@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
-import sui from "../../src/blockchains/sui";
+import Sui from "../../src/blockchains/sui";
 import { useBlockchain } from "../../src/blockchain";
 import type { Options } from "../../src/types";
 
 describe("Sui", () => {
   describe("Mainnet", () => {
-    const blockchain = useBlockchain(sui());
+    const blockchain = useBlockchain(new Sui());
 
     // Test vectors
     const keyPrivate = "0000000000000000000000000000000000000000000000000000000000000001";
@@ -38,6 +38,13 @@ describe("Sui", () => {
         expect(blockchain.getKeyPublic(keyPrivate)).toBe(keyPublicEd25519);
         expect(blockchain.getAddress(keyPublicEd25519)).toBe(addressEd25519);
       });
+    });
+
+    it("uses the key scheme when generating a wallet address", () => {
+      const wallet = blockchain.generateWallet({ scheme: "secp256k1" });
+
+      expect(wallet.address).toBe(blockchain.getAddress(wallet.keys.public, "secp256k1"));
+      expect(wallet.address).not.toBe(blockchain.getAddress(wallet.keys.public, "ed25519"));
     });
 
     describe("Address validation", () => {
@@ -73,7 +80,7 @@ describe("Sui", () => {
 
   describe("Testnet", () => {
     const options: Options = { network: "testnet" };
-    const testnetBlockchain = useBlockchain(sui(options));
+    const testnetBlockchain = useBlockchain(new Sui(options));
 
     describe("blockchain interface", () => {
       it("has correct name", () => {

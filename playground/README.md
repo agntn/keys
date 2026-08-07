@@ -4,16 +4,19 @@ This folder contains example code and experiments demonstrating the usage of ubi
 
 ## Contents
 
-- `bip32-demo.ts` - Demonstrates BIP32 hierarchical deterministic wallet functionality
-- Additional examples will be added as new features are implemented
+- `lazy-class-demo.ts` - Lazy-loads and constructs concrete blockchain classes
+- `signing-demo.ts` - Signs and verifies messages with EVM and Ed25519 classes
+- `bip44-demo.ts` - Uses concrete classes to compare BIP44 paths across all supported chains
+- `bip32-demo.ts` - Demonstrates BIP32 hierarchical deterministic key derivation
+- `bip39-demo.ts` - Generates mnemonics and derives multi-chain seed material
+- `slip10-demo.ts` - Demonstrates hardened Ed25519 derivation with SLIP-0010
 
 ## Running Examples
 
-To run the examples, use the following command:
+Run any example through the project script:
 
 ```bash
-# For BIP32 demo
-npx tsx playground/bip32-demo.ts
+pnpm playground playground/lazy-class-demo.ts
 ```
 
 ## Notes

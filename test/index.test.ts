@@ -1,7 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { useBlockchain } from "../src";
-import bitcoin from "../src/blockchains/bitcoin";
-import ethereum from "../src/blockchains/ethereum";
+import { AbstractBlockchain, AbstractEVMBlockchain, blockchains, useBlockchain } from "../src";
+import Bitcoin, { Bitcoin as BitcoinClass } from "../src/blockchains/bitcoin";
+import Ethereum from "../src/blockchains/ethereum";
+
+describe("Blockchain class API", () => {
+  it("exports the concrete class as both the named and default export", () => {
+    expect(Bitcoin).toBe(BitcoinClass);
+    expect(new Bitcoin()).toBeInstanceOf(AbstractBlockchain);
+    expect(new Ethereum()).toBeInstanceOf(AbstractEVMBlockchain);
+  });
+
+  it("constructs concrete classes through the lazy registry", async () => {
+    const blockchain = await blockchains.bitcoin({ network: "testnet" })();
+
+    expect(blockchain).toBeInstanceOf(Bitcoin);
+    expect(blockchain.network).toBe("testnet");
+    expect(useBlockchain(blockchain)).toBe(blockchain);
+  });
+
+  it("preserves mainnet defaulting for empty network values", async () => {
+    const blockchain = await blockchains.bitcoin({ network: "" })();
+
+    expect(blockchain.network).toBe("mainnet");
+  });
+});
 
 describe("Common blockchain functionality", () => {
   it("should expose useBlockchain function", () => {
@@ -10,7 +32,7 @@ describe("Common blockchain functionality", () => {
 
   describe("generateKeys function", () => {
     it("should generate a valid key pair for Bitcoin", () => {
-      const blockchain = useBlockchain(bitcoin());
+      const blockchain = useBlockchain(new Bitcoin());
       const keys = blockchain.generateKeys();
 
       // Verify structure
@@ -31,7 +53,7 @@ describe("Common blockchain functionality", () => {
     });
 
     it("should generate a valid key pair for Ethereum", () => {
-      const blockchain = useBlockchain(ethereum());
+      const blockchain = useBlockchain(new Ethereum());
       const keys = blockchain.generateKeys();
 
       // Verify structure
@@ -52,7 +74,7 @@ describe("Common blockchain functionality", () => {
     });
 
     it("should respect options passed to generateKeys", () => {
-      const blockchain = useBlockchain(bitcoin());
+      const blockchain = useBlockchain(new Bitcoin());
 
       // Generate with default options (compressed key)
       const compressedKeys = blockchain.generateKeys();
@@ -68,7 +90,7 @@ describe("Common blockchain functionality", () => {
     });
 
     it("should generate different key pairs each time", () => {
-      const blockchain = useBlockchain(bitcoin());
+      const blockchain = useBlockchain(new Bitcoin());
       const keys1 = blockchain.generateKeys();
       const keys2 = blockchain.generateKeys();
 
@@ -77,7 +99,7 @@ describe("Common blockchain functionality", () => {
     });
 
     it("should generate a valid wallet with address", () => {
-      const blockchain = useBlockchain(bitcoin());
+      const blockchain = useBlockchain(new Bitcoin());
       const wallet = blockchain.generateWallet();
 
       // Verify structure
@@ -101,7 +123,7 @@ describe("Common blockchain functionality", () => {
     });
 
     it("should respect address type in generateWallet", () => {
-      const blockchain = useBlockchain(bitcoin());
+      const blockchain = useBlockchain(new Bitcoin());
 
       // Default legacy address
       const legacyWallet = blockchain.generateWallet();

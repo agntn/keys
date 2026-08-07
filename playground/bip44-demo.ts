@@ -1,12 +1,12 @@
 import { useBlockchain, BIP44Change, getBlockchainPath } from "../src";
-import bitcoin from "../src/blockchains/bitcoin";
-import ethereum from "../src/blockchains/ethereum";
-import solana from "../src/blockchains/solana";
-import cardano from "../src/blockchains/cardano";
-import tron from "../src/blockchains/tron";
-import aptos from "../src/blockchains/aptos";
-import sui from "../src/blockchains/sui";
-import base from "../src/blockchains/base";
+import Bitcoin from "../src/blockchains/bitcoin";
+import Ethereum from "../src/blockchains/ethereum";
+import Solana from "../src/blockchains/solana";
+import Cardano from "../src/blockchains/cardano";
+import Tron from "../src/blockchains/tron";
+import Aptos from "../src/blockchains/aptos";
+import Sui from "../src/blockchains/sui";
+import Base from "../src/blockchains/base";
 
 import { mnemonicToSeed } from "../src/utils/bip39";
 import {
@@ -20,14 +20,14 @@ import {
 
 // Create blockchain instances
 const chains = [
-  useBlockchain(bitcoin()),
-  useBlockchain(ethereum()),
-  useBlockchain(solana()),
-  useBlockchain(cardano()),
-  useBlockchain(tron()),
-  useBlockchain(aptos()),
-  useBlockchain(sui()),
-  useBlockchain(base()),
+  useBlockchain(new Bitcoin()),
+  useBlockchain(new Ethereum()),
+  useBlockchain(new Solana()),
+  useBlockchain(new Cardano()),
+  useBlockchain(new Tron()),
+  useBlockchain(new Aptos()),
+  useBlockchain(new Sui()),
+  useBlockchain(new Base()),
 ];
 
 // Display BIP44 codes for each blockchain

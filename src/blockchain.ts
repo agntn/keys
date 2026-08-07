@@ -1,46 +1,44 @@
-import type {
-  Blockchain,
-  BlockchainImplementation,
-  Keys,
-  Wallet,
-  KeyOptions,
-  AddressType,
-} from "./types.ts";
 import { webcrypto } from "node:crypto";
 import { bytesToHex } from "@noble/hashes/utils.js";
+import type { AddressType, Blockchain, Curve, KeyOptions, Keys, Options, Wallet } from "./types.ts";
 
 /**
- * Creates and returns an interface using the specified blockchain implementation.
- * This interface allows you to generate keys, addresses,
- * and sign transactions.
- *
- * @param blockchain - The blockchain implementation with the basic required functions.
- * @returns The complete blockchain interface that allows cryptocurrency operations.
+ * Shared blockchain behavior. Concrete chains provide key, address, and signing rules.
  */
-export function useBlockchain(blockchain: BlockchainImplementation): Blockchain {
-  /**
-   * Generates a cryptographically secure random private key
-   * Common implementation for all blockchains - 32 bytes (256 bits)
-   * represented as a 64-character hex string
-   */
-  function generateKeyPrivate(): string {
-    // Generate 32 bytes (256 bits) of random data using Web Crypto API
-    const keyPrivateBytes = webcrypto.getRandomValues(new Uint8Array(32));
+export abstract class AbstractBlockchain implements Blockchain {
+  abstract readonly name: string;
+  abstract readonly curve: Curve | readonly Curve[];
+  abstract readonly bip44: number;
 
-    // Convert to hex string
+  readonly network: string;
+
+  constructor(options?: Options) {
+    this.network = options?.network || "mainnet";
+  }
+
+  abstract getKeyPublic(keyPrivate: string, options?: KeyOptions): string;
+  abstract getAddress(keyPublic: string, type?: string): string;
+  abstract validateAddress(address: string): boolean;
+  abstract signMessage(
+    message: string | Uint8Array,
+    keyPrivate: string,
+    options?: KeyOptions,
+  ): string;
+  abstract verifyMessage(
+    message: string | Uint8Array,
+    signature: string,
+    keyPublic: string,
+    options?: KeyOptions,
+  ): boolean;
+
+  generateKeyPrivate(): string {
+    const keyPrivateBytes = webcrypto.getRandomValues(new Uint8Array(32));
     return bytesToHex(keyPrivateBytes);
   }
 
-  /**
-   * Generates a key pair (private and public keys)
-   * This is a convenience function that combines generateKeyPrivate and getKeyPublic
-   *
-   * @param options - Optional parameters for key generation
-   * @returns A pair of cryptographic keys
-   */
-  function generateKeys(options?: KeyOptions): Keys {
-    const privateKey = generateKeyPrivate();
-    const publicKey = blockchain.getKeyPublic(privateKey, options);
+  generateKeys(options?: KeyOptions): Keys {
+    const privateKey = this.generateKeyPrivate();
+    const publicKey = this.getKeyPublic(privateKey, options);
 
     return {
       keys: {
@@ -50,42 +48,20 @@ export function useBlockchain(blockchain: BlockchainImplementation): Blockchain 
     };
   }
 
-  /**
-   * Generates a complete wallet (private key, public key, and address)
-   * This is a convenience function that combines generateKeys and getAddress
-   *
-   * @param options - Optional parameters for key generation
-   * @param addressType - Optional address type for blockchains with multiple address formats
-   * @returns A complete wallet with keys and address
-   */
-  function generateWallet(options?: KeyOptions, addressType?: AddressType): Wallet {
-    const keys = generateKeys(options);
-    const address = blockchain.getAddress(keys.keys.public, addressType);
+  generateWallet(options?: KeyOptions, addressType?: AddressType): Wallet {
+    const keys = this.generateKeys(options);
+    const address = this.getAddress(keys.keys.public, addressType);
 
     return {
       ...keys,
       address,
     };
   }
+}
 
-  const response: Blockchain = {
-    name: blockchain.name,
-    curve: blockchain.curve,
-    network: blockchain.network,
-    bip44: blockchain.bip44,
-    generateKeyPrivate,
-    getKeyPublic: blockchain.getKeyPublic,
-    getAddress: blockchain.getAddress,
-    generateKeys,
-    generateWallet,
-    signMessage: blockchain.signMessage,
-    verifyMessage: blockchain.verifyMessage,
-  };
-
-  // Add address validation if blockchain implements it
-  if (blockchain.validateAddress) {
-    response.validateAddress = blockchain.validateAddress;
-  }
-
-  return response satisfies Blockchain;
+/**
+ * Returns a concrete blockchain instance through the unified public API.
+ */
+export function useBlockchain<T extends AbstractBlockchain>(blockchain: T): T {
+  return blockchain;
 }

@@ -1,75 +1,74 @@
 import { blake2b } from "@noble/hashes/blake2.js";
 import { hexToBytes } from "@noble/hashes/utils.js";
+import { bech32 } from "@scure/base";
+import { AbstractBlockchain } from "../blockchain.ts";
 import { generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
-import { bech32 } from "@scure/base";
-import type { Curve, KeyOptions, Options, BlockchainImplementation } from "../types.ts";
+import type { Curve, KeyOptions } from "../types.ts";
 
-export default function cardano(options?: Options) {
-  const name = "cardano";
-  const curve: Curve = "ed25519";
-  const network = options?.network || "mainnet";
-  const bip44 = 1815; // SLIP-0044 index for Cardano
+const ADDRESS_TYPE = {
+  BASE_PAYMENT: 0,
+  ENTERPRISE_KEY: 6,
+  REWARD_KEY: 14,
+} as const;
 
-  const networkId = network === "testnet" ? 0 : 1;
+const NETWORK_PARAMS = {
+  mainnet: {
+    hrpAddress: "addr",
+    hrpStake: "stake",
+    networkId: 1,
+  },
+  testnet: {
+    hrpAddress: "addr_test",
+    hrpStake: "stake_test",
+    networkId: 0,
+  },
+} as const;
 
-  const ADDRESS_TYPE = {
-    BASE_PAYMENT: 0,
-    ENTERPRISE_KEY: 6,
-    REWARD_KEY: 14,
-  };
+/** Cardano blockchain implementation. */
+export class Cardano extends AbstractBlockchain {
+  override readonly name = "cardano";
+  override readonly curve: Curve = "ed25519";
+  override readonly bip44 = 1815;
 
-  /**
-   * Get public key from private key using Ed25519 curve
-   *
-   * @param keyPrivate - The private key as a hex string
-   * @param options - Optional parameters
-   * @returns Public key as hex string
-   */
-  function getKeyPublic(keyPrivate: string, _options?: KeyOptions): string {
+  private get params() {
+    return this.network === "testnet" ? NETWORK_PARAMS.testnet : NETWORK_PARAMS.mainnet;
+  }
+
+  override getKeyPublic(keyPrivate: string, _options?: KeyOptions): string {
     return getEd25519KeyPublic(keyPrivate);
   }
 
-  /**
-   * Get Cardano key hash from public key
-   *
-   * @param keyPublic - Public key as hex string
-   * @returns Hashed key bytes
-   */
-  function getKeyHash(keyPublic: string): Uint8Array {
-    // Convert public key to bytes
-    const keyPublicBytes = hexToBytes(keyPublic);
-
-    // Hash the public key with blake2b-224 for Cardano addresses
-    return blake2b(keyPublicBytes, { dkLen: 28 }); // 28 bytes = 224 bits
+  private getKeyHash(keyPublic: string): Uint8Array {
+    return blake2b(hexToBytes(keyPublic), { dkLen: 28 });
   }
 
-  function encodeAddress(hrp: string, header: number, payload: Uint8Array): string {
+  private encodeAddress(hrp: string, header: number, payload: Uint8Array): string {
     const bytes = new Uint8Array(1 + payload.length);
     bytes[0] = header;
     bytes.set(payload, 1);
     return bech32.encode(hrp, bech32.toWords(bytes), false);
   }
 
-  function header(addressType: number): number {
-    return (addressType << 4) | networkId;
+  private header(addressType: number): number {
+    return (addressType << 4) | this.params.networkId;
   }
 
-  function getAddress(keyPublic: string, type?: string): string {
-    const keyHash = getKeyHash(keyPublic);
+  override getAddress(keyPublic: string, type?: string): string {
+    const keyHash = this.getKeyHash(keyPublic);
 
     if (type === "stake") {
-      return encodeAddress(
-        network === "testnet" ? "stake_test" : "stake",
-        header(ADDRESS_TYPE.REWARD_KEY),
+      return this.encodeAddress(
+        this.params.hrpStake,
+        this.header(ADDRESS_TYPE.REWARD_KEY),
         keyHash,
       );
     }
 
     if (type === "enterprise") {
-      return encodeAddress(
-        network === "testnet" ? "addr_test" : "addr",
-        header(ADDRESS_TYPE.ENTERPRISE_KEY),
+      return this.encodeAddress(
+        this.params.hrpAddress,
+        this.header(ADDRESS_TYPE.ENTERPRISE_KEY),
         keyHash,
       );
     }
@@ -77,31 +76,31 @@ export default function cardano(options?: Options) {
     const basePayload = new Uint8Array(keyHash.length * 2);
     basePayload.set(keyHash);
     basePayload.set(keyHash, keyHash.length);
-    return encodeAddress(
-      network === "testnet" ? "addr_test" : "addr",
-      header(ADDRESS_TYPE.BASE_PAYMENT),
+    return this.encodeAddress(
+      this.params.hrpAddress,
+      this.header(ADDRESS_TYPE.BASE_PAYMENT),
       basePayload,
     );
   }
 
-  function validateAddress(address: string): boolean {
+  override validateAddress(address: string): boolean {
     try {
       const decoded = bech32.decode(address, false);
       const bytes = bech32.fromWords(decoded.words);
-      if (bytes.length === 0) return false;
+      const headerByte = bytes[0];
+      if (headerByte === undefined) return false;
 
-      const addressNetwork = bytes[0]! & 0x0f;
-      const addressType = bytes[0]! >> 4;
-      if (addressNetwork !== networkId) return false;
+      const expectedNetwork = this.params.networkId;
+      const addressNetwork = headerByte & 0x0f;
+      const addressType = headerByte >> 4;
+      if (addressNetwork !== expectedNetwork) return false;
 
-      if (decoded.prefix === (network === "testnet" ? "stake_test" : "stake")) {
+      if (decoded.prefix === this.params.hrpStake) {
         return addressType === ADDRESS_TYPE.REWARD_KEY && bytes.length === 29;
       }
-
-      if (decoded.prefix !== (network === "testnet" ? "addr_test" : "addr")) {
+      if (decoded.prefix !== this.params.hrpAddress) {
         return false;
       }
-
       if (addressType === ADDRESS_TYPE.BASE_PAYMENT) return bytes.length === 57;
       if (addressType === ADDRESS_TYPE.ENTERPRISE_KEY) return bytes.length === 29;
       return false;
@@ -110,15 +109,7 @@ export default function cardano(options?: Options) {
     }
   }
 
-  /**
-   * Signs a message using Ed25519 for Cardano
-   *
-   * @param message - The message to sign
-   * @param keyPrivate - The private key
-   * @param options - Optional parameters
-   * @returns The signature as a hex string
-   */
-  function signMessage(
+  override signMessage(
     message: string | Uint8Array,
     keyPrivate: string,
     options?: KeyOptions,
@@ -126,16 +117,7 @@ export default function cardano(options?: Options) {
     return ed25519SignMessage(message, keyPrivate, options);
   }
 
-  /**
-   * Verifies a message signature for Cardano
-   *
-   * @param message - The original message
-   * @param signature - The signature to verify
-   * @param keyPublic - The public key
-   * @param options - Optional parameters
-   * @returns Whether the signature is valid
-   */
-  function verifyMessage(
+  override verifyMessage(
     message: string | Uint8Array,
     signature: string,
     keyPublic: string,
@@ -143,16 +125,6 @@ export default function cardano(options?: Options) {
   ): boolean {
     return ed25519VerifyMessage(message, signature, keyPublic, options);
   }
-
-  return {
-    name,
-    curve,
-    network,
-    bip44,
-    getKeyPublic,
-    getAddress,
-    validateAddress,
-    signMessage,
-    verifyMessage,
-  } satisfies BlockchainImplementation;
 }
+
+export default Cardano;

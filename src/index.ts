@@ -1,4 +1,5 @@
-export { useBlockchain } from "./blockchain.ts";
+export { AbstractBlockchain, useBlockchain } from "./blockchain.ts";
+export { AbstractEVMBlockchain } from "./utils/evm.ts";
 
 // Export lazy-loaded blockchain implementations
 export { blockchains } from "./_blockchains.ts";
@@ -17,10 +18,12 @@ export { signMessage, verifyMessage, type SigningOptions } from "./utils/signing
 
 export type {
   Blockchain,
+  Curve,
   BlockchainImplementation,
   Keys,
   Wallet,
   KeyOptions,
+  Options,
   AddressType,
   NetworkType,
   AddressFormat,

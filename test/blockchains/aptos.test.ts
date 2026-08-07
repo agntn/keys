@@ -1,11 +1,11 @@
 import { expect, describe, it } from "vitest";
-import aptos from "../../src/blockchains/aptos";
+import Aptos from "../../src/blockchains/aptos";
 import { useBlockchain } from "../../src/blockchain";
 import type { Options } from "../../src/types";
 
 describe("Aptos Blockchain", () => {
   describe("Mainnet", () => {
-    const blockchain = useBlockchain(aptos());
+    const blockchain = useBlockchain(new Aptos());
 
     // Test private key generation
     it("generates a valid private key", () => {
@@ -55,7 +55,7 @@ describe("Aptos Blockchain", () => {
 
   describe("Testnet", () => {
     const options: Options = { network: "testnet" };
-    const testnetBlockchain = useBlockchain(aptos(options));
+    const testnetBlockchain = useBlockchain(new Aptos(options));
 
     describe("blockchain interface", () => {
       it("has correct name", () => {
@@ -74,7 +74,7 @@ describe("Aptos Blockchain", () => {
     describe("address generation", () => {
       it("generates identical addresses for testnet and mainnet", () => {
         // Aptos uses the same address format for both networks
-        const mainnetBlockchain = useBlockchain(aptos());
+        const mainnetBlockchain = useBlockchain(new Aptos());
         const keyPrivate = "0000000000000000000000000000000000000000000000000000000000000001";
 
         const testnetPublicKey = testnetBlockchain.getKeyPublic(keyPrivate);

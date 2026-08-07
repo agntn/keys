@@ -1,49 +1,33 @@
-import { generateKeyPublic as getKeyPublic } from "../utils/secp256k1.ts";
-import { hexToBytes } from "@noble/hashes/utils.js";
-import { keccak_256 } from "@noble/hashes/sha3.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { keccak_256 } from "@noble/hashes/sha3.js";
+import { hexToBytes } from "@noble/hashes/utils.js";
+import { AbstractBlockchain } from "../blockchain.ts";
 import { addSchemeByte } from "../utils/address.ts";
 import { encodeBase58Check, validateBase58Check } from "../utils/encoding.ts";
 import { evmSignMessage, evmVerifyMessage } from "../utils/evm.ts";
-import type { Curve, Options, BlockchainImplementation, KeyOptions } from "../types.ts";
+import { generateKeyPublic } from "../utils/secp256k1.ts";
+import type { Curve, KeyOptions } from "../types.ts";
 
-/**
- * Tron blockchain implementation
- *
- * @param options - Optional configuration parameters
- * @param options.network - Network to use (mainnet, testnet, etc.)
- * @returns An object implementing the Blockchain interface for Tron
- */
-export default function tron(options?: Options) {
-  const name = "tron";
-  const curve: Curve = "secp256k1";
-  const network = options?.network || "mainnet";
-  const bip44 = 195; // SLIP-0044 index for TRON
+const NETWORK_PARAMS = {
+  mainnet: { prefixByte: 0x41, prefixChar: "T" },
+  testnet: { prefixByte: 0xa0, prefixChar: "A" },
+} as const;
 
-  const networkParams = {
-    mainnet: {
-      prefixByte: 0x41, // 65 in decimal, mainnet addresses start with 'T'
-      prefixChar: "T",
-    },
-    testnet: {
-      prefixByte: 0xa0, // 160 in decimal, testnet addresses typically start with a different character
-      prefixChar: "A", // Testnet addresses often start with 'A'
-    },
-  };
+/** TRON blockchain implementation. */
+export class Tron extends AbstractBlockchain {
+  override readonly name = "tron";
+  override readonly curve: Curve = "secp256k1";
+  override readonly bip44 = 195;
 
-  // Get parameters for the current network
-  const params = network === "testnet" ? networkParams.testnet : networkParams.mainnet;
+  private get params() {
+    return this.network === "testnet" ? NETWORK_PARAMS.testnet : NETWORK_PARAMS.mainnet;
+  }
 
-  /**
-   * Get TRON address from public key
-   * TRON uses Keccak-256 hash and base58check encoding with version byte
-   * Mainnet addresses start with 'T' (prefix 0x41)
-   * Testnet addresses typically start with 'A' (prefix 0xa0)
-   *
-   * @param keyPublic - The public key as a hex string
-   * @returns TRON address string
-   */
-  function getAddress(keyPublic: string): string {
+  override getKeyPublic(keyPrivate: string, options?: KeyOptions): string {
+    return generateKeyPublic(keyPrivate, options);
+  }
+
+  override getAddress(keyPublic: string): string {
     const keyPublicBytes = hexToBytes(keyPublic);
     let keyBytesForHashing: Uint8Array;
 
@@ -55,39 +39,15 @@ export default function tron(options?: Options) {
       throw new Error(`Invalid public key length: ${keyPublicBytes.length} bytes`);
     }
 
-    const keccakHash = keccak_256(keyBytesForHashing);
-    const addressBytes = keccakHash.slice(-20);
-
-    // Create versioned hash with network-specific prefix byte
-    const hashVersioned = addSchemeByte(addressBytes, params.prefixByte, true);
-
-    // Encode with Base58Check
-    return encodeBase58Check(hashVersioned);
+    const addressBytes = keccak_256(keyBytesForHashing).slice(-20);
+    return encodeBase58Check(addSchemeByte(addressBytes, this.params.prefixByte, true));
   }
 
-  /**
-   * Validate a TRON address
-   * Valid TRON addresses:
-   * - Start with the correct prefix character for the network
-   * - Have the correct version byte for the network
-   * - Pass base58check validation
-   *
-   * @param address - The address to validate
-   * @returns Whether the address is valid
-   */
-  function validateAddress(address: string): boolean {
-    return validateBase58Check(address, params.prefixByte, params.prefixChar);
+  override validateAddress(address: string): boolean {
+    return validateBase58Check(address, this.params.prefixByte, this.params.prefixChar);
   }
 
-  /**
-   * Signs a message using secp256k1 for TRON
-   *
-   * @param message - The message to sign
-   * @param keyPrivate - The private key
-   * @param options - Optional parameters
-   * @returns The signature as a hex string
-   */
-  function signMessage(
+  override signMessage(
     message: string | Uint8Array,
     keyPrivate: string,
     options?: KeyOptions,
@@ -95,16 +55,7 @@ export default function tron(options?: Options) {
     return evmSignMessage(message, keyPrivate, options);
   }
 
-  /**
-   * Verifies a message signature for TRON
-   *
-   * @param message - The original message
-   * @param signature - The signature to verify
-   * @param keyPublic - The public key
-   * @param options - Optional parameters
-   * @returns Whether the signature is valid
-   */
-  function verifyMessage(
+  override verifyMessage(
     message: string | Uint8Array,
     signature: string,
     keyPublic: string,
@@ -112,16 +63,6 @@ export default function tron(options?: Options) {
   ): boolean {
     return evmVerifyMessage(message, signature, keyPublic, options);
   }
-
-  return {
-    name,
-    curve,
-    network,
-    bip44,
-    getKeyPublic,
-    getAddress,
-    validateAddress,
-    signMessage,
-    verifyMessage,
-  } satisfies BlockchainImplementation;
 }
+
+export default Tron;

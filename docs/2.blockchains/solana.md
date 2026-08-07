@@ -14,9 +14,9 @@ Solana implementation using the ed25519 curve, with simple base58-encoded addres
 
 ```js
 import { useBlockchain } from "ubichain";
-import solana from "ubichain/blockchains/solana";
+import Solana from "ubichain/blockchains/solana";
 
-const solanaChain = useBlockchain(solana());
+const solanaChain = useBlockchain(new Solana());
 ```
 
 ## Features
@@ -50,7 +50,7 @@ console.log("Address:", address);
 
 ```js
 // Validate a Solana address
-const isValid = solanaChain.validateAddress?.("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin");
+const isValid = solanaChain.validateAddress("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin");
 console.log("Is valid:", isValid); // true or false
 ```
 

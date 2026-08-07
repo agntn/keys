@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { useBlockchain } from "../../src";
-import base from "../../src/blockchains/base";
+import Base from "../../src/blockchains/base";
 
 describe("Base blockchain", () => {
-  const blockchain = useBlockchain(base());
+  const blockchain = useBlockchain(new Base());
 
   it("should have a name", () => {
     expect(blockchain.name).toBe("base");

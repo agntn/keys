@@ -14,10 +14,10 @@ TypeScript library providing a unified interface for key generation, address der
 ubichain/
 ├── src/
 │   ├── index.ts            # Public API surface (re-exports only)
-│   ├── blockchain.ts        # useBlockchain() wrapper - adds convenience methods
+│   ├── blockchain.ts        # AbstractBlockchain base + useBlockchain() identity helper
 │   ├── types.ts             # All shared types (Blockchain, Keys, Wallet, etc.)
 │   ├── _blockchains.ts      # Lazy-loading registry with double-call pattern
-│   ├── blockchains/         # One factory per chain (see blockchains/AGENTS.md)
+│   ├── blockchains/         # One concrete class per chain (see blockchains/AGENTS.md)
 │   └── utils/               # Shared crypto utilities (see utils/AGENTS.md)
 ├── test/                    # Mirrors src/ structure exactly
 │   ├── fixtures.ts          # Shared test vectors (secp256k1, ed25519, bip39, addresses)
@@ -30,24 +30,24 @@ ubichain/
 
 ## WHERE TO LOOK
 
-| Task               | Location                                                                          | Notes                                              |
-| ------------------ | --------------------------------------------------------------------------------- | -------------------------------------------------- |
-| Add new blockchain | `src/blockchains/` + `src/_blockchains.ts`                                        | Factory pattern, register in lazy loader           |
-| Add address format | `src/utils/address.ts`                                                            | Shared across chains (legacy, segwit, hex, base58) |
-| Add EVM chain      | `src/utils/evm.ts` → `createEVMBlockchain()`                                      | 3-line file, reuses factory                        |
-| Fix signing        | `src/utils/signing.ts` (generic) or `evm.ts`/`ed25519-chains.ts` (chain-specific) | EVM uses preamble hash, ed25519 signs raw          |
-| Change public API  | `src/index.ts`                                                                    | Re-exports only, never add logic here              |
-| Add BIP/derivation | `src/utils/bip32/`, `bip39/`, `bip44/`, `slip10/`                                 | Subdirs with index.ts                              |
-| Write tests        | `test/` mirroring `src/` path                                                     | Use fixtures from `test/fixtures.ts`               |
-| Integration test   | `test-integration/`                                                               | Separate pnpm package, manual execution            |
-| Run demos          | `playground/*.ts`                                                                 | Execute via `pnpm playground <file>`               |
+| Task               | Location                                                                          | Notes                                                      |
+| ------------------ | --------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Add new blockchain | `src/blockchains/` + `src/_blockchains.ts`                                        | Extend the appropriate base class, register in lazy loader |
+| Add address format | `src/utils/address.ts`                                                            | Shared across chains (legacy, segwit, hex, base58)         |
+| Add EVM chain      | `src/utils/evm.ts` → `AbstractEVMBlockchain`                                      | Minimal subclass with `name` and `bip44`                   |
+| Fix signing        | `src/utils/signing.ts` (generic) or `evm.ts`/`ed25519-chains.ts` (chain-specific) | EVM uses preamble hash, ed25519 signs raw                  |
+| Change public API  | `src/index.ts`                                                                    | Re-exports only, never add logic here                      |
+| Add BIP/derivation | `src/utils/bip32/`, `bip39/`, `bip44/`, `slip10/`                                 | Subdirs with index.ts                                      |
+| Write tests        | `test/` mirroring `src/` path                                                     | Use fixtures from `test/fixtures.ts`                       |
+| Integration test   | `test-integration/`                                                               | Separate pnpm package, manual execution                    |
+| Run demos          | `playground/*.ts`                                                                 | Execute via `pnpm playground <file>`                       |
 
 ## CONVENTIONS
 
 - **All crypto from @noble/@scure** - never import raw crypto from Node or other libs
-- **Factory pattern** - every blockchain exports `default function name(options?: Options): BlockchainImplementation`
-- **`satisfies BlockchainImplementation`** - every factory return uses this assertion, not `: BlockchainImplementation`
-- **Lazy double-call** - `blockchains.chain(options)()` first passes config, second triggers async import
+- **Class pattern** - every blockchain exports a named concrete class and the same class as its default export
+- **Abstract bases** - all chains extend `AbstractBlockchain`; Ethereum and Base extend `AbstractEVMBlockchain`
+- **Lazy double-call** - `blockchains.chain(options)()` passes constructor options, then imports and constructs the class
 - **Curve-split signing** - secp256k1 chains use `evmSignMessage` (Ethereum preamble + keccak256), ed25519 chains use `ed25519SignMessage` (raw, no prehash)
 - **Test mirrors src** - `src/blockchains/bitcoin.ts` -> `test/blockchains/bitcoin.test.ts`
 - **Shared fixtures** - test vectors live in `test/fixtures.ts`, not duplicated per test file
@@ -60,7 +60,7 @@ ubichain/
 - **No type assertions in src/** - zero `as any`, `@ts-ignore`, `@ts-expect-error` in source code (`@ts-expect-error` exists in tests only, for intentional invalid input testing)
 - **No non-noble crypto** - never use Node `crypto` module for hashing/signing (only `webcrypto.getRandomValues` for key generation)
 - **No logic in index.ts** - only re-exports
-- **No direct blockchain instantiation** - always go through `_blockchains.ts` lazy loader for public API
+- **Don't bypass the lazy registry by accident** - use `blockchains.chain(options)()` for routine public loading; direct constructors are for explicit per-chain imports and subclassing
 - **Don't mix signing utils** - secp256k1 chains must use `evmSignMessage`, ed25519 chains must use `ed25519SignMessage` or chain-specific variant
 
 ## COMMANDS

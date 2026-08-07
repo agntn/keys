@@ -1,21 +1,22 @@
-import type { Options, BlockchainImplementation } from "./types.ts";
+import type { AbstractBlockchain } from "./blockchain.ts";
+import type { Options } from "./types.ts";
 
-type BlockchainFactory = (options?: Options) => BlockchainImplementation;
-type BlockchainModule = { default: BlockchainFactory };
+type BlockchainConstructor<T extends AbstractBlockchain> = new (options?: Options) => T;
+type BlockchainModule<T extends AbstractBlockchain> = { default: BlockchainConstructor<T> };
 
 /**
- * Creates a lazy-loaded blockchain factory.
+ * Creates a lazy-loaded blockchain class constructor.
  * The import is deferred until the returned async function is called.
  */
-function lazy(loader: () => Promise<BlockchainModule>) {
-  return (options?: Options) => async (): Promise<BlockchainImplementation> => {
-    const { default: create } = await loader();
-    return create(options);
+function lazy<T extends AbstractBlockchain>(loader: () => Promise<BlockchainModule<T>>) {
+  return (options?: Options) => async (): Promise<T> => {
+    const { default: Blockchain } = await loader();
+    return new Blockchain(options);
   };
 }
 
 /**
- * Blockchain implementations with lazy loading for improved performance and reduced bundle size
+ * Blockchain classes with lazy loading for improved performance and reduced bundle size.
  */
 export const blockchains = {
   bitcoin: lazy(() => import("./blockchains/bitcoin.ts")),

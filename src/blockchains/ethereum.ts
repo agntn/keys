@@ -1,22 +1,10 @@
-import { createEVMBlockchain } from "../utils/evm.ts";
-import type { Options, BlockchainImplementation } from "../types.ts";
+import { AbstractEVMBlockchain } from "../utils/evm.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 
-/**
- * Ethereum blockchain implementation
- * Uses the EVM implementation for address generation and validation
- *
- * @param options - Optional configuration parameters
- * @param options.network - Network to use (mainnet, testnet, etc.)
- * @returns An object implementing the Blockchain interface for Ethereum
- */
-export default function ethereum(options?: Options) {
-  const name = "ethereum";
-  const bip44 = BIP44.ETHEREUM;
-  const network = options?.network || "mainnet";
-
-  return createEVMBlockchain(name, {
-    network,
-    bip44,
-  }) satisfies BlockchainImplementation;
+/** Ethereum blockchain implementation. */
+export class Ethereum extends AbstractEVMBlockchain {
+  override readonly name = "ethereum";
+  override readonly bip44 = BIP44.ETHEREUM;
 }
+
+export default Ethereum;

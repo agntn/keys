@@ -14,9 +14,9 @@ Bitcoin implementation using the secp256k1 curve, supporting legacy (P2PKH), P2S
 
 ```js
 import { useBlockchain } from "ubichain";
-import bitcoin from "ubichain/blockchains/bitcoin";
+import Bitcoin from "ubichain/blockchains/bitcoin";
 
-const bitcoinChain = useBlockchain(bitcoin());
+const bitcoinChain = useBlockchain(new Bitcoin());
 ```
 
 ## Features
@@ -82,16 +82,16 @@ const taprootAddress = bitcoinChain.getAddress(publicKey, "taproot");
 
 ```js
 // Validate a legacy address
-const isValidLegacy = bitcoinChain.validateAddress?.("1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2");
+const isValidLegacy = bitcoinChain.validateAddress("1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2");
 
 // Validate a P2SH address
-const isValidP2SH = bitcoinChain.validateAddress?.("3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy");
+const isValidP2SH = bitcoinChain.validateAddress("3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy");
 
 // Validate a SegWit v0 address
-const isValidSegWit = bitcoinChain.validateAddress?.("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4");
+const isValidSegWit = bitcoinChain.validateAddress("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4");
 
 // Validate a Taproot (SegWit v1) address
-const isValidTaproot = bitcoinChain.validateAddress?.(
+const isValidTaproot = bitcoinChain.validateAddress(
   "bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0",
 );
 ```
