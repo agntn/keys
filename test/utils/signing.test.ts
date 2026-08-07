@@ -100,13 +100,18 @@ describe("Signing utilities", () => {
       ).toBe(false);
     });
 
-    it("should expose signing options through the Blockchain interface", () => {
-      type Options = NonNullable<Parameters<Blockchain["signMessage"]>[2]>;
+    it("should separate signing options from key options", () => {
+      type Signing = NonNullable<Parameters<Blockchain["signMessage"]>[2]>;
+      type Verification = NonNullable<Parameters<Blockchain["verifyMessage"]>[3]>;
+      type KeyGeneration = NonNullable<Parameters<Blockchain["generateKeys"]>[0]>;
 
-      expectTypeOf<"curve" extends keyof Options ? true : false>().toEqualTypeOf<true>();
-      expectTypeOf<"hash" extends keyof Options ? true : false>().toEqualTypeOf<true>();
-      expectTypeOf<Options["curve"]>().toEqualTypeOf<Curve | undefined>();
-      expectTypeOf<Options["hash"]>().toEqualTypeOf<boolean | undefined>();
+      expectTypeOf<"curve" extends keyof Signing ? true : false>().toEqualTypeOf<true>();
+      expectTypeOf<"hash" extends keyof Signing ? true : false>().toEqualTypeOf<true>();
+      expectTypeOf<Signing["curve"]>().toEqualTypeOf<Curve | undefined>();
+      expectTypeOf<Signing["hash"]>().toEqualTypeOf<boolean | undefined>();
+      expectTypeOf<Verification>().toEqualTypeOf<Signing>();
+      expectTypeOf<"curve" extends keyof KeyGeneration ? true : false>().toEqualTypeOf<false>();
+      expectTypeOf<"hash" extends keyof KeyGeneration ? true : false>().toEqualTypeOf<false>();
     });
   });
 

@@ -13,7 +13,7 @@ import {
   signMessage as genericSignMessage,
   verifyMessage as genericVerifyMessage,
 } from "../utils/signing.ts";
-import type { Curve, KeyOptions } from "../types.ts";
+import type { Curve, KeyOptions, SigningOptions } from "../types.ts";
 
 const NETWORK_PARAMS = {
   mainnet: {
@@ -130,7 +130,7 @@ export class Bitcoin extends AbstractBlockchain {
   override signMessage(
     message: string | Uint8Array,
     keyPrivate: string,
-    options?: KeyOptions,
+    options?: SigningOptions,
   ): string {
     const hash = this.hashWithBitcoinPreamble(message);
     return genericSignMessage(hash, keyPrivate, {
@@ -144,7 +144,7 @@ export class Bitcoin extends AbstractBlockchain {
     message: string | Uint8Array,
     signature: string,
     keyPublic: string,
-    options?: KeyOptions,
+    options?: SigningOptions,
   ): boolean {
     const hash = this.hashWithBitcoinPreamble(message);
     try {

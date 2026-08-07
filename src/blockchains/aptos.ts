@@ -4,7 +4,7 @@ import { AbstractBlockchain } from "../blockchain.ts";
 import { addSchemeByte, createPrefixedAddress, validateAddressHex } from "../utils/address.ts";
 import { generateKeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
-import type { Curve, KeyOptions } from "../types.ts";
+import type { Curve, KeyOptions, SigningOptions } from "../types.ts";
 
 /** Aptos blockchain implementation. */
 export class Aptos extends AbstractBlockchain {
@@ -37,7 +37,7 @@ export class Aptos extends AbstractBlockchain {
   override signMessage(
     message: string | Uint8Array,
     keyPrivate: string,
-    options?: KeyOptions,
+    options?: SigningOptions,
   ): string {
     return ed25519SignMessage(message, keyPrivate, options);
   }
@@ -46,7 +46,7 @@ export class Aptos extends AbstractBlockchain {
     message: string | Uint8Array,
     signature: string,
     keyPublic: string,
-    options?: KeyOptions,
+    options?: SigningOptions,
   ): boolean {
     return ed25519VerifyMessage(message, signature, keyPublic, options);
   }

@@ -6,7 +6,7 @@ import { generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
 import { evmSignMessage, evmVerifyMessage } from "../utils/evm.ts";
 import { generateKeyPublic as getSecp256k1KeyPublic } from "../utils/secp256k1.ts";
-import type { AddressType, KeyOptions, Wallet } from "../types.ts";
+import type { AddressType, KeyOptions, SigningOptions, Wallet } from "../types.ts";
 
 const CURVES = ["ed25519", "secp256k1"] as const;
 const SIGNATURE_SCHEME_FLAGS = {
@@ -63,7 +63,7 @@ export class Sui extends AbstractBlockchain {
   override signMessage(
     message: string | Uint8Array,
     keyPrivate: string,
-    options?: KeyOptions,
+    options?: SigningOptions,
   ): string {
     const scheme = options?.scheme ?? "ed25519";
     return scheme.toLowerCase() === "secp256k1"
@@ -75,7 +75,7 @@ export class Sui extends AbstractBlockchain {
     message: string | Uint8Array,
     signature: string,
     keyPublic: string,
-    options?: KeyOptions,
+    options?: SigningOptions,
   ): boolean {
     const scheme = options?.scheme ?? "ed25519";
     return scheme.toLowerCase() === "secp256k1"

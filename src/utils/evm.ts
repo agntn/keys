@@ -4,7 +4,7 @@ import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { generateKeyPublic as getSecp256k1KeyPublic } from "./secp256k1.ts";
 import { signMessage, verifyMessage } from "./signing.ts";
-import type { KeyOptions } from "../types.ts";
+import type { KeyOptions, SigningOptions } from "../types.ts";
 
 /**
  * Generate an EVM compatible address from a public key
@@ -146,7 +146,7 @@ function hashWithPreamble(message: string | Uint8Array): Uint8Array {
 export function evmSignMessage(
   message: string | Uint8Array,
   keyPrivate: string,
-  options: KeyOptions = {},
+  options: SigningOptions = {},
 ): string {
   const hash = hashWithPreamble(message);
 
@@ -170,7 +170,7 @@ export function evmVerifyMessage(
   message: string | Uint8Array,
   signature: string,
   keyPublic: string,
-  options: KeyOptions = {},
+  options: SigningOptions = {},
 ): boolean {
   const hash = hashWithPreamble(message);
 
@@ -206,7 +206,7 @@ export abstract class AbstractEVMBlockchain extends AbstractBlockchain {
   override signMessage(
     message: string | Uint8Array,
     keyPrivate: string,
-    options?: KeyOptions,
+    options?: SigningOptions,
   ): string {
     return evmSignMessage(message, keyPrivate, options);
   }
@@ -215,7 +215,7 @@ export abstract class AbstractEVMBlockchain extends AbstractBlockchain {
     message: string | Uint8Array,
     signature: string,
     keyPublic: string,
-    options?: KeyOptions,
+    options?: SigningOptions,
   ): boolean {
     return evmVerifyMessage(message, signature, keyPublic, options);
   }

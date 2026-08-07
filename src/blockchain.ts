@@ -1,7 +1,16 @@
 import { webcrypto } from "node:crypto";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
-import type { AddressType, Blockchain, Curve, KeyOptions, Keys, Options, Wallet } from "./types.ts";
+import type {
+  AddressType,
+  Blockchain,
+  Curve,
+  KeyOptions,
+  Keys,
+  Options,
+  SigningOptions,
+  Wallet,
+} from "./types.ts";
 
 /**
  * Shared blockchain behavior. Concrete chains provide key, address, and signing rules.
@@ -23,13 +32,13 @@ export abstract class AbstractBlockchain implements Blockchain {
   abstract signMessage(
     message: string | Uint8Array,
     keyPrivate: string,
-    options?: KeyOptions,
+    options?: SigningOptions,
   ): string;
   abstract verifyMessage(
     message: string | Uint8Array,
     signature: string,
     keyPublic: string,
-    options?: KeyOptions,
+    options?: SigningOptions,
   ): boolean;
 
   generateKeyPrivate(): string {

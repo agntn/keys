@@ -60,9 +60,15 @@ export interface KeyOptions {
   compressed?: boolean;
   encoding?: "hex" | "base64" | "binary";
   scheme?: string; // For blockchain implementations that support multiple signature schemes
+  // Extend with more specific options as needed
+}
+
+/**
+ * Options for message signing and verification.
+ */
+export interface SigningOptions extends KeyOptions {
   curve?: Curve;
   hash?: boolean;
-  // Extend with more specific options as needed
 }
 
 /**
@@ -126,7 +132,11 @@ export interface BlockchainImplementation {
    * @param options - Optional parameters for signing
    * @returns The signature as a hex string
    */
-  signMessage: (message: string | Uint8Array, keyPrivate: string, options?: KeyOptions) => string;
+  signMessage: (
+    message: string | Uint8Array,
+    keyPrivate: string,
+    options?: SigningOptions,
+  ) => string;
 
   /**
    * Verifies a message signature
@@ -140,7 +150,7 @@ export interface BlockchainImplementation {
     message: string | Uint8Array,
     signature: string,
     keyPublic: string,
-    options?: KeyOptions,
+    options?: SigningOptions,
   ) => boolean;
 }
 

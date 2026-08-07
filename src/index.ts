@@ -14,7 +14,7 @@ export {
 } from "./utils/bip44/index.ts";
 
 // Export Signing utilities
-export { signMessage, verifyMessage, type SigningOptions } from "./utils/signing.ts";
+export { signMessage, verifyMessage } from "./utils/signing.ts";
 
 export type {
   Blockchain,
@@ -23,6 +23,7 @@ export type {
   Keys,
   Wallet,
   KeyOptions,
+  SigningOptions,
   Options,
   AddressType,
   NetworkType,

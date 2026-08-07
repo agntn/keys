@@ -4,7 +4,7 @@ import { bech32 } from "@scure/base";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
-import type { Curve, KeyOptions } from "../types.ts";
+import type { Curve, KeyOptions, SigningOptions } from "../types.ts";
 
 const ADDRESS_TYPE = {
   BASE_PAYMENT: 0,
@@ -112,7 +112,7 @@ export class Cardano extends AbstractBlockchain {
   override signMessage(
     message: string | Uint8Array,
     keyPrivate: string,
-    options?: KeyOptions,
+    options?: SigningOptions,
   ): string {
     return ed25519SignMessage(message, keyPrivate, options);
   }
@@ -121,7 +121,7 @@ export class Cardano extends AbstractBlockchain {
     message: string | Uint8Array,
     signature: string,
     keyPublic: string,
-    options?: KeyOptions,
+    options?: SigningOptions,
   ): boolean {
     return ed25519VerifyMessage(message, signature, keyPublic, options);
   }
