@@ -16,7 +16,9 @@ describe("SLIP-0010 Utils", () => {
 
   it("creates a master key from seed", () => {
     const masterKey = getMasterKeyFromSeed(testSeed);
-    expect(Buffer.from(masterKey.privateKey).toString("hex")).toBe(
+    const privateKey: Uint8Array = masterKey.privateKey;
+    const derivedKey: typeof masterKey = masterKey.derive("m/0'");
+    expect(Buffer.from(privateKey).toString("hex")).toBe(
       "2b4be7f19ee27bbf30c667b642d5f4aa69fd169872f8fc3059c08ebae2eb19e7",
     );
     expect(Buffer.from(masterKey.publicKey).toString("hex")).toBe(
@@ -25,6 +27,9 @@ describe("SLIP-0010 Utils", () => {
     expect(Buffer.from(masterKey.chainCode).toString("hex")).toBe(
       "90046a93de5380a72b5e45010748567d5ea02bbf6522f979e05c0d8d8ca9fffb",
     );
+    expect(derivedKey.privateKey).toBeInstanceOf(Uint8Array);
+    // @ts-expect-error SLIP-10 keys must reject unknown properties.
+    expect(masterKey.privKey).toBeUndefined();
   });
 
   it("derives child keys using path", () => {
