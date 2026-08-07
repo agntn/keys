@@ -6,7 +6,7 @@ import { addSchemeByte } from "../utils/address.ts";
 import { encodeBase58Check, validateBase58Check } from "../utils/encoding.ts";
 import { evmSignMessage, evmVerifyMessage } from "../utils/evm.ts";
 import { generateKeyPublic } from "../utils/secp256k1.ts";
-import type { Curve, KeyOptions, SigningOptions } from "../types.ts";
+import type { Curve, KeyOptions } from "../types.ts";
 
 const NETWORK_PARAMS = {
   mainnet: { prefixByte: 0x41, prefixChar: "T" },
@@ -50,7 +50,7 @@ export class Tron extends AbstractBlockchain {
   override signMessage(
     message: string | Uint8Array,
     keyPrivate: string,
-    options?: SigningOptions,
+    options?: KeyOptions,
   ): string {
     return evmSignMessage(message, keyPrivate, options);
   }
@@ -59,7 +59,7 @@ export class Tron extends AbstractBlockchain {
     message: string | Uint8Array,
     signature: string,
     keyPublic: string,
-    options?: SigningOptions,
+    options?: KeyOptions,
   ): boolean {
     return evmVerifyMessage(message, signature, keyPublic, options);
   }

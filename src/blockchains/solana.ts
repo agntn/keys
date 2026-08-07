@@ -4,7 +4,7 @@ import { AbstractBlockchain } from "../blockchain.ts";
 import { generateKeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
-import type { Curve, KeyOptions, SigningOptions } from "../types.ts";
+import type { Curve, KeyOptions } from "../types.ts";
 
 /** Solana blockchain implementation. */
 export class Solana extends AbstractBlockchain {
@@ -31,7 +31,7 @@ export class Solana extends AbstractBlockchain {
   override signMessage(
     message: string | Uint8Array,
     keyPrivate: string,
-    options?: SigningOptions,
+    options?: KeyOptions,
   ): string {
     return ed25519SignMessage(message, keyPrivate, options);
   }
@@ -40,7 +40,7 @@ export class Solana extends AbstractBlockchain {
     message: string | Uint8Array,
     signature: string,
     keyPublic: string,
-    options?: SigningOptions,
+    options?: KeyOptions,
   ): boolean {
     try {
       return ed25519VerifyMessage(message, signature, keyPublic, options);

@@ -104,6 +104,8 @@ describe("Signing utilities", () => {
       type Signing = NonNullable<Parameters<Blockchain["signMessage"]>[2]>;
       type Verification = NonNullable<Parameters<Blockchain["verifyMessage"]>[3]>;
       type KeyGeneration = NonNullable<Parameters<Blockchain["generateKeys"]>[0]>;
+      type EvmAdapter = NonNullable<Parameters<typeof evmSignMessage>[2]>;
+      type Ed25519Adapter = NonNullable<Parameters<typeof ed25519SignMessage>[2]>;
 
       expectTypeOf<"curve" extends keyof Signing ? true : false>().toEqualTypeOf<true>();
       expectTypeOf<"hash" extends keyof Signing ? true : false>().toEqualTypeOf<true>();
@@ -112,6 +114,9 @@ describe("Signing utilities", () => {
       expectTypeOf<Verification>().toEqualTypeOf<Signing>();
       expectTypeOf<"curve" extends keyof KeyGeneration ? true : false>().toEqualTypeOf<false>();
       expectTypeOf<"hash" extends keyof KeyGeneration ? true : false>().toEqualTypeOf<false>();
+      expectTypeOf<"curve" extends keyof EvmAdapter ? true : false>().toEqualTypeOf<false>();
+      expectTypeOf<"hash" extends keyof EvmAdapter ? true : false>().toEqualTypeOf<false>();
+      expectTypeOf<Ed25519Adapter>().toEqualTypeOf<EvmAdapter>();
     });
   });
 
@@ -139,6 +144,7 @@ describe("Signing utilities", () => {
     it("should not allow options to override EVM signing rules", () => {
       const signature = evmSignMessage(testMessage, secp256k1TestPrivateKey);
       const signatureWithOverrides = evmSignMessage(testMessage, secp256k1TestPrivateKey, {
+        // @ts-expect-error Fixed EVM adapter rejects curve and hash overrides.
         curve: "ed25519",
         hash: true,
       });
@@ -179,6 +185,7 @@ describe("Signing utilities", () => {
     it("should not allow options to override the Ed25519 curve", () => {
       const signature = ed25519SignMessage(testMessage, ed25519TestPrivateKey);
       const signatureWithOverride = ed25519SignMessage(testMessage, ed25519TestPrivateKey, {
+        // @ts-expect-error Fixed Ed25519 adapter rejects curve overrides.
         curve: "secp256k1",
       });
 

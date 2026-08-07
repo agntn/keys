@@ -1,5 +1,5 @@
 import { signMessage, verifyMessage } from "./signing.ts";
-import type { SigningOptions } from "../types.ts";
+import type { KeyOptions } from "../types.ts";
 
 /**
  * Signs a message using Ed25519 for Ed25519-based blockchains
@@ -12,7 +12,7 @@ import type { SigningOptions } from "../types.ts";
 export function ed25519SignMessage(
   message: string | Uint8Array,
   keyPrivate: string,
-  options: SigningOptions = {},
+  options: KeyOptions = {},
 ): string {
   // Ed25519 signatures are simpler than EVM signatures because they don't use a preamble
   // We just directly sign the message with the Ed25519 curve
@@ -35,7 +35,7 @@ export function ed25519VerifyMessage(
   message: string | Uint8Array,
   signature: string,
   keyPublic: string,
-  options: SigningOptions = {},
+  options: KeyOptions = {},
 ): boolean {
   // Just directly verify the signature with the Ed25519 curve
   return verifyMessage(message, signature, keyPublic, {
