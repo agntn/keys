@@ -64,6 +64,14 @@ export interface KeyOptions {
 }
 
 /**
+ * Options for message signing and verification.
+ */
+export interface SigningOptions extends KeyOptions {
+  curve?: Curve;
+  hash?: boolean;
+}
+
+/**
  * Network type
  */
 export type NetworkType = "mainnet" | "testnet" | string;
@@ -124,7 +132,11 @@ export interface BlockchainImplementation {
    * @param options - Optional parameters for signing
    * @returns The signature as a hex string
    */
-  signMessage: (message: string | Uint8Array, keyPrivate: string, options?: KeyOptions) => string;
+  signMessage: (
+    message: string | Uint8Array,
+    keyPrivate: string,
+    options?: SigningOptions,
+  ) => string;
 
   /**
    * Verifies a message signature
@@ -138,7 +150,7 @@ export interface BlockchainImplementation {
     message: string | Uint8Array,
     signature: string,
     keyPublic: string,
-    options?: KeyOptions,
+    options?: SigningOptions,
   ) => boolean;
 }
 

@@ -2,12 +2,9 @@ import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 import { sha256 } from "@noble/hashes/sha2.js";
-import type { Curve, KeyOptions } from "../types.ts";
+import type { SigningOptions } from "../types.ts";
 
-export interface SigningOptions extends KeyOptions {
-  curve?: Curve;
-  hash?: boolean;
-}
+export type { SigningOptions } from "../types.ts";
 
 /**
  * Signs a message using the appropriate elliptic curve
@@ -72,9 +69,6 @@ export function verifyMessage(
   // Convert message to Uint8Array if it's a string
   let messageBytes = typeof message === "string" ? new TextEncoder().encode(message) : message;
 
-  // Convert public key from hex string to Uint8Array
-  const keyPublicBytes = hexToBytes(keyPublic);
-
   // Different handling based on curve type
   if (curve === "secp256k1") {
     // For secp256k1, we typically hash the message first with SHA-256
@@ -84,6 +78,7 @@ export function verifyMessage(
     }
 
     try {
+      const keyPublicBytes = hexToBytes(keyPublic);
       // In @noble/curves v2, verify() accepts Uint8Array signature directly
       const signatureBytes = hexToBytes(signature);
       return secp256k1.verify(signatureBytes, messageBytes, keyPublicBytes);
@@ -93,6 +88,7 @@ export function verifyMessage(
   } else if (curve === "ed25519") {
     // Ed25519 doesn't typically prehash the message
     try {
+      const keyPublicBytes = hexToBytes(keyPublic);
       return ed25519.verify(hexToBytes(signature), messageBytes, keyPublicBytes);
     } catch {
       return false;
