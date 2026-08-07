@@ -136,6 +136,16 @@ describe("Signing utilities", () => {
       expect(evmSig).not.toBe(basicSig);
     });
 
+    it("should not allow options to override EVM signing rules", () => {
+      const signature = evmSignMessage(testMessage, secp256k1TestPrivateKey);
+      const signatureWithOverrides = evmSignMessage(testMessage, secp256k1TestPrivateKey, {
+        curve: "ed25519",
+        hash: true,
+      });
+
+      expect(signatureWithOverrides).toBe(signature);
+    });
+
     it("should produce identical hash for string and equivalent Uint8Array", () => {
       const messageString = "Hello";
       const messageBytes = new TextEncoder().encode(messageString);
@@ -164,6 +174,15 @@ describe("Signing utilities", () => {
       const isValid = ed25519VerifyMessage(testMessage, signature, ed25519TestPublicKey);
 
       expect(isValid).toBe(true);
+    });
+
+    it("should not allow options to override the Ed25519 curve", () => {
+      const signature = ed25519SignMessage(testMessage, ed25519TestPrivateKey);
+      const signatureWithOverride = ed25519SignMessage(testMessage, ed25519TestPrivateKey, {
+        curve: "secp256k1",
+      });
+
+      expect(signatureWithOverride).toBe(signature);
     });
 
     it("should have correct Ed25519 signature length", () => {

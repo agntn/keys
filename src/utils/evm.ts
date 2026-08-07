@@ -151,9 +151,9 @@ export function evmSignMessage(
   const hash = hashWithPreamble(message);
 
   return signMessage(hash, keyPrivate, {
+    ...options,
     curve: "secp256k1",
     hash: false,
-    ...options,
   });
 }
 
@@ -176,9 +176,9 @@ export function evmVerifyMessage(
 
   try {
     return verifyMessage(hash, signature, keyPublic, {
+      ...options,
       curve: "secp256k1",
       hash: false,
-      ...options,
     });
   } catch {
     return false;

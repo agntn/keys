@@ -17,8 +17,8 @@ export function ed25519SignMessage(
   // Ed25519 signatures are simpler than EVM signatures because they don't use a preamble
   // We just directly sign the message with the Ed25519 curve
   return signMessage(message, keyPrivate, {
-    curve: "ed25519",
     ...options,
+    curve: "ed25519",
   });
 }
 
@@ -39,7 +39,7 @@ export function ed25519VerifyMessage(
 ): boolean {
   // Just directly verify the signature with the Ed25519 curve
   return verifyMessage(message, signature, keyPublic, {
-    curve: "ed25519",
     ...options,
+    curve: "ed25519",
   });
 }
