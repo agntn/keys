@@ -1,4 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { webcrypto } from "node:crypto";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { bytesToHex } from "@noble/hashes/utils.js";
+import { describe, expect, it, vi } from "vitest";
 import { useBlockchain } from "../../src";
 import Bitcoin from "../../src/blockchains/bitcoin";
 import type { Options } from "../../src/types";
@@ -15,6 +18,25 @@ describe("Bitcoin blockchain", () => {
 
     // Private key should be a 64-character hex string (32 bytes)
     expect(keyPrivate).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("should generate a private key from a 48-byte secp256k1 seed", () => {
+    const seed = new Uint8Array(48);
+    const getRandomValues = vi.spyOn(webcrypto, "getRandomValues").mockImplementation((array) => {
+      const bytes = new Uint8Array(array.buffer, array.byteOffset, array.byteLength);
+      bytes.set(seed.subarray(0, bytes.byteLength));
+      return array;
+    });
+
+    try {
+      const keyPrivate = blockchain.generateKeyPrivate();
+
+      expect(getRandomValues).toHaveBeenCalledOnce();
+      expect(getRandomValues.mock.calls[0]?.[0].byteLength).toBe(seed.byteLength);
+      expect(keyPrivate).toBe(bytesToHex(secp256k1.utils.randomSecretKey(seed)));
+    } finally {
+      getRandomValues.mockRestore();
+    }
   });
 
   it("should generate different private keys each time", () => {
