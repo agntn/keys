@@ -1,9 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, expectTypeOf } from "vitest";
 import { signMessage, verifyMessage } from "../../src/utils/signing";
 import { hexToBytes, bytesToHex } from "@noble/hashes/utils.js";
 import { evmSignMessage } from "../../src/utils/evm";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../../src/utils/ed25519-chains";
 import { secp256k1TestVectors, ed25519TestVectors, testMessages } from "../fixtures";
+import type { Blockchain, Curve } from "../../src/types";
 
 describe("Signing utilities", () => {
   // Use test vectors from fixtures
@@ -73,6 +74,39 @@ describe("Signing utilities", () => {
       });
 
       expect(isValid).toBe(false);
+    });
+
+    it("should return false for a malformed secp256k1 public key", () => {
+      const signature = signMessage(testMessage, secp256k1TestPrivateKey, {
+        curve: "secp256k1",
+      });
+
+      expect(
+        verifyMessage(testMessage, signature, "not-hex", {
+          curve: "secp256k1",
+        }),
+      ).toBe(false);
+    });
+
+    it("should return false for a malformed ed25519 public key", () => {
+      const signature = signMessage(testMessage, ed25519TestPrivateKey, {
+        curve: "ed25519",
+      });
+
+      expect(
+        verifyMessage(testMessage, signature, "not-hex", {
+          curve: "ed25519",
+        }),
+      ).toBe(false);
+    });
+
+    it("should expose signing options through the Blockchain interface", () => {
+      type Options = NonNullable<Parameters<Blockchain["signMessage"]>[2]>;
+
+      expectTypeOf<"curve" extends keyof Options ? true : false>().toEqualTypeOf<true>();
+      expectTypeOf<"hash" extends keyof Options ? true : false>().toEqualTypeOf<true>();
+      expectTypeOf<Options["curve"]>().toEqualTypeOf<Curve | undefined>();
+      expectTypeOf<Options["hash"]>().toEqualTypeOf<boolean | undefined>();
     });
   });
 
