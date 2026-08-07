@@ -1,8 +1,7 @@
-import slip10 from "micro-key-producer/slip10.js";
+import { HDKey } from "micro-key-producer/slip10.js";
 
 // Reexport the SLIP10 implementation
-const HDKeyImpl = slip10;
-export { HDKeyImpl as HDKey };
+export { HDKey };
 
 // SLIP-0010 hardened offset constant - same as BIP32
 export const HARDENED_OFFSET = 0x80_00_00_00;
@@ -12,8 +11,8 @@ export const HARDENED_OFFSET = 0x80_00_00_00;
  * @param seed - A seed byte array
  * @returns HDKey instance for the master key
  */
-export function getMasterKeyFromSeed(seed: Uint8Array): any {
-  return slip10.fromMasterSeed(seed);
+export function getMasterKeyFromSeed(seed: Uint8Array): HDKey {
+  return HDKey.fromMasterSeed(seed);
 }
 
 /**
@@ -23,7 +22,7 @@ export function getMasterKeyFromSeed(seed: Uint8Array): any {
  * @param forceHardened - Whether to force hardened derivation for ed25519
  * @returns Derived HDKey instance
  */
-export function deriveHDKey(parent: any, path: string, forceHardened = true): any {
+export function deriveHDKey(parent: HDKey, path: string, forceHardened = true): HDKey {
   return parent.derive(path, forceHardened);
 }
 
@@ -33,7 +32,7 @@ export function deriveHDKey(parent: any, path: string, forceHardened = true): an
  * @param index - Child index (use index + HARDENED_OFFSET for hardened keys)
  * @returns Derived HDKey child
  */
-export function deriveHDChild(parent: any, index: number): any {
+export function deriveHDChild(parent: HDKey, index: number): HDKey {
   return parent.deriveChild(index);
 }
 

@@ -55,7 +55,7 @@
     "lint": "oxlint . && oxfmt --check .",
     "lint:fix": "oxlint . --fix && oxfmt .",
     "test": "pnpm lint && pnpm test:types && pnpm build && pnpm test:ext && vitest run --coverage",
-    "test:types": "tsc --noEmit --skipLibCheck",
+    "test:types": "tsc --noEmit --skipLibCheck && tsc -p tsconfig.type-tests.json --noEmit --skipLibCheck",
     "test:ext": "tsc -p tsconfig.extensions.json --noEmit",
     "playground": "tsx",
     "playground:bip32": "tsx playground/bip32-demo.ts",
