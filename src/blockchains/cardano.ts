@@ -12,11 +12,28 @@ const ADDRESS_TYPE = {
   REWARD_KEY: 14,
 } as const;
 
+const NETWORK_PARAMS = {
+  mainnet: {
+    hrpAddress: "addr",
+    hrpStake: "stake",
+    networkId: 1,
+  },
+  testnet: {
+    hrpAddress: "addr_test",
+    hrpStake: "stake_test",
+    networkId: 0,
+  },
+} as const;
+
 /** Cardano blockchain implementation. */
 export class Cardano extends AbstractBlockchain {
   override readonly name = "cardano";
   override readonly curve: Curve = "ed25519";
   override readonly bip44 = 1815;
+
+  private get params() {
+    return this.network === "testnet" ? NETWORK_PARAMS.testnet : NETWORK_PARAMS.mainnet;
+  }
 
   override getKeyPublic(keyPrivate: string, _options?: KeyOptions): string {
     return getEd25519KeyPublic(keyPrivate);
@@ -34,8 +51,7 @@ export class Cardano extends AbstractBlockchain {
   }
 
   private header(addressType: number): number {
-    const networkId = this.network === "testnet" ? 0 : 1;
-    return (addressType << 4) | networkId;
+    return (addressType << 4) | this.params.networkId;
   }
 
   override getAddress(keyPublic: string, type?: string): string {
@@ -43,7 +59,7 @@ export class Cardano extends AbstractBlockchain {
 
     if (type === "stake") {
       return this.encodeAddress(
-        this.network === "testnet" ? "stake_test" : "stake",
+        this.params.hrpStake,
         this.header(ADDRESS_TYPE.REWARD_KEY),
         keyHash,
       );
@@ -51,7 +67,7 @@ export class Cardano extends AbstractBlockchain {
 
     if (type === "enterprise") {
       return this.encodeAddress(
-        this.network === "testnet" ? "addr_test" : "addr",
+        this.params.hrpAddress,
         this.header(ADDRESS_TYPE.ENTERPRISE_KEY),
         keyHash,
       );
@@ -61,7 +77,7 @@ export class Cardano extends AbstractBlockchain {
     basePayload.set(keyHash);
     basePayload.set(keyHash, keyHash.length);
     return this.encodeAddress(
-      this.network === "testnet" ? "addr_test" : "addr",
+      this.params.hrpAddress,
       this.header(ADDRESS_TYPE.BASE_PAYMENT),
       basePayload,
     );
@@ -74,15 +90,15 @@ export class Cardano extends AbstractBlockchain {
       const headerByte = bytes[0];
       if (headerByte === undefined) return false;
 
-      const expectedNetwork = this.network === "testnet" ? 0 : 1;
+      const expectedNetwork = this.params.networkId;
       const addressNetwork = headerByte & 0x0f;
       const addressType = headerByte >> 4;
       if (addressNetwork !== expectedNetwork) return false;
 
-      if (decoded.prefix === (this.network === "testnet" ? "stake_test" : "stake")) {
+      if (decoded.prefix === this.params.hrpStake) {
         return addressType === ADDRESS_TYPE.REWARD_KEY && bytes.length === 29;
       }
-      if (decoded.prefix !== (this.network === "testnet" ? "addr_test" : "addr")) {
+      if (decoded.prefix !== this.params.hrpAddress) {
         return false;
       }
       if (addressType === ADDRESS_TYPE.BASE_PAYMENT) return bytes.length === 57;

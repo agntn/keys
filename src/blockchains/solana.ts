@@ -2,7 +2,7 @@ import { hexToBytes } from "@noble/hashes/utils.js";
 import { base58 } from "@scure/base";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { generateKeyPublic } from "../utils/ed25519.ts";
-import { solanaSignMessage, solanaVerifyMessage } from "../utils/ed25519-chains.ts";
+import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 import type { Curve, KeyOptions } from "../types.ts";
 
@@ -31,18 +31,22 @@ export class Solana extends AbstractBlockchain {
   override signMessage(
     message: string | Uint8Array,
     keyPrivate: string,
-    _options?: KeyOptions,
+    options?: KeyOptions,
   ): string {
-    return solanaSignMessage(message, keyPrivate);
+    return ed25519SignMessage(message, keyPrivate, options);
   }
 
   override verifyMessage(
     message: string | Uint8Array,
     signature: string,
     keyPublic: string,
-    _options?: KeyOptions,
+    options?: KeyOptions,
   ): boolean {
-    return solanaVerifyMessage(message, signature, keyPublic);
+    try {
+      return ed25519VerifyMessage(message, signature, keyPublic, options);
+    } catch {
+      return false;
+    }
   }
 }
 

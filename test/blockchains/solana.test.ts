@@ -49,6 +49,13 @@ describe("Solana Blockchain", () => {
       expect(blockchain.validateAddress?.("1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2")).toBe(false); // Bitcoin address
       expect(blockchain.validateAddress?.("")).toBe(false);
     });
+
+    it("returns false for malformed signatures", () => {
+      const keyPrivate = "0000000000000000000000000000000000000000000000000000000000000001";
+      const keyPublic = blockchain.getKeyPublic(keyPrivate);
+
+      expect(blockchain.verifyMessage("message", "not-a-signature", keyPublic)).toBe(false);
+    });
   });
 
   describe("Testnet", () => {

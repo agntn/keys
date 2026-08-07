@@ -18,10 +18,12 @@ export { signMessage, verifyMessage, type SigningOptions } from "./utils/signing
 
 export type {
   Blockchain,
+  Curve,
   BlockchainImplementation,
   Keys,
   Wallet,
   KeyOptions,
+  Options,
   AddressType,
   NetworkType,
   AddressFormat,
