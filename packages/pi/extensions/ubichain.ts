@@ -33,9 +33,9 @@ async function getBlockchain(chain: string, network?: string) {
   if (!Object.hasOwn(lib.blockchains, key)) {
     throw new Error(`Unknown chain "${chain}". Supported: ${CHAINS.join(", ")}`);
   }
-  const factory = lib.blockchains[key];
-  const impl = await factory({ network: network ?? "mainnet" })();
-  return lib.useBlockchain(impl);
+  const loadBlockchain = lib.blockchains[key];
+  const blockchain = await loadBlockchain({ network: network ?? "mainnet" })();
+  return lib.useBlockchain(blockchain);
 }
 
 export default function ubichainExtension(pi: ExtensionAPI) {
@@ -147,17 +147,6 @@ export default function ubichainExtension(pi: ExtensionAPI) {
     },
     async execute(_toolCallId, params): Promise<AgentToolResult<undefined>> {
       const blockchain = await getBlockchain(params.chain, params.network);
-      if (!blockchain.validateAddress) {
-        return {
-          details: undefined,
-          content: [
-            {
-              type: "text",
-              text: `Chain "${params.chain}" does not support address validation`,
-            },
-          ],
-        };
-      }
       const valid = blockchain.validateAddress(params.address);
       return {
         details: undefined,
@@ -338,10 +327,10 @@ export default function ubichainExtension(pi: ExtensionAPI) {
         };
       }
 
-      const factory = lib.blockchains[key];
-      const impl = await factory()();
+      const loadBlockchain = lib.blockchains[key];
+      const blockchain = await loadBlockchain()();
       const path = lib.getBlockchainPath(
-        impl,
+        blockchain,
         params.account ?? 0,
         params.change ?? 0,
         params.addressIndex ?? 0,
@@ -352,9 +341,10 @@ export default function ubichainExtension(pi: ExtensionAPI) {
         content: [
           {
             type: "text",
-            text: [`Chain: ${impl.name} (BIP44 coin type: ${impl.bip44})`, `Path: ${path}`].join(
-              "\n",
-            ),
+            text: [
+              `Chain: ${blockchain.name} (BIP44 coin type: ${blockchain.bip44})`,
+              `Path: ${path}`,
+            ].join("\n"),
           },
         ],
       };

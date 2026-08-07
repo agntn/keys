@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-Lazy-loaded factory modules. Each file exports one `default function` returning `BlockchainImplementation`.
+Lazy-loaded class modules. Each file exports a named concrete class and the same class as its default export.
 
 ## CHAIN FAMILIES
 
@@ -15,27 +15,25 @@ Lazy-loaded factory modules. Each file exports one `default function` returning 
 
 ## ADDING A NEW CHAIN
 
-1. Create `src/blockchains/<name>.ts` exporting `default function <name>(options?: Options)`
-2. Implement: `getKeyPublic`, `getAddress`, `validateAddress`, `signMessage`, `verifyMessage`
-3. Return with `satisfies BlockchainImplementation` (not `: BlockchainImplementation`)
-4. Register in `src/_blockchains.ts`: `<name>: lazy(() => import('./blockchains/<name>'))`
+1. Create `src/blockchains/<name>.ts` with `class Name extends AbstractBlockchain`
+2. Implement `name`, `curve`, `bip44`, `getKeyPublic`, `getAddress`, `validateAddress`, `signMessage`, and `verifyMessage`
+3. Export the class by name and as the default export
+4. Register it in `src/_blockchains.ts`: `<name>: lazy(() => import("./blockchains/<name>.ts"))`
 5. Create `test/blockchains/<name>.test.ts` using fixtures from `test/fixtures.ts`
-6. For EVM chains: use `createEVMBlockchain()` from `utils/evm.ts` (3 lines total)
+6. For EVM chains, extend `AbstractEVMBlockchain` and provide only `name` and `bip44`
 
 ## PATTERNS
 
-- **EVM shortcut** - `ethereum.ts` and `base.ts` are ~20 lines each, delegating to `createEVMBlockchain()`
-- **Network params** - chains with testnet support (bitcoin, tron, cardano) define `networkParams` record keyed by network name
+- **EVM base class** - `Ethereum` and `Base` extend `AbstractEVMBlockchain`, which owns their shared key, address, validation, and signing behavior
+- **Network params** - chains with testnet support (bitcoin, tron, cardano) define a `NETWORK_PARAMS` record keyed by network name
 - **BIP44 coin type** - every chain sets `bip44` from `BIP44` enum or SLIP-0044 number
 - **SUI dual-curve** - `getKeyPublic` and `signMessage` check `options.scheme` to pick ed25519 or secp256k1
 
 ## COMPLEXITY
 
-| Chain          | Lines | Why                                                                         |
-| -------------- | ----- | --------------------------------------------------------------------------- |
-| bitcoin        | 175   | 5 address formats (legacy, p2sh, segwit, p2wsh, taproot) + testnet variants |
-| cardano        | 199   | Custom address encoding (prefix + base58 key hash) with 3 address types     |
-| sui            | 151   | Dual curve support, scheme-based dispatch in 4 methods                      |
-| tron           | 118   | Custom Keccak + base58check encoding                                        |
-| solana, aptos  | ~95   | Straightforward single-curve implementations                                |
-| ethereum, base | ~22   | EVM factory delegates everything                                            |
+- **Bitcoin** - five address formats (legacy, p2sh, segwit, p2wsh, taproot) plus testnet variants
+- **Cardano** - custom address encoding with three address types and centralized network parameters
+- **SUI** - dual-curve support with scheme-based dispatch
+- **TRON** - custom Keccak and Base58Check encoding
+- **Solana and Aptos** - straightforward single-curve subclasses
+- **Ethereum and Base** - minimal `AbstractEVMBlockchain` subclasses

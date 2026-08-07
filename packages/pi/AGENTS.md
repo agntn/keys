@@ -13,8 +13,8 @@ Pi coding-agent extension only. Wraps the `ubichain` library as 6 agent tools. *
 - **Library resolution:** `loadLib()` imports built `ubichain` from `dist/`; falls back to `../../../src/index.ts` in dev before a build. Run `pnpm build` before relying on the dist path.
 - **Type-check:** `pnpm test:ext` (`tsc -p ../../tsconfig.extensions.json --noEmit`). Wired into `pnpm test` after `pnpm build` (the extensions tsconfig maps `ubichain` → `dist/index.d.mts`, so dist must exist first).
 - **Tool params:** declared with `typebox` `Type.*`, not zod. Match the existing style.
-- **Required vs optional library methods:** `signMessage`/`verifyMessage` are required on the `Blockchain` interface → call unguarded. `validateAddress` is optional → must guard with `if (!blockchain.validateAddress)`.
-- **Lazy double-call:** `factory({ network })()` — first call passes config, second triggers the async import. See `../../src/_blockchains.ts`.
+- **Concrete class contract:** every lazy-loaded class extends `AbstractBlockchain`, so `validateAddress`, `signMessage`, and `verifyMessage` are required and called directly.
+- **Lazy double-call:** `blockchains.chain({ network })()` — first call passes constructor options, second imports and constructs the concrete class. See `../../src/_blockchains.ts`.
 
 ## Constraints
 

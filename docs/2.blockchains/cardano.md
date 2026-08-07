@@ -6,9 +6,9 @@ This document explains how to use the Cardano blockchain functionality in ubicha
 
 ```javascript
 import { useBlockchain } from "ubichain";
-import cardano from "ubichain/blockchains/cardano";
+import Cardano from "ubichain/blockchains/cardano";
 
-const cardanoBlockchain = useBlockchain(cardano());
+const cardanoBlockchain = useBlockchain(new Cardano());
 ```
 
 ## Features

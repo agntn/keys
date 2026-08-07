@@ -14,9 +14,9 @@ SUI implementation supporting both ed25519 and secp256k1 curves, with addresses 
 
 ```js
 import { useBlockchain } from "ubichain";
-import sui from "ubichain/blockchains/sui";
+import Sui from "ubichain/blockchains/sui";
 
-const suiChain = useBlockchain(sui());
+const suiChain = useBlockchain(new Sui());
 ```
 
 ## Features
@@ -68,13 +68,13 @@ console.log("Address (secp256k1):", addressSecp);
 
 ```js
 // Validate a SUI address
-const isValid = suiChain.validateAddress?.(
+const isValid = suiChain.validateAddress(
   "0x7e08ac7940568c91564ddc6f5f3bf91b15a9334194ab7855daeac51c5cc74936",
 );
 console.log("Is valid:", isValid); // true
 
 // Invalid address (wrong format)
-const isInvalid = suiChain.validateAddress?.(
+const isInvalid = suiChain.validateAddress(
   "7e08ac7940568c91564ddc6f5f3bf91b15a9334194ab7855daeac51c5cc74936",
 );
 console.log("Is valid:", isInvalid); // false (missing 0x prefix)

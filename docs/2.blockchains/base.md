@@ -14,9 +14,9 @@ Base implementation using the secp256k1 curve, with EIP-55 checksum support for 
 
 ```js
 import { useBlockchain } from "ubichain";
-import base from "ubichain/blockchains/base";
+import Base from "ubichain/blockchains/base";
 
-const baseChain = useBlockchain(base());
+const baseChain = useBlockchain(new Base());
 ```
 
 ## Features
@@ -53,15 +53,15 @@ console.log("Address:", address); // 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf
 
 ```js
 // Validate a checksummed address
-const isValidChecksum = baseChain.validateAddress?.("0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf");
+const isValidChecksum = baseChain.validateAddress("0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf");
 console.log("Is valid:", isValidChecksum); // true
 
 // Validate a lowercase address (also valid)
-const isValidLowercase = baseChain.validateAddress?.("0x7e5f4552091a69125d5dfcb7b8c2659029395bdf");
+const isValidLowercase = baseChain.validateAddress("0x7e5f4552091a69125d5dfcb7b8c2659029395bdf");
 console.log("Is valid:", isValidLowercase); // true
 
 // Invalid checksum (wrong case)
-const isInvalidChecksum = baseChain.validateAddress?.("0x7e5F4552091A69125d5DfCb7b8C2659029395Bdf");
+const isInvalidChecksum = baseChain.validateAddress("0x7e5F4552091A69125d5DfCb7b8C2659029395Bdf");
 console.log("Is valid:", isInvalidChecksum); // false
 ```
 
@@ -75,13 +75,15 @@ Base is an EVM (Ethereum Virtual Machine) compatible blockchain, which means:
 2. The same private key will generate the same address on both Ethereum and Base
 3. All Base addresses can be used on Ethereum, and vice versa
 
-Base is implemented using the common EVM module in ubichain:
+Base extends ubichain's common EVM base class:
 
 ```js
-import { createEVMBlockchain } from "../utils/evm";
+import { AbstractEVMBlockchain } from "../utils/evm";
+import { BIP44 } from "../utils/bip44";
 
-export default function base() {
-  return createEVMBlockchain("base");
+export default class Base extends AbstractEVMBlockchain {
+  readonly name = "base";
+  readonly bip44 = BIP44.ETHEREUM;
 }
 ```
 
@@ -122,14 +124,16 @@ Base addresses are generated following the Ethereum standard:
 
 ## Source Code
 
-The Base implementation is located in `src/blockchains/base.ts` and uses the common EVM implementation from `src/utils/evm.ts`.
+The Base implementation is located in `src/blockchains/base.ts` and extends `AbstractEVMBlockchain` from `src/utils/evm.ts`.
 
 ```js
 // Base implementation
-import { createEVMBlockchain } from "../utils/evm";
+import { AbstractEVMBlockchain } from "../utils/evm";
+import { BIP44 } from "../utils/bip44";
 
-export default function base() {
-  return createEVMBlockchain("base");
+export default class Base extends AbstractEVMBlockchain {
+  readonly name = "base";
+  readonly bip44 = BIP44.ETHEREUM;
 }
 ```
 

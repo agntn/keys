@@ -14,9 +14,9 @@ Ethereum implementation using the secp256k1 curve, with EIP-55 checksum support 
 
 ```js
 import { useBlockchain } from "ubichain";
-import ethereum from "ubichain/blockchains/ethereum";
+import Ethereum from "ubichain/blockchains/ethereum";
 
-const ethereumChain = useBlockchain(ethereum());
+const ethereumChain = useBlockchain(new Ethereum());
 ```
 
 ## Features
@@ -53,17 +53,15 @@ console.log("Address:", address); // 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf
 
 ```js
 // Validate a checksummed address
-const isValidChecksum = ethereumChain.validateAddress?.(
-  "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf",
-);
+const isValidChecksum = ethereumChain.validateAddress("0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf");
 
 // Validate a lowercase address (also valid)
-const isValidLowercase = ethereumChain.validateAddress?.(
+const isValidLowercase = ethereumChain.validateAddress(
   "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf",
 );
 
 // Invalid checksum (wrong case)
-const isInvalidChecksum = ethereumChain.validateAddress?.(
+const isInvalidChecksum = ethereumChain.validateAddress(
   "0x7e5F4552091A69125d5DfCb7b8C2659029395Bdf",
 );
 ```
@@ -107,20 +105,22 @@ Ethereum addresses are generated as follows:
 
 ## EVM Compatibility
 
-Ethereum is an EVM (Ethereum Virtual Machine) blockchain. All EVM-compatible blockchains in ubichain share the same implementation through the `utils/evm.ts` module.
+Ethereum is an EVM (Ethereum Virtual Machine) blockchain. All EVM-compatible blockchains in ubichain inherit the same behavior from `AbstractEVMBlockchain`.
 
 This means that the same private key will generate the same address on all EVM chains, including Ethereum, Base, and any other EVM-compatible blockchains that may be added in the future.
 
 ## Source Code
 
-The Ethereum implementation is located in `src/blockchains/ethereum.ts` and uses the common EVM implementation from `src/utils/evm.ts`.
+The Ethereum implementation is located in `src/blockchains/ethereum.ts` and extends the common EVM base class from `src/utils/evm.ts`.
 
 ```js
 // Ethereum implementation
-import { createEVMBlockchain } from "../utils/evm";
+import { AbstractEVMBlockchain } from "../utils/evm";
+import { BIP44 } from "../utils/bip44";
 
-export default function ethereum() {
-  return createEVMBlockchain("ethereum");
+export default class Ethereum extends AbstractEVMBlockchain {
+  readonly name = "ethereum";
+  readonly bip44 = BIP44.ETHEREUM;
 }
 ```
 

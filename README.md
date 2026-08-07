@@ -36,8 +36,8 @@ Concrete blockchain classes are lazy-loaded. The double-call pattern `blockchain
 ```ts
 import { useBlockchain, blockchains } from "ubichain";
 
-const impl = await blockchains.ethereum()();
-const chain = useBlockchain(impl);
+const ethereum = await blockchains.ethereum()();
+const chain = useBlockchain(ethereum);
 
 const wallet = chain.generateWallet();
 console.log(wallet.keys.private); // hex private key

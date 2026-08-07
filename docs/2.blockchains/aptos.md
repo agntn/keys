@@ -14,9 +14,9 @@ Aptos implementation using the ed25519 curve, with addresses derived using SHA3-
 
 ```js
 import { useBlockchain } from "ubichain";
-import aptos from "ubichain/blockchains/aptos";
+import Aptos from "ubichain/blockchains/aptos";
 
-const aptosChain = useBlockchain(aptos());
+const aptosChain = useBlockchain(new Aptos());
 ```
 
 ## Features
@@ -50,13 +50,13 @@ console.log("Address:", address); // e.g., 0x7e08ac7940568c91564ddc6f5f3bf91b15a
 
 ```js
 // Validate an Aptos address
-const isValid = aptosChain.validateAddress?.(
+const isValid = aptosChain.validateAddress(
   "0x7e08ac7940568c91564ddc6f5f3bf91b15a9334194ab7855daeac51c5cc74936",
 );
 console.log("Is valid:", isValid); // true
 
 // Invalid address (wrong format)
-const isInvalid = aptosChain.validateAddress?.(
+const isInvalid = aptosChain.validateAddress(
   "7e08ac7940568c91564ddc6f5f3bf91b15a9334194ab7855daeac51c5cc74936",
 );
 console.log("Is valid:", isInvalid); // false (missing 0x prefix)

@@ -14,9 +14,9 @@ TRON implementation using the secp256k1 curve, with Base58Check-encoded addresse
 
 ```js
 import { useBlockchain } from "ubichain";
-import tron from "ubichain/blockchains/tron";
+import Tron from "ubichain/blockchains/tron";
 
-const tronChain = useBlockchain(tron());
+const tronChain = useBlockchain(new Tron());
 ```
 
 ## Features
@@ -52,11 +52,11 @@ console.log("Address:", address); // e.g., TJCnKsPa7y5okkXvQAidZBzqx3QyQ6sxMW
 
 ```js
 // Validate a TRON address
-const isValid = tronChain.validateAddress?.("TJCnKsPa7y5okkXvQAidZBzqx3QyQ6sxMW");
+const isValid = tronChain.validateAddress("TJCnKsPa7y5okkXvQAidZBzqx3QyQ6sxMW");
 console.log("Is valid:", isValid); // true
 
 // Invalid address (wrong prefix)
-const isInvalid = tronChain.validateAddress?.("1JCnKsPa7y5okkXvQAidZBzqx3QyQ6sxMW");
+const isInvalid = tronChain.validateAddress("1JCnKsPa7y5okkXvQAidZBzqx3QyQ6sxMW");
 console.log("Is valid:", isInvalid); // false (doesn't start with T)
 ```
 
