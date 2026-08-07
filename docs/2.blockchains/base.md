@@ -82,8 +82,8 @@ import { AbstractEVMBlockchain } from "../utils/evm";
 import { BIP44 } from "../utils/bip44";
 
 export default class Base extends AbstractEVMBlockchain {
-  readonly name = "base";
-  readonly bip44 = BIP44.ETHEREUM;
+  override readonly name = "base";
+  override readonly bip44 = BIP44.ETHEREUM;
 }
 ```
 
@@ -132,8 +132,8 @@ import { AbstractEVMBlockchain } from "../utils/evm";
 import { BIP44 } from "../utils/bip44";
 
 export default class Base extends AbstractEVMBlockchain {
-  readonly name = "base";
-  readonly bip44 = BIP44.ETHEREUM;
+  override readonly name = "base";
+  override readonly bip44 = BIP44.ETHEREUM;
 }
 ```
 
