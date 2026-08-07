@@ -1,54 +1,28 @@
 import { sha3_256 } from "@noble/hashes/sha3.js";
 import { hexToBytes } from "@noble/hashes/utils.js";
-import { generateKeyPublic as getKeyPublic } from "../utils/ed25519.ts";
-import { validateAddressHex, addSchemeByte, createPrefixedAddress } from "../utils/address.ts";
+import { AbstractBlockchain } from "../blockchain.ts";
+import { addSchemeByte, createPrefixedAddress, validateAddressHex } from "../utils/address.ts";
+import { generateKeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
-import type { Curve, Options, BlockchainImplementation, KeyOptions } from "../types.ts";
+import type { Curve, KeyOptions } from "../types.ts";
 
-/**
- * Aptos blockchain implementation
- *
- * @param options - Optional configuration parameters
- * @param options.network - Network to use (mainnet, testnet, etc.)
- * @returns An object implementing the Blockchain interface for Aptos
- */
-export default function aptos(options?: Options) {
-  const name = "aptos";
-  const curve: Curve = "ed25519";
-  const network = options?.network || "mainnet";
-  const bip44 = 637; // SLIP-0044 index for Aptos
+/** Aptos blockchain implementation. */
+export class Aptos extends AbstractBlockchain {
+  override readonly name = "aptos";
+  override readonly curve: Curve = "ed25519";
+  override readonly bip44 = 637;
 
-  /**
-   * Get Aptos address from public key
-   * Aptos address is the 32-byte SHA3-256 hash of the public key concatenated with a single byte 0x00
-   * The address format is the same for both mainnet and testnet
-   *
-   * @param keyPublic - The public key as a hex string
-   * @returns Aptos address (hex string)
-   */
-  function getAddress(keyPublic: string): string {
-    // Convert hex public key to bytes
-    const keyPublicBytes = hexToBytes(keyPublic);
-
-    // Concatenate with scheme identifier byte (0x00 for single Ed25519)
-    const dataToHash = addSchemeByte(keyPublicBytes, 0x00, false);
-
-    // Hash with SHA3-256
-    const addressBytes = sha3_256(dataToHash);
-
-    // Return as hex string with 0x prefix
-    return createPrefixedAddress(addressBytes);
+  override getKeyPublic(keyPrivate: string, _options?: KeyOptions): string {
+    return generateKeyPublic(keyPrivate);
   }
 
-  /**
-   * Validate an Aptos address
-   * Aptos addresses are hex-encoded 32-byte values starting with '0x'
-   * The validation is the same for both mainnet and testnet
-   *
-   * @param address - The address to validate
-   * @returns Whether the address is valid
-   */
-  function validateAddress(address: string): boolean {
+  override getAddress(keyPublic: string): string {
+    const keyPublicBytes = hexToBytes(keyPublic);
+    const dataToHash = addSchemeByte(keyPublicBytes, 0x00, false);
+    return createPrefixedAddress(sha3_256(dataToHash));
+  }
+
+  override validateAddress(address: string): boolean {
     try {
       return validateAddressHex(address, {
         prefix: "0x",
@@ -60,15 +34,7 @@ export default function aptos(options?: Options) {
     }
   }
 
-  /**
-   * Signs a message using Ed25519 for Aptos
-   *
-   * @param message - The message to sign
-   * @param keyPrivate - The private key
-   * @param options - Optional parameters
-   * @returns The signature as a hex string
-   */
-  function signMessage(
+  override signMessage(
     message: string | Uint8Array,
     keyPrivate: string,
     options?: KeyOptions,
@@ -76,16 +42,7 @@ export default function aptos(options?: Options) {
     return ed25519SignMessage(message, keyPrivate, options);
   }
 
-  /**
-   * Verifies a message signature for Aptos
-   *
-   * @param message - The original message
-   * @param signature - The signature to verify
-   * @param keyPublic - The public key
-   * @param options - Optional parameters
-   * @returns Whether the signature is valid
-   */
-  function verifyMessage(
+  override verifyMessage(
     message: string | Uint8Array,
     signature: string,
     keyPublic: string,
@@ -93,16 +50,6 @@ export default function aptos(options?: Options) {
   ): boolean {
     return ed25519VerifyMessage(message, signature, keyPublic, options);
   }
-
-  return {
-    name,
-    curve,
-    network,
-    bip44,
-    getKeyPublic,
-    getAddress,
-    validateAddress,
-    signMessage,
-    verifyMessage,
-  } satisfies BlockchainImplementation;
 }
+
+export default Aptos;

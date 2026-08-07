@@ -1,9 +1,9 @@
 import { expect, describe, it } from "vitest";
-import tron from "../../src/blockchains/tron";
+import Tron from "../../src/blockchains/tron";
 import { useBlockchain } from "../../src/blockchain";
 
 describe("TRON Blockchain", () => {
-  const blockchain = useBlockchain(tron());
+  const blockchain = useBlockchain(new Tron());
 
   describe("Key Generation", () => {
     // Test vectors for key pairs with correct values from our test

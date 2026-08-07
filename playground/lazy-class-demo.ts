@@ -1,6 +1,6 @@
 import { useBlockchain, blockchains } from "../src";
 
-console.log("Lazy factory demo: only imports the implementation when needed");
+console.log("Lazy class demo: only imports the implementation when needed");
 
 // Bitcoin
 console.log("\n--- Bitcoin ---");

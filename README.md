@@ -29,7 +29,7 @@ pnpm add ubichain
 
 ## Usage
 
-Blockchain implementations are lazy-loaded. The double-call pattern `blockchains.chain(options)()` first passes config, then triggers the async import.
+Concrete blockchain classes are lazy-loaded. The double-call pattern `blockchains.chain(options)()` first passes config, then imports and constructs the class.
 
 ### Generate a wallet
 

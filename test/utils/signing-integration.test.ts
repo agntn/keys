@@ -3,8 +3,8 @@ import { Keypair } from "@solana/web3.js";
 import { SigningKey, Wallet } from "ethers";
 import { hexToBytes, bytesToHex } from "@noble/hashes/utils.js";
 import { useBlockchain } from "../../src/blockchain";
-import ethereum from "../../src/blockchains/ethereum";
-import solana from "../../src/blockchains/solana";
+import Ethereum from "../../src/blockchains/ethereum";
+import Solana from "../../src/blockchains/solana";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { secp256k1TestVectors, testMessages } from "../fixtures";
 
@@ -18,7 +18,7 @@ describe("Signing Integration Tests", () => {
       const solanaPublicKeyHex = bytesToHex(solanaKeypair.publicKey.toBytes());
 
       // Create corresponding keys using ubichain
-      const solanaBlockchain = useBlockchain(solana());
+      const solanaBlockchain = useBlockchain(new Solana());
       const ubichainPublicKey = solanaBlockchain.getKeyPublic(solanaPrivateKeyHex);
 
       // Verify that public keys match
@@ -42,7 +42,7 @@ describe("Signing Integration Tests", () => {
 
     it("should produce valid signatures for Solana", () => {
       // Create new keys in ubichain
-      const solanaBlockchain = useBlockchain(solana());
+      const solanaBlockchain = useBlockchain(new Solana());
       const ubichainWallet = solanaBlockchain.generateWallet();
 
       // Sign message using ubichain
@@ -96,7 +96,7 @@ describe("Signing Integration Tests", () => {
 
       // Create instances of both libraries
       const ethersSigningKey = new SigningKey(privateKeyHex);
-      const ethereumBlockchain = useBlockchain(ethereum());
+      const ethereumBlockchain = useBlockchain(new Ethereum());
 
       // Get public keys
       const ethersPublicKey = ethersSigningKey.publicKey.slice(2); // remove '0x' prefix
@@ -120,7 +120,7 @@ describe("Signing Integration Tests", () => {
       const privateKeyNoPrefix = privateKeyHex.slice(2);
 
       // Create Ethereum instance and derive keys from the same private key
-      const ethereumBlockchain = useBlockchain(ethereum());
+      const ethereumBlockchain = useBlockchain(new Ethereum());
       const publicKey = ethereumBlockchain.getKeyPublic(privateKeyNoPrefix, { compressed: false });
       const ubichainAddress = ethereumBlockchain.getAddress(publicKey);
 

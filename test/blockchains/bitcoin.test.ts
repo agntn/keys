@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { useBlockchain } from "../../src";
-import bitcoin from "../../src/blockchains/bitcoin";
+import Bitcoin from "../../src/blockchains/bitcoin";
 import type { Options } from "../../src/types";
 
 describe("Bitcoin blockchain", () => {
-  const blockchain = useBlockchain(bitcoin());
+  const blockchain = useBlockchain(new Bitcoin());
 
   it("should have a name", () => {
     expect(blockchain.name).toBe("bitcoin");
@@ -262,8 +262,8 @@ describe("Bitcoin blockchain", () => {
     });
 
     it("should produce different signatures than EVM for the same key and message", async () => {
-      const { default: ethereum } = await import("../../src/blockchains/ethereum");
-      const ethBlockchain = useBlockchain(ethereum());
+      const { default: Ethereum } = await import("../../src/blockchains/ethereum");
+      const ethBlockchain = useBlockchain(new Ethereum());
 
       const wallet = blockchain.generateWallet();
       const message = "Test message";
@@ -278,7 +278,7 @@ describe("Bitcoin blockchain", () => {
   describe("Testnet addresses", () => {
     // Create bitcoin blockchain with testnet network option
     const options: Options = { network: "testnet" };
-    const testnetBlockchain = useBlockchain(bitcoin(options));
+    const testnetBlockchain = useBlockchain(new Bitcoin(options));
 
     it("should have a network property set to testnet", () => {
       expect(testnetBlockchain.network).toBe("testnet");

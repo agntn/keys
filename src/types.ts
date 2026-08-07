@@ -89,7 +89,7 @@ export interface BlockchainImplementation {
    * The cryptographic curve(s) used by the blockchain.
    * Some blockchains (like SUI) support multiple curves.
    */
-  curve: Curve | Curve[];
+  curve: Curve | readonly Curve[];
 
   /**
    * The network type (mainnet, testnet, etc.).

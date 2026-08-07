@@ -1,4 +1,5 @@
-export { useBlockchain } from "./blockchain.ts";
+export { AbstractBlockchain, useBlockchain } from "./blockchain.ts";
+export { AbstractEVMBlockchain } from "./utils/evm.ts";
 
 // Export lazy-loaded blockchain implementations
 export { blockchains } from "./_blockchains.ts";

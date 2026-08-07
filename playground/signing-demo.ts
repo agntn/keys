@@ -6,8 +6,8 @@ import { useBlockchain } from "../src/blockchain";
 const ethereumImport = await import("../src/blockchains/ethereum");
 const solanaImport = await import("../src/blockchains/solana");
 
-const ethereum = ethereumImport.default;
-const solana = solanaImport.default;
+const Ethereum = ethereumImport.default;
+const Solana = solanaImport.default;
 
 // Generate random private keys
 function generateRandomKeyPrivate(): string {
@@ -17,7 +17,7 @@ function generateRandomKeyPrivate(): string {
 
 // Demo dla podpisów Ethereum (EVM)
 console.log("--- Ethereum Signing Demo ---");
-const ethBlockchain = useBlockchain(ethereum());
+const ethBlockchain = useBlockchain(new Ethereum());
 const ethWallet = ethBlockchain.generateWallet({
   compressed: false, // Ethereum uses uncompressed public keys
 });
@@ -44,7 +44,7 @@ console.log(`Verification with wrong key: ${ethInvalid ? "Valid (error!)" : "Inv
 
 // Demo dla podpisów Solana (Ed25519)
 console.log("\n\n--- Solana Signing Demo ---");
-const solBlockchain = useBlockchain(solana());
+const solBlockchain = useBlockchain(new Solana());
 const solWallet = solBlockchain.generateWallet();
 
 console.log(`Generated Solana wallet:`);

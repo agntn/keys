@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { useBlockchain } from "../../src/blockchain";
-import cardano from "../../src/blockchains/cardano";
+import Cardano from "../../src/blockchains/cardano";
 import type { Options } from "../../src/types";
 
 describe("Cardano blockchain", () => {
   describe("Mainnet", () => {
-    const blockchain = useBlockchain(cardano());
+    const blockchain = useBlockchain(new Cardano());
 
     // Ensure validateAddress is defined for TypeScript
     const validateAddress = (address: string): boolean => {
@@ -162,7 +162,7 @@ describe("Cardano blockchain", () => {
 
   describe("Testnet", () => {
     const options: Options = { network: "testnet" };
-    const testnetBlockchain = useBlockchain(cardano(options));
+    const testnetBlockchain = useBlockchain(new Cardano(options));
 
     // Ensure validateAddress is defined for TypeScript
     const validateAddress = (address: string): boolean => {

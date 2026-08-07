@@ -1,11 +1,11 @@
 import { expect, describe, it } from "vitest";
-import solana from "../../src/blockchains/solana";
+import Solana from "../../src/blockchains/solana";
 import { useBlockchain } from "../../src/blockchain";
 import type { Options } from "../../src/types";
 
 describe("Solana Blockchain", () => {
   describe("Mainnet", () => {
-    const blockchain = useBlockchain(solana());
+    const blockchain = useBlockchain(new Solana());
 
     // Test private key generation
     it("generates a valid private key", () => {
@@ -53,7 +53,7 @@ describe("Solana Blockchain", () => {
 
   describe("Testnet", () => {
     const options: Options = { network: "testnet" };
-    const testnetBlockchain = useBlockchain(solana(options));
+    const testnetBlockchain = useBlockchain(new Solana(options));
 
     describe("blockchain interface", () => {
       it("has correct name", () => {
@@ -72,7 +72,7 @@ describe("Solana Blockchain", () => {
     describe("address generation", () => {
       it("generates identical addresses for testnet and mainnet", () => {
         // Solana uses the same address format for both networks
-        const mainnetBlockchain = useBlockchain(solana());
+        const mainnetBlockchain = useBlockchain(new Solana());
         const keyPrivate = "0000000000000000000000000000000000000000000000000000000000000001";
 
         const testnetPublicKey = testnetBlockchain.getKeyPublic(keyPrivate);

@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
-import sui from "../../src/blockchains/sui";
+import Sui from "../../src/blockchains/sui";
 import { useBlockchain } from "../../src/blockchain";
 import type { Options } from "../../src/types";
 
 describe("Sui", () => {
   describe("Mainnet", () => {
-    const blockchain = useBlockchain(sui());
+    const blockchain = useBlockchain(new Sui());
 
     // Test vectors
     const keyPrivate = "0000000000000000000000000000000000000000000000000000000000000001";
@@ -73,7 +73,7 @@ describe("Sui", () => {
 
   describe("Testnet", () => {
     const options: Options = { network: "testnet" };
-    const testnetBlockchain = useBlockchain(sui(options));
+    const testnetBlockchain = useBlockchain(new Sui(options));
 
     describe("blockchain interface", () => {
       it("has correct name", () => {

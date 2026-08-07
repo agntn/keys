@@ -7,9 +7,9 @@ import {
   getBlockchainPath,
 } from "../../src/utils/bip44";
 import { useBlockchain } from "../../src/blockchain";
-import bitcoin from "../../src/blockchains/bitcoin";
-import ethereum from "../../src/blockchains/ethereum";
-import solana from "../../src/blockchains/solana";
+import Bitcoin from "../../src/blockchains/bitcoin";
+import Ethereum from "../../src/blockchains/ethereum";
+import Solana from "../../src/blockchains/solana";
 
 describe("BIP44 Path Generation", () => {
   test("should generate correct BIP44 path for Bitcoin", () => {
@@ -79,25 +79,25 @@ describe("BIP44 Path Parsing", () => {
 
 describe("Blockchain Path Integration", () => {
   test("should generate correct path for bitcoin blockchain", () => {
-    const chain = useBlockchain(bitcoin());
+    const chain = useBlockchain(new Bitcoin());
     const path = getBlockchainPath(chain);
     expect(path).toBe("m/44'/0'/0'/0/0");
   });
 
   test("should generate correct path for ethereum blockchain", () => {
-    const chain = useBlockchain(ethereum());
+    const chain = useBlockchain(new Ethereum());
     const path = getBlockchainPath(chain);
     expect(path).toBe("m/44'/60'/0'/0/0");
   });
 
   test("should generate correct path for solana blockchain", () => {
-    const chain = useBlockchain(solana());
+    const chain = useBlockchain(new Solana());
     const path = getBlockchainPath(chain);
     expect(path).toBe("m/44'/501'/0'/0/0");
   });
 
   test("should respect custom account parameters", () => {
-    const chain = useBlockchain(bitcoin());
+    const chain = useBlockchain(new Bitcoin());
     const path = getBlockchainPath(chain, 2, BIP44Change.INTERNAL, 5);
     expect(path).toBe("m/44'/0'/2'/1/5");
   });

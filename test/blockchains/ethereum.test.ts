@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { useBlockchain } from "../../src";
-import ethereum from "../../src/blockchains/ethereum";
+import Ethereum from "../../src/blockchains/ethereum";
 import type { Options } from "../../src/types";
 
 describe("Ethereum blockchain", () => {
   describe("Mainnet", () => {
-    const blockchain = useBlockchain(ethereum());
+    const blockchain = useBlockchain(new Ethereum());
 
     it("should have a name", () => {
       expect(blockchain.name).toBe("ethereum");
@@ -144,7 +144,7 @@ describe("Ethereum blockchain", () => {
 
   describe("Testnet", () => {
     const options: Options = { network: "testnet" };
-    const testnetBlockchain = useBlockchain(ethereum(options));
+    const testnetBlockchain = useBlockchain(new Ethereum(options));
 
     it("should have a name", () => {
       expect(testnetBlockchain.name).toBe("ethereum");
@@ -161,7 +161,7 @@ describe("Ethereum blockchain", () => {
     describe("Address generation", () => {
       it("should generate the same addresses for both networks", () => {
         // EVM addresses are the same regardless of network
-        const mainnetBlockchain = useBlockchain(ethereum());
+        const mainnetBlockchain = useBlockchain(new Ethereum());
         const keyPrivate = "0000000000000000000000000000000000000000000000000000000000000001";
 
         const testnetPublicKey = testnetBlockchain.getKeyPublic(keyPrivate);

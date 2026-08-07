@@ -1,9 +1,10 @@
 import { hexToBytes, bytesToHex } from "@noble/hashes/utils.js";
 import { keccak_256 } from "@noble/hashes/sha3.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { AbstractBlockchain } from "../blockchain.ts";
 import { generateKeyPublic as getSecp256k1KeyPublic } from "./secp256k1.ts";
 import { signMessage, verifyMessage } from "./signing.ts";
-import type { BlockchainImplementation, KeyOptions } from "../types.ts";
+import type { KeyOptions } from "../types.ts";
 
 /**
  * Generate an EVM compatible address from a public key
@@ -185,28 +186,37 @@ export function evmVerifyMessage(
 }
 
 /**
- * Factory function that creates a blockchain implementation for an EVM chain
- *
- * @param name - The name of the blockchain
- * @param options - Optional configuration parameters
- * @returns An object implementing the Blockchain interface for EVM chains
+ * Shared implementation for EVM-compatible blockchains.
  */
-export function createEVMBlockchain(
-  name: string,
-  options: { network?: string; bip44: number },
-): BlockchainImplementation {
-  const network = options.network || "mainnet";
-  const bip44 = options.bip44;
+export abstract class AbstractEVMBlockchain extends AbstractBlockchain {
+  override readonly curve = "secp256k1";
 
-  return {
-    name,
-    curve: "secp256k1" as const,
-    network,
-    bip44,
-    getKeyPublic: getSecp256k1KeyPublic,
-    getAddress: generateAddress,
-    validateAddress,
-    signMessage: evmSignMessage,
-    verifyMessage: evmVerifyMessage,
-  };
+  override getKeyPublic(keyPrivate: string, options?: KeyOptions): string {
+    return getSecp256k1KeyPublic(keyPrivate, options);
+  }
+
+  override getAddress(keyPublic: string): string {
+    return generateAddress(keyPublic);
+  }
+
+  override validateAddress(address: string): boolean {
+    return validateAddress(address);
+  }
+
+  override signMessage(
+    message: string | Uint8Array,
+    keyPrivate: string,
+    options?: KeyOptions,
+  ): string {
+    return evmSignMessage(message, keyPrivate, options);
+  }
+
+  override verifyMessage(
+    message: string | Uint8Array,
+    signature: string,
+    keyPublic: string,
+    options?: KeyOptions,
+  ): boolean {
+    return evmVerifyMessage(message, signature, keyPublic, options);
+  }
 }
