@@ -16,76 +16,65 @@ describe("Signing Integration Tests", () => {
       const solanaSecretKey = solanaKeypair.secretKey;
       const solanaPrivateKeyHex = bytesToHex(solanaSecretKey.slice(0, 32));
       const solanaPublicKeyHex = bytesToHex(solanaKeypair.publicKey.toBytes());
-
-      // Create corresponding keys using ubichain
       const solanaBlockchain = useBlockchain(new Solana());
-      const ubichainPublicKey = solanaBlockchain.getKeyPublic(solanaPrivateKeyHex);
+      const keysPublicKey = solanaBlockchain.getKeyPublic(solanaPrivateKeyHex);
 
       // Verify that public keys match
-      expect(ubichainPublicKey).toBe(solanaPublicKeyHex);
+      expect(keysPublicKey).toBe(solanaPublicKeyHex);
 
       // Generate a new address
-      const ubichainAddress = solanaBlockchain.getAddress(ubichainPublicKey);
+      const keysAddress = solanaBlockchain.getAddress(keysPublicKey);
       const solanaAddress = solanaKeypair.publicKey.toBase58();
 
       // Verify that addresses match
-      expect(ubichainAddress).toBe(solanaAddress);
+      expect(keysAddress).toBe(solanaAddress);
 
       // Print keys and addresses for confirmation
       console.log("\nSolana Keys:");
       console.log(`Private Key: ${solanaPrivateKeyHex}`);
       console.log(`Solana Public Key: ${solanaPublicKeyHex}`);
-      console.log(`Ubichain Public Key: ${ubichainPublicKey}`);
+      console.log(`@agntn/keys Public Key: ${keysPublicKey}`);
       console.log(`Solana Address: ${solanaAddress}`);
-      console.log(`Ubichain Address: ${ubichainAddress}`);
+      console.log(`@agntn/keys Address: ${keysAddress}`);
     });
 
     it("should produce valid signatures for Solana", () => {
-      // Create new keys in ubichain
       const solanaBlockchain = useBlockchain(new Solana());
-      const ubichainWallet = solanaBlockchain.generateWallet();
-
-      // Sign message using ubichain
+      const keysWallet = solanaBlockchain.generateWallet();
       const message = testMessages.medium;
       const messageBytes = new TextEncoder().encode(message);
-      const ubichainSignature = solanaBlockchain.signMessage(message, ubichainWallet.keys.private);
-      const ubichainSignatureBytes = hexToBytes(ubichainSignature);
+      const keysSignature = solanaBlockchain.signMessage(message, keysWallet.keys.private);
+      const keysSignatureBytes = hexToBytes(keysSignature);
 
       // Verify signature using @noble/curves/ed25519 (the same library we use internally)
-      const publicKeyBytes = hexToBytes(ubichainWallet.keys.public);
+      const publicKeyBytes = hexToBytes(keysWallet.keys.public);
 
       // Verify using the library that we use internally
-      const verificationResult = ed25519.verify(
-        ubichainSignatureBytes,
-        messageBytes,
-        publicKeyBytes,
-      );
+      const verificationResult = ed25519.verify(keysSignatureBytes, messageBytes, publicKeyBytes);
 
       // Sign message directly using the library
-      const privateKeyBytes = hexToBytes(ubichainWallet.keys.private);
+      const privateKeyBytes = hexToBytes(keysWallet.keys.private);
       const directSignature = ed25519.sign(messageBytes, privateKeyBytes);
       const directSignatureHex = bytesToHex(directSignature);
 
       // Display results
       console.log("\nSolana Signature Verification:");
       console.log(`Message: "${message}"`);
-      console.log(`Ubichain Signature: ${ubichainSignature}`);
+      console.log(`@agntn/keys Signature: ${keysSignature}`);
       console.log(`Direct Ed25519 Signature: ${directSignatureHex}`);
       console.log(`Noble Curves verification result: ${verificationResult}`);
-
-      // Verify direct signature using ubichain
-      const ubichainVerificationOfDirect = solanaBlockchain.verifyMessage(
+      const keysVerificationOfDirect = solanaBlockchain.verifyMessage(
         message,
         directSignatureHex,
-        ubichainWallet.keys.public,
+        keysWallet.keys.public,
       );
 
-      console.log(`Ubichain verification of direct signature: ${ubichainVerificationOfDirect}`);
+      console.log(`@agntn/keys verification of direct signature: ${keysVerificationOfDirect}`);
 
       // Check if verifications succeeded
       expect(verificationResult).toBe(true);
-      expect(ubichainVerificationOfDirect).toBe(true);
-      expect(ubichainSignature).toBe(directSignatureHex);
+      expect(keysVerificationOfDirect).toBe(true);
+      expect(keysSignature).toBe(directSignatureHex);
     });
   });
 
@@ -100,18 +89,18 @@ describe("Signing Integration Tests", () => {
 
       // Get public keys
       const ethersPublicKey = ethersSigningKey.publicKey.slice(2); // remove '0x' prefix
-      const ubichainPublicKey = ethereumBlockchain.getKeyPublic(privateKeyHex.slice(2), {
+      const keysPublicKey = ethereumBlockchain.getKeyPublic(privateKeyHex.slice(2), {
         compressed: false,
       });
 
       // Verify that public keys match (ethers returns without 0x)
-      expect(ubichainPublicKey).toBe(ethersPublicKey);
+      expect(keysPublicKey).toBe(ethersPublicKey);
 
       // Display information
       console.log("\nEthereum Keys:");
       console.log(`Private Key: ${privateKeyHex}`);
       console.log(`Ethers Public Key: ${ethersPublicKey}`);
-      console.log(`Ubichain Public Key: ${ubichainPublicKey}`);
+      console.log(`@agntn/keys Public Key: ${keysPublicKey}`);
     });
 
     it("should verify messages between libraries", () => {
@@ -122,39 +111,31 @@ describe("Signing Integration Tests", () => {
       // Create Ethereum instance and derive keys from the same private key
       const ethereumBlockchain = useBlockchain(new Ethereum());
       const publicKey = ethereumBlockchain.getKeyPublic(privateKeyNoPrefix, { compressed: false });
-      const ubichainAddress = ethereumBlockchain.getAddress(publicKey);
+      const keysAddress = ethereumBlockchain.getAddress(publicKey);
 
       // Create ethers.js wallet from same private key
       const ethersWallet = new Wallet(privateKeyHex);
       const ethersAddress = ethersWallet.address;
 
       // Addresses MUST match
-      expect(ubichainAddress.toLowerCase()).toBe(ethersAddress.toLowerCase());
+      expect(keysAddress.toLowerCase()).toBe(ethersAddress.toLowerCase());
 
       console.log("\nEthereum Addresses:");
-      console.log(`Ubichain: ${ubichainAddress}`);
+      console.log(`@agntn/keys: ${keysAddress}`);
       console.log(`Ethers: ${ethersAddress}`);
 
       // Message to sign
       const message = testMessages.medium;
-
-      // Sign using ubichain
-      const ubichainSignature = ethereumBlockchain.signMessage(message, privateKeyNoPrefix);
-
-      // Verify signature using ubichain
-      const ubichainVerified = ethereumBlockchain.verifyMessage(
-        message,
-        ubichainSignature,
-        publicKey,
-      );
+      const keysSignature = ethereumBlockchain.signMessage(message, privateKeyNoPrefix);
+      const keysVerified = ethereumBlockchain.verifyMessage(message, keysSignature, publicKey);
 
       console.log("\nEthereum Signatures:");
       console.log(`Message: "${message}"`);
-      console.log(`Ubichain Signature: ${ubichainSignature}`);
-      console.log(`Verification result: ${ubichainVerified}`);
+      console.log(`@agntn/keys Signature: ${keysSignature}`);
+      console.log(`Verification result: ${keysVerified}`);
 
       // Check if verification succeeded
-      expect(ubichainVerified).toBe(true);
+      expect(keysVerified).toBe(true);
     });
   });
 });

@@ -13,8 +13,8 @@ Base implementation using the secp256k1 curve, with EIP-55 checksum support for 
 **Driver name:** `base`
 
 ```js
-import { useBlockchain } from "ubichain";
-import Base from "ubichain/blockchains/base";
+import { useBlockchain } from "@agntn/keys";
+import Base from "@agntn/keys/blockchains/base";
 
 const baseChain = useBlockchain(new Base());
 ```
@@ -75,7 +75,7 @@ Base is an EVM (Ethereum Virtual Machine) compatible blockchain, which means:
 2. The same private key will generate the same address on both Ethereum and Base
 3. All Base addresses can be used on Ethereum, and vice versa
 
-Base extends ubichain's common EVM base class:
+Base extends @agntn/keys's common EVM base class:
 
 ```js
 import { AbstractEVMBlockchain } from "../utils/evm";

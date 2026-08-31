@@ -1,14 +1,14 @@
-# ubichain
+# @agntn/keys
 
-[![npm version](https://img.shields.io/npm/v/ubichain?style=flat&colorA=130f40&colorB=474787)](https://npmjs.com/package/ubichain)
-[![npm downloads](https://img.shields.io/npm/dm/ubichain?style=flat&colorA=130f40&colorB=474787)](https://npm.chart.dev/ubichain)
-[![license](https://img.shields.io/github/license/oritwoen/ubichain?style=flat&colorA=130f40&colorB=474787)](https://github.com/oritwoen/ubichain/blob/main/LICENSE.md)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/oritwoen/ubichain)
+[![npm version](https://img.shields.io/npm/v/%40agntn%2Fkeys?style=flat&colorA=130f40&colorB=474787)](https://npmjs.com/package/@agntn/keys)
+[![npm downloads](https://img.shields.io/npm/dm/%40agntn%2Fkeys?style=flat&colorA=130f40&colorB=474787)](https://npm.chart.dev/@agntn/keys)
+[![license](https://img.shields.io/github/license/agntn/keys?style=flat&colorA=130f40&colorB=474787)](https://github.com/agntn/keys/blob/main/LICENSE.md)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/agntn/keys)
 
-Unified TypeScript interface for generating keys, addresses, and wallets across multiple blockchains. One API, eight chains, two curves.
+Typed key generation, address derivation, and message signing across eight blockchains and two curves.
 
 > [!WARNING]
-> **ubichain is experimental.** The package name, public API, provider model, CLI flags, and tool surfaces may change before the first stable release. Pin exact versions if you build on it now.
+> **@agntn/keys is experimental.** The package name, public API, provider model, and tool surfaces may change before the first stable release. Pin exact versions if you build on it now.
 
 ## Features
 
@@ -24,7 +24,7 @@ Unified TypeScript interface for generating keys, addresses, and wallets across 
 ## Install
 
 ```bash
-pnpm add ubichain
+pnpm add @agntn/keys
 ```
 
 ## Usage
@@ -34,7 +34,7 @@ Concrete blockchain classes are lazy-loaded. The double-call pattern `blockchain
 ### Generate a wallet
 
 ```ts
-import { useBlockchain, blockchains } from "ubichain";
+import { useBlockchain, blockchains } from "@agntn/keys";
 
 const ethereum = await blockchains.ethereum()();
 const chain = useBlockchain(ethereum);
@@ -48,7 +48,7 @@ console.log(wallet.address); // 0x... checksum address
 ### Bitcoin address types
 
 ```ts
-import { useBlockchain, blockchains } from "ubichain";
+import { useBlockchain, blockchains } from "@agntn/keys";
 
 const btc = useBlockchain(await blockchains.bitcoin()());
 
@@ -69,7 +69,7 @@ testnet.getAddress(publicKey, "segwit"); // tb1q...
 ### Sign and verify messages
 
 ```ts
-import { useBlockchain, blockchains } from "ubichain";
+import { useBlockchain, blockchains } from "@agntn/keys";
 
 const chain = useBlockchain(await blockchains.solana()());
 
@@ -81,7 +81,7 @@ const valid = chain.verifyMessage("hello", signature, keys.public); // true
 ### EVM chains share addresses
 
 ```ts
-import { useBlockchain, blockchains } from "ubichain";
+import { useBlockchain, blockchains } from "@agntn/keys";
 
 const eth = useBlockchain(await blockchains.ethereum()());
 const base = useBlockchain(await blockchains.base()());
@@ -118,7 +118,7 @@ Built on audited cryptographic packages from [@paulmillr](https://github.com/pau
 - [micro-key-producer](https://github.com/paulmillr/micro-key-producer) - SLIP-0010 for ed25519
 
 > [!CAUTION]
-> **Never — ever — use this with real funds or with any wallet that has ever been used.** Generated and signed material is handled as plaintext; treat every key it touches as burned the moment it is produced. Generate fresh throwaway keys for testing only and assume anything passing through ubichain is compromised. Real-funds keys belong on a hardware wallet, never in a process, log, or agent transcript.
+> **Never use this with real funds or with any wallet that has ever been used.** Generated and signed material is handled as plaintext; treat every key it touches as burned the moment it is produced. Generate fresh throwaway keys for testing only and assume anything passing through `@agntn/keys` is compromised. Keys that control real funds belong on a hardware wallet, never in a process, log, or agent transcript.
 
 ## License
 

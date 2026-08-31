@@ -1,6 +1,6 @@
-# Ubichain Playground
+# @agntn/keys Playground
 
-This folder contains example code and experiments demonstrating the usage of ubichain library features. It's perfect for understanding how to integrate the library into your own projects or to explore new features before they're fully documented.
+This folder contains example code and experiments demonstrating the usage of @agntn/keys library features. It's perfect for understanding how to integrate the library into your own projects or to explore new features before they're fully documented.
 
 ## Contents
 

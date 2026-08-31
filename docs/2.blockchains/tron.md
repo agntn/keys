@@ -13,8 +13,8 @@ TRON implementation using the secp256k1 curve, with Base58Check-encoded addresse
 **Driver name:** `tron`
 
 ```js
-import { useBlockchain } from "ubichain";
-import Tron from "ubichain/blockchains/tron";
+import { useBlockchain } from "@agntn/keys";
+import Tron from "@agntn/keys/blockchains/tron";
 
 const tronChain = useBlockchain(new Tron());
 ```

@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=https://unpkg.com/undocs/schema/config.json
-name: ubichain
-shortDescription: Universal Blockchain Interface.
-description: A TypeScript library for interacting with various blockchains, providing simple and consistent interfaces for generating keys, addresses, and managing crypto wallets.
-github: oritwoen/ubichain
-url: https://github.com/oritwoen/ubichain
+name: "@agntn/keys"
+shortDescription: Cryptographic keys across blockchains.
+description: Cryptographic key generation, derivation, addresses, and message signing across blockchains.
+github: agntn/keys
+url: https://github.com/agntn/keys
 themeColor: amber
 landing:
   contributors: true
@@ -13,7 +13,7 @@ landing:
       description: "Your code will work on any JavaScript runtime including Node.js, Bun, Deno, and Browsers."
       icon: "i-material-symbols-lock-open-right-outline-rounded"
     - title: "Multiple Blockchains"
-      description: "Ubichain supports multiple blockchains including Bitcoin, Ethereum, Solana, Aptos, TRON, SUI, and more with a consistent API."
+      description: "@agntn/keys supports Bitcoin, Ethereum, Solana, Aptos, TRON, SUI, and more through one API."
       icon: "i-material-symbols-view-list-outline"
     - title: "Type-safe"
       description: "Written in TypeScript with full type definitions for a better developer experience."

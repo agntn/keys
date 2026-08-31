@@ -1,5 +1,5 @@
 /**
- * Pi extension: ubichain — unified blockchain key/address/signing tools
+ * Pi extension exposing blockchain key, address, and signing tools.
  */
 import type { AgentToolResult, ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
@@ -7,11 +7,11 @@ import { Type } from "typebox";
 
 /** Lazy-load the library. */
 async function loadLib() {
-  const mod = await import("ubichain").catch(() => {
+  const mod = await import("@agntn/keys").catch(() => {
     // Runtime fallback for dev before dist is built (same package source).
     return import("../../../src/index.ts");
   });
-  return mod as typeof import("ubichain");
+  return mod as typeof import("@agntn/keys");
 }
 
 const CHAINS = [
@@ -38,10 +38,10 @@ async function getBlockchain(chain: string, network?: string) {
   return lib.useBlockchain(blockchain);
 }
 
-export default function ubichainExtension(pi: ExtensionAPI) {
+export default function keysExtension(pi: ExtensionAPI) {
   // ─── generate_wallet ────────────────────────────────────────────────────
   pi.registerTool({
-    name: "ubichain_generate_wallet",
+    name: "keys_generate_wallet",
     label: "Generate Wallet",
     description:
       "Generate a new wallet (private key, public key, and address) for any supported blockchain",
@@ -96,7 +96,7 @@ export default function ubichainExtension(pi: ExtensionAPI) {
 
   // ─── get_address ────────────────────────────────────────────────────────
   pi.registerTool({
-    name: "ubichain_get_address",
+    name: "keys_get_address",
     label: "Get Address",
     description: "Derive a blockchain address from a public key",
     promptSnippet: "Use to get an address from a public key for any supported blockchain.",
@@ -132,7 +132,7 @@ export default function ubichainExtension(pi: ExtensionAPI) {
 
   // ─── validate_address ───────────────────────────────────────────────────
   pi.registerTool({
-    name: "ubichain_validate_address",
+    name: "keys_validate_address",
     label: "Validate Address",
     description: "Check if a blockchain address is valid",
     promptSnippet: "Use to verify an address is valid for a given blockchain.",
@@ -164,7 +164,7 @@ export default function ubichainExtension(pi: ExtensionAPI) {
 
   // ─── sign_message ───────────────────────────────────────────────────────
   pi.registerTool({
-    name: "ubichain_sign_message",
+    name: "keys_sign_message",
     label: "Sign Message",
     description: "Sign a message using a blockchain private key",
     promptSnippet: "Use to sign a message with a private key for any supported blockchain.",
@@ -200,7 +200,7 @@ export default function ubichainExtension(pi: ExtensionAPI) {
 
   // ─── verify_message ─────────────────────────────────────────────────────
   pi.registerTool({
-    name: "ubichain_verify_message",
+    name: "keys_verify_message",
     label: "Verify Message",
     description: "Verify a message signature using a blockchain public key",
     promptSnippet: "Use to verify that a signature is valid for a given message and public key.",
@@ -235,7 +235,7 @@ export default function ubichainExtension(pi: ExtensionAPI) {
 
   // ─── bip44_path ─────────────────────────────────────────────────────────
   pi.registerTool({
-    name: "ubichain_bip44_path",
+    name: "keys_bip44_path",
     label: "BIP44 Path",
     description: "Get or parse a BIP44 derivation path for a blockchain",
     promptSnippet:

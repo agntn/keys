@@ -1,8 +1,4 @@
-# UBICHAIN KNOWLEDGE BASE
-
-**Generated:** 2026-03-09
-**Commit:** e1f9f56
-**Branch:** main
+# @agntn/keys knowledge base
 
 ## OVERVIEW
 
@@ -11,7 +7,7 @@ TypeScript library providing a unified interface for key generation, address der
 ## STRUCTURE
 
 ```
-ubichain/
+keys/
 ├── src/
 │   ├── index.ts            # Public API surface (re-exports only)
 │   ├── blockchain.ts        # AbstractBlockchain base + useBlockchain() identity helper
@@ -23,7 +19,7 @@ ubichain/
 │   ├── fixtures.ts          # Shared test vectors (secp256k1, ed25519, bip39, addresses)
 │   ├── blockchains/         # One test file per chain
 │   └── utils/               # One test file per utility
-├── test-integration/        # Separate package - cross-lib compatibility (ethers, @solana/web3.js)
+├── test-integration/        # Separate package - compatibility with ethers and @solana/web3.js
 ├── playground/              # Runnable demo scripts (bip32, bip39, bip44, slip10, signing)
 └── docs/                    # Docus-based documentation site
 ```
@@ -52,8 +48,8 @@ ubichain/
 - **Test mirrors src** - `src/blockchains/bitcoin.ts` -> `test/blockchains/bitcoin.test.ts`
 - **Shared fixtures** - test vectors live in `test/fixtures.ts`, not duplicated per test file
 - **ESM only** - `"type": "module"` in package.json, `.mjs` output
-- **eslint-config-unjs** - linting with unjs defaults, `unicorn/prefer-export-from` disabled
-- **obuild** - entry points are explicit in `build.config.mjs`; keep package `exports` aligned with emitted `.mjs`/`.d.mts` files
+- **oxlint and oxfmt** - linting and formatting use the Oxlint configuration stored in this repository
+- **obuild** - entry points are explicit in `build.config.ts`; keep package `exports` aligned with emitted `.mjs`/`.d.mts` files
 
 ## ANTI-PATTERNS
 
@@ -69,9 +65,9 @@ ubichain/
 pnpm dev              # vitest watch mode
 pnpm test             # lint + type check + vitest with coverage
 pnpm test:types       # tsc --noEmit --skipLibCheck
-pnpm build            # obuild via build.config.mjs
-pnpm lint             # eslint
-pnpm lint:fix         # eslint --fix
+pnpm build            # obuild via build.config.ts
+pnpm lint             # oxlint + oxfmt check
+pnpm lint:fix         # oxlint + oxfmt fixes
 pnpm playground <f>   # run any TS file via tsx
 ```
 

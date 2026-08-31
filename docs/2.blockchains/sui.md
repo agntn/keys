@@ -13,8 +13,8 @@ SUI implementation supporting both ed25519 and secp256k1 curves, with addresses 
 **Driver name:** `sui`
 
 ```js
-import { useBlockchain } from "ubichain";
-import Sui from "ubichain/blockchains/sui";
+import { useBlockchain } from "@agntn/keys";
+import Sui from "@agntn/keys/blockchains/sui";
 
 const suiChain = useBlockchain(new Sui());
 ```
@@ -104,8 +104,8 @@ SUI supports multiple signature schemes, identified by flag bytes:
 
 - `0x00`: Ed25519
 - `0x01`: Secp256k1
-- `0x02`: Secp256r1 (not currently supported in ubichain)
-- `0x03`: Multisig (not currently supported in ubichain)
+- `0x02`: Secp256r1 (not currently supported in @agntn/keys)
+- `0x03`: Multisig (not currently supported in @agntn/keys)
 
 ### Validation
 

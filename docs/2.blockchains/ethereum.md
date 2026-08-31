@@ -13,8 +13,8 @@ Ethereum implementation using the secp256k1 curve, with EIP-55 checksum support 
 **Driver name:** `ethereum`
 
 ```js
-import { useBlockchain } from "ubichain";
-import Ethereum from "ubichain/blockchains/ethereum";
+import { useBlockchain } from "@agntn/keys";
+import Ethereum from "@agntn/keys/blockchains/ethereum";
 
 const ethereumChain = useBlockchain(new Ethereum());
 ```
@@ -105,7 +105,7 @@ Ethereum addresses are generated as follows:
 
 ## EVM Compatibility
 
-Ethereum is an EVM (Ethereum Virtual Machine) blockchain. All EVM-compatible blockchains in ubichain inherit the same behavior from `AbstractEVMBlockchain`.
+Ethereum uses the Ethereum Virtual Machine (EVM). Every EVM chain in `@agntn/keys` inherits the same behavior from `AbstractEVMBlockchain`.
 
 This means that the same private key will generate the same address on all EVM chains, including Ethereum, Base, and any other EVM-compatible blockchains that may be added in the future.
 

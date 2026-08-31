@@ -1,7 +1,7 @@
 {
-  "name": "ubichain",
+  "name": "@agntn/keys",
   "version": "0.2.0",
-  "description": "A TypeScript library for interacting with various blockchains, providing simple and consistent interfaces for generating keys, addresses, and managing crypto wallets",
+  "description": "Cryptographic key generation, derivation, addresses, and message signing across blockchains",
   "keywords": [
     "addresses",
     "aptos",
@@ -18,15 +18,15 @@
     "typescript",
     "wallet"
   ],
-  "homepage": "https://github.com/oritwoen/ubichain",
+  "homepage": "https://github.com/agntn/keys#readme",
   "bugs": {
-    "url": "https://github.com/oritwoen/ubichain/issues"
+    "url": "https://github.com/agntn/keys/issues"
   },
   "license": "MIT",
   "author": "oritwoen",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/oritwoen/ubichain.git"
+    "url": "git+https://github.com/agntn/keys.git"
   },
   "files": [
     "dist"
@@ -45,6 +45,9 @@
       "types": "./dist/blockchains/*.d.mts",
       "default": "./dist/blockchains/*.mjs"
     }
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "obuild",
@@ -88,10 +91,5 @@
     "typescript": "6.0.3",
     "vitest": "4.1.7"
   },
-  "packageManager": "pnpm@10.8.0",
-  "pi": {
-    "extensions": [
-      "packages/pi/extensions/ubichain.ts"
-    ]
-  }
+  "packageManager": "pnpm@10.8.0"
 }

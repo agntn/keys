@@ -2,7 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "paths": {
-      "ubichain": ["./dist/index.d.mts"]
+      "@agntn/keys": ["./dist/index.d.mts"]
     }
   },
   "include": ["packages"]

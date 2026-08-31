@@ -13,8 +13,8 @@ Bitcoin implementation using the secp256k1 curve, supporting legacy (P2PKH), P2S
 **Driver name:** `bitcoin`
 
 ```js
-import { useBlockchain } from "ubichain";
-import Bitcoin from "ubichain/blockchains/bitcoin";
+import { useBlockchain } from "@agntn/keys";
+import Bitcoin from "@agntn/keys/blockchains/bitcoin";
 
 const bitcoinChain = useBlockchain(new Bitcoin());
 ```

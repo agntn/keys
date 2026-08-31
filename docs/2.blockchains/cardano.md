@@ -1,12 +1,12 @@
 # Cardano
 
-This document explains how to use the Cardano blockchain functionality in ubichain.
+This document explains how to use the Cardano blockchain functionality in @agntn/keys.
 
 ## Importing
 
 ```javascript
-import { useBlockchain } from "ubichain";
-import Cardano from "ubichain/blockchains/cardano";
+import { useBlockchain } from "@agntn/keys";
+import Cardano from "@agntn/keys/blockchains/cardano";
 
 const cardanoBlockchain = useBlockchain(new Cardano());
 ```

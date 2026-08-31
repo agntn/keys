@@ -13,8 +13,8 @@ Solana implementation using the ed25519 curve, with simple base58-encoded addres
 **Driver name:** `solana`
 
 ```js
-import { useBlockchain } from "ubichain";
-import Solana from "ubichain/blockchains/solana";
+import { useBlockchain } from "@agntn/keys";
+import Solana from "@agntn/keys/blockchains/solana";
 
 const solanaChain = useBlockchain(new Solana());
 ```

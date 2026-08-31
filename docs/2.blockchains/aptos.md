@@ -13,8 +13,8 @@ Aptos implementation using the ed25519 curve, with addresses derived using SHA3-
 **Driver name:** `aptos`
 
 ```js
-import { useBlockchain } from "ubichain";
-import Aptos from "ubichain/blockchains/aptos";
+import { useBlockchain } from "@agntn/keys";
+import Aptos from "@agntn/keys/blockchains/aptos";
 
 const aptosChain = useBlockchain(new Aptos());
 ```
