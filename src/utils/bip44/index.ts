@@ -30,6 +30,9 @@ export enum BIP44Levels {
 // BIP44 purpose is always 44'
 export const BIP44_PURPOSE = HARDENED_OFFSET + 44;
 
+/** Highest value a path level holds before the hardened offset applies. */
+const MAX_LEVEL_INDEX = HARDENED_OFFSET - 1;
+
 // BIP44 change level values
 export enum BIP44Change {
   EXTERNAL = 0, // Receiving addresses
@@ -108,7 +111,14 @@ export function parseBIP44Path(path: string):
   const change = parseSegment(segments[3]!);
   const addressIndex = parseSegment(segments[4]!);
 
-  if (!isValidBIP44Components(purpose, coinType, account, change, addressIndex)) {
+  if (
+    purpose === undefined ||
+    coinType === undefined ||
+    account === undefined ||
+    change === undefined ||
+    addressIndex === undefined ||
+    !isValidBIP44Components(purpose, coinType, account, change, addressIndex)
+  ) {
     return undefined;
   }
 
@@ -162,15 +172,25 @@ function isValidBIP44Components(
 }
 
 /**
- * Parse a path segment which may be hardened (ending with ')
+ * Parse a path segment, hardened or not, rejecting what `parseInt` reads loosely.
  *
  * @param segment - Path segment string (e.g., "44'" or "0")
- * @returns {number} Parsed number value
+ * @returns {number | undefined} Parsed number value, or undefined when the segment is not a level index
  */
-function parseSegment(segment: string): number {
-  return segment.endsWith("'")
-    ? Number.parseInt(segment.slice(0, -1), 10) + HARDENED_OFFSET
-    : Number.parseInt(segment, 10);
+function parseSegment(segment: string): number | undefined {
+  const hardened = segment.endsWith("'");
+  const digits = hardened ? segment.slice(0, -1) : segment;
+
+  if (!/^\d+$/.test(digits)) {
+    return undefined;
+  }
+
+  const value = Number.parseInt(digits, 10);
+  if (value > MAX_LEVEL_INDEX) {
+    return undefined;
+  }
+
+  return hardened ? value + HARDENED_OFFSET : value;
 }
 
 /**
