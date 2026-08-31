@@ -48,7 +48,7 @@ keys/
 - **Test mirrors src** - `src/blockchains/bitcoin.ts` -> `test/blockchains/bitcoin.test.ts`
 - **Shared fixtures** - test vectors live in `test/fixtures.ts`, not duplicated per test file
 - **ESM only** - `"type": "module"` in package.json, `.mjs` output
-- **oxlint and oxfmt** - linting and formatting use the Oxlint configuration stored in this repository
+- **oxlint and oxfmt** - `oxlint.config.ts` and `oxfmt.config.ts` spread the shared `@agntn/ox` policy (type-aware via `oxlint-tsgolint`); keep only repository-local additions (ignore patterns, the readonly-parameter allow-list) here
 - **obuild** - entry points are explicit in `build.config.ts`; keep package `exports` aligned with emitted `.mjs`/`.d.mts` files
 
 ## ANTI-PATTERNS
