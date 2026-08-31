@@ -1,0 +1,18 @@
+diff --git a/package.json b/package.json
+index 3528c8fac0762d213fa52a020f2e295290298aa8..86861bcfa3abf9bea54a690d5d03da20bf700f38 100644
+--- a/package.json
++++ b/package.json
+@@ -6,12 +6,10 @@
+     "*.js",
+     "*.d.ts",
+     "bin/gpgkp.js",
+-    "bin/aesscr.js",
+     "src"
+   ],
+   "bin": {
+-    "gpgkp": "bin/gpgkp.js",
+-    "aesscr": "bin/aesscr.js"
++    "gpgkp": "bin/gpgkp.js"
+   },
+   "dependencies": {
+     "@noble/ciphers": "2.4.0",

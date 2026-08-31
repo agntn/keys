@@ -11,13 +11,13 @@
   },
   "dependencies": {
     "@solana/web3.js": "^1.98.4",
-    "ethers": "^6.16.0",
-    "ts-node": "^10.9.2",
+    "ethers": "^6.17.0",
     "tweetnacl": "1.0.3",
-    "typescript": "^6.0.3"
+    "typescript": "^7.0.2"
   },
   "devDependencies": {
-    "@types/node": "^25.9.1"
+    "@types/node": "^26.4.0",
+    "tsx": "^4.23.13"
   },
-  "packageManager": "pnpm@10.8.0"
+  "packageManager": "pnpm@11.24.0"
 }

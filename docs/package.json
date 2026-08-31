@@ -6,7 +6,8 @@
     "build": "undocs build"
   },
   "devDependencies": {
-    "nuxt": "4.4.6",
-    "undocs": "0.4.16"
-  }
+    "nuxt": "4.5.2",
+    "undocs": "0.4.17"
+  },
+  "packageManager": "pnpm@11.24.0"
 }
