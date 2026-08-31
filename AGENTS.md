@@ -48,7 +48,7 @@ keys/
 - **Test mirrors src** - `src/blockchains/bitcoin.ts` -> `test/blockchains/bitcoin.test.ts`
 - **Shared fixtures** - test vectors live in `test/fixtures.ts`, not duplicated per test file
 - **ESM only** - `"type": "module"` in package.json, `.mjs` output
-- **oxlint and oxfmt** - linting and formatting use the Oxlint configuration stored in this repository
+- **oxlint and oxfmt** - `oxlint.config.ts` and `oxfmt.config.ts` spread the shared `@agntn/ox` policy (type-aware via `oxlint-tsgolint`); keep only repository-local additions (ignore patterns, the readonly-parameter allow-list) here
 - **obuild** - entry points are explicit in `build.config.ts`; keep package `exports` aligned with emitted `.mjs`/`.d.mts` files
 
 ## ANTI-PATTERNS
@@ -77,5 +77,5 @@ pnpm playground <f>   # run any TS file via tsx
 - **Package exports** only expose `"."` and `"./blockchains/*"` - utils are internal, not part of public API.
 - **utils/ has mixed structure** - plain `.ts` files (address, encoding, crypto-hash, secp256k1, ed25519, ed25519-chains, evm, signing) and subdirectories with `index.ts` (bip32/, bip39/, bip44/, slip10/).
 - **`__cardano/notes.md`** - research notes for Cardano implementation, not code. The actual implementation is `cardano.ts`.
-- **Signing TODOs** - `test/utils/signing.test.ts` has two disabled verification tests marked "TODO: Fix unit test in the future" (API works in integration tests).
+- **Signing verification tests** - both verification tests in `test/utils/signing.test.ts` are enabled; they derive the secp256k1 public key from the fixture private key because `secp256k1TestVectors.publicKeyCompressed` does not pair with `privateKey` (kept only for address-derivation tests, which are self-consistent).
 - **`createVersionedHash` is deprecated** in `address.ts` - use `addSchemeByte` instead.

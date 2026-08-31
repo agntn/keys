@@ -8,8 +8,7 @@ export const secp256k1TestVectors = {
   // These are constant test vectors, not meant for production use
   privateKey: "c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4",
   privateKeyWith0x: "0xc85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4",
-  publicKeyUncompressed:
-    "0429fa449dde1228c0bacb3283310bca03022458709ad6f3fbb869a2a59c30b7d7eae5dd5c9d4987c40bc6f78ab6c3e3c1444fc79607ae0c3bc488fd4bf72e49cc",
+  /** Not paired with `privateKey`; used only by the self-consistent address tests. */
   publicKeyCompressed: "0329fa449dde1228c0bacb3283310bca03022458709ad6f3fbb869a2a59c30b7d7",
 };
 

@@ -11,7 +11,7 @@ import type { KeyOptions } from "../types.ts";
  * The address is the last 20 bytes of the Keccak-256 hash of the public key
  *
  * @param keyPublic - The public key as a hex string
- * @returns The EVM address (0x-prefixed with EIP-55 checksum)
+ * @returns {string} The EVM address (0x-prefixed with EIP-55 checksum)
  */
 export function generateAddress(keyPublic: string): string {
   // Convert public key to bytes
@@ -51,10 +51,11 @@ export function generateAddress(keyPublic: string): string {
 }
 
 /**
- * Calculate the EIP-55 checksummed version of an EVM address
+ * Calculate the EIP-55 checksummed version of an EVM address.
+ * The input is ASCII hex, so the per-character split cannot hit surrogate pairs.
  *
  * @param address - The address to checksum (without 0x prefix)
- * @returns The checksummed address (without 0x prefix)
+ * @returns {string} The checksummed address (without 0x prefix)
  */
 export function toChecksumAddress(address: string): string {
   // Convert address to lowercase
@@ -67,7 +68,7 @@ export function toChecksumAddress(address: string): string {
   const result = Array.from({ length: lowercaseAddress.length });
 
   // Use for...of with entries to get both index and character
-  for (const [i, char] of [...lowercaseAddress].entries()) {
+  for (const [i, char] of lowercaseAddress.split("").entries()) {
     const hashChar = addressHash[i];
     if (hashChar === undefined) {
       throw new Error(`Invalid hash character at index ${i}`);
@@ -84,7 +85,7 @@ export function toChecksumAddress(address: string): string {
  * Validate an EVM address including EIP-55 checksum if mixed case
  *
  * @param address - The address to validate
- * @returns Whether the address is valid
+ * @returns {boolean} Whether the address is valid
  */
 export function validateAddress(address: string): boolean {
   if (!address.startsWith("0x")) {
@@ -122,7 +123,7 @@ export function validateAddress(address: string): boolean {
  * Standard format: "\x19Ethereum Signed Message:\n" + length + message
  *
  * @param message - The message to hash
- * @returns The keccak256 hash of the prefixed message
+ * @returns {Uint8Array} The keccak256 hash of the prefixed message
  */
 function hashWithPreamble(message: string | Uint8Array): Uint8Array {
   const preamble = "\u0019Ethereum Signed Message:\n";
@@ -141,7 +142,7 @@ function hashWithPreamble(message: string | Uint8Array): Uint8Array {
  * @param message - The message to sign
  * @param keyPrivate - The private key
  * @param options - Optional parameters
- * @returns The signature as a hex string
+ * @returns {string} The signature as a hex string
  */
 export function evmSignMessage(
   message: string | Uint8Array,
@@ -164,7 +165,7 @@ export function evmSignMessage(
  * @param signature - The signature to verify
  * @param keyPublic - The public key
  * @param options - Optional parameters
- * @returns Whether the signature is valid
+ * @returns {boolean} Whether the signature is valid
  */
 export function evmVerifyMessage(
   message: string | Uint8Array,

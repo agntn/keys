@@ -5,7 +5,11 @@ import type { AgentToolResult, ExtensionAPI } from "@earendil-works/pi-coding-ag
 import { Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 
-/** Lazy-load the library. */
+/**
+ * Lazy-load the library.
+ *
+ * @returns {Promise<typeof import("@agntn/keys")>} The `@agntn/keys` module (dist build, or the source entry as dev fallback).
+ */
 async function loadLib() {
   const mod = await import("@agntn/keys").catch(() => {
     // Runtime fallback for dev before dist is built (same package source).
@@ -26,6 +30,16 @@ const CHAINS = [
 ] as const;
 
 type ChainName = (typeof CHAINS)[number];
+
+/**
+ * Format a blockchain's curve declaration for display.
+ *
+ * @param curve - A single curve name or the list of supported curves
+ * @returns {string} The curve name, or a comma-separated list of curve names
+ */
+function formatCurve(curve: string | readonly string[]): string {
+  return typeof curve === "string" ? curve : curve.join(", ");
+}
 
 async function getBlockchain(chain: string, network?: string) {
   const lib = await loadLib();
@@ -82,7 +96,7 @@ export default function keysExtension(pi: ExtensionAPI) {
             type: "text",
             text: [
               `Chain: ${blockchain.name} (${blockchain.network ?? "mainnet"})`,
-              `Curve: ${Array.isArray(blockchain.curve) ? blockchain.curve.join(", ") : blockchain.curve}`,
+              `Curve: ${formatCurve(blockchain.curve)}`,
               `BIP44: ${blockchain.bip44}`,
               `Private key: ${wallet.keys.private}`,
               `Public key: ${wallet.keys.public}`,

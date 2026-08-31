@@ -30,6 +30,59 @@ const NETWORK_PARAMS = {
   },
 } as const;
 
+type NetworkParams = (typeof NETWORK_PARAMS)[keyof typeof NETWORK_PARAMS];
+
+/**
+ * Validates a bech32 address as taproot (v1) or SegWit v0, dispatched on its prefix.
+ * @param address - The bech32 address to validate
+ * @param params - Network parameters providing the human-readable part and v1 prefix
+ * @returns {boolean} Whether the address is a valid SegWit v0 or v1 address
+ */
+function validateAddressBech32(address: string, params: NetworkParams): boolean {
+  if (address.startsWith(params.prefixSegWitV1)) {
+    return validateAddressSegWit(address, {
+      hrp: params.hrpSegWit,
+      witnessVersion: 1,
+    });
+  }
+  return validateAddressSegWit(address, {
+    hrp: params.hrpSegWit,
+    witnessVersion: 0,
+  });
+}
+
+/**
+ * Validates a base58 mainnet address as P2SH ("3") or legacy P2PKH ("1").
+ * @param address - The base58 address to validate
+ * @param params - Network parameters providing the version bytes
+ * @returns {boolean} Whether the address is a valid mainnet P2SH or legacy address
+ */
+function validateAddressBase58Mainnet(address: string, params: NetworkParams): boolean {
+  if (address.startsWith("3")) {
+    return validateAddressP2SH(address, { bytesVersion: params.bytesVersionP2SH });
+  }
+  if (address.startsWith("1")) {
+    return validateAddressLegacy(address, { bytesVersion: params.bytesVersionP2PKH });
+  }
+  return false;
+}
+
+/**
+ * Validates a base58 testnet address as P2SH ("2") or legacy P2PKH ("m"/"n").
+ * @param address - The base58 address to validate
+ * @param params - Network parameters providing the version bytes
+ * @returns {boolean} Whether the address is a valid testnet P2SH or legacy address
+ */
+function validateAddressBase58Testnet(address: string, params: NetworkParams): boolean {
+  if (address.startsWith("2")) {
+    return validateAddressP2SH(address, { bytesVersion: params.bytesVersionP2SH });
+  }
+  if (address.startsWith("m") || address.startsWith("n")) {
+    return validateAddressLegacy(address, { bytesVersion: params.bytesVersionP2PKH });
+  }
+  return false;
+}
+
 function encodeCompactSize(value: number): Uint8Array {
   if (value < 0xfd) return new Uint8Array([value]);
   if (value <= 0xffff) {
@@ -87,29 +140,14 @@ export class Bitcoin extends AbstractBlockchain {
   override validateAddress(address: string): boolean {
     const segwitPrefix = this.params.hrpSegWit + "1";
     if (address.startsWith(segwitPrefix)) {
-      if (address.startsWith(this.params.prefixSegWitV1)) {
-        return validateAddressSegWit(address, {
-          hrp: this.params.hrpSegWit,
-          witnessVersion: 1,
-        });
-      }
-      return validateAddressSegWit(address, {
-        hrp: this.params.hrpSegWit,
-        witnessVersion: 0,
-      });
+      return validateAddressBech32(address, this.params);
     }
 
-    if (this.network === "mainnet" && address.startsWith("3")) {
-      return validateAddressP2SH(address, { bytesVersion: this.params.bytesVersionP2SH });
+    if (this.network === "mainnet") {
+      return validateAddressBase58Mainnet(address, this.params);
     }
-    if (this.network === "testnet" && address.startsWith("2")) {
-      return validateAddressP2SH(address, { bytesVersion: this.params.bytesVersionP2SH });
-    }
-    if (this.network === "mainnet" && address.startsWith("1")) {
-      return validateAddressLegacy(address, { bytesVersion: this.params.bytesVersionP2PKH });
-    }
-    if (this.network === "testnet" && (address.startsWith("m") || address.startsWith("n"))) {
-      return validateAddressLegacy(address, { bytesVersion: this.params.bytesVersionP2PKH });
+    if (this.network === "testnet") {
+      return validateAddressBase58Testnet(address, this.params);
     }
     return false;
   }

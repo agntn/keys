@@ -1,7 +1,8 @@
 import { describe, it, expect, expectTypeOf } from "vitest";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { signMessage, verifyMessage } from "../../src/utils/signing";
 import { hexToBytes, bytesToHex } from "@noble/hashes/utils.js";
-import { evmSignMessage } from "../../src/utils/evm";
+import { evmSignMessage, evmVerifyMessage } from "../../src/utils/evm";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../../src/utils/ed25519-chains";
 import { secp256k1TestVectors, ed25519TestVectors, testMessages } from "../fixtures";
 import type { Blockchain, Curve } from "../../src/types";
@@ -9,7 +10,10 @@ import type { Blockchain, Curve } from "../../src/types";
 describe("Signing utilities", () => {
   // Use test vectors from fixtures
   const secp256k1TestPrivateKey = secp256k1TestVectors.privateKey;
-  const secp256k1TestPublicKey = secp256k1TestVectors.publicKeyUncompressed;
+  /** No fixture public key pairs with `privateKey`, so derive it for the round trips. */
+  const secp256k1TestPublicKey = bytesToHex(
+    secp256k1.getPublicKey(hexToBytes(secp256k1TestPrivateKey), false),
+  );
 
   const ed25519TestPrivateKey = ed25519TestVectors.privateKey;
   const ed25519TestPublicKey = ed25519TestVectors.publicKey;
@@ -25,14 +29,11 @@ describe("Signing utilities", () => {
       expect(signature).toBeTypeOf("string");
       expect(hexToBytes(signature).length).toBeGreaterThanOrEqual(64); // Secp256k1 sigs are at least 64 bytes
 
-      // Verification is temporarily disabled - API works correctly in integration tests
-      // which shows that the functionality works properly in practical cases
-      // TODO: Fix unit test in the future
-      //const isValid = verifyMessage(testMessage, signature, secp256k1TestPublicKey, {
-      //  curve: 'secp256k1'
-      //})
-      //expect(isValid).toBe(true)
-      expect(true).toBe(true);
+      const isValid = verifyMessage(testMessage, signature, secp256k1TestPublicKey, {
+        curve: "secp256k1",
+      });
+
+      expect(isValid).toBe(true);
     });
 
     it("should sign and verify with ed25519", () => {
@@ -125,12 +126,10 @@ describe("Signing utilities", () => {
       const signature = evmSignMessage(testMessage, secp256k1TestPrivateKey);
 
       expect(signature).toBeTypeOf("string");
-      // Verification is temporarily disabled - API works correctly in integration tests
-      // which shows that the functionality works properly in practical cases
-      // TODO: Fix unit test in the future
-      //const isValid = evmVerifyMessage(testMessage, signature, secp256k1TestPublicKey)
-      //expect(isValid).toBe(true)
-      expect(true).toBe(true);
+
+      const isValid = evmVerifyMessage(testMessage, signature, secp256k1TestPublicKey);
+
+      expect(isValid).toBe(true);
     });
 
     it("should apply EVM-specific preamble", () => {

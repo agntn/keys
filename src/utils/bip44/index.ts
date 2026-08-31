@@ -56,7 +56,7 @@ export const BIP44 = {
  * @param account - Account index (defaults to 0)
  * @param change - 0 for external chain (receive addresses), 1 for internal chain (change addresses)
  * @param addressIndex - Address index (defaults to 0)
- * @returns BIP44 derivation path string
+ * @returns {string} BIP44 derivation path string
  */
 export function getBIP44Path(
   coinType: number,
@@ -77,7 +77,7 @@ export function getBIP44Path(
  * Parse a BIP44 path string into its components
  *
  * @param path - BIP44 path string (e.g., "m/44'/0'/0'/0/0")
- * @returns Object with parsed components or null if invalid BIP44 path
+ * @returns {{ purpose: number; coinType: number; account: number; change: number; addressIndex: number } | undefined} Object with parsed components or undefined if invalid BIP44 path
  */
 export function parseBIP44Path(path: string):
   | {
@@ -108,23 +108,7 @@ export function parseBIP44Path(path: string):
   const change = parseSegment(segments[3]!);
   const addressIndex = parseSegment(segments[4]!);
 
-  // Validate purpose is 44'
-  if (purpose !== BIP44_PURPOSE) {
-    return undefined;
-  }
-
-  // Validate hardened status: purpose, coin_type, account should be hardened
-  if (purpose < HARDENED_OFFSET || coinType < HARDENED_OFFSET || account < HARDENED_OFFSET) {
-    return undefined;
-  }
-
-  // Validate change is 0 or 1 and not hardened
-  if ((change !== 0 && change !== 1) || change >= HARDENED_OFFSET) {
-    return undefined;
-  }
-
-  // Validate address index is not hardened
-  if (addressIndex >= HARDENED_OFFSET) {
+  if (!isValidBIP44Components(purpose, coinType, account, change, addressIndex)) {
     return undefined;
   }
 
@@ -138,10 +122,50 @@ export function parseBIP44Path(path: string):
 }
 
 /**
+ * Validate parsed BIP44 path components
+ *
+ * @param purpose - Parsed purpose segment (hardened offset included)
+ * @param coinType - Parsed coin type segment (hardened offset included)
+ * @param account - Parsed account segment (hardened offset included)
+ * @param change - Parsed change segment
+ * @param addressIndex - Parsed address index segment
+ * @returns {boolean} True if the components form a valid BIP44 path
+ */
+function isValidBIP44Components(
+  purpose: number,
+  coinType: number,
+  account: number,
+  change: number,
+  addressIndex: number,
+): boolean {
+  // Validate purpose is 44'
+  if (purpose !== BIP44_PURPOSE) {
+    return false;
+  }
+
+  // Validate hardened status: purpose, coin_type, account should be hardened
+  if (purpose < HARDENED_OFFSET || coinType < HARDENED_OFFSET || account < HARDENED_OFFSET) {
+    return false;
+  }
+
+  // Validate change is 0 or 1 and not hardened
+  if ((change !== 0 && change !== 1) || change >= HARDENED_OFFSET) {
+    return false;
+  }
+
+  // Validate address index is not hardened
+  if (addressIndex >= HARDENED_OFFSET) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Parse a path segment which may be hardened (ending with ')
  *
  * @param segment - Path segment string (e.g., "44'" or "0")
- * @returns Parsed number value
+ * @returns {number} Parsed number value
  */
 function parseSegment(segment: string): number {
   return segment.endsWith("'")
@@ -156,10 +180,10 @@ function parseSegment(segment: string): number {
  * @param account - Account index (defaults to 0)
  * @param change - 0 for external chain (receive addresses), 1 for internal chain (change addresses)
  * @param addressIndex - Address index (defaults to 0)
- * @returns BIP44 derivation path string
+ * @returns {string} BIP44 derivation path string
  */
 export function getBlockchainPath(
-  blockchain: { bip44: number },
+  blockchain: { readonly bip44: number },
   account = 0,
   change = BIP44Change.EXTERNAL,
   addressIndex = 0,

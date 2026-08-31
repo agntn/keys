@@ -7,7 +7,7 @@ import type { KeyOptions } from "../types.ts";
  * @param message - The message to sign
  * @param keyPrivate - The private key
  * @param options - Optional parameters
- * @returns The signature as a hex string
+ * @returns {string} The signature as a hex string
  */
 export function ed25519SignMessage(
   message: string | Uint8Array,
@@ -29,7 +29,7 @@ export function ed25519SignMessage(
  * @param signature - The signature to verify
  * @param keyPublic - The public key
  * @param options - Optional parameters
- * @returns Whether the signature is valid
+ * @returns {boolean} Whether the signature is valid
  */
 export function ed25519VerifyMessage(
   message: string | Uint8Array,

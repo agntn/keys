@@ -12,15 +12,15 @@ export type { SigningOptions } from "../types.ts";
  * @param message - The message to sign as a string or Uint8Array
  * @param keyPrivate - The private key as a hex string
  * @param options - Options for signature generation including curve type
- * @returns The signature as a hex string
+ * @returns {string} The signature as a hex string
  */
 export function signMessage(
   message: string | Uint8Array,
   keyPrivate: string,
   options: SigningOptions = {},
 ): string {
-  // Default to secp256k1 if not specified
-  const curve = options.curve || "secp256k1";
+  /** Read as plain string: untyped callers can pass anything, the final throw guards them. */
+  const curve: string = options.curve || "secp256k1";
 
   // Convert message to Uint8Array if it's a string
   let messageBytes = typeof message === "string" ? new TextEncoder().encode(message) : message;
@@ -55,7 +55,7 @@ export function signMessage(
  * @param signature - The signature as a hex string
  * @param keyPublic - The public key as a hex string
  * @param options - Options for signature verification including curve type
- * @returns True if the signature is valid, false otherwise
+ * @returns {boolean} True if the signature is valid, false otherwise
  */
 export function verifyMessage(
   message: string | Uint8Array,
@@ -63,8 +63,8 @@ export function verifyMessage(
   keyPublic: string,
   options: SigningOptions = {},
 ): boolean {
-  // Default to secp256k1 if not specified
-  const curve = options.curve || "secp256k1";
+  /** Read as plain string: untyped callers can pass anything, the final throw guards them. */
+  const curve: string = options.curve || "secp256k1";
 
   // Convert message to Uint8Array if it's a string
   let messageBytes = typeof message === "string" ? new TextEncoder().encode(message) : message;

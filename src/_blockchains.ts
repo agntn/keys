@@ -7,6 +7,8 @@ type BlockchainModule<T extends AbstractBlockchain> = { default: BlockchainConst
 /**
  * Creates a lazy-loaded blockchain class constructor.
  * The import is deferred until the returned async function is called.
+ * @param loader - Dynamic import of the module whose default export is the blockchain class
+ * @returns {(options?: Options) => () => Promise<T>} Factory capturing constructor options that returns an async loader constructing the blockchain
  */
 function lazy<T extends AbstractBlockchain>(loader: () => Promise<BlockchainModule<T>>) {
   return (options?: Options) => async (): Promise<T> => {
