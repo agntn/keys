@@ -1,24 +1,15 @@
 packages:
-  - packages/*
-
-minimumReleaseAgeExclude:
-  - typebox
-  - vite
+  - .
 
 overrides:
   "jayson>uuid": 14.0.2
-  vite: 8.2.2
 
 peerDependencyRules:
   allowedVersions:
     "ws@7.5.13>utf-8-validate": ">=5.0.2"
 
 allowBuilds:
-  "@google/genai": false
   bufferutil: false
   esbuild: true
   protobufjs: false
   utf-8-validate: false
-
-patchedDependencies:
-  micro-key-producer@0.10.2: patches/micro-key-producer@0.10.2.patch
