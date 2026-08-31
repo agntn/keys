@@ -74,6 +74,8 @@ export abstract class AbstractBlockchain implements Blockchain {
 
 /**
  * Returns a concrete blockchain instance through the unified public API.
+ * @param blockchain - The concrete blockchain instance to expose
+ * @returns {T} The same blockchain instance
  */
 export function useBlockchain<T extends AbstractBlockchain>(blockchain: T): T {
   return blockchain;

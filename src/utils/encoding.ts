@@ -4,7 +4,7 @@ import { base58check } from "@scure/base";
 /**
  * Encode data with Base58Check
  * @param data - The data to encode
- * @returns Base58Check encoded string
+ * @returns {string} Base58Check encoded string
  */
 export function encodeBase58Check(data: Uint8Array): string {
   return base58check(sha256).encode(data);
@@ -13,26 +13,19 @@ export function encodeBase58Check(data: Uint8Array): string {
 /**
  * Decode a Base58Check string
  * @param address - The Base58Check string to decode
- * @returns Decoded bytes
+ * @returns {Uint8Array} Decoded bytes
  */
 export function decodeBase58Check(address: string): Uint8Array {
   return base58check(sha256).decode(address);
 }
 
 /**
- * Validate a Base58Check address with specific version byte
- * @param address - The address to validate
- * @param bytesVersion - The expected version byte
+ * Quick format checks for a Base58Check address before decoding
+ * @param address - The address to check
  * @param expectedPrefix - The expected prefix character(s)
- * @param expectedLength - Expected length of decoded bytes (default: 21)
- * @returns Whether the address is valid
+ * @returns {boolean} Whether the address passes the basic format checks
  */
-export function validateBase58Check(
-  address: string,
-  bytesVersion: number,
-  expectedPrefix?: string,
-  expectedLength: number = 21,
-): boolean {
+function hasValidBase58Format(address: string, expectedPrefix?: string): boolean {
   // Quick format check before trying to decode
   if (!address || typeof address !== "string") {
     return false;
@@ -44,7 +37,24 @@ export function validateBase58Check(
   }
 
   // Most blockchain addresses are within this length range
-  if (address.length < 26 || address.length > 35) {
+  return address.length >= 26 && address.length <= 35;
+}
+
+/**
+ * Validate a Base58Check address with specific version byte
+ * @param address - The address to validate
+ * @param bytesVersion - The expected version byte
+ * @param expectedPrefix - The expected prefix character(s)
+ * @param expectedLength - Expected length of decoded bytes (default: 21)
+ * @returns {boolean} Whether the address is valid
+ */
+export function validateBase58Check(
+  address: string,
+  bytesVersion: number,
+  expectedPrefix?: string,
+  expectedLength: number = 21,
+): boolean {
+  if (!hasValidBase58Format(address, expectedPrefix)) {
     return false;
   }
 

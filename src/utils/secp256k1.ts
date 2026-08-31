@@ -3,7 +3,7 @@ import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 
 type KeyPublicOptions = {
-  compressed?: boolean;
+  readonly compressed?: boolean;
 };
 
 /**
@@ -12,7 +12,7 @@ type KeyPublicOptions = {
  *
  * @param keyPrivate - The private key as a hex string
  * @param options - Options for public key generation
- * @returns The public key as a hex string
+ * @returns {string} The public key as a hex string
  */
 export function generateKeyPublic(keyPrivate: string, options: KeyPublicOptions = {}): string {
   const { compressed = true } = options;
@@ -33,12 +33,12 @@ export function generateKeyPublic(keyPrivate: string, options: KeyPublicOptions 
  * @param message - The message to sign as a string or Uint8Array
  * @param keyPrivate - The private key as a hex string
  * @param options - Options for signature generation
- * @returns The signature as a hex string
+ * @returns {string} The signature as a hex string
  */
 export function signMessage(
   message: string | Uint8Array,
   keyPrivate: string,
-  options: { hash?: boolean } = {},
+  options: { readonly hash?: boolean } = {},
 ): string {
   const { hash = true } = options;
 
@@ -67,13 +67,13 @@ export function signMessage(
  * @param signature - The signature as a hex string
  * @param keyPublic - The public key as a hex string
  * @param options - Options for signature verification
- * @returns True if the signature is valid, false otherwise
+ * @returns {boolean} True if the signature is valid, false otherwise
  */
 export function verifyMessage(
   message: string | Uint8Array,
   signature: string,
   keyPublic: string,
-  options: { hash?: boolean } = {},
+  options: { readonly hash?: boolean } = {},
 ): boolean {
   const { hash = true } = options;
 

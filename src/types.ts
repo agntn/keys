@@ -49,17 +49,19 @@ export type BitcoinAddressType = "legacy" | "p2sh" | "segwit" | "p2wsh" | "tapro
 export type CardanoAddressType = "payment" | "stake" | "enterprise";
 
 /**
- * All blockchain address types
+ * All blockchain address types.
+ * Known values are {@link BitcoinAddressType} and {@link CardanoAddressType};
+ * any other chain-specific address type string is accepted as well.
  */
-export type AddressType = BitcoinAddressType | CardanoAddressType | string;
+export type AddressType = string;
 
 /**
  * Specific options for key derivation
  */
 export interface KeyOptions {
-  compressed?: boolean;
-  encoding?: "hex" | "base64" | "binary";
-  scheme?: string; // For blockchain implementations that support multiple signature schemes
+  readonly compressed?: boolean;
+  readonly encoding?: "hex" | "base64" | "binary";
+  readonly scheme?: string; // For blockchain implementations that support multiple signature schemes
   // Extend with more specific options as needed
 }
 
@@ -67,20 +69,22 @@ export interface KeyOptions {
  * Options for message signing and verification.
  */
 export interface SigningOptions extends KeyOptions {
-  curve?: Curve;
-  hash?: boolean;
+  readonly curve?: Curve;
+  readonly hash?: boolean;
 }
 
 /**
- * Network type
+ * Network type.
+ * Known values are `"mainnet"` and `"testnet"`;
+ * any other chain-specific network name is accepted as well.
  */
-export type NetworkType = "mainnet" | "testnet" | string;
+export type NetworkType = string;
 
 /**
  * Common blockchain options interface
  */
 export interface Options {
-  network?: NetworkType;
+  readonly network?: NetworkType;
   // Add more common options as needed
 }
 

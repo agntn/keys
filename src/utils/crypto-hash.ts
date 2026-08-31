@@ -27,12 +27,12 @@ export const hashFunctions = {
  * @param data - Input data as hex string
  * @param hashFn - Hash function to use
  * @param slice - Optional start and end positions to slice from result
- * @returns Hashed data as Uint8Array
+ * @returns {Uint8Array} Hashed data as Uint8Array
  */
 export function hashData(
   data: string,
   hashFn: HashFunction,
-  slice?: { start?: number; end?: number },
+  slice?: { readonly start?: number; readonly end?: number },
 ): Uint8Array {
   // Convert hex string to bytes
   const bytes = hexToBytes(data);
@@ -45,7 +45,7 @@ export function hashData(
     return hashed;
   }
 
-  const start = slice.start || 0;
+  const start = slice.start ?? 0;
   const end = slice.end ?? hashed.length;
 
   return hashed.slice(start, end);
@@ -57,7 +57,7 @@ export function hashData(
  *
  * @param data - Input bytes
  * @param prefixByte - Prefix byte to add
- * @returns Combined array with prefix byte
+ * @returns {Uint8Array} Combined array with prefix byte
  */
 export function addPrefixByte(data: Uint8Array, prefixByte: number): Uint8Array {
   const result = new Uint8Array(data.length + 1);
@@ -71,7 +71,7 @@ export function addPrefixByte(data: Uint8Array, prefixByte: number): Uint8Array 
  *
  * @param data - Input bytes
  * @param appendByte - Byte to append
- * @returns Combined array with appended byte
+ * @returns {Uint8Array} Combined array with appended byte
  */
 export function appendByte(data: Uint8Array, appendByte: number): Uint8Array {
   const result = new Uint8Array(data.length + 1);

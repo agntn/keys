@@ -6,7 +6,7 @@ import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
  * Used by Solana, Aptos and other blockchains
  *
  * @param keyPrivate - The private key as a hex string
- * @returns The public key as a hex string
+ * @returns {string} The public key as a hex string
  */
 export function generateKeyPublic(keyPrivate: string): string {
   const keyPrivateBytes = hexToBytes(keyPrivate);

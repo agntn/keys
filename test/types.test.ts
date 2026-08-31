@@ -1,25 +1,39 @@
 import { describe, it, expect } from "vitest";
 import type { Blockchain } from "../src/types";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isCurveValue(value: unknown): boolean {
+  return typeof value === "string" || Array.isArray(value);
+}
+
+function isOptionalValidateAddress(value: unknown): boolean {
+  return value === undefined || typeof value === "function";
+}
+
 // Helper function to check proper implementation of interfaces
-function isBlockchain(obj: any): obj is Blockchain {
+function isBlockchain(obj: unknown): obj is Blockchain {
   return (
+    isRecord(obj) &&
     typeof obj.name === "string" &&
-    (typeof obj.curve === "string" || Array.isArray(obj.curve)) &&
+    isCurveValue(obj.curve) &&
     typeof obj.getKeyPublic === "function" &&
     typeof obj.getAddress === "function" &&
-    (obj.validateAddress === undefined || typeof obj.validateAddress === "function")
+    isOptionalValidateAddress(obj.validateAddress)
   );
 }
 
-function isCompleteBlockchain(obj: any): obj is Blockchain {
+function isCompleteBlockchain(obj: unknown): obj is Blockchain {
   return (
+    isRecord(obj) &&
     typeof obj.name === "string" &&
-    (typeof obj.curve === "string" || Array.isArray(obj.curve)) &&
+    isCurveValue(obj.curve) &&
     typeof obj.generateKeyPrivate === "function" &&
     typeof obj.getKeyPublic === "function" &&
     typeof obj.getAddress === "function" &&
-    (obj.validateAddress === undefined || typeof obj.validateAddress === "function") &&
+    isOptionalValidateAddress(obj.validateAddress) &&
     typeof obj.generateKeys === "function" &&
     typeof obj.generateWallet === "function"
   );
@@ -109,6 +123,9 @@ describe("Types", () => {
       const usedBlockchain: Blockchain = {
         name: "test-chain-2",
         curve: "ed25519",
+        bip44: 501,
+        signMessage: () => "signature",
+        verifyMessage: () => true,
         generateKeyPrivate: () => "private-key",
         getKeyPublic: (keyPrivate: string) => `public-${keyPrivate}`,
         getAddress: (keyPublic: string) => `address-${keyPublic}`,

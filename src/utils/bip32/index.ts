@@ -7,7 +7,7 @@ export const HARDENED_OFFSET = 0x80_00_00_00;
 /**
  * Creates a BIP32 master key from seed bytes
  * @param seed - A seed byte array
- * @returns HDKey instance for the master key
+ * @returns {HDKey} HDKey instance for the master key
  */
 export function getMasterKeyFromSeed(seed: Uint8Array): HDKey {
   return HDKey.fromMasterSeed(seed);
@@ -16,7 +16,7 @@ export function getMasterKeyFromSeed(seed: Uint8Array): HDKey {
 /**
  * Creates a BIP32 HDKey from extended key string
  * @param xkey - Extended private or public key in base58 format
- * @returns HDKey instance
+ * @returns {HDKey} HDKey instance
  */
 export function getHDKeyFromExtended(xkey: string): HDKey {
   return HDKey.fromExtendedKey(xkey);
@@ -26,7 +26,7 @@ export function getHDKeyFromExtended(xkey: string): HDKey {
  * Derives a child key from a parent key using a derivation path
  * @param parent - Parent HDKey instance
  * @param path - Derivation path (e.g., "m/44'/0'/0'/0/0")
- * @returns Derived HDKey instance
+ * @returns {HDKey} Derived HDKey instance
  */
 export function deriveHDKey(parent: HDKey, path: string): HDKey {
   return parent.derive(path);
@@ -36,7 +36,7 @@ export function deriveHDKey(parent: HDKey, path: string): HDKey {
  * Derives a child key at a specific index from a parent key
  * @param parent - Parent HDKey instance
  * @param index - Child index (use index + HARDENED_OFFSET for hardened keys)
- * @returns Derived HDKey child
+ * @returns {HDKey} Derived HDKey child
  */
 export function deriveHDChild(parent: HDKey, index: number): HDKey {
   return parent.deriveChild(index);
@@ -45,7 +45,7 @@ export function deriveHDChild(parent: HDKey, index: number): HDKey {
 /**
  * Creates a hardened child index
  * @param index - Non-hardened index
- * @returns Hardened index
+ * @returns {number} Hardened index
  */
 export function hardenedIndex(index: number): number {
   return index + HARDENED_OFFSET;
@@ -54,7 +54,7 @@ export function hardenedIndex(index: number): number {
 /**
  * Checks if an index is hardened
  * @param index - Index to check
- * @returns True if index is hardened
+ * @returns {boolean} True if index is hardened
  */
 export function isHardenedIndex(index: number): boolean {
   return index >= HARDENED_OFFSET;
@@ -63,7 +63,7 @@ export function isHardenedIndex(index: number): boolean {
 /**
  * Formats an index to a string representation, appending ' to hardened indices
  * @param index - Index to format
- * @returns Formatted string representation
+ * @returns {string} Formatted string representation
  */
 export function formatIndex(index: number): string {
   return isHardenedIndex(index) ? `${index - HARDENED_OFFSET}'` : `${index}`;

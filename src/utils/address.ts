@@ -8,7 +8,7 @@ import { bech32, bech32m } from "@scure/base";
 /**
  * Create RIPEMD160(SHA256(input)) hash - commonly used in Bitcoin-like blockchains
  * @param data - Input bytes
- * @returns Hash160 result
+ * @returns {Uint8Array} Hash160 result
  */
 export function hash160(data: Uint8Array): Uint8Array {
   return ripemd160(sha256(data));
@@ -53,7 +53,7 @@ function generateTaprootProgram(keyPublicBytes: Uint8Array): Uint8Array {
  * Base Bitcoin address options that use version bytes (legacy P2PKH and P2SH)
  */
 export type OptionsAddressVersioned = {
-  bytesVersion: number;
+  readonly bytesVersion: number;
 };
 
 // Use the unified type for both legacy and P2SH addresses
@@ -62,24 +62,24 @@ export type OptionsAddressP2SH = OptionsAddressVersioned;
 
 // SegWit (bech32) address options
 export type OptionsAddressSegWit = {
-  hrp: string; // Human readable part (prefix)
-  witnessVersion: number; // Usually 0 for standard P2WPKH, 1 for Taproot
+  readonly hrp: string; // Human readable part (prefix)
+  readonly witnessVersion: number; // Usually 0 for standard P2WPKH, 1 for Taproot
 };
 
 /**
  * Options for validating hex addresses
  */
 export interface OptionsAddressHex {
-  prefix?: string; // Prefix for address (e.g. '0x')
-  length?: number; // Expected length without prefix
-  caseSensitive?: boolean; // Whether hex is case sensitive
+  readonly prefix?: string; // Prefix for address (e.g. '0x')
+  readonly length?: number; // Expected length without prefix
+  readonly caseSensitive?: boolean; // Whether hex is case sensitive
 }
 
 /**
  * Create a versioned hash with a version byte
  * @param hash - The hash to version
  * @param bytesVersion - The version byte to use
- * @returns Versioned hash with version byte prepended
+ * @returns {Uint8Array} Versioned hash with version byte prepended
  * @deprecated Use addSchemeByte instead
  */
 export function createVersionedHash(hash: Uint8Array, bytesVersion: number): Uint8Array {
@@ -90,7 +90,7 @@ export function createVersionedHash(hash: Uint8Array, bytesVersion: number): Uin
  * Generate Legacy (P2PKH) address for Bitcoin-like blockchains
  * @param keyPublic - The public key as a hex string
  * @param options - Options for address generation with version byte
- * @returns Legacy address
+ * @returns {string} Legacy address
  */
 export function generateAddressLegacy(keyPublic: string, options: OptionsAddressLegacy): string {
   // Convert public key to bytes
@@ -110,7 +110,7 @@ export function generateAddressLegacy(keyPublic: string, options: OptionsAddress
  * Validate a Bitcoin-like Legacy (P2PKH) address
  * @param address - The address to validate
  * @param options - Options for address validation with version byte
- * @returns Whether the address is valid
+ * @returns {boolean} Whether the address is valid
  */
 export function validateAddressLegacy(address: string, options: OptionsAddressLegacy): boolean {
   // Get expected prefix for this version
@@ -124,7 +124,7 @@ export function validateAddressLegacy(address: string, options: OptionsAddressLe
  * Generate P2SH address for Bitcoin-like blockchains
  * @param keyPublic - The public key as a hex string
  * @param options - Options for address generation with version byte
- * @returns P2SH address
+ * @returns {string} P2SH address
  */
 export function generateAddressP2SH(keyPublic: string, options: OptionsAddressP2SH): string {
   // Convert public key to bytes
@@ -153,7 +153,7 @@ export function generateAddressP2SH(keyPublic: string, options: OptionsAddressP2
  * Validate a P2SH address
  * @param address - The address to validate
  * @param options - Options for address validation with version byte
- * @returns Whether the address is valid
+ * @returns {boolean} Whether the address is valid
  */
 export function validateAddressP2SH(address: string, options: OptionsAddressP2SH): boolean {
   // Get expected prefix for this version
@@ -168,7 +168,7 @@ export function validateAddressP2SH(address: string, options: OptionsAddressP2SH
  * @param keyPublic - The public key as a hex string
  * @param options - Options for SegWit address generation
  * @param type - Optional type of SegWit address ('p2wpkh' or 'p2wsh')
- * @returns SegWit address (bech32 or bech32m format, depending on witness version)
+ * @returns {string} SegWit address (bech32 or bech32m format, depending on witness version)
  */
 export function generateAddressSegWit(
   keyPublic: string,
@@ -209,10 +209,61 @@ export function generateAddressSegWit(
 }
 
 /**
+ * Result of an unsafe bech32/bech32m decode, as consumed by validation helpers
+ */
+type DecodedBech = void | {
+  readonly prefix: string;
+  readonly words: readonly number[];
+};
+
+/**
+ * Check that a SegWit address decoded with the expected human readable part,
+ * falling back to the other bech32 variant when the primary decode failed
+ * @param address - The address being validated
+ * @param decoded - Result of decoding the address with the primary decoder
+ * @param options - Options for SegWit address validation
+ * @returns {boolean} Whether validation may continue
+ */
+function hasValidSegWitPrefix(
+  address: string,
+  decoded: DecodedBech,
+  options: OptionsAddressSegWit,
+): boolean {
+  if (decoded && decoded.prefix === options.hrp) {
+    return true;
+  }
+
+  const fallback = options.witnessVersion === 0 ? bech32m : bech32;
+  const decoded2 = fallback.decodeUnsafe(address);
+  if (!decoded2 || decoded2.prefix !== options.hrp) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Check the witness program length: 20 (P2WPKH) or 32 (P2WSH) bytes for v0,
+ * 32 bytes (x-only pubkey) for v1 Taproot, unrestricted for future versions
+ * @param data - The decoded witness program bytes
+ * @param witnessVersion - The witness version the program was decoded for
+ * @returns {boolean} Whether the program length is valid
+ */
+function hasValidWitnessProgramLength(data: Uint8Array, witnessVersion: number): boolean {
+  if (witnessVersion === 0) {
+    return data.length === 20 || data.length === 32;
+  }
+  if (witnessVersion === 1) {
+    return data.length === 32;
+  }
+
+  return true;
+}
+
+/**
  * Validate a Bitcoin-like SegWit (bech32 or bech32m) address
  * @param address - The address to validate
  * @param options - Options for SegWit address validation
- * @returns Whether the address is valid
+ * @returns {boolean} Whether the address is valid
  */
 export function validateAddressSegWit(address: string, options: OptionsAddressSegWit): boolean {
   try {
@@ -220,22 +271,8 @@ export function validateAddressSegWit(address: string, options: OptionsAddressSe
     const decoder = options.witnessVersion === 0 ? bech32 : bech32m;
     const decoded = decoder.decodeUnsafe(address);
 
-    // If decoding failed or hrp doesn't match
-    if (!decoded || decoded.prefix !== options.hrp) {
-      // If v0 decoder failed but v1 is expected, or vice versa, try the other format
-      if (options.witnessVersion === 0) {
-        // Try bech32m for v0 (backward check)
-        const decoded2 = bech32m.decodeUnsafe(address);
-        if (!decoded2 || decoded2.prefix !== options.hrp) {
-          return false;
-        }
-      } else {
-        // Try bech32 for v1 (backward check)
-        const decoded2 = bech32.decodeUnsafe(address);
-        if (!decoded2 || decoded2.prefix !== options.hrp) {
-          return false;
-        }
-      }
+    if (!hasValidSegWitPrefix(address, decoded, options)) {
+      return false;
     }
 
     // If we get here, we've successfully decoded, now verify the witness version
@@ -248,16 +285,7 @@ export function validateAddressSegWit(address: string, options: OptionsAddressSe
     const data = decoder.fromWordsUnsafe(words.slice(1));
     if (!data) return false;
 
-    if (options.witnessVersion === 0) {
-      // For v0, program length must be 20 (P2WPKH) or 32 (P2WSH) bytes
-      return data.length === 20 || data.length === 32;
-    } else if (options.witnessVersion === 1) {
-      // For v1 (Taproot), program length must be 32 bytes (x-only pubkey)
-      return data.length === 32;
-    }
-
-    // For future witness versions, length rules may vary
-    return true;
+    return hasValidWitnessProgramLength(data, options.witnessVersion);
   } catch {
     // If decoding fails, the address is invalid
     return false;
@@ -270,13 +298,13 @@ export function validateAddressSegWit(address: string, options: OptionsAddressSe
  *
  * @param address - Address to validate
  * @param options - Validation options
- * @returns Whether the address is valid
+ * @returns {boolean} Whether the address is valid
  */
 export function validateAddressHex(address: string, options: OptionsAddressHex = {}): boolean {
   // Set defaults
   const prefix = options.prefix || "0x";
-  const expectedLength = options.length || 40;
-  const caseSensitive = options.caseSensitive || false;
+  const expectedLength = options.length ?? 40;
+  const caseSensitive = options.caseSensitive ?? false;
 
   // Check prefix
   if (!address.startsWith(prefix)) {
@@ -304,7 +332,7 @@ export function validateAddressHex(address: string, options: OptionsAddressHex =
  *
  * @param hash - Hash bytes to use as address
  * @param prefix - Prefix to add (default: '0x')
- * @returns Prefixed hex address
+ * @returns {string} Prefixed hex address
  */
 export function createPrefixedAddress(hash: Uint8Array, prefix: string = "0x"): string {
   return prefix + bytesToHex(hash);
@@ -317,7 +345,7 @@ export function createPrefixedAddress(hash: Uint8Array, prefix: string = "0x"): 
  * @param data - The main data bytes
  * @param schemeByte - The scheme or flag byte to prepend/append
  * @param prepend - Whether to prepend (true) or append (false) the scheme byte
- * @returns Combined byte array
+ * @returns {Uint8Array} Combined byte array
  */
 export function addSchemeByte(
   data: Uint8Array,
