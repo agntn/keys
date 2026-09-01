@@ -32,6 +32,23 @@ function registerTools(): ReadonlyMap<string, RegisteredTool> {
 }
 
 describe("keys Pi extension", () => {
+  it("lists words compatible with the checksum for one missing mnemonic position", async () => {
+    const tool = registerTools().get("keys_recover_mnemonic_word");
+    if (!tool) throw new Error("keys_recover_mnemonic_word was not registered");
+
+    const template =
+      "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon ?";
+    const result = await tool.execute("call-1", { mnemonic: template });
+    const text = result.content.map((part) => part.text ?? "").join("\n");
+
+    expect(text).toContain("Position: 12");
+    expect(text).toContain("Candidates (128):");
+    expect(text).toContain("Candidates (128): about,");
+    expect(text).not.toContain(template);
+    expect(Value.Check(tool.parameters, { mnemonic: template })).toBe(true);
+    expect(Value.Check(tool.parameters, { mnemonic: template.replace("?", "about") })).toBe(false);
+  });
+
   it("inspects a public BIP39 mnemonic without echoing its words", async () => {
     const tool = registerTools().get("keys_inspect_mnemonic");
     if (!tool) throw new Error("keys_inspect_mnemonic was not registered");

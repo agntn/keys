@@ -21,12 +21,12 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP39, and SLIP-1
 
 **Subdirectories** (each has `index.ts`):
 
-| Dir       | Purpose                       | Exports                                                             |
-| --------- | ----------------------------- | ------------------------------------------------------------------- |
-| `bip32/`  | HD key derivation (secp256k1) | `getMasterKeyFromSeed`, `deriveHDKey`, `HARDENED_OFFSET`            |
-| `bip39/`  | Mnemonic phrases              | `generateMnemonic`, `mnemonicToSeed`, `validateMnemonic`            |
-| `bip44/`  | Derivation paths              | `BIP44` enum, `getBIP44Path`, `parseBIP44Path`, `getBlockchainPath` |
-| `slip10/` | ED25519 HD derivation         | `getMasterKeyFromSeed`, `deriveHDKey`                               |
+| Dir       | Purpose                       | Exports                                                                               |
+| --------- | ----------------------------- | ------------------------------------------------------------------------------------- |
+| `bip32/`  | HD key derivation (secp256k1) | `getMasterKeyFromSeed`, `deriveHDKey`, `HARDENED_OFFSET`                              |
+| `bip39/`  | Mnemonic phrases              | `generateMnemonic`, `mnemonicToSeed`, `validateMnemonic`, `getMnemonicWordCandidates` |
+| `bip44/`  | Derivation paths              | `BIP44` enum, `getBIP44Path`, `parseBIP44Path`, `getBlockchainPath`                   |
+| `slip10/` | ED25519 HD derivation         | `getMasterKeyFromSeed`, `deriveHDKey`                                                 |
 
 ## DEPENDENCY FLOW
 
