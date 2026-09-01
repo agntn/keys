@@ -32,6 +32,8 @@ const CHAINS = [
   "sui",
   "cardano",
 ] as const;
+const MAX_BIP39_LOOKUP_WORDS = 100;
+const BIP39_WORD_PATTERN = /^[A-Za-z]+$/u;
 
 type ChainName = (typeof CHAINS)[number];
 
@@ -180,6 +182,57 @@ export default function keysExtension(pi: ExtensionAPI) {
         const entropy = bip39.mnemonicToEntropy(normalizedMnemonic);
         lines.push(`Entropy: ${Buffer.from(entropy).toString("hex")}`);
       }
+
+      return {
+        details: undefined,
+        content: [{ type: "text", text: lines.join("\n") }],
+      };
+    },
+  });
+
+  pi.registerTool({
+    name: "keys_lookup_bip39_words",
+    label: "Lookup BIP39 Words",
+    description: "Look up English BIP39 word membership and indices",
+    promptSnippet: "Use to map public puzzle words to their BIP39 indices.",
+    promptGuidelines: [
+      "Provide up to 100 public or disposable words",
+      "Returns both zero-based and one-based indices because puzzle conventions differ",
+      "Words are matched case-insensitively against the canonical English list",
+    ],
+    parameters: Type.Object({
+      words: Type.Array(
+        Type.String({
+          minLength: 1,
+          maxLength: 32,
+          pattern: BIP39_WORD_PATTERN.source,
+          description: "A word to check against the English BIP39 list",
+        }),
+        { minItems: 1, maxItems: MAX_BIP39_LOOKUP_WORDS },
+      ),
+    }),
+    renderCall(args, _theme) {
+      return new Text(`🧩 Lookup ${args.words.length} BIP39 words`, 0, 0);
+    },
+    async execute(_toolCallId, params): Promise<AgentToolResult<undefined>> {
+      if (!Array.isArray(params.words)) {
+        throw new TypeError("BIP39 lookup words must be an array");
+      }
+      if (params.words.length === 0 || params.words.length > MAX_BIP39_LOOKUP_WORDS) {
+        throw new RangeError(`Provide between 1 and ${MAX_BIP39_LOOKUP_WORDS} words`);
+      }
+      if (params.words.some((word) => typeof word !== "string" || !BIP39_WORD_PATTERN.test(word))) {
+        throw new TypeError("BIP39 lookup words must contain English letters only");
+      }
+
+      const bip39 = await loadBIP39();
+      const lines = params.words.map((word) => {
+        const normalizedWord = word.toLowerCase();
+        const zeroBasedIndex = bip39.wordlist.indexOf(normalizedWord);
+        return zeroBasedIndex === -1
+          ? `${normalizedWord}: not in English BIP39`
+          : `${normalizedWord}: zero-based ${zeroBasedIndex}, one-based ${zeroBasedIndex + 1}`;
+      });
 
       return {
         details: undefined,

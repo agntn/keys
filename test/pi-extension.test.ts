@@ -32,6 +32,33 @@ function registerTools(): ReadonlyMap<string, RegisteredTool> {
 }
 
 describe("keys Pi extension", () => {
+  it("looks up English BIP39 word membership and both index conventions", async () => {
+    const tool = registerTools().get("keys_lookup_bip39_words");
+    if (!tool) throw new Error("keys_lookup_bip39_words was not registered");
+
+    const result = await tool.execute("call-1", {
+      words: ["abandon", "Skill", "zoo", "eleven"],
+    });
+    const text = result.content.map((part) => part.text ?? "").join("\n");
+
+    expect(text).toContain("abandon: zero-based 0, one-based 1");
+    expect(text).toContain("skill: zero-based 1619, one-based 1620");
+    expect(text).toContain("zoo: zero-based 2047, one-based 2048");
+    expect(text).toContain("eleven: not in English BIP39");
+    expect(Value.Check(tool.parameters, { words: ["skill"] })).toBe(true);
+    expect(Value.Check(tool.parameters, { words: [] })).toBe(false);
+    expect(Value.Check(tool.parameters, { words: ["two words"] })).toBe(false);
+    const tooManyWords = Array.from({ length: 101 }, () => "zoo");
+    expect(Value.Check(tool.parameters, { words: tooManyWords })).toBe(false);
+    await expect(tool.execute("call-2", { words: "skill" })).rejects.toThrow("must be an array");
+    await expect(tool.execute("call-3", { words: tooManyWords })).rejects.toThrow(
+      "Provide between 1 and 100 words",
+    );
+    await expect(tool.execute("call-4", { words: ["two words"] })).rejects.toThrow(
+      "must contain English letters only",
+    );
+  });
+
   it("lists words compatible with the checksum for one missing mnemonic position", async () => {
     const tool = registerTools().get("keys_recover_mnemonic_word");
     if (!tool) throw new Error("keys_recover_mnemonic_word was not registered");
