@@ -44,6 +44,16 @@ describe("TRON Blockchain", () => {
         const address = blockchain.getAddress(vector.keyPublic);
         expect(address).toBe(vector.address);
       }
+
+      const uncompressedKey = blockchain.getKeyPublic(
+        "0000000000000000000000000000000000000000000000000000000000000001",
+        { compressed: false },
+      );
+      expect(blockchain.getAddress(uncompressedKey)).toBe(addressVectors[0]?.address);
+    });
+
+    it("rejects an uncompressed public key outside the curve", () => {
+      expect(() => blockchain.getAddress(`04${"00".repeat(64)}`)).toThrow();
     });
   });
 
