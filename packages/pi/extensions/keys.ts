@@ -4,6 +4,7 @@
 import type { AgentToolResult, ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
+import { BIP39_LANGUAGES, isBIP39Language } from "../../../src/utils/bip39/languages.ts";
 
 /**
  * Lazy-load the library.
@@ -33,7 +34,8 @@ const CHAINS = [
   "cardano",
 ] as const;
 const MAX_BIP39_LOOKUP_WORDS = 100;
-const BIP39_WORD_PATTERN = /^[A-Za-z]+$/u;
+const BIP39_WORD_SCHEMA_PATTERN = "^\\S+$";
+const BIP39_WORD_PATTERN = /^[\p{L}\p{M}]+$/u;
 
 type ChainName = (typeof CHAINS)[number];
 
@@ -193,22 +195,31 @@ export default function keysExtension(pi: ExtensionAPI) {
   pi.registerTool({
     name: "keys_lookup_bip39_words",
     label: "Lookup BIP39 Words",
-    description: "Look up English BIP39 word membership and indices",
+    description: "Look up word membership and indices in an official BIP39 list",
     promptSnippet: "Use to map public puzzle words to their BIP39 indices.",
     promptGuidelines: [
       "Provide up to 100 public or disposable words",
+      "Choose an official BIP39 language when the puzzle is not English",
       "Returns both zero-based and one-based indices because puzzle conventions differ",
-      "Words are matched case-insensitively against the canonical English list",
+      "Words are matched case-insensitively with Unicode NFKD normalization",
     ],
     parameters: Type.Object({
       words: Type.Array(
         Type.String({
           minLength: 1,
           maxLength: 32,
-          pattern: BIP39_WORD_PATTERN.source,
-          description: "A word to check against the English BIP39 list",
+          pattern: BIP39_WORD_SCHEMA_PATTERN,
+          description: "A word to check against the selected BIP39 list",
         }),
         { minItems: 1, maxItems: MAX_BIP39_LOOKUP_WORDS },
+      ),
+      language: Type.Optional(
+        Type.String({
+          enum: BIP39_LANGUAGES,
+          minLength: 1,
+          maxLength: 19,
+          description: "Official BIP39 language key. Default: english",
+        }),
       ),
     }),
     renderCall(args, _theme) {
@@ -222,21 +233,24 @@ export default function keysExtension(pi: ExtensionAPI) {
         throw new RangeError(`Provide between 1 and ${MAX_BIP39_LOOKUP_WORDS} words`);
       }
       if (params.words.some((word) => typeof word !== "string" || !BIP39_WORD_PATTERN.test(word))) {
-        throw new TypeError("BIP39 lookup words must contain English letters only");
+        throw new TypeError("BIP39 lookup words must contain letters and combining marks only");
       }
 
+      const language = params.language ?? "english";
+      if (typeof language !== "string" || !isBIP39Language(language)) {
+        throw new RangeError(`Unknown BIP39 language. Supported: ${BIP39_LANGUAGES.join(", ")}`);
+      }
       const bip39 = await loadBIP39();
-      const lines = params.words.map((word) => {
-        const normalizedWord = word.toLowerCase();
-        const zeroBasedIndex = bip39.wordlist.indexOf(normalizedWord);
-        return zeroBasedIndex === -1
-          ? `${normalizedWord}: not in English BIP39`
-          : `${normalizedWord}: zero-based ${zeroBasedIndex}, one-based ${zeroBasedIndex + 1}`;
-      });
+      const lookups = await bip39.lookupBIP39Words(params.words, language);
+      const lines = lookups.map((lookup) =>
+        lookup.zeroBasedIndex === null
+          ? `${lookup.word}: not in BIP39 (${language})`
+          : `${lookup.word}: zero-based ${lookup.zeroBasedIndex}, one-based ${lookup.zeroBasedIndex + 1}`,
+      );
 
       return {
         details: undefined,
-        content: [{ type: "text", text: lines.join("\n") }],
+        content: [{ type: "text", text: [`Language: ${language}`, ...lines].join("\n") }],
       };
     },
   });

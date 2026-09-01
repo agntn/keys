@@ -7,18 +7,18 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 
 ## Tools
 
-| Tool                         | Purpose                                                     |
-| ---------------------------- | ----------------------------------------------------------- |
-| `keys_generate_wallet`       | Generate private key + public key + address for a chain     |
-| `keys_derive_wallet`         | Derive public key + address from an existing private key    |
-| `keys_inspect_mnemonic`      | Validate a BIP39 mnemonic and recover its entropy           |
-| `keys_lookup_bip39_words`    | Check word membership and report 0- and 1-based indices     |
-| `keys_recover_mnemonic_word` | List words allowed by the checksum for one missing position |
-| `keys_get_address`           | Derive an address from a public key                         |
-| `keys_validate_address`      | Check if an address is valid for a chain                    |
-| `keys_sign_message`          | Sign a message with a private key (secp256k1/ed25519)       |
-| `keys_verify_message`        | Verify a signature against message + public key             |
-| `keys_bip44_path`            | Generate or parse a BIP44 derivation path                   |
+| Tool                         | Purpose                                                        |
+| ---------------------------- | -------------------------------------------------------------- |
+| `keys_generate_wallet`       | Generate private key + public key + address for a chain        |
+| `keys_derive_wallet`         | Derive public key + address from an existing private key       |
+| `keys_inspect_mnemonic`      | Validate a BIP39 mnemonic and recover its entropy              |
+| `keys_lookup_bip39_words`    | Search an official word list and report 0- and 1-based indices |
+| `keys_recover_mnemonic_word` | List words allowed by the checksum for one missing position    |
+| `keys_get_address`           | Derive an address from a public key                            |
+| `keys_validate_address`      | Check if an address is valid for a chain                       |
+| `keys_sign_message`          | Sign a message with a private key (secp256k1/ed25519)          |
+| `keys_verify_message`        | Verify a signature against message + public key                |
+| `keys_bip44_path`            | Generate or parse a BIP44 derivation path                      |
 
 ## Repository status
 

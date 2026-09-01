@@ -44,7 +44,11 @@ describe("keys Pi extension", () => {
     expect(text).toContain("abandon: zero-based 0, one-based 1");
     expect(text).toContain("skill: zero-based 1619, one-based 1620");
     expect(text).toContain("zoo: zero-based 2047, one-based 2048");
-    expect(text).toContain("eleven: not in English BIP39");
+    expect(text).toContain("Language: english");
+    expect(text).toContain("eleven: not in BIP39 (english)");
+    expect(tool.parameters).toMatchObject({
+      properties: { words: { items: { pattern: "^\\S+$" } } },
+    });
     expect(Value.Check(tool.parameters, { words: ["skill"] })).toBe(true);
     expect(Value.Check(tool.parameters, { words: [] })).toBe(false);
     expect(Value.Check(tool.parameters, { words: ["two words"] })).toBe(false);
@@ -55,8 +59,30 @@ describe("keys Pi extension", () => {
       "Provide between 1 and 100 words",
     );
     await expect(tool.execute("call-4", { words: ["two words"] })).rejects.toThrow(
-      "must contain English letters only",
+      "must contain letters and combining marks only",
     );
+  });
+
+  it("looks up words from an explicit BIP39 language", async () => {
+    const tool = registerTools().get("keys_lookup_bip39_words");
+    if (!tool) throw new Error("keys_lookup_bip39_words was not registered");
+
+    const result = await tool.execute("call-1", {
+      words: ["orologio", "civetta"],
+      language: "italian",
+    });
+    const text = result.content.map((part) => part.text ?? "").join("\n");
+
+    expect(text).toContain("orologio: zero-based 1178, one-based 1179");
+    expect(text).toContain("civetta: zero-based 361, one-based 362");
+    expect(Value.Check(tool.parameters, { words: ["orologio"], language: "italian" })).toBe(true);
+    expect(Value.Check(tool.parameters, { words: ["あいこくしん"], language: "japanese" })).toBe(
+      true,
+    );
+    expect(Value.Check(tool.parameters, { words: ["orologio"], language: "unknown" })).toBe(false);
+    await expect(
+      tool.execute("call-2", { words: ["orologio"], language: "unknown" }),
+    ).rejects.toThrow("Unknown BIP39 language");
   });
 
   it("lists words compatible with the checksum for one missing mnemonic position", async () => {
