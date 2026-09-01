@@ -1,5 +1,5 @@
 /**
- * Pi extension exposing blockchain key, address, and signing tools.
+ * Pi extension exposing blockchain key, mnemonic, address, and signing tools.
  */
 import type { AgentToolResult, ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
@@ -16,6 +16,10 @@ async function loadLib() {
     return import("../../../src/index.ts");
   });
   return mod as typeof import("@agntn/keys");
+}
+
+async function loadBIP39() {
+  return import("@agntn/keys/bip39").catch(() => import("../../../src/utils/bip39/index.ts"));
 }
 
 const CHAINS = [
@@ -141,6 +145,45 @@ export default function keysExtension(pi: ExtensionAPI) {
             text: [`Public key: ${wallet.keys.public}`, `Address: ${wallet.address}`].join("\n"),
           },
         ],
+      };
+    },
+  });
+
+  pi.registerTool({
+    name: "keys_inspect_mnemonic",
+    label: "Inspect Mnemonic",
+    description: "Validate an English BIP39 mnemonic and recover its entropy",
+    promptSnippet: "Use to check mnemonic candidates from public crypto puzzles.",
+    promptGuidelines: [
+      "Provide an English BIP39 mnemonic",
+      "Use only public or disposable candidates because tool arguments are saved in the transcript",
+      "Returns checksum validity, word count, and entropy for valid mnemonics",
+    ],
+    parameters: Type.Object({
+      mnemonic: Type.String({
+        minLength: 1,
+        pattern: "\\S",
+        description: "English BIP39 mnemonic candidate",
+      }),
+    }),
+    renderCall(_args, _theme) {
+      return new Text("🧩 Inspect BIP39 mnemonic", 0, 0);
+    },
+    async execute(_toolCallId, params): Promise<AgentToolResult<undefined>> {
+      const bip39 = await loadBIP39();
+      const normalizedMnemonic = params.mnemonic.trim().replaceAll(/\s+/gu, " ");
+      const wordCount = normalizedMnemonic === "" ? 0 : normalizedMnemonic.split(" ").length;
+      const valid = bip39.validateMnemonic(normalizedMnemonic);
+      const lines = [`Valid BIP39: ${valid ? "yes" : "no"}`, `Words: ${wordCount}`];
+
+      if (valid) {
+        const entropy = bip39.mnemonicToEntropy(normalizedMnemonic);
+        lines.push(`Entropy: ${Buffer.from(entropy).toString("hex")}`);
+      }
+
+      return {
+        details: undefined,
+        content: [{ type: "text", text: lines.join("\n") }],
       };
     },
   });

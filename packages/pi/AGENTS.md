@@ -2,11 +2,11 @@
 
 ## Scope
 
-Pi coding agent extension only. Wraps the `@agntn/keys` library as 7 agent tools. **Do not** add blockchain logic, crypto, or chain implementations here. Those live in `../../src/`. This package is a thin tool surface over the public library API.
+Pi coding agent extension only. Wraps the `@agntn/keys` library as 8 agent tools. **Do not** add blockchain logic, crypto, or chain implementations here. Those live in `../../src/`. This package is a thin tool surface over the public library API.
 
 ## Layout
 
-- `extensions/keys.ts`: the extension. One `export default function(pi: ExtensionAPI)` registering 7 tools via `pi.registerTool`.
+- `extensions/keys.ts`: the extension. One `export default function(pi: ExtensionAPI)` registering 8 tools via `pi.registerTool`.
 
 ## Key facts
 
@@ -22,4 +22,4 @@ Pi coding agent extension only. Wraps the `@agntn/keys` library as 7 agent tools
 - Pin Pi/typebox dev deps to exact versions (no `latest`) — consistent with the rest of the repo.
 - Experimental surface: tool names/params may change. Don't treat them as a stable contract yet.
 - Distribution: do not register or publish the extension with npm while it handles plaintext private keys.
-- Security: tools emit plaintext private keys and signatures into the transcript. Never connect it to keys that control real funds. Use burner keys only.
+- Security: tools can accept or emit plaintext private keys, mnemonics, entropy, and signatures in the transcript. Never connect them to keys that control real funds. Use only public or disposable material.
