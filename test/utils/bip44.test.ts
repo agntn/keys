@@ -75,6 +75,36 @@ describe("BIP44 Path Parsing", () => {
     const result = parseBIP44Path("m/44'/60'/0'/0'/0");
     expect(result).toBeUndefined();
   });
+
+  test.each([
+    ["non-numeric segments", "m/44'/abc'/0'/0/xyz"],
+    ["a non-numeric address index", "m/44'/60'/0'/0/abc"],
+    ["a hex literal coin type", "m/44'/0x10'/0'/0/0"],
+    ["an exponent coin type", "m/44'/1e3'/0'/0/0"],
+    ["a fractional address index", "m/44'/60'/0'/0/5.9"],
+    ["trailing characters after the digits", "m/44'/60'/0'/0/0abc"],
+    ["leading whitespace", "m/44'/60'/0'/0/ 5"],
+    ["an empty segment", "m/44'/60'/0'/0/"],
+    ["a negative address index", "m/44'/60'/0'/0/-1"],
+  ])("should return undefined for %s", (_description, path) => {
+    expect(parseBIP44Path(path)).toBeUndefined();
+  });
+
+  test("should return undefined when a level exceeds the BIP32 index range", () => {
+    const result = parseBIP44Path("m/44'/2147483648'/0'/0/0");
+    expect(result).toBeUndefined();
+  });
+
+  test("should parse the largest level index BIP32 allows", () => {
+    const result = parseBIP44Path("m/44'/2147483647'/0'/0/2147483647");
+    expect(result).toEqual({
+      purpose: 44,
+      coinType: 2_147_483_647,
+      account: 0,
+      change: 0,
+      addressIndex: 2_147_483_647,
+    });
+  });
 });
 
 describe("Blockchain Path Integration", () => {
