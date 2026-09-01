@@ -51,6 +51,14 @@ describe("Aptos Blockchain", () => {
       expect(blockchain.validateAddress?.("0x1234")).toBe(false); // Too short
       expect(blockchain.validateAddress?.("")).toBe(false);
     });
+
+    it.each(["0x0", "0x1", "0xa", "0xF"])("accepts canonical short address %s", (address) => {
+      expect(blockchain.validateAddress(address)).toBe(true);
+    });
+
+    it.each(["0x01", "0x10"])("rejects noncanonical short address %s", (address) => {
+      expect(blockchain.validateAddress(address)).toBe(false);
+    });
   });
 
   describe("Testnet", () => {

@@ -24,11 +24,14 @@ export class Aptos extends AbstractBlockchain {
 
   override validateAddress(address: string): boolean {
     try {
-      return validateAddressHex(address, {
-        prefix: "0x",
-        length: 64,
-        caseSensitive: false,
-      });
+      return (
+        /^0x[0-9a-fA-F]$/.test(address) ||
+        validateAddressHex(address, {
+          prefix: "0x",
+          length: 64,
+          caseSensitive: false,
+        })
+      );
     } catch {
       return false;
     }
