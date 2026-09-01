@@ -5,6 +5,7 @@ import { useBlockchain } from "../../src/blockchain";
 
 describe("TRON Blockchain", () => {
   const blockchain = useBlockchain(new Tron());
+  const testnetBlockchain = useBlockchain(new Tron({ network: "testnet" }));
 
   describe("Key Generation", () => {
     // Test vectors for key pairs with correct values from our test
@@ -53,12 +54,25 @@ describe("TRON Blockchain", () => {
       expect(blockchain.getAddress(uncompressedKey)).toBe(addressVectors[0]?.address);
     });
 
+    it("uses the canonical TRON address prefix on testnet", () => {
+      expect(testnetBlockchain.generateWallet().address).toMatch(/^T/);
+      expect(
+        testnetBlockchain.getAddress(
+          "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        ),
+      ).toBe("TMVQGm1qAQYVdetCeGRRkTWYYrLXuHK2HC");
+    });
+
     it("rejects an uncompressed public key outside the curve", () => {
       expect(() => blockchain.getAddress(`04${"00".repeat(64)}`)).toThrow();
     });
   });
 
   describe("Address Validation", () => {
+    it("validates canonical TRON addresses on testnet", () => {
+      expect(testnetBlockchain.validateAddress("TMVQGm1qAQYVdetCeGRRkTWYYrLXuHK2HC")).toBe(true);
+    });
+
     it("validates correct TRON addresses", () => {
       // Use only the addresses we generated in the test vectors
       const validAddresses = [
