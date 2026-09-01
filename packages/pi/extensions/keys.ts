@@ -34,6 +34,9 @@ const CHAINS = [
   "cardano",
 ] as const;
 const MAX_BIP39_LOOKUP_ITEMS = 100;
+const BIP39_ENTROPY_BYTE_LENGTHS: readonly number[] = [16, 20, 24, 28, 32];
+const BIP39_ENTROPY_SCHEMA_PATTERN = `^(?:${BIP39_ENTROPY_BYTE_LENGTHS.map((bytes) => `[0-9A-Fa-f]{${bytes * 2}}`).join("|")})$`;
+const BIP39_ENTROPY_PATTERN = /^[0-9a-f]+$/i;
 const BIP39_WORD_SCHEMA_PATTERN = "^\\S+$";
 const BIP39_WORD_PATTERN = /^[\p{L}\p{M}]+$/u;
 
@@ -47,6 +50,16 @@ type ChainName = (typeof CHAINS)[number];
  */
 function formatCurve(curve: string | readonly string[]): string {
   return typeof curve === "string" ? curve : curve.join(", ");
+}
+
+function parseBIP39Entropy(entropy: unknown): Uint8Array {
+  if (typeof entropy !== "string" || !BIP39_ENTROPY_PATTERN.test(entropy)) {
+    throw new TypeError("BIP39 entropy must be a hexadecimal string");
+  }
+  if (!BIP39_ENTROPY_BYTE_LENGTHS.includes(entropy.length / 2)) {
+    throw new RangeError("BIP39 entropy must be 16, 20, 24, 28, or 32 bytes");
+  }
+  return Buffer.from(entropy, "hex");
 }
 
 function assertBIP39IndexBatch(indices: unknown): asserts indices is readonly number[] {
@@ -213,6 +226,43 @@ export default function keysExtension(pi: ExtensionAPI) {
       return {
         details: undefined,
         content: [{ type: "text", text: lines.join("\n") }],
+      };
+    },
+  });
+
+  pi.registerTool({
+    name: "keys_encode_bip39_entropy",
+    label: "Encode BIP39 Entropy",
+    description: "Encode hexadecimal entropy as an English BIP39 mnemonic",
+    promptSnippet: "Use to turn public puzzle entropy into BIP39 words.",
+    promptGuidelines: [
+      "Provide 16, 20, 24, 28, or 32 bytes as hexadecimal text",
+      "Use only public or disposable entropy because tool arguments are saved in the transcript",
+      "Returns the canonical English mnemonic with its word count",
+    ],
+    parameters: Type.Object({
+      entropy: Type.String({
+        pattern: BIP39_ENTROPY_SCHEMA_PATTERN,
+        description: "BIP39 entropy as 32, 40, 48, 56, or 64 hexadecimal characters",
+      }),
+    }),
+    renderCall(_args, _theme) {
+      return new Text("🧩 Encode BIP39 entropy", 0, 0);
+    },
+    async execute(_toolCallId, params): Promise<AgentToolResult<undefined>> {
+      const entropy = parseBIP39Entropy(params.entropy);
+      const bip39 = await loadBIP39();
+      const mnemonic = bip39.entropyToMnemonic(entropy);
+      const wordCount = mnemonic.split(" ").length;
+
+      return {
+        details: undefined,
+        content: [
+          {
+            type: "text",
+            text: [`Words: ${wordCount}`, `Mnemonic: ${mnemonic}`].join("\n"),
+          },
+        ],
       };
     },
   });

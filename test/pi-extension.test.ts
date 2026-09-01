@@ -162,6 +162,33 @@ describe("keys Pi extension", () => {
     expect(Value.Check(tool.parameters, { mnemonic: "   " })).toBe(false);
   });
 
+  it("encodes public entropy as an English BIP39 mnemonic", async () => {
+    const tool = registerTools().get("keys_encode_bip39_entropy");
+    if (!tool) throw new Error("keys_encode_bip39_entropy was not registered");
+
+    const entropy = "00000000000000000000000000000000";
+    const result = await tool.execute("call-1", { entropy });
+    const text = result.content.map((part) => part.text ?? "").join("\n");
+
+    expect(text).toContain("Words: 12");
+    expect(text).toContain(
+      "Mnemonic: abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+    );
+    expect(text).not.toContain(entropy);
+    for (const bytes of [16, 20, 24, 28, 32]) {
+      expect(Value.Check(tool.parameters, { entropy: "00".repeat(bytes) })).toBe(true);
+    }
+    expect(Value.Check(tool.parameters, { entropy: "AA".repeat(16) })).toBe(true);
+    expect(Value.Check(tool.parameters, { entropy: "00".repeat(15) })).toBe(false);
+    expect(Value.Check(tool.parameters, { entropy: "gg".repeat(16) })).toBe(false);
+    await expect(tool.execute("call-2", { entropy: "00".repeat(15) })).rejects.toThrow(
+      "16, 20, 24, 28, or 32 bytes",
+    );
+    await expect(tool.execute("call-3", { entropy: "gg".repeat(16) })).rejects.toThrow(
+      "must be a hexadecimal string",
+    );
+  });
+
   it("derives a Sui wallet from an existing private key", async () => {
     const tool = registerTools().get("keys_derive_wallet");
     if (!tool) throw new Error("keys_derive_wallet was not registered");

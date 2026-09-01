@@ -1,6 +1,6 @@
 # @agntn/keys: Pi extension
 
-Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as 11 agent tools for key generation, BIP39 inspection and recovery, address derivation, validation, signing, and BIP44 paths across 8 blockchains (Bitcoin, Ethereum, Base, Solana, Aptos, TRON, SUI, Cardano).
+Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as 12 agent tools for key generation, BIP39 entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across 8 blockchains (Bitcoin, Ethereum, Base, Solana, Aptos, TRON, SUI, Cardano).
 
 > [!WARNING]
 > **This extension is experimental.** The package name, public API, provider model, CLI flags, and tool surfaces may change before the first stable release. Pin exact versions if you build on it now.
@@ -12,6 +12,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 | `keys_generate_wallet`       | Generate private key + public key + address for a chain        |
 | `keys_derive_wallet`         | Derive public key + address from an existing private key       |
 | `keys_inspect_mnemonic`      | Validate a BIP39 mnemonic and recover its entropy              |
+| `keys_encode_bip39_entropy`  | Encode hexadecimal entropy as an English BIP39 mnemonic        |
 | `keys_lookup_bip39_indices`  | Map numeric positions to words in an official BIP39 list       |
 | `keys_lookup_bip39_words`    | Search an official word list and report 0- and 1-based indices |
 | `keys_recover_mnemonic_word` | List words allowed by the checksum for one missing position    |
