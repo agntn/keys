@@ -39,7 +39,7 @@ type NetworkParams = (typeof NETWORK_PARAMS)[keyof typeof NETWORK_PARAMS];
  * @returns {boolean} Whether the address is a valid SegWit v0 or v1 address
  */
 function validateAddressBech32(address: string, params: NetworkParams): boolean {
-  if (address.startsWith(params.prefixSegWitV1)) {
+  if (address.toLowerCase().startsWith(params.prefixSegWitV1)) {
     return validateAddressSegWit(address, {
       hrp: params.hrpSegWit,
       witnessVersion: 1,
@@ -139,7 +139,7 @@ export class Bitcoin extends AbstractBlockchain {
 
   override validateAddress(address: string): boolean {
     const segwitPrefix = this.params.hrpSegWit + "1";
-    if (address.startsWith(segwitPrefix)) {
+    if (address.toLowerCase().startsWith(segwitPrefix)) {
       return validateAddressBech32(address, this.params);
     }
 
