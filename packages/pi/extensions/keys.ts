@@ -108,6 +108,43 @@ export default function keysExtension(pi: ExtensionAPI) {
     },
   });
 
+  pi.registerTool({
+    name: "keys_derive_wallet",
+    label: "Derive Wallet",
+    description: "Derive a public key and address from an existing private key",
+    promptSnippet: "Use to derive the public key and address for an existing burner private key.",
+    promptGuidelines: [
+      "Provide a chain name and private key as hex",
+      "Optionally specify network and address type",
+      "Bitcoin address types: legacy, p2sh, segwit, p2wsh, taproot",
+      "For Sui, use ed25519 or secp256k1 as the address type",
+    ],
+    parameters: Type.Object({
+      chain: Type.String({ description: "Blockchain name" }),
+      privateKey: Type.String({ description: "Private key as hex string" }),
+      addressType: Type.Optional(
+        Type.String({ description: "Address type (e.g. segwit, taproot, secp256k1)" }),
+      ),
+      network: Type.Optional(Type.String({ description: "Network (mainnet/testnet)" })),
+    }),
+    renderCall(args, _theme) {
+      return new Text(`🔐 Derive wallet: ${args.chain}`, 0, 0);
+    },
+    async execute(_toolCallId, params): Promise<AgentToolResult<undefined>> {
+      const blockchain = await getBlockchain(params.chain, params.network);
+      const wallet = blockchain.deriveWallet(params.privateKey, {}, params.addressType);
+      return {
+        details: undefined,
+        content: [
+          {
+            type: "text",
+            text: [`Public key: ${wallet.keys.public}`, `Address: ${wallet.address}`].join("\n"),
+          },
+        ],
+      };
+    },
+  });
+
   // ─── get_address ────────────────────────────────────────────────────────
   pi.registerTool({
     name: "keys_get_address",
