@@ -15,7 +15,7 @@ Typed key generation, address derivation, and message signing across eight block
 - 🔑 **Key generation** - cryptographically secure private keys via Web Crypto API
 - 📫 **Address generation** - all major formats per chain (legacy, segwit, taproot, base58, hex)
 - ✅ **Address validation** - verify validity and checksums for every supported format
-- 💼 **Wallet generation** - private key, public key, and address in one call
+- 💼 **Wallet construction** - generate a new wallet or derive one from an existing private key
 - ✍️ **Message signing** - sign and verify with secp256k1 or ed25519
 - 🛤️ **BIP44 paths** - derivation path utilities for all supported chains
 - 🔌 **Lazy loading** - blockchain implementations load on demand for smaller bundles

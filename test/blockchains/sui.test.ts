@@ -47,6 +47,16 @@ describe("Sui", () => {
       expect(wallet.address).not.toBe(blockchain.getAddress(wallet.keys.public, "ed25519"));
     });
 
+    it("uses the key scheme when deriving a wallet address", () => {
+      const wallet = blockchain.deriveWallet(keyPrivate, { scheme: "secp256k1" });
+
+      expect(wallet.keys.public).toBe(keyPublicSecp256k1);
+      expect(wallet.address).toBe(addressSecp256k1);
+      expect(blockchain.deriveWallet(keyPrivate, { scheme: "ed25519" }, "secp256k1")).toEqual(
+        wallet,
+      );
+    });
+
     describe("Address validation", () => {
       it("should validate correct Sui addresses", () => {
         expect(blockchain.validateAddress?.(addressEd25519)).toBe(true);

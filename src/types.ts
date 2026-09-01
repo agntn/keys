@@ -175,6 +175,11 @@ export interface Blockchain extends BlockchainImplementation {
   generateKeys: (options?: KeyOptions) => Keys;
 
   /**
+   * Derives a complete wallet from an existing private key.
+   */
+  deriveWallet?: (keyPrivate: string, options?: KeyOptions, addressType?: string) => Wallet;
+
+  /**
    * Generates a complete wallet (private key, public key, and address)
    * This is a convenience function that combines generateKeys and getAddress
    */

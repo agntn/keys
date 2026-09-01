@@ -133,5 +133,18 @@ describe("Common blockchain functionality", () => {
       const p2shWallet = blockchain.generateWallet({}, "p2sh");
       expect(p2shWallet.address.startsWith("3")).toBe(true);
     });
+
+    it("derives a wallet from an existing private key", () => {
+      const blockchain = useBlockchain(new Bitcoin());
+      const privateKey = "0000000000000000000000000000000000000000000000000000000000000001";
+
+      expect(blockchain.deriveWallet(privateKey, {}, "segwit")).toEqual({
+        keys: {
+          private: privateKey,
+          public: "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        },
+        address: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4",
+      });
+    });
   });
 });

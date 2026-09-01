@@ -22,6 +22,22 @@ export class Sui extends AbstractBlockchain {
   override readonly curve = CURVES;
   override readonly bip44 = 784;
 
+  override deriveWallet(
+    keyPrivate: string,
+    options?: KeyOptions,
+    addressType?: AddressType,
+  ): Wallet {
+    const scheme = addressType ?? options?.scheme;
+    const keyOptions =
+      addressType === undefined
+        ? options
+        : {
+            ...options,
+            scheme: addressType,
+          };
+    return super.deriveWallet(keyPrivate, keyOptions, scheme);
+  }
+
   override generateWallet(options?: KeyOptions, addressType?: AddressType): Wallet {
     const scheme = addressType ?? options?.scheme;
     const keyOptions =
