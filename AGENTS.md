@@ -9,10 +9,14 @@ TypeScript library providing a unified interface for key generation, address der
 ```
 keys/
 ├── src/
-│   ├── index.ts            # Public API surface (re-exports only)
+│   ├── index.ts             # Public API surface (re-exports only)
 │   ├── blockchain.ts        # AbstractBlockchain base + useBlockchain() identity helper
 │   ├── types.ts             # All shared types (Blockchain, Keys, Wallet, etc.)
 │   ├── _blockchains.ts      # Lazy-loading registry with double-call pattern
+│   ├── tool-operations.ts   # Shared MCP and Pi executors
+│   ├── mcp.ts               # MCP schemas, dispatch, and server factory
+│   ├── cli.ts               # keys executable with lazy mcp subcommand
+│   ├── commands/            # CLI transport adapters
 │   ├── blockchains/         # One concrete class per chain (see blockchains/AGENTS.md)
 │   └── utils/               # Shared crypto utilities (see utils/AGENTS.md)
 ├── test/                    # Mirrors src/ structure exactly
@@ -33,6 +37,7 @@ keys/
 | Add EVM chain      | `src/utils/evm.ts` → `AbstractEVMBlockchain`                                      | Minimal subclass with `name` and `bip44`                   |
 | Fix signing        | `src/utils/signing.ts` (generic) or `evm.ts`/`ed25519-chains.ts` (chain-specific) | EVM uses preamble hash, ed25519 signs raw                  |
 | Change public API  | `src/index.ts`                                                                    | Re-exports only, never add logic here                      |
+| Change agent tools | `src/tool-operations.ts`, `src/mcp.ts`, `packages/pi/extensions/keys.ts`          | Executors are shared; schemas stay aligned                 |
 | Add BIP/derivation | `src/utils/bip32/`, `bip39/`, `bip44/`, `slip10/`                                 | Subdirs with index.ts                                      |
 | Mnemonic to wallet | `src/blockchain.ts` → `deriveHDWallet` + `src/utils/hd.ts`                        | Bitcoin and Sui override it, Cardano throws (CIP-1852)     |
 | Write tests        | `test/` mirroring `src/` path                                                     | Use fixtures from `test/fixtures.ts`                       |
@@ -70,12 +75,14 @@ pnpm build            # obuild via build.config.ts
 pnpm lint             # oxlint + oxfmt check
 pnpm lint:fix         # oxlint + oxfmt fixes
 pnpm playground <f>   # run any TS file via tsx
+pnpm test:mcp         # build and exercise all 13 MCP tools over stdio
 ```
 
 ## NOTES
 
 - **CI runs**: lint -> type check -> build -> vitest with coverage (Node 22, pnpm). Autofix workflow commits lint fixes on PRs.
-- **Package exports** expose `"."`, `"./blockchains/*"`, and the HD derivation subpaths `"./bip32"`, `"./bip39"`, and `"./slip10"`; other utils remain internal.
+- **Package exports** expose `"."`, `"./mcp"`, `"./blockchains/*"`, and the HD derivation subpaths `"./bip32"`, `"./bip39"`, and `"./slip10"`; other utils remain internal.
+- **MCP transport** runs through `keys mcp`. stdout is reserved for JSON-RPC, and `createMcpServer()` remains importable for hosts with their own transport.
 - **utils/ has mixed structure** - plain `.ts` files (address, encoding, crypto-hash, secp256k1, ed25519, ed25519-chains, evm, signing) and subdirectories with `index.ts` (bip32/, bip39/, bip44/, slip10/).
 - **`__cardano/notes.md`** - research notes for Cardano implementation, not code. The actual implementation is `cardano.ts`.
 - **Signing verification tests** - both verification tests in `test/utils/signing.test.ts` are enabled; they derive the secp256k1 public key from the fixture private key because `secp256k1TestVectors.publicKeyCompressed` does not pair with `privateKey` (kept only for address-derivation tests, which are self-consistent).

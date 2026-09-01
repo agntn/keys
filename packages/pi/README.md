@@ -1,6 +1,6 @@
 # @agntn/keys: Pi extension
 
-Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as 12 agent tools for key generation, BIP39 entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across 8 blockchains (Bitcoin, Ethereum, Base, Solana, Aptos, TRON, SUI, Cardano).
+Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as 13 agent tools for key generation, BIP39 entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across 8 blockchains (Bitcoin, Ethereum, Base, Solana, Aptos, TRON, SUI, Cardano).
 
 > [!WARNING]
 > **This extension is experimental.** The package name, public API, provider model, CLI flags, and tool surfaces may change before the first stable release. Pin exact versions if you build on it now.
@@ -11,6 +11,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 | ---------------------------- | -------------------------------------------------------------- |
 | `keys_generate_wallet`       | Generate private key + public key + address for a chain        |
 | `keys_derive_wallet`         | Derive public key + address from an existing private key       |
+| `keys_derive_hd_wallet`      | Derive public key + address from a mnemonic and path           |
 | `keys_inspect_mnemonic`      | Validate a BIP39 mnemonic and recover its entropy              |
 | `keys_encode_bip39_entropy`  | Encode hexadecimal entropy as an English BIP39 mnemonic        |
 | `keys_lookup_bip39_indices`  | Map numeric positions to words in an official BIP39 list       |
@@ -26,7 +27,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 
 The extension stays in this repository. It is not registered or included in the npm package. Its handling of plaintext private keys must be redesigned before distribution.
 
-The source imports the built library from `dist/` (`@agntn/keys`); in development before a build it falls back to `src/index.ts`.
+The extension loads the shared executors from `dist/tool-operations.mjs`; in a checkout it uses `src/tool-operations.ts`. MCP and Pi therefore run the same boundary checks and produce the same answers.
 
 ## Requirements
 

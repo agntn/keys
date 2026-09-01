@@ -2,15 +2,15 @@
 
 ## Scope
 
-Pi coding agent extension only. Wraps the `@agntn/keys` library as 12 agent tools. **Do not** add blockchain logic, crypto, or chain implementations here. Those live in `../../src/`. This package is a thin tool surface over the public library API.
+Pi coding agent extension only. Wraps the `@agntn/keys` library as 13 agent tools. **Do not** add blockchain logic, crypto, or chain implementations here. Those live in `../../src/`. This package is a thin tool surface over shared executors.
 
 ## Layout
 
-- `extensions/keys.ts`: the extension. One `export default function(pi: ExtensionAPI)` registering 12 tools via `pi.registerTool`.
+- `extensions/keys.ts`: the extension. One `export default function(pi: ExtensionAPI)` registering 13 tools via `pi.registerTool`.
 
 ## Key facts
 
-- **Library resolution:** `loadLib()` imports built `@agntn/keys` from `dist/`; falls back to `../../../src/index.ts` in dev before a build. Run `pnpm build` before relying on the dist path.
+- **Executor resolution:** `loadToolOperations()` uses `src/tool-operations.ts` in a checkout and `dist/tool-operations.mjs` in the built package. Run `pnpm build` before relying on the dist path.
 - **Type checking:** `pnpm test:ext` (`tsc -p ../../tsconfig.extensions.json --noEmit`). Wired into `pnpm test` after `pnpm build` (the extensions tsconfig maps `@agntn/keys` → `dist/index.d.mts`, so dist must exist first).
 - **Tool params:** declared with `typebox` `Type.*`, not zod. Match the existing style.
 - **Concrete class contract:** every lazy-loaded class extends `AbstractBlockchain`, so `validateAddress`, `signMessage`, and `verifyMessage` are required and called directly.
