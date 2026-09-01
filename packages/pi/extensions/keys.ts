@@ -188,6 +188,49 @@ export default function keysExtension(pi: ExtensionAPI) {
     },
   });
 
+  pi.registerTool({
+    name: "keys_recover_mnemonic_word",
+    label: "Recover Mnemonic Word",
+    description: "List English BIP39 words that make the checksum valid for one missing position",
+    promptSnippet: "Use to narrow one missing word in a public BIP39 puzzle candidate.",
+    promptGuidelines: [
+      "Replace exactly one word with ? in a mnemonic containing 12, 15, 18, 21, or 24 words",
+      "Use checksum candidates only when the puzzle proves canonical BIP39 generation",
+      "Use only public or disposable candidates because tool arguments are saved in the transcript",
+      "Returns candidate words, not wallets or target matches",
+    ],
+    parameters: Type.Object({
+      mnemonic: Type.String({
+        minLength: 1,
+        pattern: "\\?",
+        description: "English BIP39 mnemonic template containing one ? placeholder",
+      }),
+    }),
+    renderCall(_args, _theme) {
+      return new Text("🧩 Recover BIP39 word", 0, 0);
+    },
+    async execute(_toolCallId, params): Promise<AgentToolResult<undefined>> {
+      const bip39 = await loadBIP39();
+      const normalizedMnemonic = params.mnemonic.trim().replaceAll(/\s+/gu, " ");
+      const position = normalizedMnemonic.split(" ").indexOf("?") + 1;
+      const candidates = bip39.getMnemonicWordCandidates(normalizedMnemonic);
+      const candidateText = candidates.length === 0 ? "none" : candidates.join(", ");
+
+      return {
+        details: undefined,
+        content: [
+          {
+            type: "text",
+            text: [
+              `Position: ${position}`,
+              `Candidates (${candidates.length}): ${candidateText}`,
+            ].join("\n"),
+          },
+        ],
+      };
+    },
+  });
+
   // ─── get_address ────────────────────────────────────────────────────────
   pi.registerTool({
     name: "keys_get_address",

@@ -12,6 +12,36 @@ export const mnemonicToEntropy = (mnemonic: string) => bip39.mnemonicToEntropy(m
 export const entropyToMnemonic = (entropy: Uint8Array) =>
   bip39.entropyToMnemonic(entropy, wordlist);
 
+const MNEMONIC_WORD_COUNTS: readonly number[] = [12, 15, 18, 21, 24];
+
+/**
+ * Lists English BIP39 words that make the checksum valid for a mnemonic with one placeholder.
+ * @param mnemonic - Mnemonic template containing exactly one `?`
+ * @returns {ReadonlyArray<string>} Candidate words in BIP39 list order
+ */
+export function getMnemonicWordCandidates(mnemonic: string): readonly string[] {
+  const words = mnemonic.trim().split(/\s+/u);
+  if (!MNEMONIC_WORD_COUNTS.includes(words.length)) {
+    throw new RangeError("Mnemonic template must contain 12, 15, 18, 21, or 24 words");
+  }
+
+  const placeholderCount = words.filter((word) => word === "?").length;
+  if (placeholderCount !== 1) {
+    throw new RangeError("Mnemonic template must contain exactly one ? placeholder");
+  }
+
+  const placeholderIndex = words.indexOf("?");
+  const candidates: string[] = [];
+  for (const candidate of wordlist) {
+    words[placeholderIndex] = candidate;
+    if (validateMnemonic(words.join(" "))) {
+      candidates.push(candidate);
+    }
+  }
+
+  return candidates;
+}
+
 // Re-export original components
 export { bip39 };
 export { wordlist };

@@ -5,6 +5,7 @@ import {
   mnemonicToSeed,
   mnemonicToEntropy,
   entropyToMnemonic,
+  getMnemonicWordCandidates,
 } from "../../src/utils/bip39";
 import { hexToBytes } from "@noble/hashes/utils.js";
 import { bip39TestVectors } from "../fixtures";
@@ -47,6 +48,40 @@ describe("BIP39 Utils", () => {
       ),
     ).toBe(false);
     expect(validateMnemonic("not a valid mnemonic")).toBe(false);
+  });
+
+  it.each([
+    [
+      "? abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+      "abandon",
+    ],
+    [
+      "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon ?",
+      "about",
+    ],
+  ])("finds words compatible with the checksum for a missing position", (template, expected) => {
+    const candidates = getMnemonicWordCandidates(template);
+
+    expect(candidates).toContain(expected);
+    for (const candidate of candidates) {
+      expect(validateMnemonic(template.replace("?", candidate))).toBe(true);
+    }
+  });
+
+  it("rejects malformed mnemonic templates", () => {
+    expect(() =>
+      getMnemonicWordCandidates(
+        "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+      ),
+    ).toThrow("exactly one ? placeholder");
+    expect(() =>
+      getMnemonicWordCandidates(
+        "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon ? ?",
+      ),
+    ).toThrow("exactly one ? placeholder");
+    expect(() => getMnemonicWordCandidates("abandon abandon ?")).toThrow(
+      "12, 15, 18, 21, or 24 words",
+    );
   });
 
   it("converts mnemonic to seed correctly", () => {

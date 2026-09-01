@@ -18,6 +18,7 @@ Typed key generation, address derivation, and message signing across eight block
 - 💼 **Wallet construction** - generate a new wallet or derive one from an existing private key
 - ✍️ **Message signing** - sign and verify with secp256k1 or ed25519
 - 🛤️ **BIP44 paths** - derivation path utilities for all supported chains
+- 🧩 **BIP39 puzzles** - validate phrases and narrow one missing word by checksum
 - 🔌 **Lazy loading** - blockchain implementations load on demand for smaller bundles
 - 📐 **Fully typed** - TypeScript definitions for every interface
 
@@ -106,6 +107,18 @@ const account = deriveHDKey(master, "m/84'/0'/0'/0/0");
 ```
 
 Use `@agntn/keys/slip10` instead of `@agntn/keys/bip32` for ed25519 derivation.
+
+### Recover one missing BIP39 word
+
+```ts
+import { getMnemonicWordCandidates } from "@agntn/keys/bip39";
+
+const candidates = getMnemonicWordCandidates(
+  "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon ?",
+);
+```
+
+The result only satisfies the BIP39 checksum. It does not prove that a candidate belongs to the wallet or puzzle target.
 
 ## Supported Blockchains
 
