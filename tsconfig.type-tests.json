@@ -4,5 +4,9 @@
     "module": "esnext",
     "moduleResolution": "bundler"
   },
-  "include": ["test/utils/slip10.test.ts", "test/utils/signing.test.ts"]
+  "include": [
+    "test/public-exports.test.ts",
+    "test/utils/slip10.test.ts",
+    "test/utils/signing.test.ts"
+  ]
 }

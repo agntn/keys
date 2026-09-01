@@ -74,7 +74,7 @@ pnpm playground <f>   # run any TS file via tsx
 ## NOTES
 
 - **CI runs**: lint -> type check -> build -> vitest with coverage (Node 22, pnpm). Autofix workflow commits lint fixes on PRs.
-- **Package exports** only expose `"."` and `"./blockchains/*"` - utils are internal, not part of public API.
+- **Package exports** expose `"."`, `"./blockchains/*"`, and the HD derivation subpaths `"./bip32"`, `"./bip39"`, and `"./slip10"`; other utils remain internal.
 - **utils/ has mixed structure** - plain `.ts` files (address, encoding, crypto-hash, secp256k1, ed25519, ed25519-chains, evm, signing) and subdirectories with `index.ts` (bip32/, bip39/, bip44/, slip10/).
 - **`__cardano/notes.md`** - research notes for Cardano implementation, not code. The actual implementation is `cardano.ts`.
 - **Signing verification tests** - both verification tests in `test/utils/signing.test.ts` are enabled; they derive the secp256k1 public key from the fixture private key because `secp256k1TestVectors.publicKeyCompressed` does not pair with `privateKey` (kept only for address-derivation tests, which are self-consistent).

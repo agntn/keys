@@ -44,6 +44,18 @@
     "./blockchains/*": {
       "types": "./dist/blockchains/*.d.mts",
       "default": "./dist/blockchains/*.mjs"
+    },
+    "./bip32": {
+      "types": "./dist/utils/bip32/index.d.mts",
+      "default": "./dist/utils/bip32/index.mjs"
+    },
+    "./bip39": {
+      "types": "./dist/utils/bip39/index.d.mts",
+      "default": "./dist/utils/bip39/index.mjs"
+    },
+    "./slip10": {
+      "types": "./dist/utils/slip10/index.d.mts",
+      "default": "./dist/utils/slip10/index.mjs"
     }
   },
   "publishConfig": {

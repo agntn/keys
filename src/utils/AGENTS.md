@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-Shared cryptographic primitives and encoding utilities. Everything here is internal (not in package.json exports).
+Shared cryptographic primitives and encoding utilities. BIP32, BIP39, and SLIP-10 are public package subpaths; other utilities are internal.
 
 ## STRUCTURE
 
