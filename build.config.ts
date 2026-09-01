@@ -6,6 +6,9 @@ export default defineBuildConfig({
       type: "bundle",
       input: [
         "./src/index.ts",
+        "./src/utils/bip32/index.ts",
+        "./src/utils/bip39/index.ts",
+        "./src/utils/slip10/index.ts",
         "./src/blockchains/aptos.ts",
         "./src/blockchains/base.ts",
         "./src/blockchains/bitcoin.ts",

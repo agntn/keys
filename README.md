@@ -92,6 +92,21 @@ const pubKey = eth.getKeyPublic(privateKey);
 eth.getAddress(pubKey) === base.getAddress(pubKey); // true
 ```
 
+### Derive HD keys
+
+```ts
+import { mnemonicToSeed } from "@agntn/keys/bip39";
+import { getMasterKeyFromSeed, deriveHDKey } from "@agntn/keys/bip32";
+
+const seed = mnemonicToSeed(
+  "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+);
+const master = getMasterKeyFromSeed(seed);
+const account = deriveHDKey(master, "m/84'/0'/0'/0/0");
+```
+
+Use `@agntn/keys/slip10` instead of `@agntn/keys/bip32` for ed25519 derivation.
+
 ## Supported Blockchains
 
 | Chain        | Curve              | Address Formats                      | Testnet |
