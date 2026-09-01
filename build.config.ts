@@ -6,6 +6,9 @@ export default defineBuildConfig({
       type: "bundle",
       input: [
         "./src/index.ts",
+        "./src/cli.ts",
+        "./src/mcp.ts",
+        "./src/tool-operations.ts",
         "./src/utils/bip32/index.ts",
         "./src/utils/bip39/index.ts",
         "./src/utils/slip10/index.ts",
@@ -21,4 +24,16 @@ export default defineBuildConfig({
       license: false,
     },
   ],
+  hooks: {
+    /**
+     * Keep TypeBox inside the MCP bundle to avoid resolving it during every server startup.
+     * @param config - Rolldown configuration mutated before bundling.
+     */
+    rolldownConfig(config) {
+      const externals = Array.isArray(config.external) ? config.external : [];
+      config.external = externals.filter(
+        (entry) => entry !== "typebox" && !(entry instanceof RegExp && entry.test("typebox/value")),
+      );
+    },
+  },
 });

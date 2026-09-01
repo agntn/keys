@@ -20,6 +20,7 @@ Typed key generation, address derivation, and message signing across eight block
 - 🛤️ **BIP44 paths** - derivation path utilities for all supported chains
 - 🧩 **BIP39 puzzles** - validate phrases, narrow one missing word, and map words or indices across all 10 official lists
 - 🔌 **Lazy loading** - blockchain implementations load on demand for smaller bundles
+- 🤖 **MCP server** - the same 13 key, mnemonic, address, and signing tools over stdio
 - 📐 **Fully typed** - TypeScript definitions for every interface
 
 ## Install
@@ -147,6 +148,25 @@ const indexMatches = await lookupBIP39Indices([1, 1179, 2048], "italian", 1);
 ```
 
 Language keys cover the 10 official BIP39 lists. Word lookup is case-insensitive and normalizes Unicode to NFKD. Index lookup uses base 0 by default and accepts base 1 explicitly.
+
+## MCP server
+
+The package includes a stdio MCP server with the same 13 operations used by the Pi extension. After installing the package, configure an MCP client to run `keys mcp`. A checkout can run the built entry directly:
+
+```json
+{
+  "mcpServers": {
+    "keys": {
+      "command": "node",
+      "args": ["/absolute/path/to/keys/dist/cli.mjs", "mcp"]
+    }
+  }
+}
+```
+
+Hosts that own their transport can import `createMcpServer` from `@agntn/keys/mcp`.
+
+The server handles private keys, mnemonics, entropy, messages, and signatures as plaintext MCP arguments or results. They enter client transcripts. Use only public puzzle material or disposable test keys, never a wallet that controls real funds.
 
 ## Supported Blockchains
 
