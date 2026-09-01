@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { bip39TestVectors } from "../fixtures";
 import { useBlockchain } from "../../src";
 import Ethereum from "../../src/blockchains/ethereum";
 import type { Options } from "../../src/types";
@@ -182,6 +183,24 @@ describe("Ethereum blockchain", () => {
         expect(testnetAddress).toBe(mainnetAddress);
         expect(testnetBlockchain.validateAddress!(testnetAddress)).toBe(true);
       });
+    });
+  });
+
+  /** Addresses computed independently with bip_utils 2.9.3 for the BIP39 reference mnemonic. */
+  describe("HD wallets from mnemonics", () => {
+    const blockchain = useBlockchain(new Ethereum());
+    const { mnemonic, passphrase } = bip39TestVectors;
+
+    it("derives the first BIP44 account address", () => {
+      expect(blockchain.deriveHDWallet(mnemonic, "m/44'/60'/0'/0/0").address).toBe(
+        "0x9858EfFD232B4033E47d90003D41EC34EcaEda94",
+      );
+    });
+
+    it("salts the seed with the BIP39 passphrase", () => {
+      expect(blockchain.deriveHDWallet(mnemonic, "m/44'/60'/0'/0/0", { passphrase }).address).toBe(
+        "0x9c32F71D4DB8Fb9e1A58B0a80dF79935e7256FA6",
+      );
     });
   });
 });

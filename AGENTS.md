@@ -34,6 +34,7 @@ keys/
 | Fix signing        | `src/utils/signing.ts` (generic) or `evm.ts`/`ed25519-chains.ts` (chain-specific) | EVM uses preamble hash, ed25519 signs raw                  |
 | Change public API  | `src/index.ts`                                                                    | Re-exports only, never add logic here                      |
 | Add BIP/derivation | `src/utils/bip32/`, `bip39/`, `bip44/`, `slip10/`                                 | Subdirs with index.ts                                      |
+| Mnemonic to wallet | `src/blockchain.ts` → `deriveHDWallet` + `src/utils/hd.ts`                        | Bitcoin and Sui override it, Cardano throws (CIP-1852)     |
 | Write tests        | `test/` mirroring `src/` path                                                     | Use fixtures from `test/fixtures.ts`                       |
 | Integration test   | `test-integration/`                                                               | Separate pnpm package, manual execution                    |
 | Run demos          | `playground/*.ts`                                                                 | Execute via `pnpm playground <file>`                       |

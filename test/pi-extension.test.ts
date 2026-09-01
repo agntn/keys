@@ -189,6 +189,63 @@ describe("keys Pi extension", () => {
     );
   });
 
+  it("derives an HD wallet from a public mnemonic and path", async () => {
+    const tool = registerTools().get("keys_derive_hd_wallet");
+    if (!tool) throw new Error("keys_derive_hd_wallet was not registered");
+    const mnemonic =
+      "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+
+    const result = await tool.execute("call-1", {
+      chain: "bitcoin",
+      mnemonic,
+      path: "m/84'/0'/0'/0/0",
+    });
+    const text = result.content.map((part) => part.text ?? "").join("\n");
+
+    expect(text).toContain("Chain: bitcoin (mainnet)");
+    expect(text).toContain("Path: m/84'/0'/0'/0/0");
+    expect(text).toContain(
+      "Public key: 0330d54fd0dd420a6e5f8d3624f5f3482cae350f79d5f0753bf5beef9c2d91af3c",
+    );
+    expect(text).toContain("Address: bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu");
+    expect(text).not.toContain("abandon");
+    expect(text).not.toContain("4604b4b710fe91f584fff084e1a9159fe4f8408fff380596a604948474ce4fa3");
+
+    const passphraseResult = await tool.execute("call-2", {
+      chain: "ethereum",
+      mnemonic,
+      path: "m/44'/60'/0'/0/0",
+      passphrase: "TREZOR",
+    });
+    const passphraseText = passphraseResult.content.map((part) => part.text ?? "").join("\n");
+
+    expect(passphraseText).toContain("Address: 0x9c32F71D4DB8Fb9e1A58B0a80dF79935e7256FA6");
+    expect(passphraseText).not.toContain("TREZOR");
+    expect(
+      Value.Check(tool.parameters, { chain: "solana", mnemonic, path: "m/44'/501'/0'/0'" }),
+    ).toBe(true);
+    expect(Value.Check(tool.parameters, { chain: "bitcoin", mnemonic })).toBe(false);
+    expect(
+      Value.Check(tool.parameters, { chain: "bitcoin", mnemonic, path: "44'/0'/0'/0/0" }),
+    ).toBe(false);
+    expect(Value.Check(tool.parameters, { chain: "bitcoin", mnemonic: "   ", path: "m/0" })).toBe(
+      false,
+    );
+    await expect(
+      tool.execute("call-3", { chain: "bitcoin", mnemonic, path: "m/84h/0" }),
+    ).rejects.toThrow("must look like");
+    await expect(
+      tool.execute("call-4", { chain: "cardano", mnemonic, path: "m/1852'/1815'/0'/0/0" }),
+    ).rejects.toThrow("CIP-1852");
+    await expect(
+      tool.execute("call-5", {
+        chain: "bitcoin",
+        mnemonic: mnemonic.replace("about", "abandon"),
+        path: "m/84'/0'/0'/0/0",
+      }),
+    ).rejects.toThrow("Invalid BIP39 mnemonic");
+  });
+
   it("derives a Sui wallet from an existing private key", async () => {
     const tool = registerTools().get("keys_derive_wallet");
     if (!tool) throw new Error("keys_derive_wallet was not registered");

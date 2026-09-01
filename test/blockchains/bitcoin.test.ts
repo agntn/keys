@@ -2,6 +2,7 @@ import { webcrypto } from "node:crypto";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 import { describe, expect, it, vi } from "vitest";
+import { bip39TestVectors } from "../fixtures";
 import { useBlockchain } from "../../src";
 import Bitcoin from "../../src/blockchains/bitcoin";
 import type { Options } from "../../src/types";
@@ -364,6 +365,44 @@ describe("Bitcoin blockchain", () => {
 
       // Mainnet blockchain should reject testnet address
       expect(blockchain.validateAddress!(testnetAddress)).toBe(false);
+    });
+  });
+
+  /** Addresses computed independently with bip_utils 2.9.3 for the BIP39 reference mnemonic. */
+  describe("HD wallets from mnemonics", () => {
+    const { mnemonic } = bip39TestVectors;
+
+    it.each([
+      ["m/44'/0'/0'/0/0", "1LqBGSKuX5yYUonjxT5qGfpUsXKYYWeabA"],
+      ["m/49'/0'/0'/0/0", "37VucYSaXLCAsxYyAPfbSi9eh4iEcbShgf"],
+      ["m/84'/0'/0'/0/0", "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu"],
+      ["m/84'/0'/0'/0/1", "bc1qnjg0jd8228aq7egyzacy8cys3knf9xvrerkf9g"],
+      ["m/86'/0'/0'/0/0", "bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr"],
+    ])("picks the address type from the purpose of %s", (path, address) => {
+      expect(blockchain.deriveHDWallet(mnemonic, path).address).toBe(address);
+    });
+
+    it("keeps an explicit address type over the purpose", () => {
+      const wallet = blockchain.deriveHDWallet(mnemonic, "m/84'/0'/0'/0/0", {}, "legacy");
+
+      expect(wallet.keys.private).toBe(
+        "4604b4b710fe91f584fff084e1a9159fe4f8408fff380596a604948474ce4fa3",
+      );
+      expect(wallet.address).toBe(blockchain.getAddress(wallet.keys.public, "legacy"));
+    });
+
+    it("falls back to legacy for paths without a known purpose", () => {
+      const wallet = blockchain.deriveHDWallet(mnemonic, "m/0/0");
+
+      expect(wallet.address).toBe(blockchain.getAddress(wallet.keys.public, "legacy"));
+    });
+
+    it("derives testnet addresses on the testnet coin type", () => {
+      const testnet = useBlockchain(new Bitcoin({ network: "testnet" }));
+
+      expect(testnet.deriveHDWallet(mnemonic, "m/44'/1'/0'/0/0").address).toBe(
+        "mkpZhYtJu2r87Js3pDiWJDmPte2NRZ8bJV",
+      );
     });
   });
 });

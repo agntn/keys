@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { bip39TestVectors } from "./fixtures";
 import { AbstractBlockchain, AbstractEVMBlockchain, blockchains, useBlockchain } from "../src";
 import Bitcoin, { Bitcoin as BitcoinClass } from "../src/blockchains/bitcoin";
 import Ethereum from "../src/blockchains/ethereum";
@@ -146,5 +147,28 @@ describe("Common blockchain functionality", () => {
         address: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4",
       });
     });
+  });
+});
+
+describe("deriveHDWallet", () => {
+  const blockchain = useBlockchain(new Bitcoin());
+  const { mnemonic } = bip39TestVectors;
+
+  it("collapses whitespace before validating the mnemonic", () => {
+    const messy = `  ${mnemonic.replaceAll(" ", "\n  ")} `;
+
+    expect(blockchain.deriveHDWallet(messy, "m/84'/0'/0'/0/0")).toEqual(
+      blockchain.deriveHDWallet(mnemonic, "m/84'/0'/0'/0/0"),
+    );
+  });
+
+  it("rejects a mnemonic with a bad checksum", () => {
+    expect(() =>
+      blockchain.deriveHDWallet(mnemonic.replace("about", "abandon"), "m/84'/0'/0'/0/0"),
+    ).toThrow("Invalid BIP39 mnemonic");
+  });
+
+  it("rejects a path that does not start at the master key", () => {
+    expect(() => blockchain.deriveHDWallet(mnemonic, "84'/0'/0'/0/0")).toThrow("Path must start");
   });
 });

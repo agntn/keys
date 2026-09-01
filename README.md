@@ -15,7 +15,7 @@ Typed key generation, address derivation, and message signing across eight block
 - 🔑 **Key generation** - cryptographically secure private keys via Web Crypto API
 - 📫 **Address generation** - all major formats per chain (legacy, segwit, taproot, base58, hex)
 - ✅ **Address validation** - verify validity and checksums for every supported format
-- 💼 **Wallet construction** - generate a new wallet or derive one from an existing private key
+- 💼 **Wallet construction** - generate a new wallet, or derive one from a private key or from a BIP39 mnemonic and derivation path
 - ✍️ **Message signing** - sign and verify with secp256k1 or ed25519
 - 🛤️ **BIP44 paths** - derivation path utilities for all supported chains
 - 🧩 **BIP39 puzzles** - validate phrases, narrow one missing word, and map words or indices across all 10 official lists
@@ -107,6 +107,23 @@ const account = deriveHDKey(master, "m/84'/0'/0'/0/0");
 ```
 
 Use `@agntn/keys/slip10` instead of `@agntn/keys/bip32` for ed25519 derivation.
+
+### Derive a wallet from a mnemonic
+
+```ts
+import { useBlockchain, blockchains } from "@agntn/keys";
+
+const mnemonic =
+  "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+
+const btc = useBlockchain(await blockchains.bitcoin()());
+btc.deriveHDWallet(mnemonic, "m/84'/0'/0'/0/0").address; // bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu
+
+const sol = useBlockchain(await blockchains.solana()());
+sol.deriveHDWallet(mnemonic, "m/44'/501'/0'/0'", { passphrase: "TREZOR" }).address;
+```
+
+secp256k1 chains walk BIP32 and ed25519 chains walk SLIP-10, which accepts hardened segments only. Bitcoin reads the address type off the purpose level (44, 49, 84, 86) unless one is passed. Cardano throws, because CIP-1852 starts from the entropy rather than the BIP39 seed.
 
 ### Recover one missing BIP39 word
 

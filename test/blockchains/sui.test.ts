@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { bip39TestVectors } from "../fixtures";
 import Sui from "../../src/blockchains/sui";
 import { useBlockchain } from "../../src/blockchain";
 import type { Options } from "../../src/types";
@@ -129,6 +130,43 @@ describe("Sui", () => {
           addressSecp256k1,
         );
       });
+    });
+  });
+
+  /** Ed25519 vector computed independently with bip_utils 2.9.3 for the BIP39 reference mnemonic. */
+  describe("HD wallets from mnemonics", () => {
+    const blockchain = useBlockchain(new Sui());
+    const { mnemonic } = bip39TestVectors;
+    const path = "m/44'/784'/0'/0'/0'";
+
+    it("derives the ed25519 wallet over SLIP-10 by default", () => {
+      const wallet = blockchain.deriveHDWallet(mnemonic, path);
+
+      expect(wallet.keys.public).toBe(
+        "900b4d81eecea3df2f74b14200c4f4cf3f49afaca7a634ffd2cf6ff82bdaecf2",
+      );
+      expect(wallet.address).toBe(
+        "0x5e93a736d04fbb25737aa40bee40171ef79f65fae833749e3c089fe7cc2161f1",
+      );
+    });
+
+    it("switches to BIP32 when the scheme is secp256k1", () => {
+      const fromAddressType = blockchain.deriveHDWallet(
+        mnemonic,
+        "m/54'/784'/0'/0/0",
+        {},
+        "secp256k1",
+      );
+      const fromScheme = blockchain.deriveHDWallet(mnemonic, "m/54'/784'/0'/0/0", {
+        scheme: "secp256k1",
+      });
+
+      expect(fromAddressType).toEqual(fromScheme);
+      expect(fromAddressType.keys.public).toMatch(/^0[23][0-9a-f]{64}$/);
+      expect(fromAddressType).toEqual(
+        blockchain.deriveWallet(fromAddressType.keys.private, {}, "secp256k1"),
+      );
+      expect(fromAddressType.address).not.toBe(blockchain.deriveHDWallet(mnemonic, path).address);
     });
   });
 });

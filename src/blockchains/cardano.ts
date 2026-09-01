@@ -4,7 +4,7 @@ import { bech32 } from "@scure/base";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
-import type { Curve, KeyOptions } from "../types.ts";
+import type { Curve, KeyOptions, Wallet } from "../types.ts";
 
 const ADDRESS_TYPE = {
   BASE_PAYMENT: 0,
@@ -37,6 +37,11 @@ export class Cardano extends AbstractBlockchain {
 
   override getKeyPublic(keyPrivate: string, _options?: KeyOptions): string {
     return getEd25519KeyPublic(keyPrivate);
+  }
+
+  /** CIP-1852 roots come from the mnemonic entropy, not the BIP39 seed, so the shared SLIP-10 walk would give a wrong address. */
+  override deriveHDWallet(): Wallet {
+    throw new Error("Cardano CIP-1852 derivation is not supported");
   }
 
   private getKeyHash(keyPublic: string): Uint8Array {

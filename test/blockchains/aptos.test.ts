@@ -1,4 +1,5 @@
 import { expect, describe, it } from "vitest";
+import { bip39TestVectors } from "../fixtures";
 import Aptos from "../../src/blockchains/aptos";
 import { useBlockchain } from "../../src/blockchain";
 import type { Options } from "../../src/types";
@@ -98,6 +99,17 @@ describe("Aptos Blockchain", () => {
         expect(testnetAddress).toBe(mainnetAddress);
         expect(testnetBlockchain.validateAddress?.(testnetAddress)).toBe(true);
       });
+    });
+  });
+
+  /** Address computed independently with bip_utils 2.9.3 for the BIP39 reference mnemonic. */
+  describe("HD wallets from mnemonics", () => {
+    const blockchain = useBlockchain(new Aptos());
+
+    it("derives the first account address over SLIP-10", () => {
+      expect(
+        blockchain.deriveHDWallet(bip39TestVectors.mnemonic, "m/44'/637'/0'/0'/0'").address,
+      ).toBe("0xeb663b681209e7087d681c5d3eed12aaa8e1915e7c87794542c3f96e94b3d3bf");
     });
   });
 });

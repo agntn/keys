@@ -1,4 +1,5 @@
 import { expect, describe, it } from "vitest";
+import { bip39TestVectors } from "../fixtures";
 import Solana from "../../src/blockchains/solana";
 import { useBlockchain } from "../../src/blockchain";
 import type { Options } from "../../src/types";
@@ -95,6 +96,23 @@ describe("Solana Blockchain", () => {
         expect(testnetAddress).toBe(mainnetAddress);
         expect(testnetBlockchain.validateAddress?.(testnetAddress)).toBe(true);
       });
+    });
+  });
+
+  /** Address computed independently with bip_utils 2.9.3 for the BIP39 reference mnemonic. */
+  describe("HD wallets from mnemonics", () => {
+    const blockchain = useBlockchain(new Solana());
+
+    it("derives the Phantom style m/44'/501'/0'/0' address over SLIP-10", () => {
+      expect(blockchain.deriveHDWallet(bip39TestVectors.mnemonic, "m/44'/501'/0'/0'").address).toBe(
+        "HAgk14JpMQLgt6rVgv7cBQFJWFto5Dqxi472uT3DKpqk",
+      );
+    });
+
+    it("rejects non-hardened segments on ed25519", () => {
+      expect(() => blockchain.deriveHDWallet(bip39TestVectors.mnemonic, "m/44'/501'/0'/0")).toThrow(
+        "Non-hardened",
+      );
     });
   });
 });

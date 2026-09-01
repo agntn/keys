@@ -1,4 +1,5 @@
 import { expect, describe, it } from "vitest";
+import { bip39TestVectors } from "../fixtures";
 import Tron from "../../src/blockchains/tron";
 import { useBlockchain } from "../../src/blockchain";
 
@@ -83,6 +84,15 @@ describe("TRON Blockchain", () => {
       for (const address of invalidAddresses) {
         expect(blockchain.validateAddress?.(address)).toBe(false);
       }
+    });
+  });
+
+  /** Address computed independently with bip_utils 2.9.3 for the BIP39 reference mnemonic. */
+  describe("HD wallets from mnemonics", () => {
+    it("derives the first BIP44 account address", () => {
+      expect(
+        blockchain.deriveHDWallet(bip39TestVectors.mnemonic, "m/44'/195'/0'/0/0").address,
+      ).toBe("TUEZSdKsoDHQMeZwihtdoBiN46zxhGWYdH");
     });
   });
 });
