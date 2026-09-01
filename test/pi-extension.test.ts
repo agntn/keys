@@ -32,6 +32,40 @@ function registerTools(): ReadonlyMap<string, RegisteredTool> {
 }
 
 describe("keys Pi extension", () => {
+  it("maps BIP39 indices to words with an explicit base", async () => {
+    const tool = registerTools().get("keys_lookup_bip39_indices");
+    if (!tool) throw new Error("keys_lookup_bip39_indices was not registered");
+
+    const zeroBasedResult = await tool.execute("call-1", {
+      indices: [0, 1619, 2047],
+    });
+    const zeroBasedText = zeroBasedResult.content.map((part) => part.text ?? "").join("\n");
+
+    expect(zeroBasedText).toContain("Index base: 0");
+    expect(zeroBasedText).toContain("0: abandon");
+    expect(zeroBasedText).toContain("1619: skill");
+    expect(zeroBasedText).toContain("2047: zoo");
+
+    const oneBasedResult = await tool.execute("call-2", {
+      indices: [1, 1179, 2048],
+      indexBase: 1,
+      language: "italian",
+    });
+    const oneBasedText = oneBasedResult.content.map((part) => part.text ?? "").join("\n");
+
+    expect(oneBasedText).toContain("Language: italian");
+    expect(oneBasedText).toContain("Index base: 1");
+    expect(oneBasedText).toContain("1: abaco");
+    expect(oneBasedText).toContain("1179: orologio");
+    expect(Value.Check(tool.parameters, { indices: [0, 2047] })).toBe(true);
+    expect(Value.Check(tool.parameters, { indices: [1, 2048], indexBase: 1 })).toBe(true);
+    expect(Value.Check(tool.parameters, { indices: [1.5] })).toBe(false);
+    expect(Value.Check(tool.parameters, { indices: [] })).toBe(false);
+    await expect(tool.execute("call-3", { indices: [0], indexBase: 1 })).rejects.toThrow(
+      "BIP39 indices must be between 1 and 2048",
+    );
+  });
+
   it("looks up English BIP39 word membership and both index conventions", async () => {
     const tool = registerTools().get("keys_lookup_bip39_words");
     if (!tool) throw new Error("keys_lookup_bip39_words was not registered");

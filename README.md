@@ -18,7 +18,7 @@ Typed key generation, address derivation, and message signing across eight block
 - 💼 **Wallet construction** - generate a new wallet or derive one from an existing private key
 - ✍️ **Message signing** - sign and verify with secp256k1 or ed25519
 - 🛤️ **BIP44 paths** - derivation path utilities for all supported chains
-- 🧩 **BIP39 puzzles** - validate phrases, narrow one missing word, and search any of the 10 official word lists
+- 🧩 **BIP39 puzzles** - validate phrases, narrow one missing word, and map words or indices across all 10 official lists
 - 🔌 **Lazy loading** - blockchain implementations load on demand for smaller bundles
 - 📐 **Fully typed** - TypeScript definitions for every interface
 
@@ -120,15 +120,16 @@ const candidates = getMnemonicWordCandidates(
 
 The result only satisfies the BIP39 checksum. It does not prove that a candidate belongs to the wallet or puzzle target.
 
-### Look up localized BIP39 words
+### Map localized BIP39 words and indices
 
 ```ts
-import { lookupBIP39Words } from "@agntn/keys/bip39";
+import { lookupBIP39Indices, lookupBIP39Words } from "@agntn/keys/bip39";
 
-const matches = await lookupBIP39Words(["orologio", "civetta"], "italian");
+const wordMatches = await lookupBIP39Words(["orologio", "civetta"], "italian");
+const indexMatches = await lookupBIP39Indices([1, 1179, 2048], "italian", 1);
 ```
 
-Language keys cover the 10 official BIP39 lists. Lookup is case-insensitive and normalizes Unicode to NFKD before matching.
+Language keys cover the 10 official BIP39 lists. Word lookup is case-insensitive and normalizes Unicode to NFKD. Index lookup uses base 0 by default and accepts base 1 explicitly.
 
 ## Supported Blockchains
 
