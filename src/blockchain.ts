@@ -61,6 +61,18 @@ export abstract class AbstractBlockchain implements Blockchain {
     };
   }
 
+  deriveWallet(keyPrivate: string, options?: KeyOptions, addressType?: AddressType): Wallet {
+    const keyPublic = this.getKeyPublic(keyPrivate, options);
+
+    return {
+      keys: {
+        private: keyPrivate,
+        public: keyPublic,
+      },
+      address: this.getAddress(keyPublic, addressType),
+    };
+  }
+
   generateWallet(options?: KeyOptions, addressType?: AddressType): Wallet {
     const keys = this.generateKeys(options);
     const address = this.getAddress(keys.keys.public, addressType);
