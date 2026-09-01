@@ -29,15 +29,7 @@ export class Tron extends AbstractBlockchain {
 
   override getAddress(keyPublic: string): string {
     const keyPublicBytes = hexToBytes(keyPublic);
-    let keyBytesForHashing: Uint8Array;
-
-    if (keyPublicBytes.length === 33) {
-      keyBytesForHashing = secp256k1.Point.fromBytes(keyPublicBytes).toBytes(false).slice(1);
-    } else if (keyPublicBytes.length === 65) {
-      keyBytesForHashing = keyPublicBytes.slice(1);
-    } else {
-      throw new Error(`Invalid public key length: ${keyPublicBytes.length} bytes`);
-    }
+    const keyBytesForHashing = secp256k1.Point.fromBytes(keyPublicBytes).toBytes(false).slice(1);
 
     const addressBytes = keccak_256(keyBytesForHashing).slice(-20);
     return encodeBase58Check(addSchemeByte(addressBytes, this.params.prefixByte, true));

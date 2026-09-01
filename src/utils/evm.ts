@@ -17,25 +17,7 @@ export function generateAddress(keyPublic: string): string {
   // Convert public key to bytes
   const keyPublicBytes = hexToBytes(keyPublic);
 
-  // For EVM addresses, we need to:
-  // 1. Convert to uncompressed format if compressed
-  // 2. Remove the first byte (0x04) from uncompressed key
-  // 3. Hash with keccak-256
-  // 4. Take the last 20 bytes
-  let publicKeyForHashing: Uint8Array;
-
-  if (keyPublicBytes.length === 33) {
-    // Compressed format (33 bytes starting with 02 or 03)
-    // We need to decompress it manually without trying to regenerate from private key
-    const point = secp256k1.Point.fromBytes(keyPublicBytes);
-    const uncompressedKey = point.toBytes(false); // false = uncompressed
-    publicKeyForHashing = uncompressedKey.slice(1); // Remove the 0x04 prefix
-  } else if (keyPublicBytes.length === 65) {
-    // Already uncompressed (65 bytes starting with 04)
-    publicKeyForHashing = keyPublicBytes.slice(1); // Remove the 0x04 prefix
-  } else {
-    throw new Error(`Invalid public key length: ${keyPublicBytes.length} bytes`);
-  }
+  const publicKeyForHashing = secp256k1.Point.fromBytes(keyPublicBytes).toBytes(false).slice(1);
 
   // Apply Keccak-256 hash to the public key
   const keccakHash = keccak_256(publicKeyForHashing);

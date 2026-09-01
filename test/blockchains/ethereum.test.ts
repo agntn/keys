@@ -80,6 +80,11 @@ describe("Ethereum blockchain", () => {
 
         // Ethereum address should be 42 characters (0x + 40 hex chars)
         expect(address.length).toBe(42);
+        expect(address).toBe(blockchain.getAddress(blockchain.getKeyPublic(keyPrivate)));
+      });
+
+      it("should reject an uncompressed public key outside the curve", () => {
+        expect(() => blockchain.getAddress(`04${"00".repeat(64)}`)).toThrow();
       });
 
       it("should validate a valid Ethereum address", () => {
