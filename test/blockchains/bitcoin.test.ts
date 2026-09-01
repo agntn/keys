@@ -197,7 +197,7 @@ describe("Bitcoin blockchain", () => {
         "tc1qw508d6qejxtdg4y5r3zarvary0c5xw7kg3g4ty", // Wrong hrp
         "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t5", // Invalid checksum
         "bc10w508d6qejxtdg4y5r3zarvary0c5xw7kw508d6q", // Invalid witness version
-        "BC1SW50QA3JX3S", // Mixed case not allowed in bech32
+        "bC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4",
         "bc1zw508d6qejxtdg4y5r3zarvaryvg6kdaj", // Invalid program length
         "bc1q", // Too short
       ];
@@ -272,6 +272,13 @@ describe("Bitcoin blockchain", () => {
       const invalidAddress = address.slice(0, -1) + (address.at(-1) === "a" ? "b" : "a");
       expect(blockchain.validateAddress!(invalidAddress)).toBe(false);
     });
+  });
+
+  it.each([
+    ["Bech32", "BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4"],
+    ["Bech32m", "BC1P0XLXVLHEMJA6C4DQV22UAPCTQUPFHLXM9H8Z3K2E72Q4K9HCZ7VQZK5JJ0"],
+  ])("should validate an uppercase %s address", (_encoding, address) => {
+    expect(blockchain.validateAddress!(address)).toBe(true);
   });
 
   describe("Message signing", () => {
