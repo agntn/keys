@@ -39,6 +39,8 @@ const BIP39_ENTROPY_SCHEMA_PATTERN = `^(?:${BIP39_ENTROPY_BYTE_LENGTHS.map((byte
 const BIP39_ENTROPY_PATTERN = /^[0-9a-f]+$/i;
 const BIP39_WORD_SCHEMA_PATTERN = "^\\S+$";
 const BIP39_WORD_PATTERN = /^[\p{L}\p{M}]+$/u;
+const DERIVATION_PATH_SCHEMA_PATTERN = "^m(/[0-9]+'?)+$";
+const DERIVATION_PATH_PATTERN = /^m(?:\/\d+'?)+$/u;
 
 type ChainName = (typeof CHAINS)[number];
 
@@ -60,6 +62,12 @@ function parseBIP39Entropy(entropy: unknown): Uint8Array {
     throw new RangeError("BIP39 entropy must be 16, 20, 24, 28, or 32 bytes");
   }
   return Buffer.from(entropy, "hex");
+}
+
+function assertDerivationPath(path: unknown): asserts path is string {
+  if (typeof path !== "string" || !DERIVATION_PATH_PATTERN.test(path)) {
+    throw new TypeError("Derivation path must look like m/84'/0'/0'/0/0");
+  }
 }
 
 function assertBIP39IndexBatch(indices: unknown): asserts indices is readonly number[] {
@@ -185,6 +193,70 @@ export default function keysExtension(pi: ExtensionAPI) {
           {
             type: "text",
             text: [`Public key: ${wallet.keys.public}`, `Address: ${wallet.address}`].join("\n"),
+          },
+        ],
+      };
+    },
+  });
+
+  pi.registerTool({
+    name: "keys_derive_hd_wallet",
+    label: "Derive HD Wallet",
+    description: "Derive a public key and address from a BIP39 mnemonic and derivation path",
+    promptSnippet:
+      "Use to see which address a public puzzle mnemonic reaches on a given derivation path.",
+    promptGuidelines: [
+      "Provide a chain, an English BIP39 mnemonic, and a full derivation path",
+      "Common paths: Bitcoin m/44'/0'/0'/0/0 (legacy), m/49'/0'/0'/0/0 (p2sh), m/84'/0'/0'/0/0 (segwit), m/86'/0'/0'/0/0 (taproot); Ethereum m/44'/60'/0'/0/0; Solana m/44'/501'/0'/0'; Aptos m/44'/637'/0'/0'/0'; Sui m/44'/784'/0'/0'/0'",
+      "Bitcoin picks the address type from the path purpose unless addressType is set",
+      "Optionally pass a BIP39 passphrase, a network, or an address type",
+      "Cardano is not supported because CIP-1852 derives from entropy, not from the BIP39 seed",
+      "Use only public or disposable mnemonics because tool arguments are saved in the transcript",
+      "Returns the path, public key, and address, never the mnemonic or private key",
+    ],
+    parameters: Type.Object({
+      chain: Type.String({
+        description: `Blockchain name (${CHAINS.join(", ")})`,
+      }),
+      mnemonic: Type.String({
+        minLength: 1,
+        pattern: "\\S",
+        description: "English BIP39 mnemonic",
+      }),
+      path: Type.String({
+        pattern: DERIVATION_PATH_SCHEMA_PATTERN,
+        description: "Derivation path such as m/84'/0'/0'/0/0",
+      }),
+      passphrase: Type.Optional(Type.String({ description: "BIP39 passphrase. Default: empty" })),
+      addressType: Type.Optional(
+        Type.String({ description: "Address type (e.g. segwit, taproot, secp256k1)" }),
+      ),
+      network: Type.Optional(Type.String({ description: "Network (mainnet/testnet)" })),
+    }),
+    renderCall(args, _theme) {
+      return new Text(`🧩 Derive HD wallet: ${args.chain} ${args.path}`, 0, 0);
+    },
+    async execute(_toolCallId, params): Promise<AgentToolResult<undefined>> {
+      assertDerivationPath(params.path);
+      const blockchain = await getBlockchain(params.chain, params.network);
+      const wallet = blockchain.deriveHDWallet(
+        params.mnemonic,
+        params.path,
+        { passphrase: params.passphrase },
+        params.addressType,
+      );
+
+      return {
+        details: undefined,
+        content: [
+          {
+            type: "text",
+            text: [
+              `Chain: ${blockchain.name} (${blockchain.network ?? "mainnet"})`,
+              `Path: ${params.path}`,
+              `Public key: ${wallet.keys.public}`,
+              `Address: ${wallet.address}`,
+            ].join("\n"),
           },
         ],
       };

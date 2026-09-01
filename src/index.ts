@@ -23,6 +23,7 @@ export type {
   Keys,
   Wallet,
   KeyOptions,
+  HDWalletOptions,
   SigningOptions,
   Options,
   AddressType,

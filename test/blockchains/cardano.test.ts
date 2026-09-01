@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { bip39TestVectors } from "../fixtures";
 import { useBlockchain } from "../../src/blockchain";
 import Cardano from "../../src/blockchains/cardano";
 import type { Options } from "../../src/types";
@@ -244,6 +245,16 @@ describe("Cardano blockchain", () => {
         expect(wallet.address).toMatch(/^stake_test1[a-z0-9]+$/);
         expect(validateAddress(wallet.address)).toBe(true);
       });
+    });
+  });
+
+  describe("HD wallets from mnemonics", () => {
+    it("refuses to fake CIP-1852 with the shared SLIP-10 walk", () => {
+      const blockchain = useBlockchain(new Cardano());
+
+      expect(() =>
+        blockchain.deriveHDWallet(bip39TestVectors.mnemonic, "m/1852'/1815'/0'/0/0"),
+      ).toThrow("CIP-1852");
     });
   });
 });

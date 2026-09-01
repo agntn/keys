@@ -13,7 +13,22 @@ import {
   signMessage as genericSignMessage,
   verifyMessage as genericVerifyMessage,
 } from "../utils/signing.ts";
-import type { Curve, KeyOptions } from "../types.ts";
+import type {
+  AddressType,
+  BitcoinAddressType,
+  Curve,
+  HDWalletOptions,
+  KeyOptions,
+  Wallet,
+} from "../types.ts";
+
+/** BIP43 purpose levels and the address format each one stands for. */
+const PURPOSE_ADDRESS_TYPES: Readonly<Record<string, BitcoinAddressType>> = {
+  "44": "legacy",
+  "49": "p2sh",
+  "84": "segwit",
+  "86": "taproot",
+};
 
 const NETWORK_PARAMS = {
   mainnet: {
@@ -135,6 +150,25 @@ export class Bitcoin extends AbstractBlockchain {
     return generateAddressLegacy(keyPublic, {
       bytesVersion: this.params.bytesVersionP2PKH,
     });
+  }
+
+  /**
+   * Without an explicit type the path purpose picks the format, so `m/84'/...` lands on bc1q, not on a legacy `1`.
+   * @param mnemonic - English BIP39 mnemonic
+   * @param path - Derivation path such as `m/84'/0'/0'/0/0`
+   * @param options - Key options plus an optional BIP39 passphrase
+   * @param addressType - Explicit address type that wins over the purpose
+   * @returns {Wallet} The wallet at the path
+   */
+  override deriveHDWallet(
+    mnemonic: string,
+    path: string,
+    options?: HDWalletOptions,
+    addressType?: AddressType,
+  ): Wallet {
+    const purpose = /^m\/(\d+)'/u.exec(path)?.[1];
+    const inferredType = purpose === undefined ? undefined : PURPOSE_ADDRESS_TYPES[purpose];
+    return super.deriveHDWallet(mnemonic, path, options, addressType ?? inferredType);
   }
 
   override validateAddress(address: string): boolean {

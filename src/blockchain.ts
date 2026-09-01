@@ -1,10 +1,12 @@
 import { webcrypto } from "node:crypto";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
+import { deriveKeyPrivateFromMnemonic } from "./utils/hd.ts";
 import type {
   AddressType,
   Blockchain,
   Curve,
+  HDWalletOptions,
   KeyOptions,
   Keys,
   Options,
@@ -81,6 +83,40 @@ export abstract class AbstractBlockchain implements Blockchain {
       ...keys,
       address,
     };
+  }
+
+  /**
+   * Picks the curve a derivation walks: chains with two curves read `options.scheme`, the rest ignore it.
+   * @param options - Key options that may carry a signature scheme
+   * @returns {Curve} The curve to derive on
+   */
+  protected resolveCurve(options?: KeyOptions): Curve {
+    if (typeof this.curve === "string") {
+      return this.curve;
+    }
+    const scheme = options?.scheme?.toLowerCase();
+    const [fallback] = this.curve;
+    if (fallback === undefined) {
+      throw new Error(`${this.name} declares no curve`);
+    }
+    return this.curve.find((curve) => curve === scheme) ?? fallback;
+  }
+
+  deriveHDWallet(
+    mnemonic: string,
+    path: string,
+    options?: HDWalletOptions,
+    addressType?: AddressType,
+  ): Wallet {
+    const { passphrase, ...keyOptions } = options ?? {};
+    const keyPrivate = deriveKeyPrivateFromMnemonic(
+      mnemonic,
+      path,
+      this.resolveCurve(keyOptions),
+      passphrase,
+    );
+
+    return this.deriveWallet(keyPrivate, keyOptions, addressType);
   }
 }
 

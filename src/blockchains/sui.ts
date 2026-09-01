@@ -6,7 +6,7 @@ import { generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
 import { evmSignMessage, evmVerifyMessage } from "../utils/evm.ts";
 import { generateKeyPublic as getSecp256k1KeyPublic } from "../utils/secp256k1.ts";
-import type { AddressType, KeyOptions, Wallet } from "../types.ts";
+import type { AddressType, HDWalletOptions, KeyOptions, Wallet } from "../types.ts";
 
 const CURVES = ["ed25519", "secp256k1"] as const;
 const SIGNATURE_SCHEME_FLAGS = {
@@ -15,6 +15,22 @@ const SIGNATURE_SCHEME_FLAGS = {
   SECP256R1: 0x02,
   MULTISIG: 0x03,
 } as const;
+
+/**
+ * Lets the address type name the signature scheme, so one argument drives key, address, and curve.
+ * @param options - Key options that may already carry a scheme
+ * @param addressType - Scheme given as the address type, if any
+ * @returns {{ scheme: string | undefined; keyOptions: HDWalletOptions | undefined }} The scheme to use and options carrying it
+ */
+function withScheme(
+  options: HDWalletOptions | undefined,
+  addressType?: AddressType,
+): { readonly scheme: string | undefined; readonly keyOptions: HDWalletOptions | undefined } {
+  if (addressType === undefined) {
+    return { scheme: options?.scheme, keyOptions: options };
+  }
+  return { scheme: addressType, keyOptions: { ...options, scheme: addressType } };
+}
 
 /** Sui blockchain implementation. */
 export class Sui extends AbstractBlockchain {
@@ -27,26 +43,22 @@ export class Sui extends AbstractBlockchain {
     options?: KeyOptions,
     addressType?: AddressType,
   ): Wallet {
-    const scheme = addressType ?? options?.scheme;
-    const keyOptions =
-      addressType === undefined
-        ? options
-        : {
-            ...options,
-            scheme: addressType,
-          };
+    const { scheme, keyOptions } = withScheme(options, addressType);
     return super.deriveWallet(keyPrivate, keyOptions, scheme);
   }
 
+  override deriveHDWallet(
+    mnemonic: string,
+    path: string,
+    options?: HDWalletOptions,
+    addressType?: AddressType,
+  ): Wallet {
+    const { scheme, keyOptions } = withScheme(options, addressType);
+    return super.deriveHDWallet(mnemonic, path, keyOptions, scheme);
+  }
+
   override generateWallet(options?: KeyOptions, addressType?: AddressType): Wallet {
-    const scheme = addressType ?? options?.scheme;
-    const keyOptions =
-      addressType === undefined
-        ? options
-        : {
-            ...options,
-            scheme: addressType,
-          };
+    const { scheme, keyOptions } = withScheme(options, addressType);
     return super.generateWallet(keyOptions, scheme);
   }
 

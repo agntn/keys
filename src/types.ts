@@ -66,6 +66,13 @@ export interface KeyOptions {
 }
 
 /**
+ * Options for deriving a wallet from a BIP39 mnemonic.
+ */
+export interface HDWalletOptions extends KeyOptions {
+  readonly passphrase?: string;
+}
+
+/**
  * Options for message signing and verification.
  */
 export interface SigningOptions extends KeyOptions {
@@ -178,6 +185,16 @@ export interface Blockchain extends BlockchainImplementation {
    * Derives a complete wallet from an existing private key.
    */
   deriveWallet?: (keyPrivate: string, options?: KeyOptions, addressType?: string) => Wallet;
+
+  /**
+   * Derives a complete wallet from a BIP39 mnemonic and derivation path.
+   */
+  deriveHDWallet?: (
+    mnemonic: string,
+    path: string,
+    options?: HDWalletOptions,
+    addressType?: string,
+  ) => Wallet;
 
   /**
    * Generates a complete wallet (private key, public key, and address)
