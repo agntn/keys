@@ -36,6 +36,23 @@ describe("BIP44 Path Generation", () => {
     const path = getBIP44Path(BIP44.SOLANA, 0, BIP44Change.EXTERNAL, 42);
     expect(path).toBe("m/44'/501'/0'/0/42");
   });
+
+  test("should generate a path with the largest BIP32 level indices", () => {
+    const path = getBIP44Path(2_147_483_647, 2_147_483_647, BIP44Change.INTERNAL, 2_147_483_647);
+
+    expect(path).toBe("m/44'/2147483647'/2147483647'/1/2147483647");
+  });
+
+  test.each([
+    ["a negative coin type", () => getBIP44Path(-1)],
+    ["a coin type above the BIP32 range", () => getBIP44Path(2_147_483_648)],
+    ["a negative account", () => getBIP44Path(BIP44.BITCOIN, -1)],
+    ["a change level other than 0 or 1", () => getBIP44Path(BIP44.BITCOIN, 0, 2)],
+    ["a negative address index", () => getBIP44Path(BIP44.BITCOIN, 0, 0, -1)],
+    ["a fractional address index", () => getBIP44Path(BIP44.BITCOIN, 0, 0, 1.5)],
+  ])("should reject %s", (_description, generate) => {
+    expect(generate).toThrow(RangeError);
+  });
 });
 
 describe("BIP44 Path Parsing", () => {

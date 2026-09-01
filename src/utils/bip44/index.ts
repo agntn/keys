@@ -33,6 +33,12 @@ export const BIP44_PURPOSE = HARDENED_OFFSET + 44;
 /** Highest value a path level holds before the hardened offset applies. */
 const MAX_LEVEL_INDEX = HARDENED_OFFSET - 1;
 
+function assertLevelIndex(name: string, value: number, maximum = MAX_LEVEL_INDEX): void {
+  if (!Number.isInteger(value) || value < 0 || value > maximum) {
+    throw new RangeError(`${name} must be an integer between 0 and ${maximum}`);
+  }
+}
+
 // BIP44 change level values
 export enum BIP44Change {
   EXTERNAL = 0, // Receiving addresses
@@ -67,6 +73,11 @@ export function getBIP44Path(
   change = BIP44Change.EXTERNAL,
   addressIndex = 0,
 ): string {
+  assertLevelIndex("coinType", coinType);
+  assertLevelIndex("account", account);
+  assertLevelIndex("change", change, BIP44Change.INTERNAL);
+  assertLevelIndex("addressIndex", addressIndex);
+
   // Harden purpose, coin type, and account
   const purposeStr = formatIndex(BIP44_PURPOSE);
   const coinTypeStr = formatIndex(HARDENED_OFFSET + coinType);
