@@ -14,6 +14,12 @@ export interface BIP39WordLookup {
   readonly zeroBasedIndex: number | null;
 }
 
+/** One requested BIP39 index and the word found at that position. */
+export interface BIP39IndexLookup {
+  readonly index: number;
+  readonly word: string | null;
+}
+
 interface BIP39WordlistModule {
   readonly wordlist: readonly string[];
 }
@@ -50,6 +56,29 @@ export async function lookupBIP39Words(
       zeroBasedIndex: zeroBasedIndex === -1 ? null : zeroBasedIndex,
     };
   });
+}
+
+/**
+ * Finds words at positions in one official BIP39 list.
+ * @param indices - Positions using base 0 or 1
+ * @param language - Official BIP39 language key
+ * @param indexBase - Whether the supplied positions start at 0 or 1
+ * @returns {Promise<ReadonlyArray<BIP39IndexLookup>>} Requested positions and matching words
+ */
+export async function lookupBIP39Indices(
+  indices: readonly number[],
+  language: BIP39Language = "english",
+  indexBase: 0 | 1 = 0,
+): Promise<readonly BIP39IndexLookup[]> {
+  if (indexBase !== 0 && indexBase !== 1) {
+    throw new RangeError("BIP39 index base must be 0 or 1");
+  }
+
+  const { wordlist: selectedWordlist } = await BIP39_WORDLIST_LOADERS[language]();
+  return indices.map((index) => ({
+    index,
+    word: selectedWordlist[index - indexBase] ?? null,
+  }));
 }
 
 // Re-export main functionality with default wordlist

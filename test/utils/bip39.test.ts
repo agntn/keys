@@ -8,6 +8,7 @@ import {
   getMnemonicWordCandidates,
   BIP39_LANGUAGES,
   isBIP39Language,
+  lookupBIP39Indices,
   lookupBIP39Words,
 } from "../../src/utils/bip39";
 import { hexToBytes } from "@noble/hashes/utils.js";
@@ -73,6 +74,26 @@ describe("BIP39 Utils", () => {
       { word: "acción", zeroBasedIndex: 14 },
     ]);
     expect(compatibilityLookup).toEqual([{ word: "abandon", zeroBasedIndex: 0 }]);
+  });
+
+  it("maps indices from either base to localized BIP39 words", async () => {
+    await expect(lookupBIP39Indices([0, 1619, 2047])).resolves.toEqual([
+      { index: 0, word: "abandon" },
+      { index: 1619, word: "skill" },
+      { index: 2047, word: "zoo" },
+    ]);
+    await expect(lookupBIP39Indices([1, 1179, 2048], "italian", 1)).resolves.toEqual([
+      { index: 1, word: "abaco" },
+      { index: 1179, word: "orologio" },
+      { index: 2048, word: "zuppa" },
+    ]);
+    await expect(lookupBIP39Indices([-1, 2048])).resolves.toEqual([
+      { index: -1, word: null },
+      { index: 2048, word: null },
+    ]);
+    await expect(Reflect.apply(lookupBIP39Indices, undefined, [[1], "english", 2])).rejects.toThrow(
+      "BIP39 index base must be 0 or 1",
+    );
   });
 
   it("validates mnemonics correctly", () => {

@@ -33,7 +33,7 @@ const CHAINS = [
   "sui",
   "cardano",
 ] as const;
-const MAX_BIP39_LOOKUP_WORDS = 100;
+const MAX_BIP39_LOOKUP_ITEMS = 100;
 const BIP39_WORD_SCHEMA_PATTERN = "^\\S+$";
 const BIP39_WORD_PATTERN = /^[\p{L}\p{M}]+$/u;
 
@@ -47,6 +47,31 @@ type ChainName = (typeof CHAINS)[number];
  */
 function formatCurve(curve: string | readonly string[]): string {
   return typeof curve === "string" ? curve : curve.join(", ");
+}
+
+function assertBIP39IndexBatch(indices: unknown): asserts indices is readonly number[] {
+  if (!Array.isArray(indices)) {
+    throw new TypeError("BIP39 indices must be an array");
+  }
+  if (indices.length === 0 || indices.length > MAX_BIP39_LOOKUP_ITEMS) {
+    throw new RangeError(`Provide between 1 and ${MAX_BIP39_LOOKUP_ITEMS} indices`);
+  }
+  if (indices.some((index) => typeof index !== "number" || !Number.isInteger(index))) {
+    throw new TypeError("BIP39 indices must be integers");
+  }
+}
+
+function parseBIP39IndexBase(indexBase: unknown): 0 | 1 {
+  if (indexBase === undefined || indexBase === 0) return 0;
+  if (indexBase === 1) return 1;
+  throw new RangeError("BIP39 index base must be 0 or 1");
+}
+
+function assertBIP39IndexRange(indices: readonly number[], indexBase: 0 | 1): void {
+  const maximumIndex = 2047 + indexBase;
+  if (indices.some((index) => index < indexBase || index > maximumIndex)) {
+    throw new RangeError(`BIP39 indices must be between ${indexBase} and ${maximumIndex}`);
+  }
 }
 
 async function getBlockchain(chain: string, network?: string) {
@@ -193,6 +218,68 @@ export default function keysExtension(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
+    name: "keys_lookup_bip39_indices",
+    label: "Lookup BIP39 Indices",
+    description: "Read words at numeric positions in an official BIP39 list",
+    promptSnippet: "Use to map public puzzle indices to BIP39 words.",
+    promptGuidelines: [
+      "Provide up to 100 integer positions",
+      "Set index base to match the puzzle convention. Default: 0",
+      "Choose an official BIP39 language when the puzzle is not English",
+      "Returns words in the same order as the supplied positions",
+    ],
+    parameters: Type.Object({
+      indices: Type.Array(
+        Type.Integer({
+          minimum: 0,
+          maximum: 2048,
+          description: "A position from 0 to 2047 for base 0, or 1 to 2048 for base 1",
+        }),
+        { minItems: 1, maxItems: MAX_BIP39_LOOKUP_ITEMS },
+      ),
+      language: Type.Optional(
+        Type.String({
+          enum: BIP39_LANGUAGES,
+          minLength: 1,
+          maxLength: 19,
+          description: "Official BIP39 language key. Default: english",
+        }),
+      ),
+      indexBase: Type.Optional(
+        Type.Union([Type.Literal(0), Type.Literal(1)], {
+          description: "Whether positions start at 0 or 1. Default: 0",
+        }),
+      ),
+    }),
+    renderCall(args, _theme) {
+      return new Text(`🧩 Lookup ${args.indices.length} BIP39 indices`, 0, 0);
+    },
+    async execute(_toolCallId, params): Promise<AgentToolResult<undefined>> {
+      assertBIP39IndexBatch(params.indices);
+      const indexBase = parseBIP39IndexBase(params.indexBase);
+      assertBIP39IndexRange(params.indices, indexBase);
+
+      const language = params.language ?? "english";
+      if (typeof language !== "string" || !isBIP39Language(language)) {
+        throw new RangeError(`Unknown BIP39 language. Supported: ${BIP39_LANGUAGES.join(", ")}`);
+      }
+      const bip39 = await loadBIP39();
+      const lookups = await bip39.lookupBIP39Indices(params.indices, language, indexBase);
+      const lines = lookups.map((lookup) => `${lookup.index}: ${lookup.word}`);
+
+      return {
+        details: undefined,
+        content: [
+          {
+            type: "text",
+            text: [`Language: ${language}`, `Index base: ${indexBase}`, ...lines].join("\n"),
+          },
+        ],
+      };
+    },
+  });
+
+  pi.registerTool({
     name: "keys_lookup_bip39_words",
     label: "Lookup BIP39 Words",
     description: "Look up word membership and indices in an official BIP39 list",
@@ -211,7 +298,7 @@ export default function keysExtension(pi: ExtensionAPI) {
           pattern: BIP39_WORD_SCHEMA_PATTERN,
           description: "A word to check against the selected BIP39 list",
         }),
-        { minItems: 1, maxItems: MAX_BIP39_LOOKUP_WORDS },
+        { minItems: 1, maxItems: MAX_BIP39_LOOKUP_ITEMS },
       ),
       language: Type.Optional(
         Type.String({
@@ -229,8 +316,8 @@ export default function keysExtension(pi: ExtensionAPI) {
       if (!Array.isArray(params.words)) {
         throw new TypeError("BIP39 lookup words must be an array");
       }
-      if (params.words.length === 0 || params.words.length > MAX_BIP39_LOOKUP_WORDS) {
-        throw new RangeError(`Provide between 1 and ${MAX_BIP39_LOOKUP_WORDS} words`);
+      if (params.words.length === 0 || params.words.length > MAX_BIP39_LOOKUP_ITEMS) {
+        throw new RangeError(`Provide between 1 and ${MAX_BIP39_LOOKUP_ITEMS} words`);
       }
       if (params.words.some((word) => typeof word !== "string" || !BIP39_WORD_PATTERN.test(word))) {
         throw new TypeError("BIP39 lookup words must contain letters and combining marks only");
