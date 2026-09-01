@@ -21,5 +21,6 @@ Pi coding agent extension only. Wraps the `@agntn/keys` library as 10 agent tool
 - No new abstraction layers (KISS/YAGNI). Add a tool only when it maps to a real library capability.
 - Pin Pi/typebox dev deps to exact versions (no `latest`) — consistent with the rest of the repo.
 - Experimental surface: tool names/params may change. Don't treat them as a stable contract yet.
+- Tool schema regexes must stay portable across JSON Schema consumers. Keep features specific to JavaScript, such as Unicode property escapes, in executor validation rather than in `pattern` fields.
 - Distribution: do not register or publish the extension with npm while it handles plaintext private keys.
 - Security: tools can accept or emit plaintext private keys, mnemonics, entropy, and signatures in the transcript. Never connect them to keys that control real funds. Use only public or disposable material.

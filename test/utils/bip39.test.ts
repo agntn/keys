@@ -6,12 +6,28 @@ import {
   mnemonicToEntropy,
   entropyToMnemonic,
   getMnemonicWordCandidates,
+  BIP39_LANGUAGES,
+  isBIP39Language,
+  lookupBIP39Words,
 } from "../../src/utils/bip39";
 import { hexToBytes } from "@noble/hashes/utils.js";
 import { bip39TestVectors } from "../fixtures";
 
 describe("BIP39 Utils", () => {
   // Test vectors from BIP39 specification
+  const wordlistVectors = [
+    ["czech", "abdikace"],
+    ["english", "abandon"],
+    ["french", "abaisser"],
+    ["italian", "abaco"],
+    ["japanese", "あいこくしん"],
+    ["korean", "가격"],
+    ["portuguese", "abacate"],
+    ["simplified-chinese", "的"],
+    ["spanish", "ábaco"],
+    ["traditional-chinese", "的"],
+  ] as const;
+
   const testVectors = [
     {
       entropy: "00000000000000000000000000000000",
@@ -34,6 +50,29 @@ describe("BIP39 Utils", () => {
 
     expect(mnemonic12.split(" ").length).toBe(12);
     expect(mnemonic24.split(" ").length).toBe(24);
+  });
+
+  it.each(wordlistVectors)("looks up words in the %s BIP39 list", async (language, word) => {
+    const lookups = await lookupBIP39Words([word], language);
+
+    expect(lookups).toEqual([{ word: word.toLowerCase().normalize("NFKD"), zeroBasedIndex: 0 }]);
+  });
+
+  it("publishes every official BIP39 language key", () => {
+    expect(BIP39_LANGUAGES).toEqual(wordlistVectors.map(([language]) => language));
+    expect(isBIP39Language("italian")).toBe(true);
+    expect(isBIP39Language("unknown")).toBe(false);
+  });
+
+  it("normalizes localized BIP39 words before lookup", async () => {
+    const lookups = await lookupBIP39Words(["ÁBACO", "acción"], "spanish");
+    const compatibilityLookup = await lookupBIP39Words(["𝐀𝐁𝐀𝐍𝐃𝐎𝐍"]);
+
+    expect(lookups).toEqual([
+      { word: "ábaco", zeroBasedIndex: 0 },
+      { word: "acción", zeroBasedIndex: 14 },
+    ]);
+    expect(compatibilityLookup).toEqual([{ word: "abandon", zeroBasedIndex: 0 }]);
   });
 
   it("validates mnemonics correctly", () => {

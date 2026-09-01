@@ -1,8 +1,56 @@
 import * as bip39 from "@scure/bip39";
 import * as english from "@scure/bip39/wordlists/english.js";
+import type { BIP39Language } from "./languages.js";
+
+export { BIP39_LANGUAGES, isBIP39Language } from "./languages.js";
+export type { BIP39Language } from "./languages.js";
 
 // Get English wordlist
 const wordlist = english.wordlist;
+
+/** A normalized word and its index in one BIP39 word list. */
+export interface BIP39WordLookup {
+  readonly word: string;
+  readonly zeroBasedIndex: number | null;
+}
+
+interface BIP39WordlistModule {
+  readonly wordlist: readonly string[];
+}
+
+const BIP39_WORDLIST_LOADERS = {
+  czech: () => import("@scure/bip39/wordlists/czech.js"),
+  english: () => import("@scure/bip39/wordlists/english.js"),
+  french: () => import("@scure/bip39/wordlists/french.js"),
+  italian: () => import("@scure/bip39/wordlists/italian.js"),
+  japanese: () => import("@scure/bip39/wordlists/japanese.js"),
+  korean: () => import("@scure/bip39/wordlists/korean.js"),
+  portuguese: () => import("@scure/bip39/wordlists/portuguese.js"),
+  "simplified-chinese": () => import("@scure/bip39/wordlists/simplified-chinese.js"),
+  spanish: () => import("@scure/bip39/wordlists/spanish.js"),
+  "traditional-chinese": () => import("@scure/bip39/wordlists/traditional-chinese.js"),
+} satisfies Record<BIP39Language, () => Promise<BIP39WordlistModule>>;
+
+/**
+ * Finds words in one official BIP39 list after Unicode NFKD normalization.
+ * @param words - Words to look up
+ * @param language - Official BIP39 language key
+ * @returns {Promise<ReadonlyArray<BIP39WordLookup>>} Normalized words and zero-based indices
+ */
+export async function lookupBIP39Words(
+  words: readonly string[],
+  language: BIP39Language = "english",
+): Promise<readonly BIP39WordLookup[]> {
+  const { wordlist: selectedWordlist } = await BIP39_WORDLIST_LOADERS[language]();
+  return words.map((word) => {
+    const normalizedWord = word.normalize("NFKD").toLowerCase().normalize("NFKD");
+    const zeroBasedIndex = selectedWordlist.indexOf(normalizedWord);
+    return {
+      word: normalizedWord,
+      zeroBasedIndex: zeroBasedIndex === -1 ? null : zeroBasedIndex,
+    };
+  });
+}
 
 // Re-export main functionality with default wordlist
 export const generateMnemonic = (strength = 128) => bip39.generateMnemonic(wordlist, strength);
