@@ -301,6 +301,33 @@ describe("keys Pi extension", () => {
     ).rejects.toThrow("Invalid BIP39 mnemonic");
   });
 
+  it("requires one unambiguous BIP44 path mode", async () => {
+    const tool = registerTools().get("keys_bip44_path");
+    if (!tool) throw new Error("keys_bip44_path was not registered");
+    const path = "m/44'/0'/0'/0/0";
+
+    expect(Value.Check(tool.parameters, { chain: "bitcoin" })).toBe(true);
+    expect(Value.Check(tool.parameters, { path })).toBe(true);
+    const parsed = await tool.execute("parse-mode", { path });
+    expect(parsed.content.map((part) => part.text ?? "").join("\n")).toContain("Coin type: 0");
+
+    for (const params of [
+      {},
+      { account: 1 },
+      { change: 1 },
+      { addressIndex: 1 },
+      { chain: "bitcoin", path },
+      { path, account: 1 },
+      { path, change: 1 },
+      { path, addressIndex: 1 },
+    ]) {
+      expect(Value.Check(tool.parameters, params)).toBe(false);
+      await expect(tool.execute("ambiguous-mode", params)).rejects.toThrow(
+        "Provide path by itself, or chain with optional account, change, and addressIndex",
+      );
+    }
+  });
+
   it("derives a Sui wallet from an existing private key", async () => {
     const tool = registerTools().get("keys_derive_wallet");
     if (!tool) throw new Error("keys_derive_wallet was not registered");

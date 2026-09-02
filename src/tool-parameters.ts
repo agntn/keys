@@ -1,3 +1,18 @@
+/** Require either parse mode by itself or generation mode with its optional indices. */
+export const BIP44_PATH_MODE_SCHEMA = {
+  oneOf: [
+    {
+      required: ["path"],
+      not: {
+        anyOf: ["chain", "account", "change", "addressIndex"].map((field) => ({
+          required: [field],
+        })),
+      },
+    },
+    { required: ["chain"], not: { required: ["path"] } },
+  ],
+} as const;
+
 /** Every blockchain exposed by the tool surfaces. */
 export const TOOL_CHAINS = [
   "bitcoin",
