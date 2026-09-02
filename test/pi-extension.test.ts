@@ -301,11 +301,13 @@ describe("keys Pi extension", () => {
     ).rejects.toThrow("Invalid BIP39 mnemonic");
   });
 
-  it("requires one unambiguous BIP44 path mode", async () => {
+  it("keeps the BIP44 path schema portable and enforces one mode", async () => {
     const tool = registerTools().get("keys_bip44_path");
     if (!tool) throw new Error("keys_bip44_path was not registered");
     const path = "m/44'/0'/0'/0/0";
 
+    expect(tool.parameters).toMatchObject({ type: "object" });
+    expect(tool.parameters).not.toHaveProperty("oneOf");
     expect(Value.Check(tool.parameters, { chain: "bitcoin" })).toBe(true);
     expect(Value.Check(tool.parameters, { path })).toBe(true);
     const parsed = await tool.execute("parse-mode", { path });
@@ -321,7 +323,7 @@ describe("keys Pi extension", () => {
       { path, change: 1 },
       { path, addressIndex: 1 },
     ]) {
-      expect(Value.Check(tool.parameters, params)).toBe(false);
+      expect(Value.Check(tool.parameters, params)).toBe(true);
       await expect(tool.execute("ambiguous-mode", params)).rejects.toThrow(
         "Provide path by itself, or chain with optional account, change, and addressIndex",
       );

@@ -5,12 +5,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import type * as KeysTools from "../../../dist/tool-operations.d.mts";
-import {
-  BIP44_PATH_MODE_SCHEMA,
-  TOOL_ADDRESS_TYPES,
-  TOOL_CHAINS,
-  TOOL_NETWORKS,
-} from "../../../src/tool-parameters.ts";
+import { TOOL_ADDRESS_TYPES, TOOL_CHAINS, TOOL_NETWORKS } from "../../../src/tool-parameters.ts";
 import { BIP39_LANGUAGES } from "../../../src/utils/bip39/languages.ts";
 
 const sourceModuleUrl = new URL("../../../src/tool-operations.ts", import.meta.url);
@@ -475,7 +470,7 @@ export default function keysExtension(pi: ExtensionAPI) {
           }),
         ),
       },
-      { additionalProperties: false, ...BIP44_PATH_MODE_SCHEMA },
+      { additionalProperties: false },
     ),
     renderCall(args, _theme) {
       return new Text(args.path ? `🛤️ Parse: ${args.path}` : `🛤️ BIP44: ${args.chain}`, 0, 0);
