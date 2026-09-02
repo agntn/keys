@@ -32,6 +32,61 @@ function registerTools(): ReadonlyMap<string, RegisteredTool> {
 }
 
 describe("keys Pi extension", () => {
+  it("rejects unsupported networks and address types on every relevant tool", async () => {
+    const tools = registerTools();
+    const networkCases = [
+      ["keys_generate_wallet", { chain: "bitcoin" }],
+      ["keys_derive_wallet", { chain: "ethereum", privateKey: "unused" }],
+      ["keys_derive_hd_wallet", { chain: "base", mnemonic: "unused", path: "m/0" }],
+      ["keys_get_address", { chain: "solana", publicKey: "unused" }],
+      ["keys_validate_address", { chain: "aptos", address: "unused" }],
+      ["keys_sign_message", { chain: "tron", message: "unused", privateKey: "unused" }],
+      [
+        "keys_verify_message",
+        { chain: "sui", message: "unused", signature: "unused", publicKey: "unused" },
+      ],
+    ] as const;
+
+    for (const [name, params] of networkCases) {
+      const tool = tools.get(name);
+      if (!tool) throw new Error(`${name} was not registered`);
+      const invalidParams = { ...params, network: "testnett" };
+
+      expect(Value.Check(tool.parameters, invalidParams)).toBe(false);
+      await expect(tool.execute("invalid-network", invalidParams)).rejects.toThrow(
+        'Unsupported network "testnett"',
+      );
+    }
+
+    const addressTypeCases = [
+      ["keys_generate_wallet", { chain: "bitcoin", addressType: "stake" }],
+      ["keys_derive_wallet", { chain: "ethereum", privateKey: "unused", addressType: "segwit" }],
+      [
+        "keys_derive_hd_wallet",
+        { chain: "base", mnemonic: "unused", path: "m/0", addressType: "segwit" },
+      ],
+      ["keys_get_address", { chain: "solana", publicKey: "unused", addressType: "segwit" }],
+      ["keys_generate_wallet", { chain: "aptos", addressType: "segwit" }],
+      ["keys_derive_wallet", { chain: "tron", privateKey: "unused", addressType: "segwit" }],
+      [
+        "keys_derive_hd_wallet",
+        { chain: "sui", mnemonic: "unused", path: "m/0", addressType: "taproot" },
+      ],
+      ["keys_get_address", { chain: "cardano", publicKey: "unused", addressType: "secp256k1" }],
+    ] as const;
+
+    for (const [name, params] of addressTypeCases) {
+      const tool = tools.get(name);
+      if (!tool) throw new Error(`${name} was not registered`);
+
+      expect(Value.Check(tool.parameters, params)).toBe(true);
+      expect(Value.Check(tool.parameters, { ...params, addressType: "bogus" })).toBe(false);
+      await expect(tool.execute("wrong-chain-address-type", params)).rejects.toThrow(
+        /Address type/u,
+      );
+    }
+  });
+
   it("maps BIP39 indices to words with an explicit base", async () => {
     const tool = registerTools().get("keys_lookup_bip39_indices");
     if (!tool) throw new Error("keys_lookup_bip39_indices was not registered");

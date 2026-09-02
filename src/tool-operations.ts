@@ -8,6 +8,13 @@
 import type { AbstractBlockchain } from "./blockchain.ts";
 import { blockchains, getBlockchainPath, parseBIP44Path, useBlockchain } from "./index.ts";
 import {
+  TOOL_ADDRESS_TYPES_BY_CHAIN,
+  TOOL_CHAINS,
+  TOOL_NETWORKS,
+  type ToolChain,
+  type ToolNetwork,
+} from "./tool-parameters.ts";
+import {
   entropyToMnemonic,
   getMnemonicWordCandidates,
   lookupBIP39Indices,
@@ -16,18 +23,6 @@ import {
   validateMnemonic,
 } from "./utils/bip39/index.ts";
 import { BIP39_LANGUAGES, isBIP39Language } from "./utils/bip39/languages.ts";
-
-/** Every blockchain exposed by the tool surfaces. */
-export const TOOL_CHAINS = [
-  "bitcoin",
-  "ethereum",
-  "base",
-  "solana",
-  "aptos",
-  "tron",
-  "sui",
-  "cardano",
-] as const;
 
 /** Maximum number of words or indices accepted by one BIP39 lookup. */
 export const MAX_BIP39_LOOKUP_ITEMS = 100;
@@ -225,8 +220,8 @@ function formatCurve(curve: string | readonly string[]): string {
 }
 
 const BLOCKCHAIN_LOADERS: ReadonlyArray<{
-  name: string;
-  load(network: string): Promise<AbstractBlockchain>;
+  name: ToolChain;
+  load(network: ToolNetwork): Promise<AbstractBlockchain>;
 }> = [
   {
     name: "bitcoin",
@@ -250,10 +245,39 @@ const BLOCKCHAIN_LOADERS: ReadonlyArray<{
   },
 ];
 
+function parseNetwork(value: unknown): ToolNetwork {
+  const network = optionalString(value, "Network") ?? "mainnet";
+  const matched = TOOL_NETWORKS.find((candidate) => candidate === network);
+  if (matched === undefined) {
+    throw new RangeError(
+      `Unsupported network ${JSON.stringify(network)}. Supported: ${TOOL_NETWORKS.join(", ")}`,
+    );
+  }
+  return matched;
+}
+
+function parseAddressType(chain: ToolChain, value: unknown): string | undefined {
+  const addressType = optionalString(value, "Address type");
+  if (addressType === undefined) return undefined;
+
+  const supported = TOOL_ADDRESS_TYPES_BY_CHAIN[chain];
+  if (supported.length === 0) {
+    throw new RangeError(`Address type is not supported for ${chain}`);
+  }
+  const matched = supported.find((candidate) => candidate === addressType);
+  if (matched === undefined) {
+    throw new RangeError(
+      `Address type ${JSON.stringify(addressType)} is not supported for ${chain}. Supported: ${supported.join(", ")}`,
+    );
+  }
+  return matched;
+}
+
 async function getBlockchain(
   chainValue: unknown,
   networkValue?: unknown,
-): Promise<AbstractBlockchain> {
+  addressTypeValue?: unknown,
+): Promise<{ readonly blockchain: AbstractBlockchain; readonly addressType: string | undefined }> {
   const chain = requiredString(chainValue, "Chain").toLowerCase();
   const loader = BLOCKCHAIN_LOADERS.find((candidate) => candidate.name === chain);
   if (!loader) {
@@ -261,7 +285,9 @@ async function getBlockchain(
       `Unknown chain ${JSON.stringify(chain)}. Supported: ${TOOL_CHAINS.join(", ")}`,
     );
   }
-  return loader.load(optionalString(networkValue, "Network") ?? "mainnet");
+  const network = parseNetwork(networkValue);
+  const addressType = parseAddressType(loader.name, addressTypeValue);
+  return { blockchain: await loader.load(network), addressType };
 }
 
 /**
@@ -276,8 +302,11 @@ export async function generateWallet(
   networkValue?: unknown,
   addressTypeValue?: unknown,
 ): Promise<ToolResult<GeneratedWalletDetails | undefined>> {
-  const blockchain = await getBlockchain(chainValue, networkValue);
-  const addressType = optionalString(addressTypeValue, "Address type");
+  const { blockchain, addressType } = await getBlockchain(
+    chainValue,
+    networkValue,
+    addressTypeValue,
+  );
   const wallet = blockchain.generateWallet({}, addressType);
   const details = {
     chain: blockchain.name,
@@ -317,9 +346,12 @@ export async function deriveWallet(
   addressTypeValue?: unknown,
   networkValue?: unknown,
 ): Promise<ToolResult<DerivedWalletDetails>> {
-  const blockchain = await getBlockchain(chainValue, networkValue);
+  const { blockchain, addressType } = await getBlockchain(
+    chainValue,
+    networkValue,
+    addressTypeValue,
+  );
   const privateKey = requiredString(privateKeyValue, "Private key");
-  const addressType = optionalString(addressTypeValue, "Address type");
   const wallet = blockchain.deriveWallet(privateKey, {}, addressType);
   const details = {
     chain: blockchain.name,
@@ -355,10 +387,13 @@ export async function deriveHdWallet(
   if (!DERIVATION_PATH_PATTERN.test(path)) {
     throw new TypeError("Derivation path must look like m/84'/0'/0'/0/0");
   }
-  const blockchain = await getBlockchain(chainValue, networkValue);
+  const { blockchain, addressType } = await getBlockchain(
+    chainValue,
+    networkValue,
+    addressTypeValue,
+  );
   const mnemonic = requiredString(mnemonicValue, "BIP39 mnemonic");
   const passphrase = optionalString(passphraseValue, "BIP39 passphrase");
-  const addressType = optionalString(addressTypeValue, "Address type");
   const wallet = blockchain.deriveHDWallet(mnemonic, path, { passphrase }, addressType);
   const details = {
     chain: blockchain.name,
@@ -530,9 +565,12 @@ export async function getAddress(
   addressTypeValue?: unknown,
   networkValue?: unknown,
 ): Promise<ToolResult<AddressDetails>> {
-  const blockchain = await getBlockchain(chainValue, networkValue);
+  const { blockchain, addressType } = await getBlockchain(
+    chainValue,
+    networkValue,
+    addressTypeValue,
+  );
   const publicKey = requiredString(publicKeyValue, "Public key");
-  const addressType = optionalString(addressTypeValue, "Address type");
   const address = blockchain.getAddress(publicKey, addressType);
   return {
     content: content(`Address: ${address}`),
@@ -552,7 +590,7 @@ export async function validateAddress(
   addressValue: unknown,
   networkValue?: unknown,
 ): Promise<ToolResult<AddressValidationDetails>> {
-  const blockchain = await getBlockchain(chainValue, networkValue);
+  const { blockchain } = await getBlockchain(chainValue, networkValue);
   const address = requiredString(addressValue, "Address");
   const valid = blockchain.validateAddress(address);
   const renderedAddress = sanitizeToolText(address);
@@ -580,7 +618,7 @@ export async function signMessage(
   privateKeyValue: unknown,
   networkValue?: unknown,
 ): Promise<ToolResult<SignatureDetails>> {
-  const blockchain = await getBlockchain(chainValue, networkValue);
+  const { blockchain } = await getBlockchain(chainValue, networkValue);
   const message = requiredString(messageValue, "Message");
   const privateKey = requiredString(privateKeyValue, "Private key");
   const signature = blockchain.signMessage(message, privateKey);
@@ -606,7 +644,7 @@ export async function verifyMessage(
   publicKeyValue: unknown,
   networkValue?: unknown,
 ): Promise<ToolResult<SignatureVerificationDetails>> {
-  const blockchain = await getBlockchain(chainValue, networkValue);
+  const { blockchain } = await getBlockchain(chainValue, networkValue);
   const message = requiredString(messageValue, "Message");
   const signature = requiredString(signatureValue, "Signature");
   const publicKey = requiredString(publicKeyValue, "Public key");
@@ -661,7 +699,7 @@ export async function bip44Path(
   const account = optionalIndex(accountValue, "Account") ?? 0;
   const change = optionalIndex(changeValue, "Change", 1) ?? 0;
   const addressIndex = optionalIndex(addressIndexValue, "Address index") ?? 0;
-  const blockchain = await getBlockchain(chainValue);
+  const { blockchain } = await getBlockchain(chainValue);
   const generated = getBlockchainPath(blockchain, account, change, addressIndex);
   return {
     content: content(
