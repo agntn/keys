@@ -87,9 +87,10 @@ The Solana implementation is located in `src/blockchains/solana.ts`.
 ```js
 // Core functions
 function getAddress(keyPublic) {
-  // For Solana, the address is the same as the public key
-  // We just need to convert from hex to base58
   const keyBytes = hexToBytes(keyPublic);
+  if (keyBytes.length !== 32) {
+    throw new RangeError("Solana public key must be 32 bytes");
+  }
   return base58.encode(keyBytes);
 }
 
