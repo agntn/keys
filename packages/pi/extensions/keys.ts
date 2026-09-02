@@ -5,6 +5,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import type * as KeysTools from "../../../dist/tool-operations.d.mts";
+import { TOOL_ADDRESS_TYPES, TOOL_CHAINS, TOOL_NETWORKS } from "../../../src/tool-parameters.ts";
 import { BIP39_LANGUAGES } from "../../../src/utils/bip39/languages.ts";
 
 const sourceModuleUrl = new URL("../../../src/tool-operations.ts", import.meta.url);
@@ -22,21 +23,23 @@ function loadToolOperations(): Promise<typeof KeysTools> {
   return toolOperationsPromise;
 }
 
-const CHAINS = [
-  "bitcoin",
-  "ethereum",
-  "base",
-  "solana",
-  "aptos",
-  "tron",
-  "sui",
-  "cardano",
-] as const;
 const MAX_BIP39_LOOKUP_ITEMS = 100;
 const BIP39_ENTROPY_BYTE_LENGTHS: readonly number[] = [16, 20, 24, 28, 32];
 const BIP39_ENTROPY_SCHEMA_PATTERN = `^(?:${BIP39_ENTROPY_BYTE_LENGTHS.map((bytes) => `[0-9A-Fa-f]{${bytes * 2}}`).join("|")})$`;
 const BIP39_WORD_SCHEMA_PATTERN = "^\\S+$";
 const DERIVATION_PATH_SCHEMA_PATTERN = "^m(/[0-9]+'?)+$";
+const NETWORK_PARAMETER = Type.Optional(
+  Type.String({
+    enum: TOOL_NETWORKS,
+    description: "Network (mainnet or testnet). Default: mainnet",
+  }),
+);
+const ADDRESS_TYPE_PARAMETER = Type.Optional(
+  Type.String({
+    enum: TOOL_ADDRESS_TYPES,
+    description: "Address type for the selected chain",
+  }),
+);
 
 export default function keysExtension(pi: ExtensionAPI) {
   // ─── generate_wallet ────────────────────────────────────────────────────
@@ -56,18 +59,10 @@ export default function keysExtension(pi: ExtensionAPI) {
     ],
     parameters: Type.Object({
       chain: Type.String({
-        description: `Blockchain name (${CHAINS.join(", ")})`,
+        description: `Blockchain name (${TOOL_CHAINS.join(", ")})`,
       }),
-      network: Type.Optional(
-        Type.String({
-          description: "Network (mainnet or testnet). Default: mainnet",
-        }),
-      ),
-      addressType: Type.Optional(
-        Type.String({
-          description: "Address type (e.g. segwit for Bitcoin, stake for Cardano)",
-        }),
-      ),
+      network: NETWORK_PARAMETER,
+      addressType: ADDRESS_TYPE_PARAMETER,
     }),
     renderCall(args, _theme) {
       return new Text(`🔑 Generate wallet: ${args.chain}`, 0, 0);
@@ -95,10 +90,8 @@ export default function keysExtension(pi: ExtensionAPI) {
     parameters: Type.Object({
       chain: Type.String({ description: "Blockchain name" }),
       privateKey: Type.String({ description: "Private key as hex string" }),
-      addressType: Type.Optional(
-        Type.String({ description: "Address type (e.g. segwit, taproot, secp256k1)" }),
-      ),
-      network: Type.Optional(Type.String({ description: "Network (mainnet/testnet)" })),
+      addressType: ADDRESS_TYPE_PARAMETER,
+      network: NETWORK_PARAMETER,
     }),
     renderCall(args, _theme) {
       return new Text(`🔐 Derive wallet: ${args.chain}`, 0, 0);
@@ -130,7 +123,7 @@ export default function keysExtension(pi: ExtensionAPI) {
     ],
     parameters: Type.Object({
       chain: Type.String({
-        description: `Blockchain name (${CHAINS.join(", ")})`,
+        description: `Blockchain name (${TOOL_CHAINS.join(", ")})`,
       }),
       mnemonic: Type.String({
         minLength: 1,
@@ -142,10 +135,8 @@ export default function keysExtension(pi: ExtensionAPI) {
         description: "Derivation path such as m/84'/0'/0'/0/0",
       }),
       passphrase: Type.Optional(Type.String({ description: "BIP39 passphrase. Default: empty" })),
-      addressType: Type.Optional(
-        Type.String({ description: "Address type (e.g. segwit, taproot, secp256k1)" }),
-      ),
-      network: Type.Optional(Type.String({ description: "Network (mainnet/testnet)" })),
+      addressType: ADDRESS_TYPE_PARAMETER,
+      network: NETWORK_PARAMETER,
     }),
     renderCall(args, _theme) {
       return new Text(`🧩 Derive HD wallet: ${args.chain} ${args.path}`, 0, 0);
@@ -334,10 +325,8 @@ export default function keysExtension(pi: ExtensionAPI) {
     parameters: Type.Object({
       chain: Type.String({ description: "Blockchain name" }),
       publicKey: Type.String({ description: "Public key as hex string" }),
-      addressType: Type.Optional(
-        Type.String({ description: "Address type (e.g. segwit, taproot)" }),
-      ),
-      network: Type.Optional(Type.String({ description: "Network (mainnet/testnet)" })),
+      addressType: ADDRESS_TYPE_PARAMETER,
+      network: NETWORK_PARAMETER,
     }),
     renderCall(args, _theme) {
       return new Text(`📬 Get address: ${args.chain}`, 0, 0);
@@ -362,7 +351,7 @@ export default function keysExtension(pi: ExtensionAPI) {
     parameters: Type.Object({
       chain: Type.String({ description: "Blockchain name" }),
       address: Type.String({ description: "Address to validate" }),
-      network: Type.Optional(Type.String({ description: "Network (mainnet/testnet)" })),
+      network: NETWORK_PARAMETER,
     }),
     renderCall(args, _theme) {
       return new Text(`✅ Validate: ${args.address}`, 0, 0);
@@ -392,7 +381,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       chain: Type.String({ description: "Blockchain name" }),
       message: Type.String({ description: "Message to sign" }),
       privateKey: Type.String({ description: "Private key as hex string" }),
-      network: Type.Optional(Type.String({ description: "Network (mainnet/testnet)" })),
+      network: NETWORK_PARAMETER,
     }),
     renderCall(args, _theme) {
       return new Text(`✍️ Sign: "${args.message.slice(0, 30)}…"`, 0, 0);
@@ -422,7 +411,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       message: Type.String({ description: "Original message" }),
       signature: Type.String({ description: "Signature as hex string" }),
       publicKey: Type.String({ description: "Public key as hex string" }),
-      network: Type.Optional(Type.String({ description: "Network (mainnet/testnet)" })),
+      network: NETWORK_PARAMETER,
     }),
     renderCall(args, _theme) {
       return new Text(`🔍 Verify: "${args.message.slice(0, 30)}…"`, 0, 0);

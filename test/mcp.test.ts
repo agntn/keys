@@ -110,6 +110,23 @@ describe("keys MCP server", () => {
     expect(text(response.content)).toContain("Invalid arguments");
   });
 
+  it("rejects unsupported wallet options at the schema", async () => {
+    const client = await connectTestClient();
+
+    for (const arguments_ of [
+      { chain: "bitcoin", network: "testnett" },
+      { chain: "bitcoin", addressType: "bogus" },
+    ]) {
+      const response = await client.callTool({
+        name: "keys_generate_wallet",
+        arguments: arguments_,
+      });
+
+      expect(response.isError).toBe(true);
+      expect(text(response.content)).toContain("Invalid arguments");
+    }
+  });
+
   it("rejects prototype property names as unknown tools", async () => {
     const client = await connectTestClient();
 
