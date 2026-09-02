@@ -36,6 +36,10 @@ describe("Solana Blockchain", () => {
       expect(blockchain.validateAddress?.(address)).toBe(true);
     });
 
+    it.each([31, 33])("rejects a public key with %i bytes", (bytes) => {
+      expect(() => blockchain.getAddress("00".repeat(bytes))).toThrow("32 bytes");
+    });
+
     // Test address validation
     it("validates Solana addresses correctly", () => {
       // Use the address generated in the previous test

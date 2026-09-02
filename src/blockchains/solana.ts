@@ -17,7 +17,11 @@ export class Solana extends AbstractBlockchain {
   }
 
   override getAddress(keyPublic: string): string {
-    return base58.encode(hexToBytes(keyPublic));
+    const keyPublicBytes = hexToBytes(keyPublic);
+    if (keyPublicBytes.length !== 32) {
+      throw new RangeError("Solana public key must be 32 bytes");
+    }
+    return base58.encode(keyPublicBytes);
   }
 
   override validateAddress(address: string): boolean {
