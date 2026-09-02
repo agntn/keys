@@ -7,7 +7,12 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { Type, type TSchema } from "typebox";
 import { Value } from "typebox/value";
-import { TOOL_ADDRESS_TYPES, TOOL_CHAINS, TOOL_NETWORKS } from "./tool-parameters.ts";
+import {
+  BIP44_PATH_MODE_SCHEMA,
+  TOOL_ADDRESS_TYPES,
+  TOOL_CHAINS,
+  TOOL_NETWORKS,
+} from "./tool-parameters.ts";
 import { BIP39_LANGUAGES } from "./utils/bip39/languages.ts";
 import {
   BIP39_ENTROPY_SCHEMA_PATTERN,
@@ -361,20 +366,27 @@ const tools: readonly ToolDefinition[] = [
           }),
         ),
         account: Type.Optional(
-          Type.Integer({ description: "Account index. Default: 0", minimum: 0 }),
+          Type.Integer({
+            description: "Account index for generation only. Default: 0",
+            minimum: 0,
+          }),
         ),
         change: Type.Optional(
           Type.Integer({
-            description: "Change branch: 0 for external, 1 for internal. Default: 0",
+            description:
+              "Change branch for generation only: 0 for external, 1 for internal. Default: 0",
             minimum: 0,
             maximum: 1,
           }),
         ),
         addressIndex: Type.Optional(
-          Type.Integer({ description: "Address index. Default: 0", minimum: 0 }),
+          Type.Integer({
+            description: "Address index for generation only. Default: 0",
+            minimum: 0,
+          }),
         ),
       },
-      { additionalProperties: false },
+      { additionalProperties: false, ...BIP44_PATH_MODE_SCHEMA },
     ),
     annotations: LOCAL_READ,
     execute: (args) =>

@@ -190,6 +190,21 @@ function optionalIndex(value: unknown, name: string, maximum = 0x7fffffff): numb
   return value;
 }
 
+function assertBip44PathMode(
+  chainValue: unknown,
+  pathValue: unknown,
+  generationOptions: readonly unknown[],
+): void {
+  if (pathValue === undefined) {
+    if (chainValue !== undefined) return;
+  } else if (chainValue === undefined && generationOptions.every((value) => value === undefined)) {
+    return;
+  }
+  throw new TypeError(
+    "Provide path by itself, or chain with optional account, change, and addressIndex",
+  );
+}
+
 function stringArray(value: unknown, name: string): readonly string[] {
   if (!Array.isArray(value) || !value.every((item) => typeof item === "string")) {
     throw new TypeError(`${name} must be an array of strings`);
@@ -671,6 +686,7 @@ export async function bip44Path(
   changeValue?: unknown,
   addressIndexValue?: unknown,
 ): Promise<ToolResult<BIP44PathDetails>> {
+  assertBip44PathMode(chainValue, pathValue, [accountValue, changeValue, addressIndexValue]);
   const path = optionalString(pathValue, "BIP44 path");
   if (path !== undefined) {
     const parsed = parseBIP44Path(path);

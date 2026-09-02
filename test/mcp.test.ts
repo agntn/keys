@@ -110,6 +110,37 @@ describe("keys MCP server", () => {
     expect(text(response.content)).toContain("Invalid arguments");
   });
 
+  it("rejects ambiguous BIP44 path modes at the schema", async () => {
+    const client = await connectTestClient();
+    const path = "m/44'/0'/0'/0/0";
+
+    for (const arguments_ of [
+      {},
+      { account: 1 },
+      { change: 1 },
+      { addressIndex: 1 },
+      { chain: "bitcoin", path },
+      { path, account: 1 },
+      { path, change: 1 },
+      { path, addressIndex: 1 },
+    ]) {
+      const response = await client.callTool({
+        name: "keys_bip44_path",
+        arguments: arguments_,
+      });
+
+      expect(response.isError).toBe(true);
+      expect(text(response.content)).toContain("Invalid arguments");
+    }
+
+    const parsed = await client.callTool({
+      name: "keys_bip44_path",
+      arguments: { path },
+    });
+    expect(parsed.isError).not.toBe(true);
+    expect(text(parsed.content)).toContain("Coin type: 0");
+  });
+
   it("rejects unsupported wallet options at the schema", async () => {
     const client = await connectTestClient();
 

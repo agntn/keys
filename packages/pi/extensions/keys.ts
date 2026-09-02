@@ -5,7 +5,12 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import type * as KeysTools from "../../../dist/tool-operations.d.mts";
-import { TOOL_ADDRESS_TYPES, TOOL_CHAINS, TOOL_NETWORKS } from "../../../src/tool-parameters.ts";
+import {
+  BIP44_PATH_MODE_SCHEMA,
+  TOOL_ADDRESS_TYPES,
+  TOOL_CHAINS,
+  TOOL_NETWORKS,
+} from "../../../src/tool-parameters.ts";
 import { BIP39_LANGUAGES } from "../../../src/utils/bip39/languages.ts";
 
 const sourceModuleUrl = new URL("../../../src/tool-operations.ts", import.meta.url);
@@ -435,34 +440,43 @@ export default function keysExtension(pi: ExtensionAPI) {
     promptSnippet:
       "Use to generate or parse BIP44 derivation paths (m/44'/coin'/account'/change/index).",
     promptGuidelines: [
-      "Provide either a chain name to generate a path, or a path string to parse it",
-      "Optional: account, change, addressIndex (defaults to 0)",
+      "Provide a path by itself to parse it, or a chain name to generate a path",
+      "For generation only: account, change, addressIndex (defaults to 0)",
     ],
-    parameters: Type.Object({
-      chain: Type.Optional(
-        Type.String({
-          description: "Blockchain name (to generate a path)",
-        }),
-      ),
-      path: Type.Optional(
-        Type.String({
-          description: "BIP44 path string to parse (e.g. m/44'/0'/0'/0/0)",
-        }),
-      ),
-      account: Type.Optional(
-        Type.Integer({ description: "Account index (default 0)", minimum: 0 }),
-      ),
-      change: Type.Optional(
-        Type.Integer({
-          description: "Change level (0=external, 1=internal, default 0)",
-          minimum: 0,
-          maximum: 1,
-        }),
-      ),
-      addressIndex: Type.Optional(
-        Type.Integer({ description: "Address index (default 0)", minimum: 0 }),
-      ),
-    }),
+    parameters: Type.Object(
+      {
+        chain: Type.Optional(
+          Type.String({
+            description: "Blockchain name (to generate a path)",
+          }),
+        ),
+        path: Type.Optional(
+          Type.String({
+            description: "BIP44 path string to parse (e.g. m/44'/0'/0'/0/0)",
+          }),
+        ),
+        account: Type.Optional(
+          Type.Integer({
+            description: "Account index for generation only (default 0)",
+            minimum: 0,
+          }),
+        ),
+        change: Type.Optional(
+          Type.Integer({
+            description: "Change level for generation only (0=external, 1=internal, default 0)",
+            minimum: 0,
+            maximum: 1,
+          }),
+        ),
+        addressIndex: Type.Optional(
+          Type.Integer({
+            description: "Address index for generation only (default 0)",
+            minimum: 0,
+          }),
+        ),
+      },
+      { additionalProperties: false, ...BIP44_PATH_MODE_SCHEMA },
+    ),
     renderCall(args, _theme) {
       return new Text(args.path ? `🛤️ Parse: ${args.path}` : `🛤️ BIP44: ${args.chain}`, 0, 0);
     },
