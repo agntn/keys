@@ -62,6 +62,9 @@ export default defineNuxtConfig({
       nodeCompat: true,
     },
   },
+
+  compatibilityDate: '2026-09-03',
+
   fonts: {
     families: [
       { name: "Space Grotesk", weights: [400, 500, 600] },
