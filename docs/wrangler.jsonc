@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "agntn-keys",
+  "account_id": "6ef8d3cbe19975e93d994f25228488e7",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
     "NUXT_SITE_URL": "https://keys.agntn.dev"
