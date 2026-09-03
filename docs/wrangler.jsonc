@@ -12,5 +12,8 @@
       "database_id": "07da50dc-a4d9-4e9f-8ea0-72e480f1353b"
     }
   ],
+  "cache": {
+    "enabled": true
+  },
   "routes": [{ "pattern": "keys.agntn.dev", "custom_domain": true }]
 }
