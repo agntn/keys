@@ -1,16 +1,15 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "keys-docs",
+  "name": "agntn-keys",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
     "NUXT_SITE_URL": "https://keys.agntn.dev"
   },
   "d1_databases": [
     {
-      /* Nuxt Content keeps its index in D1. Create it once with `wrangler d1 create keys-docs` and paste the id below. */
       "binding": "DB",
-      "database_name": "keys-docs",
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+      "database_name": "agntn-keys",
+      "database_id": "07da50dc-a4d9-4e9f-8ea0-72e480f1353b"
     }
   ],
   "routes": [{ "pattern": "keys.agntn.dev", "custom_domain": true }]
