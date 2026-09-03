@@ -1,13 +1,24 @@
 {
   "name": "docs",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "undocs dev",
-    "build": "undocs build"
+    "dev": "nuxt dev --extends docus",
+    "build": "NUXT_SITE_URL=https://keys.agntn.dev nuxt build --extends docus",
+    "generate": "NUXT_SITE_URL=https://keys.agntn.dev nuxt generate --extends docus",
+    "preview": "nuxt preview --extends docus"
   },
+  "dependencies": {
+    "@agntn/keys": "file:..",
+    "better-sqlite3": "12.11.1",
+    "docus": "5.13.0",
+    "nuxt": "4.5.2"
+  },
+  "packageManager": "pnpm@11.24.0",
   "devDependencies": {
-    "nuxt": "4.5.2",
-    "undocs": "0.4.17"
-  },
-  "packageManager": "pnpm@11.24.0"
+    "@iconify-json/lucide": "1.2.128",
+    "@iconify-json/simple-icons": "1.2.94",
+    "@iconify-json/vscode-icons": "1.2.76",
+    "wrangler": "4.128.0"
+  }
 }

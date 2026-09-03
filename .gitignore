@@ -1,4 +1,8 @@
 node_modules/
 dist/
 coverage/
-docs/.docs
+docs/.nuxt
+docs/.output
+docs/.data
+docs/.nitro
+docs/.cache

@@ -18,7 +18,7 @@
     "typescript",
     "wallet"
   ],
-  "homepage": "https://github.com/agntn/keys#readme",
+  "homepage": "https://keys.agntn.dev",
   "bugs": {
     "url": "https://github.com/agntn/keys/issues"
   },
@@ -85,7 +85,9 @@
     "playground:slip10": "tsx playground/slip10-demo.ts",
     "playground:bip39": "tsx playground/bip39-demo.ts",
     "playground:bip44": "tsx playground/bip44-demo.ts",
-    "playground:signing": "tsx playground/signing-demo.ts"
+    "playground:signing": "tsx playground/signing-demo.ts",
+    "docs": "pnpm --dir docs dev",
+    "docs:build": "pnpm --dir docs build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
