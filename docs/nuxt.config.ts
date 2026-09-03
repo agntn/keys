@@ -53,6 +53,7 @@ export default defineNuxtConfig({
   },
   nitro: {
     preset: "cloudflare_module",
+    compatibilityDate: '2026-09-03',
     prerender: {
       crawlLinks: true,
       routes: ["/", "/sitemap.xml", "/robots.txt", "/llms.txt", "/llms-full.txt"],
