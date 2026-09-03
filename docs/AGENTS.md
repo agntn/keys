@@ -25,9 +25,12 @@ docs/
 ```bash
 pnpm install          # from docs/, after pnpm build in the repo root
 pnpm dev              # http://localhost:3000
-pnpm build            # Nitro output in .output/
-pnpm generate         # static output in .output/public
+pnpm build            # Cloudflare Workers output in .output/, every route prerendered
+pnpm deploy           # build, then wrangler deploy to keys.agntn.dev
+pnpm generate         # static output only, no worker
 ```
+
+Deployment: Nitro preset `cloudflare_module`. Nuxt Content needs a D1 binding named `DB`; `wrangler.jsonc` carries the binding and the `NUXT_SITE_URL` var, Nitro merges it into the generated `.output/server/wrangler.json`. Create the database once with `wrangler d1 create keys-docs` and put its id in `wrangler.jsonc`.
 
 The explorer imports `@agntn/keys` from `file:..`. Build the parent package first.
 

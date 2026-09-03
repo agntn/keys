@@ -47,6 +47,21 @@ export default defineNuxtConfig({
   colorMode: {
     preference: "dark",
   },
+  /** Docus ships an MCP endpoint that needs the Cloudflare Agents SDK on Workers. The docs do not need it. */
+  mcp: {
+    enabled: false,
+  },
+  nitro: {
+    preset: "cloudflare_module",
+    prerender: {
+      crawlLinks: true,
+      routes: ["/", "/sitemap.xml", "/robots.txt", "/llms.txt", "/llms-full.txt"],
+    },
+    cloudflare: {
+      deployConfig: true,
+      nodeCompat: true,
+    },
+  },
   fonts: {
     families: [
       { name: "Space Grotesk", weights: [400, 500, 600] },
@@ -54,6 +69,10 @@ export default defineNuxtConfig({
     ],
   },
   content: {
+    database: {
+      type: "d1",
+      bindingName: "DB",
+    },
     build: {
       markdown: {
         highlight: {
