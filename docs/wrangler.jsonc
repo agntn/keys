@@ -6,6 +6,7 @@
   "vars": {
     "NUXT_SITE_URL": "https://keys.agntn.dev"
   },
+  "workers_dev": true,
   "preview_urls": true,
   "d1_databases": [
     {
