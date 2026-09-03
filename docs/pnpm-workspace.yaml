@@ -1,24 +1,8 @@
 packages:
   - .
 
-minimumReleaseAgeExclude:
-  - esbuild
-  - nanoid
-  - nuxt
-  - postcss
-  - undocs
-
-overrides:
-  "fontless>esbuild": 0.28.2
-  "postcss>nanoid": 3.3.18
-  postcss: 8.5.26
-
-peerDependencyRules:
-  allowedVersions:
-    "unctx@3.0.1>oxc-parser": ">=0.139.0"
-    "unctx@3.0.1>unplugin": ">=2.3.11"
-
 allowBuilds:
-  "@parcel/watcher": true
+  better-sqlite3: true
   esbuild: true
+  workerd: true
   vue-demi: true
