@@ -51,9 +51,9 @@ export default function keysExtension(pi: ExtensionAPI) {
     promptSnippet:
       "Use to create a new wallet with keys and address for Bitcoin, Ethereum, Solana, etc.",
     promptGuidelines: [
-      "Provide a chain name (bitcoin, ethereum, base, solana, aptos, tron, sui, cardano)",
+      "Provide a chain name (bitcoin, litecoin, ethereum, base, solana, aptos, tron, sui, cardano)",
       "Optionally specify network (mainnet/testnet) and address type",
-      "Bitcoin address types: legacy, p2sh, segwit, p2wsh, taproot",
+      "Bitcoin and Litecoin address types: legacy, p2sh, segwit, p2wsh, taproot",
       "Cardano address types: payment, stake, enterprise",
       "Returns hex private key, hex public key, and address",
     ],
@@ -84,7 +84,7 @@ export default function keysExtension(pi: ExtensionAPI) {
     promptGuidelines: [
       "Provide a chain name and private key as hex",
       "Optionally specify network and address type",
-      "Bitcoin address types: legacy, p2sh, segwit, p2wsh, taproot",
+      "Bitcoin and Litecoin address types: legacy, p2sh, segwit, p2wsh, taproot",
       "For Sui, use ed25519 or secp256k1 as the address type",
     ],
     parameters: Type.Object({
@@ -115,7 +115,7 @@ export default function keysExtension(pi: ExtensionAPI) {
     promptGuidelines: [
       "Provide a chain, an English BIP39 mnemonic, and a full derivation path",
       "Common paths: Bitcoin m/44'/0'/0'/0/0 (legacy), m/49'/0'/0'/0/0 (p2sh), m/84'/0'/0'/0/0 (segwit), m/86'/0'/0'/0/0 (taproot); Ethereum m/44'/60'/0'/0/0; Solana m/44'/501'/0'/0'; Aptos m/44'/637'/0'/0'/0'; Sui m/44'/784'/0'/0'/0'",
-      "Bitcoin picks the address type from the path purpose unless addressType is set",
+      "Bitcoin and Litecoin pick the address type from the path purpose unless addressType is set",
       "Optionally pass a BIP39 passphrase, a network, or an address type",
       "Cardano is not supported because CIP-1852 derives from entropy, not from the BIP39 seed",
       "Use only public or disposable mnemonics because tool arguments are saved in the transcript",
@@ -374,7 +374,7 @@ export default function keysExtension(pi: ExtensionAPI) {
     promptGuidelines: [
       "Provide chain, message text, and private key (hex)",
       "Returns the signature as hex string",
-      "Bitcoin uses its own message preamble format",
+      "Bitcoin and Litecoin each use their own message preamble",
       "Ethereum/Base use EIP-191 prefix",
     ],
     parameters: Type.Object({

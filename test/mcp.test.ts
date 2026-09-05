@@ -1,6 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterEach, describe, expect, it } from "vitest";
+import { litecoinTestVectors } from "./fixtures.ts";
 import { createMcpServer } from "../src/mcp.ts";
 
 const TOOL_NAMES = [
@@ -84,6 +85,17 @@ describe("keys MCP server", () => {
     expect(response.isError).not.toBe(true);
     expect(text(response.content)).toContain("Address: bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu");
     expect(text(response.content)).not.toContain(mnemonic);
+  });
+
+  it("derives Litecoin through the MCP schema and executor", async () => {
+    const client = await connectTestClient();
+    const response = await client.callTool({
+      name: "keys_derive_wallet",
+      arguments: { chain: "litecoin", privateKey: litecoinTestVectors.privateKey },
+    });
+    expect(response.isError).not.toBe(true);
+    expect(text(response.content)).toContain(litecoinTestVectors.address);
+    expect(text(response.content)).not.toContain(litecoinTestVectors.privateKey);
   });
 
   it("validates a known Bitcoin address", async () => {

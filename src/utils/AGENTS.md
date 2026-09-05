@@ -8,17 +8,18 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP39, and SLIP-1
 
 **Plain files** (imported directly by blockchains):
 
-| File                | Lines | Used By                          | Purpose                                                                            |
-| ------------------- | ----- | -------------------------------- | ---------------------------------------------------------------------------------- |
-| `address.ts`        | 312   | bitcoin, sui, aptos, tron        | hash160, legacy/P2SH/SegWit address gen + validation, hex address validation       |
-| `evm.ts`            | ~220  | EVM classes and secp256k1 chains | EVM address generation, EIP-55 checksum, preamble signing, `AbstractEVMBlockchain` |
-| `signing.ts`        | ~100  | evm.ts, ed25519-chains.ts        | Generic sign/verify dispatching by curve type                                      |
-| `ed25519-chains.ts` | ~50   | solana, aptos, cardano, sui      | Shared raw Ed25519 signing and verification                                        |
-| `secp256k1.ts`      | ~100  | bitcoin, tron, sui, evm.ts       | Public key generation (compressed/uncompressed)                                    |
-| `ed25519.ts`        | ~50   | solana, aptos, cardano, sui      | Ed25519 public key generation                                                      |
-| `encoding.ts`       | ~60   | address.ts, tron                 | Base58Check encode/decode/validate                                                 |
-| `crypto-hash.ts`    | ~70   | (internal)                       | Hash function wrappers                                                             |
-| `hd.ts`             | ~45   | blockchain.ts                    | Mnemonic to private key at a path: BIP32 for secp256k1, SLIP-10 for ed25519        |
+| File                | Lines | Used By                          | Purpose                                                                                |
+| ------------------- | ----- | -------------------------------- | -------------------------------------------------------------------------------------- |
+| `address.ts`        | 312   | bitcoin, sui, aptos, tron        | hash160, legacy/P2SH/SegWit address gen + validation, hex address validation           |
+| `bitcoin.ts`        |       | bitcoin, litecoin                | Shared transparent address generation, HD purpose inference, and message serialization |
+| `evm.ts`            | ~220  | EVM classes and secp256k1 chains | EVM address generation, EIP-55 checksum, preamble signing, `AbstractEVMBlockchain`     |
+| `signing.ts`        | ~100  | evm.ts, ed25519-chains.ts        | Generic sign/verify dispatching by curve type                                          |
+| `ed25519-chains.ts` | ~50   | solana, aptos, cardano, sui      | Shared raw Ed25519 signing and verification                                            |
+| `secp256k1.ts`      | ~100  | bitcoin, tron, sui, evm.ts       | Public key generation (compressed/uncompressed)                                        |
+| `ed25519.ts`        | ~50   | solana, aptos, cardano, sui      | Ed25519 public key generation                                                          |
+| `encoding.ts`       | ~60   | address.ts, tron                 | Base58Check encode/decode/validate                                                     |
+| `crypto-hash.ts`    | ~70   | (internal)                       | Hash function wrappers                                                                 |
+| `hd.ts`             | ~45   | blockchain.ts                    | Mnemonic to private key at a path: BIP32 for secp256k1, SLIP-10 for ed25519            |
 
 **Subdirectories** (each has `index.ts`):
 

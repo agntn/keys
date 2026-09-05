@@ -16,6 +16,7 @@ export const BIP44_PATH_MODE_SCHEMA = {
 /** Every blockchain exposed by the tool surfaces. */
 export const TOOL_CHAINS = [
   "bitcoin",
+  "litecoin",
   "ethereum",
   "base",
   "solana",
@@ -48,6 +49,7 @@ export const TOOL_ADDRESS_TYPES = [
 /** Address types accepted for each tool chain. */
 export const TOOL_ADDRESS_TYPES_BY_CHAIN: Readonly<Record<ToolChain, readonly string[]>> = {
   bitcoin: BITCOIN_ADDRESS_TYPES,
+  litecoin: BITCOIN_ADDRESS_TYPES,
   ethereum: [],
   base: [],
   solana: [],
