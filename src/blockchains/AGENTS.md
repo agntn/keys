@@ -14,6 +14,8 @@ Lazy-loaded class modules. Each file exports a named concrete class and the same
 | **ed25519**          | solana, aptos, cardano | `ed25519SignMessage` (raw, no prehash)            | ed25519 via `utils/ed25519`         |
 | **dual-curve**       | sui                    | both (selected via `options.scheme`)              | ed25519 default, secp256k1 optional |
 
+Decred uses `AbstractBlockchain` directly: ECDSA P2PKH with BLAKE-256, not Bitcoin address hashing or EVM signing. Its HD method throws because standard BIP32 does not preserve Decred's legacy derivation.
+
 ## ADDING A NEW CHAIN
 
 1. Create `src/blockchains/<name>.ts` with `class Name extends AbstractBlockchain`

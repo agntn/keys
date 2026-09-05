@@ -68,3 +68,28 @@ export const litecoinTestVectors = {
     ["é".repeat(127), "08bebd99b9d1fbd73231de22e544e9b0b75c0c54ab6e3128f53665cdf944477f"],
   ],
 } as const;
+
+/** Disposable key 1, dcrd stdaddr v4.1.2 and chainhash v1.0.5 with wire v1.7.5. */
+export const decredTestVectors = {
+  privateKey: "00".repeat(31) + "01",
+  publicKey: "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+  addresses: {
+    mainnet: "DsmcYVbP1Nmag2H4AS17UTvmWXmGeA7nLDx",
+    testnet: "TsmfmUitQApgnNxQypdGd2x36djCCpDpERU",
+  },
+  uncompressedAddresses: {
+    mainnet: "DsbnCMAYV13buumdjHuwiJeJWZWvgjZRTbE",
+    testnet: "TsbqRLJ3so6i2GSzYgY6rsfa6fUrFMfSDJD",
+  },
+  signature:
+    "4e590293bb394c5d2a5d21fc2c166fb372c706068dc120e3fe71aaccad831006586d0eb88c6c92b6eb04432fec4550d6ccf9351e02112efa3833f5c0b00e9b36",
+  messageHashes: [
+    ["", "edec5d11d20ee5ea952da86dba18b453f520d778d40b1004908ed93ea22f93ce"],
+    ["hello", "776fea952d41c5269b91e9710afcd91103ad41a06e814f8ecba72f49044fdfe6"],
+    ["żółw 🐢", "6e3c8c1752e8b6fd010c84c21bfd51496ef47ff4fcc2c81142f80c208e42093b"],
+    ["a".repeat(252), "2c729fc2b4296dfb76b3413208d655beda09aa4fd7b64715c26fe7f85e690e3a"],
+    ["a".repeat(253), "f7fafe4c0f9f82d637608c35852c1a0056c9ef22d52ca43735b321d64c88cde6"],
+    ["a".repeat(65535), "2f3422e725451a9834251b25b1f7ade328740cf70a7e14c4119b32d469175481"],
+    ["a".repeat(65536), "5097489a2d963b9deec6554a0edc4528bef4fc2fe530279c486967efdab79bd7"],
+  ],
+} as const;

@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-TypeScript library providing a unified interface for key generation, address derivation, wallet creation, and message signing across 9 blockchains (Bitcoin, Litecoin, Ethereum, Base, Solana, Aptos, Cardano, SUI, TRON). Built entirely on the @noble/@scure audited crypto ecosystem.
+TypeScript library providing a unified interface for key generation, address derivation, wallet creation, and message signing across 10 blockchains (Bitcoin, Litecoin, Decred, Ethereum, Base, Solana, Aptos, Cardano, SUI, TRON). Built entirely on the @noble/@scure audited crypto ecosystem.
 
 ## STRUCTURE
 

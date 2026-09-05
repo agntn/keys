@@ -247,6 +247,10 @@ const BLOCKCHAIN_LOADERS: ReadonlyArray<{
     load: async (network) => useBlockchain(await blockchains.litecoin({ network })()),
   },
   {
+    name: "decred",
+    load: async (network) => useBlockchain(await blockchains.decred({ network })()),
+  },
+  {
     name: "ethereum",
     load: async (network) => useBlockchain(await blockchains.ethereum({ network })()),
   },

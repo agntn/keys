@@ -2,7 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
 import { describe, expect, it } from "vitest";
-import { litecoinTestVectors } from "./fixtures.ts";
+import { litecoinTestVectors, decredTestVectors } from "./fixtures.ts";
 import keysExtension from "../packages/pi/extensions/keys.ts";
 
 interface RegisteredTool {
@@ -43,6 +43,20 @@ describe("keys Pi extension", () => {
       {
         type: "text",
         text: `Public key: ${litecoinTestVectors.publicKey}\nAddress: ${litecoinTestVectors.address}`,
+      },
+    ]);
+  });
+
+  it("derives Decred through the registered Pi tool", async () => {
+    const tool = registerTools().get("keys_derive_wallet");
+    if (!tool) throw new Error("keys_derive_wallet was not registered");
+    const args = { chain: "decred", privateKey: decredTestVectors.privateKey };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    const result = await tool.execute("decred", args);
+    expect(result.content).toEqual([
+      {
+        type: "text",
+        text: `Public key: ${decredTestVectors.publicKey}\nAddress: ${decredTestVectors.addresses.mainnet}`,
       },
     ]);
   });
