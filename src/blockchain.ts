@@ -1,4 +1,3 @@
-import { webcrypto } from "node:crypto";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 import { deriveKeyPrivateFromMnemonic } from "./utils/hd.ts";
@@ -46,7 +45,7 @@ export abstract class AbstractBlockchain implements Blockchain {
   generateKeyPrivate(): string {
     const keyPrivateBytes = this.curve.includes("secp256k1")
       ? secp256k1.utils.randomSecretKey()
-      : webcrypto.getRandomValues(new Uint8Array(32));
+      : globalThis.crypto.getRandomValues(new Uint8Array(32));
 
     return bytesToHex(keyPrivateBytes);
   }

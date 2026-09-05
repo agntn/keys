@@ -29,6 +29,8 @@ Typed key generation, address derivation, and message signing across eight block
 pnpm add @agntn/keys
 ```
 
+Docs and the browser keyspace explorer: [keys.agntn.dev](https://keys.agntn.dev). The source lives in [`docs/`](./docs); run `pnpm docs` after `pnpm build` for a local copy.
+
 ## Usage
 
 Concrete blockchain classes are lazy-loaded. The double-call pattern `blockchains.chain(options)()` first passes config, then imports and constructs the class.

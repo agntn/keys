@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "agntn-keys",
+  "account_id": "6ef8d3cbe19975e93d994f25228488e7",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "NUXT_SITE_URL": "https://keys.agntn.dev"
+  },
+  "workers_dev": true,
+  "preview_urls": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "agntn-keys",
+      "database_id": "07da50dc-a4d9-4e9f-8ea0-72e480f1353b"
+    }
+  ],
+  "cache": {
+    "enabled": true
+  },
+  "routes": [{ "pattern": "keys.agntn.dev", "custom_domain": true }]
+}
