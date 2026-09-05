@@ -166,8 +166,8 @@ export class Bitcoin extends AbstractBlockchain {
     options?: HDWalletOptions,
     addressType?: AddressType,
   ): Wallet {
-    const purpose = /^m\/(\d+)'/u.exec(path)?.[1];
-    const inferredType = purpose === undefined ? undefined : PURPOSE_ADDRESS_TYPES[purpose];
+    const purpose = /^[mM]'?\/(\d+)'/u.exec(path)?.[1];
+    const inferredType = purpose === undefined ? undefined : PURPOSE_ADDRESS_TYPES[Number(purpose)];
     return super.deriveHDWallet(mnemonic, path, options, addressType ?? inferredType);
   }
 
