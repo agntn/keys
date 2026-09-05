@@ -379,23 +379,37 @@ describe("Bitcoin blockchain", () => {
       ["m/84'/0'/0'/0/1", "bc1qnjg0jd8228aq7egyzacy8cys3knf9xvrerkf9g"],
       ["m/86'/0'/0'/0/0", "bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr"],
     ])("picks the address type from the purpose of %s", (path, address) => {
-      expect(blockchain.deriveHDWallet(mnemonic, path).address).toBe(address);
+      const wallet = blockchain.deriveHDWallet(mnemonic, path);
+      expect(wallet.address).toBe(address);
+
+      for (const prefix of ["M/", "m'/", "M'/", "m/0"]) {
+        const equivalentPath = prefix + path.slice(2);
+        const equivalentWallet = blockchain.deriveHDWallet(mnemonic, equivalentPath);
+        expect(equivalentWallet.keys).toEqual(wallet.keys);
+        expect(equivalentWallet.address, equivalentPath).toBe(address);
+      }
     });
 
-    it("keeps an explicit address type over the purpose", () => {
-      const wallet = blockchain.deriveHDWallet(mnemonic, "m/84'/0'/0'/0/0", {}, "legacy");
+    it.each(["m/84'/0'/0'/0/0", "M'/084'/0'/0'/0/0"])(
+      "keeps an explicit address type over the purpose of %s",
+      (path) => {
+        const wallet = blockchain.deriveHDWallet(mnemonic, path, {}, "legacy");
 
-      expect(wallet.keys.private).toBe(
-        "4604b4b710fe91f584fff084e1a9159fe4f8408fff380596a604948474ce4fa3",
-      );
-      expect(wallet.address).toBe(blockchain.getAddress(wallet.keys.public, "legacy"));
-    });
+        expect(wallet.keys.private).toBe(
+          "4604b4b710fe91f584fff084e1a9159fe4f8408fff380596a604948474ce4fa3",
+        );
+        expect(wallet.address).toBe(blockchain.getAddress(wallet.keys.public, "legacy"));
+      },
+    );
 
-    it("falls back to legacy for paths without a known purpose", () => {
-      const wallet = blockchain.deriveHDWallet(mnemonic, "m/0/0");
+    it.each(["m/0/0", "M/84/0/0", "m'/084/0/0", "M/85'/0'/0'/0/0"])(
+      "falls back to legacy without a known hardened purpose in %s",
+      (path) => {
+        const wallet = blockchain.deriveHDWallet(mnemonic, path);
 
-      expect(wallet.address).toBe(blockchain.getAddress(wallet.keys.public, "legacy"));
-    });
+        expect(wallet.address).toBe(blockchain.getAddress(wallet.keys.public, "legacy"));
+      },
+    );
 
     it("derives testnet addresses on the testnet coin type", () => {
       const testnet = useBlockchain(new Bitcoin({ network: "testnet" }));
