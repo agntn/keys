@@ -243,6 +243,10 @@ const BLOCKCHAIN_LOADERS: ReadonlyArray<{
     load: async (network) => useBlockchain(await blockchains.bitcoin({ network })()),
   },
   {
+    name: "litecoin",
+    load: async (network) => useBlockchain(await blockchains.litecoin({ network })()),
+  },
+  {
     name: "ethereum",
     load: async (network) => useBlockchain(await blockchains.ethereum({ network })()),
   },

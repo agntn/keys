@@ -2,6 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
 import { describe, expect, it } from "vitest";
+import { litecoinTestVectors } from "./fixtures.ts";
 import keysExtension from "../packages/pi/extensions/keys.ts";
 
 interface RegisteredTool {
@@ -32,6 +33,20 @@ function registerTools(): ReadonlyMap<string, RegisteredTool> {
 }
 
 describe("keys Pi extension", () => {
+  it("derives Litecoin through the registered Pi tool", async () => {
+    const tool = registerTools().get("keys_derive_wallet");
+    if (!tool) throw new Error("keys_derive_wallet was not registered");
+    const args = { chain: "litecoin", privateKey: litecoinTestVectors.privateKey };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    const result = await tool.execute("litecoin", args);
+    expect(result.content).toEqual([
+      {
+        type: "text",
+        text: `Public key: ${litecoinTestVectors.publicKey}\nAddress: ${litecoinTestVectors.address}`,
+      },
+    ]);
+  });
+
   it("rejects unsupported networks and address types on every relevant tool", async () => {
     const tools = registerTools();
     const networkCases = [

@@ -15,6 +15,7 @@ export default defineBuildConfig({
         "./src/blockchains/aptos.ts",
         "./src/blockchains/base.ts",
         "./src/blockchains/bitcoin.ts",
+        "./src/blockchains/litecoin.ts",
         "./src/blockchains/cardano.ts",
         "./src/blockchains/ethereum.ts",
         "./src/blockchains/solana.ts",

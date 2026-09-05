@@ -56,3 +56,15 @@ export const testMessages = {
   medium: "This is a longer test message for cryptographic signing operations",
   long: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec a diam lectus. Sed sit amet ipsum mauris. Maecenas congue ligula ac quam viverra nec consectetur ante hendrerit.",
 };
+
+/** Disposable key 1 and Litecoin Core message hashes, independently serialized and SHA256d hashed. */
+export const litecoinTestVectors = {
+  privateKey: "0000000000000000000000000000000000000000000000000000000000000001",
+  publicKey: "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+  publicKeyHash: "751e76e8199196d454941c45d1b3a323f1433bd6",
+  address: "LVuDpNCSSj6pQ7t9Pv6d6sUkLKoqDEVUnJ",
+  messageHashes: [
+    ["hello", "51bd869e89676860cf1d778b8735f5e6768da32023d3dcd951711bd21c669d4c"],
+    ["é".repeat(127), "08bebd99b9d1fbd73231de22e544e9b0b75c0c54ab6e3128f53665cdf944477f"],
+  ],
+} as const;

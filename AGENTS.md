@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-TypeScript library providing a unified interface for key generation, address derivation, wallet creation, and message signing across 8 blockchains (Bitcoin, Ethereum, Base, Solana, Aptos, Cardano, SUI, TRON). Built entirely on the @noble/@scure audited crypto ecosystem.
+TypeScript library providing a unified interface for key generation, address derivation, wallet creation, and message signing across 9 blockchains (Bitcoin, Litecoin, Ethereum, Base, Solana, Aptos, Cardano, SUI, TRON). Built entirely on the @noble/@scure audited crypto ecosystem.
 
 ## STRUCTURE
 
@@ -30,19 +30,20 @@ keys/
 
 ## WHERE TO LOOK
 
-| Task               | Location                                                                          | Notes                                                      |
-| ------------------ | --------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Add new blockchain | `src/blockchains/` + `src/_blockchains.ts`                                        | Extend the appropriate base class, register in lazy loader |
-| Add address format | `src/utils/address.ts`                                                            | Shared across chains (legacy, segwit, hex, base58)         |
-| Add EVM chain      | `src/utils/evm.ts` → `AbstractEVMBlockchain`                                      | Minimal subclass with `name` and `bip44`                   |
-| Fix signing        | `src/utils/signing.ts` (generic) or `evm.ts`/`ed25519-chains.ts` (chain-specific) | EVM uses preamble hash, ed25519 signs raw                  |
-| Change public API  | `src/index.ts`                                                                    | Re-exports only, never add logic here                      |
-| Change agent tools | `src/tool-operations.ts`, `src/mcp.ts`, `packages/pi/extensions/keys.ts`          | Executors are shared; schemas stay aligned                 |
-| Add BIP/derivation | `src/utils/bip32/`, `bip39/`, `bip44/`, `slip10/`                                 | Subdirs with index.ts                                      |
-| Mnemonic to wallet | `src/blockchain.ts` → `deriveHDWallet` + `src/utils/hd.ts`                        | Bitcoin and Sui override it, Cardano throws (CIP-1852)     |
-| Write tests        | `test/` mirroring `src/` path                                                     | Use fixtures from `test/fixtures.ts`                       |
-| Integration test   | `test-integration/`                                                               | Separate pnpm package, manual execution                    |
-| Run demos          | `playground/*.ts`                                                                 | Execute via `pnpm playground <file>`                       |
+| Task               | Location                                                                          | Notes                                                                                |
+| ------------------ | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Add new blockchain | `src/blockchains/` + `src/_blockchains.ts`                                        | Extend the appropriate base class, register in lazy loader                           |
+| Add address format | `src/utils/address.ts`                                                            | Shared across chains (legacy, segwit, hex, base58)                                   |
+| Add Bitcoin family | `src/utils/bitcoin.ts` → `AbstractBitcoinBlockchain`                              | Reuse transparent address and HD behavior; keep chain signing rules explicit         |
+| Add EVM chain      | `src/utils/evm.ts` → `AbstractEVMBlockchain`                                      | Minimal subclass with `name` and `bip44`                                             |
+| Fix signing        | `src/utils/signing.ts` (generic) or `evm.ts`/`ed25519-chains.ts` (chain-specific) | EVM uses preamble hash, ed25519 signs raw                                            |
+| Change public API  | `src/index.ts`                                                                    | Re-exports only, never add logic here                                                |
+| Change agent tools | `src/tool-operations.ts`, `src/mcp.ts`, `packages/pi/extensions/keys.ts`          | Executors are shared; schemas stay aligned                                           |
+| Add BIP/derivation | `src/utils/bip32/`, `bip39/`, `bip44/`, `slip10/`                                 | Subdirs with index.ts                                                                |
+| Mnemonic to wallet | `src/blockchain.ts` → `deriveHDWallet` + `src/utils/hd.ts`                        | Bitcoin/Litecoin infer the address type; Sui overrides it, Cardano throws (CIP-1852) |
+| Write tests        | `test/` mirroring `src/` path                                                     | Use fixtures from `test/fixtures.ts`                                                 |
+| Integration test   | `test-integration/`                                                               | Separate pnpm package, manual execution                                              |
+| Run demos          | `playground/*.ts`                                                                 | Execute via `pnpm playground <file>`                                                 |
 
 ## CONVENTIONS
 

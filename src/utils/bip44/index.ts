@@ -50,6 +50,7 @@ export enum BIP44Change {
 export const BIP44 = {
   BITCOIN: 0,
   TESTNET: 1,
+  LITECOIN: 2,
   ETHEREUM: 60,
   SOLANA: 501,
   CARDANO: 1815,

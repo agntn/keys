@@ -5,7 +5,7 @@
 [![license](https://img.shields.io/github/license/agntn/keys?style=flat&colorA=130f40&colorB=474787)](https://github.com/agntn/keys/blob/main/LICENSE.md)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/agntn/keys)
 
-Typed key generation, address derivation, and message signing across eight blockchains and two curves.
+Typed key generation, address derivation, and message signing across nine blockchains and two curves.
 
 > [!WARNING]
 > **@agntn/keys is experimental.** The package name, public API, provider model, and tool surfaces may change before the first stable release. Pin exact versions if you build on it now.
@@ -68,6 +68,22 @@ const testnet = useBlockchain(await blockchains.bitcoin({ network: "testnet" })(
 testnet.getAddress(publicKey, "segwit"); // tb1q...
 ```
 
+### Litecoin
+
+```ts
+import { blockchains } from "@agntn/keys";
+
+const mnemonic =
+  "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+const ltc = await blockchains.litecoin()();
+const wallet = ltc.deriveHDWallet(mnemonic, "m/84'/2'/0'/0/0");
+const testnet = await blockchains.litecoin({ network: "testnet" })();
+```
+
+Litecoin uses the same five address types as Bitcoin, with `L`/`M`/`ltc1` on mainnet and `m` or `n`/`Q`/`tltc1` on testnet. Old P2SH prefixes (`3` and `2`) are accepted, not generated. Those old addresses overlap with Bitcoin, so validation alone cannot identify the chain. MWEB and regtest are outside this implementation.
+
+Message signing uses the Litecoin Core message digest and returns a compact signature of 64 bytes as hex, not Core's recoverable base64 format. Verify against the public key with `verifyMessage`.
+
 ### Sign and verify messages
 
 ```ts
@@ -124,7 +140,7 @@ const sol = useBlockchain(await blockchains.solana()());
 sol.deriveHDWallet(mnemonic, "m/44'/501'/0'/0'", { passphrase: "TREZOR" }).address;
 ```
 
-secp256k1 chains walk BIP32 and ed25519 chains walk SLIP-10, which accepts hardened segments only. Bitcoin reads the address type off the purpose level (44, 49, 84, 86) unless one is passed. Cardano throws, because CIP-1852 starts from the entropy rather than the BIP39 seed.
+secp256k1 chains walk BIP32 and ed25519 chains walk SLIP-10, which accepts hardened segments only. Bitcoin and Litecoin read the address type off the purpose level (44, 49, 84, 86) unless one is passed. Cardano throws, because CIP-1852 starts from the entropy rather than the BIP39 seed.
 
 ### Recover one missing BIP39 word
 
@@ -173,6 +189,7 @@ The server handles private keys, mnemonics, entropy, messages, and signatures as
 | Chain        | Curve              | Address Formats                      | Testnet |
 | ------------ | ------------------ | ------------------------------------ | ------- |
 | **Bitcoin**  | secp256k1          | legacy, p2sh, segwit, p2wsh, taproot | ✅      |
+| **Litecoin** | secp256k1          | legacy, p2sh, segwit, p2wsh, taproot | ✅      |
 | **Ethereum** | secp256k1          | EIP-55 checksum                      | -       |
 | **Base**     | secp256k1          | EVM-compatible                       | -       |
 | **Solana**   | ed25519            | base58                               | -       |

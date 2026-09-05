@@ -9,7 +9,8 @@ Lazy-loaded class modules. Each file exports a named concrete class and the same
 | Family               | Chains                 | Signing                                           | Key Derivation                      |
 | -------------------- | ---------------------- | ------------------------------------------------- | ----------------------------------- |
 | **EVM**              | ethereum, base         | `evmSignMessage` (preamble + keccak256)           | secp256k1 via `utils/secp256k1`     |
-| **secp256k1 custom** | bitcoin, tron          | `evmSignMessage` (same signing, custom addresses) | secp256k1 via `utils/secp256k1`     |
+| **Bitcoin family**   | bitcoin, litecoin      | chain-specific message preamble                   | secp256k1 via `utils/secp256k1`     |
+| **secp256k1 custom** | tron                   | `evmSignMessage` (same signing, custom addresses) | secp256k1 via `utils/secp256k1`     |
 | **ed25519**          | solana, aptos, cardano | `ed25519SignMessage` (raw, no prehash)            | ed25519 via `utils/ed25519`         |
 | **dual-curve**       | sui                    | both (selected via `options.scheme`)              | ed25519 default, secp256k1 optional |
 
@@ -24,11 +25,12 @@ Lazy-loaded class modules. Each file exports a named concrete class and the same
 
 ## PATTERNS
 
+- **Bitcoin base class** - `AbstractBitcoinBlockchain` in `utils/bitcoin.ts` shares address generation and HD purpose inference. Litecoin signs its Core digest with noble prehash disabled and accepts both P2SH prefix generations.
 - **EVM base class** - `Ethereum` and `Base` extend `AbstractEVMBlockchain`, which owns their shared key, address, validation, and signing behavior
-- **Network params** - Bitcoin and Cardano keep separate address parameters for each network in `NETWORK_PARAMS`; TRON uses `0x41` and `T` on mainnet, Shasta, and Nile
+- **Network params** - Bitcoin, Litecoin, and Cardano keep separate address parameters for each network in `NETWORK_PARAMS`; TRON uses `0x41` and `T` on mainnet, Shasta, and Nile
 - **BIP44 coin type** - every chain sets `bip44` from `BIP44` enum or SLIP-0044 number
 - **SUI dual-curve** - `getKeyPublic` and `signMessage` check `options.scheme` to pick ed25519 or secp256k1
-- **HD wallets** - `deriveHDWallet` on the base class walks BIP32 or SLIP-10 by curve; Bitcoin infers the address type from the path purpose, Sui takes the curve from the scheme, Cardano throws because CIP-1852 derives differently
+- **HD wallets** - `deriveHDWallet` on the base class walks BIP32 or SLIP-10 by curve; Bitcoin and Litecoin infer the address type from the path purpose, Sui takes the curve from the scheme, Cardano throws because CIP-1852 derives differently
 
 ## COMPLEXITY
 
