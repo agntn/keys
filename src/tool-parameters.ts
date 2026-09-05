@@ -17,6 +17,7 @@ export const BIP44_PATH_MODE_SCHEMA = {
 export const TOOL_CHAINS = [
   "bitcoin",
   "litecoin",
+  "decred",
   "ethereum",
   "base",
   "solana",
@@ -50,6 +51,7 @@ export const TOOL_ADDRESS_TYPES = [
 export const TOOL_ADDRESS_TYPES_BY_CHAIN: Readonly<Record<ToolChain, readonly string[]>> = {
   bitcoin: BITCOIN_ADDRESS_TYPES,
   litecoin: BITCOIN_ADDRESS_TYPES,
+  decred: ["legacy"],
   ethereum: [],
   base: [],
   solana: [],

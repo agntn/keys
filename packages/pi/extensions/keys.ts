@@ -51,9 +51,10 @@ export default function keysExtension(pi: ExtensionAPI) {
     promptSnippet:
       "Use to create a new wallet with keys and address for Bitcoin, Ethereum, Solana, etc.",
     promptGuidelines: [
-      "Provide a chain name (bitcoin, litecoin, ethereum, base, solana, aptos, tron, sui, cardano)",
+      "Provide a chain name (bitcoin, litecoin, decred, ethereum, base, solana, aptos, tron, sui, cardano)",
       "Optionally specify network (mainnet/testnet) and address type",
       "Bitcoin and Litecoin address types: legacy, p2sh, segwit, p2wsh, taproot",
+      "Decred supports legacy ECDSA P2PKH addresses only",
       "Cardano address types: payment, stake, enterprise",
       "Returns hex private key, hex public key, and address",
     ],
@@ -117,6 +118,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       "Common paths: Bitcoin m/44'/0'/0'/0/0 (legacy), m/49'/0'/0'/0/0 (p2sh), m/84'/0'/0'/0/0 (segwit), m/86'/0'/0'/0/0 (taproot); Ethereum m/44'/60'/0'/0/0; Solana m/44'/501'/0'/0'; Aptos m/44'/637'/0'/0'/0'; Sui m/44'/784'/0'/0'/0'",
       "Bitcoin and Litecoin pick the address type from the path purpose unless addressType is set",
       "Optionally pass a BIP39 passphrase, a network, or an address type",
+      "Decred HD derivation is not supported because it differs from standard BIP32",
       "Cardano is not supported because CIP-1852 derives from entropy, not from the BIP39 seed",
       "Use only public or disposable mnemonics because tool arguments are saved in the transcript",
       "Returns the path, public key, and address, never the mnemonic or private key",

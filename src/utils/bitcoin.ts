@@ -88,7 +88,7 @@ function validateAddressBase58Testnet(address: string, params: NetworkParams): b
   return false;
 }
 
-function encodeCompactSize(value: number): Uint8Array {
+export function encodeCompactSize(value: number): Uint8Array {
   if (value < 0xfd) return new Uint8Array([value]);
   if (value <= 0xffff) {
     const buffer = new Uint8Array(3);

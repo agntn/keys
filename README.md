@@ -5,7 +5,7 @@
 [![license](https://img.shields.io/github/license/agntn/keys?style=flat&colorA=130f40&colorB=474787)](https://github.com/agntn/keys/blob/main/LICENSE.md)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/agntn/keys)
 
-Typed key generation, address derivation, and message signing across nine blockchains and two curves.
+Typed key generation, address derivation, and message signing across ten blockchains and two curves.
 
 > [!WARNING]
 > **@agntn/keys is experimental.** The package name, public API, provider model, and tool surfaces may change before the first stable release. Pin exact versions if you build on it now.
@@ -84,6 +84,20 @@ Litecoin uses the same five address types as Bitcoin, with `L`/`M`/`ltc1` on mai
 
 Message signing uses the Litecoin Core message digest and returns a compact signature of 64 bytes as hex, not Core's recoverable base64 format. Verify against the public key with `verifyMessage`.
 
+### Decred
+
+```ts
+import { blockchains } from "@agntn/keys";
+
+const dcr = await blockchains.decred()();
+const wallet = dcr.generateWallet();
+const testnet = await blockchains.decred({ network: "testnet" })();
+```
+
+Decred supports ECDSA P2PKH addresses (`legacy`), with `Ds` on mainnet and `Ts` on testnet3. Both compressed and uncompressed public keys work. Other address formats and signature schemes are outside this implementation.
+
+Message signing uses the Decred message digest and returns 64 bytes of compact r/s as hex, not the recoverable base64 format used by dcrd. Use `verifyMessage` with the public key. `deriveHDWallet` throws: Decred's HD derivation strips leading zeros, so ordinary BIP32 is not a safe substitute. BIP44 path generation uses coin type 42, not the historical type 20.
+
 ### Sign and verify messages
 
 ```ts
@@ -140,7 +154,7 @@ const sol = useBlockchain(await blockchains.solana()());
 sol.deriveHDWallet(mnemonic, "m/44'/501'/0'/0'", { passphrase: "TREZOR" }).address;
 ```
 
-secp256k1 chains walk BIP32 and ed25519 chains walk SLIP-10, which accepts hardened segments only. Bitcoin and Litecoin read the address type off the purpose level (44, 49, 84, 86) unless one is passed. Cardano throws, because CIP-1852 starts from the entropy rather than the BIP39 seed.
+secp256k1 chains walk BIP32 and ed25519 chains walk SLIP-10, which accepts hardened segments only. Bitcoin and Litecoin read the address type off the purpose level (44, 49, 84, 86) unless one is passed. Decred throws because its HD derivation differs from standard BIP32. Cardano throws, because CIP-1852 starts from the entropy rather than the BIP39 seed.
 
 ### Recover one missing BIP39 word
 
@@ -190,6 +204,7 @@ The server handles private keys, mnemonics, entropy, messages, and signatures as
 | ------------ | ------------------ | ------------------------------------ | ------- |
 | **Bitcoin**  | secp256k1          | legacy, p2sh, segwit, p2wsh, taproot | ✅      |
 | **Litecoin** | secp256k1          | legacy, p2sh, segwit, p2wsh, taproot | ✅      |
+| **Decred**   | secp256k1          | legacy ECDSA P2PKH                   | ✅      |
 | **Ethereum** | secp256k1          | EIP-55 checksum                      | -       |
 | **Base**     | secp256k1          | EVM-compatible                       | -       |
 | **Solana**   | ed25519            | base58                               | -       |
@@ -205,7 +220,7 @@ All chains support key generation, address derivation, address validation, and m
 Built on audited cryptographic packages from [@paulmillr](https://github.com/paulmillr):
 
 - [@noble/curves](https://github.com/paulmillr/noble-curves) - elliptic curve implementations (secp256k1, ed25519)
-- [@noble/hashes](https://github.com/paulmillr/noble-hashes) - SHA-256, Keccak, BLAKE2b, SHA3
+- [@noble/hashes](https://github.com/paulmillr/noble-hashes) - SHA-256, Keccak, BLAKE-256, BLAKE2b, SHA3
 - [@scure/base](https://github.com/paulmillr/scure-base) - base58, bech32, hex encoding
 - [@scure/bip32](https://github.com/paulmillr/scure-bip32) - HD wallet key derivation
 - [micro-key-producer](https://github.com/paulmillr/micro-key-producer) - SLIP-0010 for ed25519
