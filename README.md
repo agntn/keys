@@ -68,6 +68,24 @@ const testnet = useBlockchain(await blockchains.bitcoin({ network: "testnet" })(
 testnet.getAddress(publicKey, "segwit"); // tb1q...
 ```
 
+### Import and export WIF
+
+```ts
+import { encodeWIF, decodeWIF, blockchains } from "@agntn/keys";
+
+const privateKey = "00".repeat(31) + "01";
+const wif = encodeWIF(privateKey, { chain: "bitcoin" });
+const decoded = decodeWIF(wif, { chain: "bitcoin" });
+const btc = await blockchains.bitcoin()();
+const wallet = btc.deriveWallet(decoded.privateKey, { compressed: decoded.compressed });
+```
+
+Choose `chain: "bitcoin"`, `"litecoin"` or `"decred"`, the three chains in this package with native WIF support. Both functions default to `network: "mainnet"`; pass `network: "testnet"` for testnet (testnet3 on Decred). `encodeWIF` takes exactly 64 hex characters without `0x` and defaults to `compressed: true`. Bitcoin and Litecoin also accept `compressed: false`. Decred uses its native BLAKE-256 checksum and ECDSA scheme, and rejects uncompressed exports or other signature schemes.
+
+`decodeWIF` checks the selected chain/network and returns `{ privateKey, chain, network, compressed }`. Both functions reject invalid secp256k1 scalars; decoding also checks the checksum, payload length and compression marker. Bitcoin and Litecoin share a testnet prefix, so the returned chain is the requested context, not proof of ownership. Other chains, networks and BIP38 encrypted keys are not supported.
+
+Preserve `compressed` when deriving a wallet: the same private key can produce a different address without it. WIF is not encryption. Use disposable test keys only.
+
 ### Litecoin
 
 ```ts
