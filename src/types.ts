@@ -36,6 +36,8 @@ export interface Wallet extends Keys {
    * Blockchain address derived from the public key
    */
   address: AddressFormat;
+  /** Present when HD derivation explicitly accepts an invalid mnemonic checksum. */
+  warnings?: readonly string[];
 }
 
 /**
@@ -70,6 +72,8 @@ export interface KeyOptions {
  */
 export interface HDWalletOptions extends KeyOptions {
   readonly passphrase?: string;
+  /** Accept an invalid checksum, but still require English BIP39 words and length. Default: false. */
+  readonly allowInvalidChecksum?: boolean;
 }
 
 /**

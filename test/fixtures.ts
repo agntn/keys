@@ -27,6 +27,15 @@ export const bip39TestVectors = {
   passphrase: "TREZOR",
 };
 
+/** Public, claimed Bitcoin Movie Enigma solution: floflo777/open-crypto-puzzles#24. */
+export const invalidChecksumPuzzle = {
+  mnemonic:
+    "path mad alien apology escape spare miss goddess leopard crime visit clock start first blade guard close barrel term screen matrix toy ghost shine",
+  path: "m/84'/0'/0'/0/0",
+  address: "bc1q94ecsn0qk8lap2gefrycnms3ruepy889z969a6",
+  publicKey: "022c17f7486b4107b42a243a62e4d0919af3e8ee858a272319bffb0536486b9405",
+};
+
 // Bitcoin test vectors
 export const bitcoinTestVectors = {
   // Valid addresses for testing

@@ -9,6 +9,7 @@
     "test/mcp.test.ts",
     "test/pi-extension.test.ts",
     "test/utils/bip39.test.ts",
+    "test/utils/hd.test.ts",
     "test/utils/slip10.test.ts",
     "test/utils/signing.test.ts",
     "test/utils/wif.test.ts"

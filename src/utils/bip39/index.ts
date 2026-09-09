@@ -102,6 +102,43 @@ export const entropyToMnemonic = (entropy: Uint8Array) =>
 
 const MNEMONIC_WORD_COUNTS: readonly number[] = [12, 15, 18, 21, 24];
 
+/** BIP39 diagnostics without the input words or entropy. */
+export interface BIP39MnemonicInspection {
+  readonly valid: boolean;
+  readonly words: number;
+  readonly wordCountValid: boolean;
+  readonly wordlistValid: boolean;
+  /** Null when word count or dictionary membership prevents checking the checksum. */
+  readonly checksumValid: boolean | null;
+}
+
+/**
+ * Separates word count, dictionary membership and checksum after NFKD normalization.
+ * @param mnemonic - Candidate phrase with words separated by single spaces
+ * @param selectedWordlist - BIP39 word list, defaulting to English
+ * @returns {BIP39MnemonicInspection} Diagnostics without echoing the phrase
+ */
+export function inspectBIP39Mnemonic(
+  mnemonic: string,
+  selectedWordlist: readonly string[] = wordlist,
+): BIP39MnemonicInspection {
+  const normalized = mnemonic.normalize("NFKD");
+  const words = normalized === "" ? [] : normalized.split(" ");
+  const wordCountValid = MNEMONIC_WORD_COUNTS.includes(words.length);
+  const wordlistValid = words.length > 0 && words.every((word) => selectedWordlist.includes(word));
+  const checksumValid =
+    wordCountValid && wordlistValid
+      ? bip39.validateMnemonic(normalized, [...selectedWordlist])
+      : null;
+  return {
+    valid: checksumValid === true,
+    words: words.length,
+    wordCountValid,
+    wordlistValid,
+    checksumValid,
+  };
+}
+
 /**
  * Lists English BIP39 words that make the checksum valid for a mnemonic with one placeholder.
  * @param mnemonic - Mnemonic template containing exactly one `?`

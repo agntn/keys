@@ -6,6 +6,7 @@ import {
   mnemonicToEntropy,
   entropyToMnemonic,
   getMnemonicWordCandidates,
+  inspectBIP39Mnemonic,
   BIP39_LANGUAGES,
   isBIP39Language,
   lookupBIP39Indices,
@@ -13,7 +14,7 @@ import {
   loadBIP39Wordlist,
 } from "../../src/utils/bip39";
 import { hexToBytes } from "@noble/hashes/utils.js";
-import { bip39TestVectors } from "../fixtures";
+import { bip39TestVectors, invalidChecksumPuzzle, localizedMnemonicVectors } from "../fixtures";
 
 describe("BIP39 Utils", () => {
   // Test vectors from BIP39 specification
@@ -155,6 +156,80 @@ describe("BIP39 Utils", () => {
     expect(() => getMnemonicWordCandidates("abandon abandon ?")).toThrow(
       "12, 15, 18, 21, or 24 words",
     );
+  });
+
+  it("reports a checksum failure independently from word count and dictionary membership", () => {
+    const { mnemonic } = invalidChecksumPuzzle;
+    expect(inspectBIP39Mnemonic(mnemonic)).toEqual({
+      valid: false,
+      words: 24,
+      wordCountValid: true,
+      wordlistValid: true,
+      checksumValid: false,
+    });
+    expect(inspectBIP39Mnemonic(bip39TestVectors.mnemonic)).toEqual({
+      valid: true,
+      words: 12,
+      wordCountValid: true,
+      wordlistValid: true,
+      checksumValid: true,
+    });
+    expect(inspectBIP39Mnemonic(mnemonic.replace("path", "notaword"))).toMatchObject({
+      valid: false,
+      wordCountValid: true,
+      wordlistValid: false,
+      checksumValid: null,
+    });
+    expect(inspectBIP39Mnemonic("abandon")).toMatchObject({
+      valid: false,
+      wordCountValid: false,
+      wordlistValid: true,
+      checksumValid: null,
+    });
+    expect(inspectBIP39Mnemonic("")).toMatchObject({
+      valid: false,
+      words: 0,
+      wordCountValid: false,
+      wordlistValid: false,
+      checksumValid: null,
+    });
+    expect(inspectBIP39Mnemonic(bip39TestVectors.mnemonic.replaceAll("a", "\uFF41"))).toMatchObject(
+      { valid: true },
+    );
+    expect(getMnemonicWordCandidates(mnemonic.replace(/shine$/u, "?"))).not.toContain("shine");
+    expect(validateMnemonic(mnemonic)).toBe(false);
+    expect(() => mnemonicToEntropy(mnemonic)).toThrow("Invalid checksum");
+  });
+
+  it.each(localizedMnemonicVectors)(
+    "inspects $language with the explicitly selected word list",
+    async ({ language, mnemonic }) => {
+      const wordlist = await loadBIP39Wordlist(language);
+      expect(inspectBIP39Mnemonic(mnemonic.normalize("NFC"), wordlist)).toEqual({
+        valid: true,
+        words: 12,
+        wordCountValid: true,
+        wordlistValid: true,
+        checksumValid: true,
+      });
+    },
+  );
+
+  it("distinguishes a localized checksum failure from the wrong dictionary", async () => {
+    const wordlist = await loadBIP39Wordlist("spanish");
+    const mnemonic = Array.from({ length: 12 }, () => "ábaco").join(" ");
+    expect(inspectBIP39Mnemonic(mnemonic, wordlist)).toMatchObject({
+      valid: false,
+      wordCountValid: true,
+      wordlistValid: true,
+      checksumValid: false,
+    });
+    expect(inspectBIP39Mnemonic(mnemonic)).toMatchObject({
+      valid: false,
+      wordCountValid: true,
+      wordlistValid: false,
+      checksumValid: null,
+    });
   });
 
   it("converts mnemonic to seed correctly", () => {

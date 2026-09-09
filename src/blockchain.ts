@@ -1,7 +1,7 @@
 import { webcrypto } from "node:crypto";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
-import { deriveKeyPrivateFromMnemonic } from "./utils/hd.ts";
+import { deriveMnemonicKey } from "./utils/hd.ts";
 import type {
   AddressType,
   Blockchain,
@@ -108,15 +108,25 @@ export abstract class AbstractBlockchain implements Blockchain {
     options?: HDWalletOptions,
     addressType?: AddressType,
   ): Wallet {
-    const { passphrase, ...keyOptions } = options ?? {};
-    const keyPrivate = deriveKeyPrivateFromMnemonic(
+    const { passphrase, allowInvalidChecksum, ...keyOptions } = options ?? {};
+    const { privateKey, checksumValid } = deriveMnemonicKey(
       mnemonic,
       path,
       this.resolveCurve(keyOptions),
       passphrase,
+      allowInvalidChecksum,
     );
 
-    return this.deriveWallet(keyPrivate, keyOptions, addressType);
+    const wallet = this.deriveWallet(privateKey, keyOptions, addressType);
+    return checksumValid
+      ? wallet
+      : {
+          ...wallet,
+          warnings: [
+            ...(wallet.warnings ?? []),
+            "BIP39 checksum is invalid. Derived from the supplied words without repairing the checksum.",
+          ],
+        };
   }
 }
 

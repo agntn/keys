@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { DecodedWIF, WIFOptions } from "@agntn/keys";
-import { wifTestVectors, localizedMnemonicVectors } from "./fixtures.ts";
+import type { DecodedWIF, WIFOptions, HDWalletOptions } from "@agntn/keys";
+import type { BIP39MnemonicInspection } from "@agntn/keys/bip39";
+import { wifTestVectors, localizedMnemonicVectors, invalidChecksumPuzzle } from "./fixtures.ts";
 
 const EXPORTS = [
   ["@agntn/keys/bip32", "/dist/utils/bip32/index.mjs"],
@@ -23,6 +24,25 @@ describe("Public WIF exports", () => {
 });
 
 describe("Public derivation exports", () => {
+  it("exports checksum diagnostics and the explicit HD override from the built package", async () => {
+    const { blockchains } = await import("@agntn/keys");
+    const { inspectBIP39Mnemonic } = await import("@agntn/keys/bip39");
+    const { mnemonic, path, address } = invalidChecksumPuzzle;
+    const inspection: BIP39MnemonicInspection = inspectBIP39Mnemonic(mnemonic);
+    expect(inspection).toMatchObject({
+      valid: false,
+      wordCountValid: true,
+      wordlistValid: true,
+      checksumValid: false,
+    });
+    const options: HDWalletOptions = { allowInvalidChecksum: true };
+    const chain = await blockchains.bitcoin()();
+    expect(() => chain.deriveHDWallet(mnemonic, path)).toThrow("Invalid BIP39 mnemonic");
+    const wallet = chain.deriveHDWallet(mnemonic, path, options);
+    expect(wallet.address).toBe(address);
+    expect(wallet.warnings).toEqual([expect.stringContaining("checksum is invalid")]);
+  });
+
   it("loads localized lists for the published BIP39 codec", async () => {
     const { loadBIP39Wordlist, bip39, generateMnemonic, validateMnemonic } =
       await import("@agntn/keys/bip39");

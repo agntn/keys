@@ -6,6 +6,7 @@ import {
   decredTestVectors,
   wifTestVectors,
   localizedMnemonicVectors,
+  invalidChecksumPuzzle,
 } from "./fixtures.ts";
 import { createMcpServer } from "../src/mcp.ts";
 
@@ -67,6 +68,9 @@ describe("keys MCP server", () => {
       expect(inspected.isError).not.toBe(true);
       expect(text(inspected.content)).toContain(`Language: ${language}`);
       expect(text(inspected.content)).toContain(`Entropy: ${entropy}`);
+      expect(text(inspected.content)).toContain("Word count valid: yes");
+      expect(text(inspected.content)).toContain("Wordlist valid: yes");
+      expect(text(inspected.content)).toContain("Checksum valid: yes");
     }
     const generated = await client.callTool({
       name: "keys_generate_mnemonic",
@@ -205,6 +209,39 @@ describe("keys MCP server", () => {
     expect(response.isError).not.toBe(true);
     expect(text(response.content)).toContain("Address: bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu");
     expect(text(response.content)).not.toContain(mnemonic);
+  });
+
+  it("requires an explicit checksum override and reports the warning through MCP", async () => {
+    const client = await connectTestClient();
+    const { mnemonic, path, address, publicKey } = invalidChecksumPuzzle;
+    const args = { chain: "bitcoin", mnemonic, path };
+    const strict = await client.callTool({ name: "keys_derive_hd_wallet", arguments: args });
+    expect(strict.isError).toBe(true);
+    expect(text(strict.content)).toContain("Invalid BIP39 mnemonic");
+    const result = await client.callTool({
+      name: "keys_derive_hd_wallet",
+      arguments: { ...args, allowInvalidChecksum: true },
+    });
+    expect(result.isError).not.toBe(true);
+    expect(text(result.content)).toContain(address);
+    expect(text(result.content)).toContain(publicKey);
+    expect(text(result.content)).toContain("Warning: BIP39 checksum is invalid.");
+    expect(text(result.content)).not.toContain(mnemonic);
+    for (const allowInvalidChecksum of [false, "true", "false", 1, null]) {
+      const rejected = await client.callTool({
+        name: "keys_derive_hd_wallet",
+        arguments: { ...args, allowInvalidChecksum },
+      });
+      expect(rejected.isError).toBe(true);
+    }
+    const inspection = await client.callTool({
+      name: "keys_inspect_mnemonic",
+      arguments: { mnemonic },
+    });
+    expect(text(inspection.content)).toContain("Word count valid: yes");
+    expect(text(inspection.content)).toContain("Wordlist valid: yes");
+    expect(text(inspection.content)).toContain("Checksum valid: no");
+    expect(text(inspection.content)).not.toContain("Entropy:");
   });
 
   it("derives Litecoin through the MCP schema and executor", async () => {

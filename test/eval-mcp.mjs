@@ -3,6 +3,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import path from "node:path";
+import { invalidChecksumPuzzle } from "./fixtures.ts";
 
 const server = path.resolve(import.meta.dirname, "../dist/cli.mjs");
 const transport = new StdioClientTransport({ command: process.execPath, args: [server, "mcp"] });
@@ -97,6 +98,32 @@ try {
   const generatedMnemonic = /Mnemonic: ([a-z ]+)/.exec(generated)?.[1];
   if (!generatedMnemonic) throw new Error("keys_generate_mnemonic returned no mnemonic");
   await call("keys_inspect_mnemonic", { mnemonic: generatedMnemonic }, /Valid BIP39: yes/);
+  const puzzleArgs = {
+    chain: "bitcoin",
+    mnemonic: invalidChecksumPuzzle.mnemonic,
+    path: invalidChecksumPuzzle.path,
+  };
+  const strictPuzzle = await client.callTool({
+    name: "keys_derive_hd_wallet",
+    arguments: puzzleArgs,
+  });
+  if (strictPuzzle.isError !== true || !text(strictPuzzle).includes("Invalid BIP39 mnemonic")) {
+    throw new Error("Invalid puzzle checksum must be rejected by default");
+  }
+  const puzzleWallet = await call(
+    "keys_derive_hd_wallet",
+    { ...puzzleArgs, allowInvalidChecksum: true },
+    /Warning: BIP39 checksum is invalid\./,
+  );
+  if (
+    !puzzleWallet.includes(invalidChecksumPuzzle.address) ||
+    !puzzleWallet.includes(invalidChecksumPuzzle.publicKey)
+  ) {
+    throw new Error("Puzzle derivation did not reproduce the published wallet");
+  }
+  if (puzzleWallet.includes(invalidChecksumPuzzle.mnemonic)) {
+    throw new Error("Puzzle derivation echoed the mnemonic");
+  }
   await call("keys_inspect_mnemonic", { mnemonic }, /Valid BIP39: yes/);
   await call("keys_encode_bip39_entropy", { entropy: "00".repeat(16) }, /Words: 12/);
   for (const name of ["keys_generate_mnemonic", "keys_encode_bip39_entropy"]) {
