@@ -157,7 +157,7 @@ const tools: readonly ToolDefinition[] = [
     name: "keys_derive_hd_wallet",
     title: "Derive HD Wallet",
     description:
-      "Derive a public key and address from an English BIP39 mnemonic and an absolute derivation path. The mnemonic and optional passphrase enter the MCP transcript, so use only public or disposable material.",
+      "Derive a public key and address from English BIP39 words and a path. Use allowInvalidChecksum for public puzzle candidates that fail only the checksum. Words are not repaired. Inputs enter the MCP transcript, so use only public or disposable material.",
     inputSchema: Type.Object(
       {
         chain: chainArgument,
@@ -171,6 +171,12 @@ const tools: readonly ToolDefinition[] = [
           pattern: DERIVATION_PATH_SCHEMA_PATTERN,
         }),
         passphrase: Type.Optional(Type.String({ description: "BIP39 passphrase. Default: empty" })),
+        allowInvalidChecksum: Type.Optional(
+          Type.Boolean({
+            description:
+              "Accept an invalid checksum with a warning. English words and BIP39 word counts are still required. Default: false",
+          }),
+        ),
         addressType: addressTypeArgument,
         network: networkArgument,
       },
@@ -185,6 +191,7 @@ const tools: readonly ToolDefinition[] = [
         args["passphrase"],
         args["addressType"],
         args["network"],
+        args["allowInvalidChecksum"],
       ),
   },
   {
@@ -200,7 +207,7 @@ const tools: readonly ToolDefinition[] = [
     name: "keys_inspect_mnemonic",
     title: "Inspect Mnemonic",
     description:
-      "Validate a BIP39 mnemonic and recover its entropy when valid. The phrase enters the MCP transcript, so use only public or disposable candidates.",
+      "Inspect BIP39 word count, dictionary membership and checksum separately. Recover entropy only when valid. A bad checksum does not rule out a puzzle candidate. The phrase enters the MCP transcript, so use only public or disposable candidates.",
     inputSchema: Type.Object(
       {
         language: BIP39_LANGUAGE_PARAMETER,
@@ -287,7 +294,7 @@ const tools: readonly ToolDefinition[] = [
     name: "keys_recover_mnemonic_word",
     title: "Recover Mnemonic Word",
     description:
-      "List English BIP39 words that make the checksum valid for one missing position. The partial phrase enters the MCP transcript, so use only public or disposable candidates.",
+      "List English BIP39 words that make the checksum valid for one missing position. Use this filter only when canonical BIP39 generation is established, not for puzzles that may have invalid checksums. Inputs enter the MCP transcript, so use only public or disposable candidates.",
     inputSchema: Type.Object(
       {
         mnemonic: Type.String({

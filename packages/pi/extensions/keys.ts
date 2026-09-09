@@ -146,7 +146,8 @@ export default function keysExtension(pi: ExtensionAPI) {
   pi.registerTool({
     name: "keys_derive_hd_wallet",
     label: "Derive HD Wallet",
-    description: "Derive a public key and address from a BIP39 mnemonic and derivation path",
+    description:
+      "Derive a public key and address from English BIP39 words and a path, optionally accepting an invalid checksum for public puzzles",
     promptSnippet:
       "Use to see which address a public puzzle mnemonic reaches on a given derivation path.",
     promptGuidelines: [
@@ -154,6 +155,9 @@ export default function keysExtension(pi: ExtensionAPI) {
       "Common paths: Bitcoin m/44'/0'/0'/0/0 (legacy), m/49'/0'/0'/0/0 (p2sh), m/84'/0'/0'/0/0 (segwit), m/86'/0'/0'/0/0 (taproot); Ethereum m/44'/60'/0'/0/0; Solana m/44'/501'/0'/0'; Aptos m/44'/637'/0'/0'/0'; Sui m/44'/784'/0'/0'/0'",
       "Bitcoin and Litecoin pick the address type from the path purpose unless addressType is set",
       "Optionally pass a BIP39 passphrase, a network, or an address type",
+      "For public puzzles, allowInvalidChecksum=true accepts a checksum failure with a warning, but still requires English BIP39 words and word counts",
+      "Never repair words just to satisfy the checksum. A bad checksum does not rule out a puzzle candidate",
+      "Whitespace is collapsed and BIP39 NFKD normalization still applies, not raw text hashing",
       "Decred HD derivation is not supported because it differs from standard BIP32",
       "Cardano is not supported because CIP-1852 derives from entropy, not from the BIP39 seed",
       "Use only public or disposable mnemonics because tool arguments are saved in the transcript",
@@ -173,6 +177,12 @@ export default function keysExtension(pi: ExtensionAPI) {
         description: "Derivation path such as m/84'/0'/0'/0/0",
       }),
       passphrase: Type.Optional(Type.String({ description: "BIP39 passphrase. Default: empty" })),
+      allowInvalidChecksum: Type.Optional(
+        Type.Boolean({
+          description:
+            "Accept an invalid checksum with a warning. English words and BIP39 word counts are still required. Default: false",
+        }),
+      ),
       addressType: ADDRESS_TYPE_PARAMETER,
       network: NETWORK_PARAMETER,
     }),
@@ -187,6 +197,7 @@ export default function keysExtension(pi: ExtensionAPI) {
         params.passphrase,
         params.addressType,
         params.network,
+        params.allowInvalidChecksum,
       );
     },
   });
@@ -213,13 +224,16 @@ export default function keysExtension(pi: ExtensionAPI) {
   pi.registerTool({
     name: "keys_inspect_mnemonic",
     label: "Inspect Mnemonic",
-    description: "Validate a BIP39 mnemonic and recover its entropy",
+    description:
+      "Inspect BIP39 word count, dictionary membership and checksum, with entropy only when valid",
     promptSnippet: "Use to check mnemonic candidates from public crypto puzzles.",
     promptGuidelines: [
       "keys_inspect_mnemonic accepts an explicit BIP39 language; omission means english, not automatic detection",
       "Provide a BIP39 mnemonic",
       "Use only public or disposable candidates because tool arguments are saved in the transcript",
-      "Returns checksum validity, word count, and entropy for valid mnemonics",
+      "Returns wordCountValid, wordlistValid and checksumValid separately, with entropy only for valid mnemonics",
+      "checksumValid is null when word count or dictionary membership prevents checking it",
+      "A checksum failure is not proof that a puzzle candidate is wrong. keys_derive_hd_wallet accepts allowInvalidChecksum=true explicitly",
     ],
     parameters: Type.Object({
       language: BIP39_LANGUAGE_PARAMETER,

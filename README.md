@@ -176,6 +176,26 @@ sol.deriveHDWallet(mnemonic, "m/44'/501'/0'/0'", { passphrase: "TREZOR" }).addre
 
 secp256k1 chains walk BIP32 and ed25519 chains walk SLIP-10, which accepts hardened segments only. Bitcoin and Litecoin read the address type off the purpose level (44, 49, 84, 86) unless one is passed. Decred throws because its HD derivation differs from standard BIP32. Cardano throws, because CIP-1852 starts from the entropy rather than the BIP39 seed.
 
+### Puzzle phrases with an invalid checksum
+
+A bad checksum does not always mean a wrong puzzle answer. The [claimed Bitcoin Movie Enigma solution](https://github.com/floflo777/open-crypto-puzzles/issues/24) has one. Repairing its last word derives a different wallet.
+
+`deriveHDWallet` rejects invalid checksums by default. Set `allowInvalidChecksum: true` explicitly to derive from the supplied words:
+
+```ts
+const puzzleMnemonic =
+  "path mad alien apology escape spare miss goddess leopard crime visit clock start first blade guard close barrel term screen matrix toy ghost shine";
+const puzzleWallet = btc.deriveHDWallet(puzzleMnemonic, "m/84'/0'/0'/0/0", {
+  allowInvalidChecksum: true,
+});
+console.log(puzzleWallet.address);
+console.log(puzzleWallet.warnings);
+```
+
+This public, burned example produces `bc1q94ecsn0qk8lap2gefrycnms3ruepy889z969a6` and a checksum warning. The override still requires English BIP39 words and a count of 12, 15, 18, 21 or 24. It does not bypass path or chain restrictions. Whitespace collapsing and BIP39 NFKD normalization still apply. This is not arbitrary text hashing.
+
+MCP and Pi expose the same `allowInvalidChecksum` boolean on `keys_derive_hd_wallet`, defaulting to `false`. Warnings appear in tool text and Pi details. `keys_inspect_mnemonic` and the library's `inspectBIP39Mnemonic` export from `@agntn/keys/bip39` report `wordCountValid`, `wordlistValid` and `checksumValid` separately. A `null` checksum verdict means the shape or dictionary check failed. Entropy is returned by the inspection tool only for a fully valid mnemonic. The tool respects its `language` option. The library inspector defaults to English; pass a list from `loadBIP39Wordlist(language)` as its second argument to inspect another language.
+
 ### Recover one missing BIP39 word
 
 ```ts
@@ -186,7 +206,7 @@ const candidates = getMnemonicWordCandidates(
 );
 ```
 
-The result only satisfies the BIP39 checksum. It does not prove that a candidate belongs to the wallet or puzzle target.
+The result only satisfies the BIP39 checksum. It does not prove that a candidate belongs to the wallet or puzzle target. Use this filter only when canonical BIP39 generation is established. It excludes the actual last word from the Movie Enigma solution above.
 
 ### Map localized BIP39 words and indices
 

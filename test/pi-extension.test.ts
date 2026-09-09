@@ -7,6 +7,7 @@ import {
   decredTestVectors,
   wifTestVectors,
   localizedMnemonicVectors,
+  invalidChecksumPuzzle,
 } from "./fixtures.ts";
 import keysExtension from "../packages/pi/extensions/keys.ts";
 import { mnemonicToEntropy, validateMnemonic } from "../src/utils/bip39/index.ts";
@@ -54,7 +55,17 @@ describe("keys Pi extension", () => {
         mnemonic: mnemonic.normalize("NFC"),
         language,
       });
-      expect(inspected).toMatchObject({ details: { language, valid: true, words: 12, entropy } });
+      expect(inspected).toMatchObject({
+        details: {
+          language,
+          valid: true,
+          words: 12,
+          entropy,
+          wordCountValid: true,
+          wordlistValid: true,
+          checksumValid: true,
+        },
+      });
       expect(inspected.content[0]?.text).toContain(`Language: ${language}`);
       expect(inspected.content[0]?.text).not.toContain(mnemonic);
       for (const [tool, args] of [
@@ -394,6 +405,9 @@ describe("keys Pi extension", () => {
     expect(validText).toContain("Words: 12");
     expect(validText).toContain("Entropy: 00000000000000000000000000000000");
     expect(validText).not.toContain(mnemonic);
+    expect(validResult).toMatchObject({
+      details: { valid: true, wordCountValid: true, wordlistValid: true, checksumValid: true },
+    });
 
     const invalidResult = await tool.execute("call-2", {
       mnemonic:
@@ -404,6 +418,18 @@ describe("keys Pi extension", () => {
     expect(invalidText).toContain("Valid BIP39: no");
     expect(invalidText).toContain("Words: 12");
     expect(invalidText).not.toContain("Entropy:");
+    expect(invalidResult).toMatchObject({
+      details: { valid: false, wordCountValid: true, wordlistValid: true, checksumValid: false },
+    });
+    const unknown = await tool.execute("unknown-word", {
+      mnemonic: mnemonic.replace("about", "notaword"),
+    });
+    expect(unknown).toMatchObject({
+      details: { valid: false, wordCountValid: true, wordlistValid: false, checksumValid: null },
+    });
+    expect(unknown.content.map((part) => part.text ?? "").join("\n")).toContain(
+      "Checksum valid: not checked",
+    );
     expect(Value.Check(tool.parameters, { mnemonic: "   " })).toBe(false);
   });
 
@@ -488,6 +514,34 @@ describe("keys Pi extension", () => {
         mnemonic: mnemonic.replace("about", "abandon"),
         path: "m/84'/0'/0'/0/0",
       }),
+    ).rejects.toThrow("Invalid BIP39 mnemonic");
+  });
+
+  it("exposes the checksum override and warning in Pi content and details", async () => {
+    const tool = registerTools().get("keys_derive_hd_wallet");
+    if (!tool) throw new Error("keys_derive_hd_wallet was not registered");
+    const { mnemonic, path, address, publicKey } = invalidChecksumPuzzle;
+    const args = { chain: "bitcoin", mnemonic, path, allowInvalidChecksum: true };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    const result = await tool.execute("puzzle", args);
+    const text = result.content.map((part) => part.text ?? "").join("\n");
+    expect(text).toContain(address);
+    expect(text).toContain("Warning: BIP39 checksum is invalid.");
+    expect(text).not.toContain(mnemonic);
+    expect(result).toMatchObject({
+      details: { address, publicKey, warnings: [expect.stringContaining("checksum is invalid")] },
+    });
+    await expect(tool.execute("strict", { ...args, allowInvalidChecksum: false })).rejects.toThrow(
+      "Invalid BIP39 mnemonic",
+    );
+    for (const allowInvalidChecksum of ["true", "false", 1, null]) {
+      expect(Value.Check(tool.parameters, { ...args, allowInvalidChecksum })).toBe(false);
+      await expect(tool.execute("invalid-flag", { ...args, allowInvalidChecksum })).rejects.toThrow(
+        "allowInvalidChecksum must be a boolean",
+      );
+    }
+    await expect(
+      tool.execute("invalid-words", { ...args, mnemonic: mnemonic.replace("path", "notaword") }),
     ).rejects.toThrow("Invalid BIP39 mnemonic");
   });
 

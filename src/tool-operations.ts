@@ -21,6 +21,7 @@ import {
   bip39,
   loadBIP39Wordlist,
   getMnemonicWordCandidates,
+  inspectBIP39Mnemonic,
   lookupBIP39Indices,
   lookupBIP39Words,
 } from "./utils/bip39/index.ts";
@@ -67,6 +68,7 @@ export interface DerivedWalletDetails {
   publicKey: string;
   address: string;
   path?: string;
+  warnings?: readonly string[];
 }
 
 /** BIP39 inspection result without the supplied mnemonic. */
@@ -74,6 +76,9 @@ export interface MnemonicInspectionDetails {
   language: BIP39Language;
   valid: boolean;
   words: number;
+  wordCountValid: boolean;
+  wordlistValid: boolean;
+  checksumValid: boolean | null;
   entropy?: string;
 }
 
@@ -415,6 +420,7 @@ export async function deriveWallet(
  * @param passphraseValue - Optional BIP39 passphrase.
  * @param addressTypeValue - Optional chain-specific address type.
  * @param networkValue - Optional network name.
+ * @param allowInvalidChecksumValue - Accept a checksum failure for a public puzzle, default false.
  * @returns {Promise<ToolResult<DerivedWalletDetails>>} Derived public wallet material.
  */
 export async function deriveHdWallet(
@@ -424,7 +430,12 @@ export async function deriveHdWallet(
   passphraseValue?: unknown,
   addressTypeValue?: unknown,
   networkValue?: unknown,
+  allowInvalidChecksumValue?: unknown,
 ): Promise<ToolResult<DerivedWalletDetails>> {
+  if (allowInvalidChecksumValue !== undefined && typeof allowInvalidChecksumValue !== "boolean") {
+    throw new TypeError("allowInvalidChecksum must be a boolean");
+  }
+  const allowInvalidChecksum = allowInvalidChecksumValue ?? false;
   const path = requiredString(pathValue, "Derivation path");
   if (!DERIVATION_PATH_PATTERN.test(path)) {
     throw new TypeError("Derivation path must look like m/84'/0'/0'/0/0");
@@ -436,13 +447,19 @@ export async function deriveHdWallet(
   );
   const mnemonic = requiredString(mnemonicValue, "BIP39 mnemonic");
   const passphrase = optionalString(passphraseValue, "BIP39 passphrase");
-  const wallet = blockchain.deriveHDWallet(mnemonic, path, { passphrase }, addressType);
+  const wallet = blockchain.deriveHDWallet(
+    mnemonic,
+    path,
+    { passphrase, allowInvalidChecksum },
+    addressType,
+  );
   const details = {
     chain: blockchain.name,
     network: blockchain.network,
     path,
     publicKey: wallet.keys.public,
     address: wallet.address,
+    ...(wallet.warnings === undefined ? {} : { warnings: wallet.warnings }),
   };
   return {
     content: content(
@@ -451,6 +468,7 @@ export async function deriveHdWallet(
         `Path: ${path}`,
         `Public key: ${details.publicKey}`,
         `Address: ${details.address}`,
+        ...(details.warnings ?? []).map((warning) => `Warning: ${warning}`),
       ].join("\n"),
     ),
     details,
@@ -494,18 +512,21 @@ export async function inspectMnemonic(
   const mnemonic = normalizedMnemonic(mnemonicValue);
   const language = parseBIP39Language(languageValue);
   const wordlist = await loadBIP39Wordlist(language);
-  const words = mnemonic.split(" ").length;
-  const valid = bip39.validateMnemonic(mnemonic, wordlist);
+  const inspection = inspectBIP39Mnemonic(mnemonic, wordlist);
+  const { valid, words, wordCountValid, wordlistValid, checksumValid } = inspection;
   const entropy = valid
     ? Buffer.from(bip39.mnemonicToEntropy(mnemonic, wordlist)).toString("hex")
     : undefined;
-  const details = { language, valid, words, ...(entropy === undefined ? {} : { entropy }) };
+  const details = { language, ...inspection, ...(entropy === undefined ? {} : { entropy }) };
   return {
     content: content(
       [
         `Language: ${language}`,
         `Valid BIP39: ${valid ? "yes" : "no"}`,
         `Words: ${words}`,
+        `Word count valid: ${wordCountValid ? "yes" : "no"}`,
+        `Wordlist valid: ${wordlistValid ? "yes" : "no"}`,
+        `Checksum valid: ${checksumValid === null ? "not checked" : checksumValid ? "yes" : "no"}`,
         entropy === undefined ? undefined : `Entropy: ${entropy}`,
       ]
         .filter((line) => line !== undefined)
