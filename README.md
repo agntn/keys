@@ -20,7 +20,7 @@ Typed key generation, address derivation, and message signing across ten blockch
 - 🛤️ **BIP44 paths** - derivation path utilities for all supported chains
 - 🧩 **BIP39 puzzles** - validate phrases, narrow one missing word, and map words or indices across all 10 official lists
 - 🔌 **Lazy loading** - blockchain implementations load on demand for smaller bundles
-- 🤖 **MCP server** - the same 13 key, mnemonic, address, and signing tools over stdio
+- 🤖 **MCP server** - the same 15 key, mnemonic, address, and signing tools over stdio
 - 📐 **Fully typed** - TypeScript definitions for every interface
 
 ## Install
@@ -67,6 +67,26 @@ btc.getAddress(publicKey, "p2wsh"); // witness script hash
 const testnet = useBlockchain(await blockchains.bitcoin({ network: "testnet" })());
 testnet.getAddress(publicKey, "segwit"); // tb1q...
 ```
+
+### Import and export WIF
+
+```ts
+import { encodeWIF, decodeWIF, blockchains } from "@agntn/keys";
+
+const privateKey = "00".repeat(31) + "01";
+const wif = encodeWIF(privateKey, { chain: "bitcoin" });
+const decoded = decodeWIF(wif, { chain: "bitcoin" });
+const btc = await blockchains.bitcoin()();
+const wallet = btc.deriveWallet(decoded.privateKey, { compressed: decoded.compressed });
+```
+
+Choose `chain: "bitcoin"`, `"litecoin"` or `"decred"`, the three chains in this package with native WIF support. Both functions default to `network: "mainnet"`; pass `network: "testnet"` for testnet (testnet3 on Decred). `encodeWIF` takes exactly 64 hex characters without `0x` and defaults to `compressed: true`. Bitcoin and Litecoin also accept `compressed: false`. Decred uses its native BLAKE-256 checksum and ECDSA scheme, and rejects uncompressed exports or other signature schemes.
+
+`decodeWIF` checks the selected chain/network and returns `{ privateKey, chain, network, compressed }`. Both functions reject invalid secp256k1 scalars; decoding also checks the checksum, payload length and compression marker. Bitcoin and Litecoin share a testnet prefix, so the returned chain is the requested context, not proof of ownership. Other chains, networks and BIP38 encrypted keys are not supported.
+
+Agents can use `keys_encode_wif` and `keys_decode_wif` through MCP or Pi with the same chain/network choices. Encoding accepts `privateKey` and optional `compressed`; decoding accepts `wif`. Both return the converted secret and effective wallet options.
+
+Preserve `compressed` when deriving a wallet: the same private key can produce a different address without it. WIF is not encryption. Use disposable test keys only.
 
 ### Litecoin
 
@@ -181,7 +201,7 @@ Language keys cover the 10 official BIP39 lists. Word lookup is case-insensitive
 
 ## MCP server
 
-The package includes a stdio MCP server with the same 13 operations used by the Pi extension. After installing the package, configure an MCP client to run `keys mcp`. A checkout can run the built entry directly:
+The package includes a stdio MCP server with the same 15 operations used by the Pi extension. After installing the package, configure an MCP client to run `keys mcp`. A checkout can run the built entry directly:
 
 ```json
 {

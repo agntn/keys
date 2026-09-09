@@ -2,15 +2,17 @@
  * Tool executors shared by the MCP server and the Pi extension.
  *
  * Inputs may bypass a host schema, so every executor checks its own boundary.
- * Secret inputs are never copied into result details or error messages.
+ * Errors never echo secret inputs; conversion results contain the equivalent secret.
  */
 
+import { encodeWIF, decodeWIF, type DecodedWIF, type WIFNetworkOptions } from "./utils/wif.ts";
 import type { AbstractBlockchain } from "./blockchain.ts";
 import { blockchains, getBlockchainPath, parseBIP44Path, useBlockchain } from "./index.ts";
 import {
   TOOL_ADDRESS_TYPES_BY_CHAIN,
   TOOL_CHAINS,
   TOOL_NETWORKS,
+  TOOL_WIF_CHAINS,
   type ToolChain,
   type ToolNetwork,
 } from "./tool-parameters.ts";
@@ -738,4 +740,61 @@ export async function bip44Path(
       addressIndex,
     },
   };
+}
+
+/** Exported WIF and the effective wallet options, without the input hex key. */
+export interface EncodedWIFDetails {
+  wif: string;
+  chain: DecodedWIF["chain"];
+  network: DecodedWIF["network"];
+  compressed: boolean;
+}
+
+function parseWIFContext(chainValue: unknown, networkValue: unknown): WIFNetworkOptions {
+  const chain = TOOL_WIF_CHAINS.find((candidate) => candidate === chainValue);
+  if (chain === undefined)
+    throw new Error("Unsupported WIF chain. Use bitcoin, litecoin or decred");
+  const network = networkValue === undefined ? "mainnet" : networkValue;
+  if (network !== "mainnet" && network !== "testnet")
+    throw new Error("Unsupported WIF network. Use mainnet or testnet");
+  return { chain, network };
+}
+
+/**
+ * Export a disposable key as native WIF without echoing the supplied hex.
+ * @param chainValue - Native WIF chain.
+ * @param privateKeyValue - Disposable private key as hex.
+ * @param networkValue - Optional network.
+ * @param compressedValue - Optional compression flag.
+ * @returns {ToolResult<EncodedWIFDetails>} WIF and effective wallet options.
+ */
+export function encodeWif(
+  chainValue: unknown,
+  privateKeyValue: unknown,
+  networkValue?: unknown,
+  compressedValue?: unknown,
+): ToolResult<EncodedWIFDetails> {
+  const options = parseWIFContext(chainValue, networkValue);
+  const compressed = compressedValue === undefined ? true : compressedValue;
+  if (typeof compressed !== "boolean") throw new TypeError("WIF compressed must be a boolean");
+  const wif = encodeWIF(requiredString(privateKeyValue, "Private key"), { ...options, compressed });
+  const details = { wif, chain: options.chain, network: options.network ?? "mainnet", compressed };
+  return { content: content(JSON.stringify(details)), details };
+}
+
+/**
+ * Read native WIF into hex and wallet options; both representations are secrets.
+ * @param chainValue - Expected native WIF chain.
+ * @param wifValue - Public or disposable WIF.
+ * @param networkValue - Optional expected network.
+ * @returns {ToolResult<DecodedWIF>} Private key and effective wallet options.
+ */
+export function decodeWif(
+  chainValue: unknown,
+  wifValue: unknown,
+  networkValue?: unknown,
+): ToolResult<DecodedWIF> {
+  const options = parseWIFContext(chainValue, networkValue);
+  const details = decodeWIF(requiredString(wifValue, "WIF"), options);
+  return { content: content(JSON.stringify(details)), details };
 }

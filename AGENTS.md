@@ -76,7 +76,7 @@ pnpm build            # obuild via build.config.ts
 pnpm lint             # oxlint + oxfmt check
 pnpm lint:fix         # oxlint + oxfmt fixes
 pnpm playground <f>   # run any TS file via tsx
-pnpm test:mcp         # build and exercise all 13 MCP tools over stdio
+pnpm test:mcp         # build and exercise all 15 MCP tools over stdio
 ```
 
 ## NOTES

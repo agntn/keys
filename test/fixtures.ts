@@ -93,3 +93,110 @@ export const decredTestVectors = {
     ["a".repeat(65536), "5097489a2d963b9deec6554a0edc4528bef4fc2fe530279c486967efdab79bd7"],
   ],
 } as const;
+
+/**
+ * Public WIF interoperability vectors.
+ * @see https://github.com/bitcoinjs/wif/blob/master/test/fixtures.json
+ * @see https://github.com/litecoin-project/litecoin/blob/master/src/test/data/key_io_valid.json
+ * @see https://github.com/decred/dcrd/blob/master/dcrutil/wif_test.go
+ */
+export const wifTestVectors = [
+  {
+    wif: "KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgd9M7rFU73sVHnoWn",
+    privateKey: "0000000000000000000000000000000000000000000000000000000000000001",
+    chain: "bitcoin",
+    network: "mainnet",
+    compressed: true,
+  },
+  {
+    wif: "5HpHagT65TZzG1PH3CSu63k8DbpvD8s5ip4nEB3kEsreAnchuDf",
+    privateKey: "0000000000000000000000000000000000000000000000000000000000000001",
+    chain: "bitcoin",
+    network: "mainnet",
+    compressed: false,
+  },
+  {
+    wif: "KxhEDBQyyEFymvfJD96q8stMbJMbZUb6D1PmXqBWZDU2WvbvVs9o",
+    privateKey: "2bfe58ab6d9fd575bdc3a624e4825dd2b375d64ac033fbc46ea79dbab4f69a3e",
+    chain: "bitcoin",
+    network: "mainnet",
+    compressed: true,
+  },
+  {
+    wif: "KzrA86mCVMGWnLGBQu9yzQa32qbxb5dvSK4XhyjjGAWSBKYX4rHx",
+    privateKey: "6c4313b03f2e7324d75e642f0ab81b734b724e13fec930f309e222470236d66b",
+    chain: "bitcoin",
+    network: "mainnet",
+    compressed: true,
+  },
+  {
+    wif: "5JdxzLtFPHNe7CAL8EBC6krdFv9pwPoRo4e3syMZEQT9srmK8hh",
+    privateKey: "6c4313b03f2e7324d75e642f0ab81b734b724e13fec930f309e222470236d66b",
+    chain: "bitcoin",
+    network: "mainnet",
+    compressed: false,
+  },
+  {
+    wif: "cRD9b1m3vQxmwmjSoJy7Mj56f4uNFXjcWMCzpQCEmHASS4edEwXv",
+    privateKey: "6c4313b03f2e7324d75e642f0ab81b734b724e13fec930f309e222470236d66b",
+    chain: "bitcoin",
+    network: "testnet",
+    compressed: true,
+  },
+  {
+    wif: "92Qba5hnyWSn5Ffcka56yMQauaWY6ZLd91Vzxbi4a9CCetaHtYj",
+    privateKey: "6c4313b03f2e7324d75e642f0ab81b734b724e13fec930f309e222470236d66b",
+    chain: "bitcoin",
+    network: "testnet",
+    compressed: false,
+  },
+  {
+    wif: "L5oLkpV3aqBjhki6LmvChTCV6odsp4SXM6FfU2Gppt5kFLaHLuZ9",
+    privateKey: "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140",
+    chain: "bitcoin",
+    network: "mainnet",
+    compressed: true,
+  },
+  {
+    wif: "6vqpCruyRS9bEY6ZVrL8S9EL5h2MnQZffzzqrpNP9i8YozvXTKs",
+    privateKey: "e2993b1b4a8b1e00c024715e106d7c79ada82528b80b938a566cfc71f9ffcf42",
+    chain: "litecoin",
+    network: "mainnet",
+    compressed: false,
+  },
+  {
+    wif: "T5MZ5z9WqJxzVxYyVPecTJUSDkzDWrUYe1JuSX2AqJ9jKmLJrvTE",
+    privateKey: "44b78d45adc801a65949661d5df1c4a44f532cd422be413a505d776784ddbe25",
+    chain: "litecoin",
+    network: "mainnet",
+    compressed: true,
+  },
+  {
+    wif: "927w9fGHSbrUEWHdfBd5AU4mDFmhEnBkxLyfsRn4oNwPTLQw7qS",
+    privateKey: "466d8cbefaa702b2f597ade1c4f9fa4b0e709527e214443990c13e3fdcb53deb",
+    chain: "litecoin",
+    network: "testnet",
+    compressed: false,
+  },
+  {
+    wif: "cQaeKQwuakynYD9iebyxsKiBKF8RT3G6zoqRNUDybMsAimANRypo",
+    privateKey: "597b8f070b98ee1f997fa3cb976466fa0e931256246b8c7177d2b067eed06ad7",
+    chain: "litecoin",
+    network: "testnet",
+    compressed: true,
+  },
+  {
+    wif: "PmQdMn8xafwaQouk8ngs1CccRCB1ZmsqQxBaxNR4vhQi5a5QB5716",
+    privateKey: "0c28fca386c7a227600b2fe50b7cae11ec86d3bf1fbe471be89827e19d72aa1d",
+    chain: "decred",
+    network: "mainnet",
+    compressed: true,
+  },
+  {
+    wif: "PtWVDUidYaiiNT5e2Sfb1Ah4evbaSopZJkkpFBuzkJYcYteugvdFg",
+    privateKey: "dda35a1488fb97b6eb3fe6e9ef2a25814e396fb5dc295fe994b96789b21a0398",
+    chain: "decred",
+    network: "testnet",
+    compressed: true,
+  },
+] as const;

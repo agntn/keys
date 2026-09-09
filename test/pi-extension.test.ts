@@ -2,7 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
 import { describe, expect, it } from "vitest";
-import { litecoinTestVectors, decredTestVectors } from "./fixtures.ts";
+import { litecoinTestVectors, decredTestVectors, wifTestVectors } from "./fixtures.ts";
 import keysExtension from "../packages/pi/extensions/keys.ts";
 
 interface RegisteredTool {
@@ -33,6 +33,49 @@ function registerTools(): ReadonlyMap<string, RegisteredTool> {
 }
 
 describe("keys Pi extension", () => {
+  it.each(wifTestVectors)("converts $chain $network WIF through Pi", async (vector) => {
+    const tools = registerTools();
+    const encode = tools.get("keys_encode_wif");
+    const decode = tools.get("keys_decode_wif");
+    if (!encode || !decode) throw new Error("WIF tools not registered");
+    const { chain, network, compressed, privateKey, wif } = vector;
+    const encodeArgs = { chain, network, compressed, privateKey };
+    const decodeArgs = { chain, network, wif };
+    expect(Value.Check(encode.parameters, encodeArgs)).toBe(true);
+    expect(Value.Check(decode.parameters, decodeArgs)).toBe(true);
+    expect(await encode.execute("encode-wif", encodeArgs)).toEqual({
+      content: [{ type: "text", text: JSON.stringify({ wif, chain, network, compressed }) }],
+      details: { wif, chain, network, compressed },
+    });
+    expect(await decode.execute("decode-wif", decodeArgs)).toEqual({
+      content: [{ type: "text", text: JSON.stringify({ privateKey, chain, network, compressed }) }],
+      details: { privateKey, chain, network, compressed },
+    });
+  });
+
+  it("validates WIF inputs even when Pi skips schema validation", async () => {
+    const tools = registerTools();
+    const encode = tools.get("keys_encode_wif");
+    const decode = tools.get("keys_decode_wif");
+    if (!encode || !decode) throw new Error("WIF tools not registered");
+    const privateKey = wifTestVectors[0].privateKey;
+    for (const args of [
+      { chain: "ethereum", privateKey },
+      { chain: "bitcoin", privateKey: "private-secret" },
+      { chain: "bitcoin", privateKey, compressed: "false" },
+      { chain: "bitcoin", privateKey, network: "unknown" },
+    ]) {
+      expect(Value.Check(encode.parameters, args)).toBe(false);
+      await expect(encode.execute("invalid", args)).rejects.toThrow();
+    }
+    await expect(
+      encode.execute("invalid", { chain: "decred", privateKey, compressed: false }),
+    ).rejects.toThrow("Decred WIF requires");
+    await expect(
+      decode.execute("invalid", { chain: "bitcoin", wif: "private-secret" }),
+    ).rejects.toThrow("Invalid WIF encoding or checksum");
+  });
+
   it("derives Litecoin through the registered Pi tool", async () => {
     const tool = registerTools().get("keys_derive_wallet");
     if (!tool) throw new Error("keys_derive_wallet was not registered");

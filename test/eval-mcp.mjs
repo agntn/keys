@@ -62,13 +62,22 @@ await client.connect(transport);
 
 try {
   const listed = await client.listTools();
-  if (listed.tools.length !== 13) throw new Error(`Expected 13 tools, got ${listed.tools.length}`);
+  if (listed.tools.length !== 15) throw new Error(`Expected 15 tools, got ${listed.tools.length}`);
 
   const privateKey = "0000000000000000000000000000000000000000000000000000000000000001";
   const mnemonic =
     "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
   const missing =
     "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon ?";
+
+  for (const chain of ["bitcoin", "litecoin", "decred"]) {
+    for (const network of ["mainnet", "testnet"]) {
+      const encoded = await call("keys_encode_wif", { chain, network, privateKey }, /"wif":/);
+      const wif = /"wif":"([1-9A-HJ-NP-Za-km-z]+)"/.exec(encoded)?.[1];
+      if (!wif) throw new Error("keys_encode_wif returned no WIF");
+      await call("keys_decode_wif", { chain, network, wif }, new RegExp(privateKey));
+    }
+  }
 
   await call("keys_generate_wallet", { chain: "bitcoin" }, /Private key: [0-9a-f]{64}/);
   const derived = await call(

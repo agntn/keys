@@ -1,10 +1,12 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterEach, describe, expect, it } from "vitest";
-import { litecoinTestVectors, decredTestVectors } from "./fixtures.ts";
+import { litecoinTestVectors, decredTestVectors, wifTestVectors } from "./fixtures.ts";
 import { createMcpServer } from "../src/mcp.ts";
 
 const TOOL_NAMES = [
+  "keys_encode_wif",
+  "keys_decode_wif",
   "keys_generate_wallet",
   "keys_derive_wallet",
   "keys_derive_hd_wallet",
@@ -42,6 +44,46 @@ afterEach(async () => {
 });
 
 describe("keys MCP server", () => {
+  it.each(wifTestVectors)("converts $chain $network WIF through MCP", async (vector) => {
+    const client = await connectTestClient();
+    const { chain, network, compressed, privateKey, wif } = vector;
+    const encoded = await client.callTool({
+      name: "keys_encode_wif",
+      arguments: { chain, network, compressed, privateKey },
+    });
+    expect(encoded.isError).not.toBe(true);
+    expect(JSON.parse(text(encoded.content))).toEqual({ chain, network, compressed, wif });
+    const decoded = await client.callTool({
+      name: "keys_decode_wif",
+      arguments: { chain, network, wif },
+    });
+    expect(decoded.isError).not.toBe(true);
+    expect(JSON.parse(text(decoded.content))).toEqual({ chain, network, compressed, privateKey });
+  });
+
+  it("rejects malformed WIF tool inputs without echoing secrets", async () => {
+    const client = await connectTestClient();
+    const secret = "burner-secret-not-valid-WIF";
+    for (const args of [
+      { chain: "ethereum", wif: secret },
+      { chain: "bitcoin", wif: secret },
+      { chain: "bitcoin", wif: "1".repeat(55) },
+      { chain: "bitcoin", wif: "111", network: "unknown" },
+      { chain: "bitcoin", wif: "111", extra: secret },
+    ]) {
+      const result = await client.callTool({ name: "keys_decode_wif", arguments: args });
+      expect(result.isError).toBe(true);
+      expect(text(result.content)).not.toContain(secret);
+    }
+    const vector = wifTestVectors[0];
+    const wrongChain = await client.callTool({
+      name: "keys_decode_wif",
+      arguments: { chain: "litecoin", wif: vector.wif },
+    });
+    expect(wrongChain.isError).toBe(true);
+    expect(text(wrongChain.content)).not.toContain(vector.wif);
+  });
+
   it("advertises every keys tool with explicit safety annotations", async () => {
     const client = await connectTestClient();
 
