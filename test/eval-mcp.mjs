@@ -62,7 +62,7 @@ await client.connect(transport);
 
 try {
   const listed = await client.listTools();
-  if (listed.tools.length !== 15) throw new Error(`Expected 15 tools, got ${listed.tools.length}`);
+  if (listed.tools.length !== 16) throw new Error(`Expected 16 tools, got ${listed.tools.length}`);
 
   const privateKey = "0000000000000000000000000000000000000000000000000000000000000001";
   const mnemonic =
@@ -93,6 +93,10 @@ try {
     { chain: "bitcoin", mnemonic, path: "m/84'/0'/0'/0/0" },
     /bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu/,
   );
+  const generated = await call("keys_generate_mnemonic", { words: 24 }, /Words: 24/);
+  const generatedMnemonic = /Mnemonic: ([a-z ]+)/.exec(generated)?.[1];
+  if (!generatedMnemonic) throw new Error("keys_generate_mnemonic returned no mnemonic");
+  await call("keys_inspect_mnemonic", { mnemonic: generatedMnemonic }, /Valid BIP39: yes/);
   await call("keys_inspect_mnemonic", { mnemonic }, /Valid BIP39: yes/);
   await call("keys_encode_bip39_entropy", { entropy: "00".repeat(16) }, /Words: 12/);
   await call("keys_lookup_bip39_indices", { indices: [0, 2047] }, /2047: zoo/);

@@ -25,6 +25,7 @@ import {
   encodeWif,
   decodeWif,
   generateWallet,
+  generateBip39Mnemonic,
   getAddress,
   inspectMnemonic,
   lookupBip39Indices,
@@ -38,7 +39,11 @@ import {
   verifyMessage,
 } from "./tool-operations.ts";
 import { version } from "./version.ts";
-import { WIF_ENCODE_PARAMETERS, WIF_DECODE_PARAMETERS } from "./tool-schemas.ts";
+import {
+  WIF_ENCODE_PARAMETERS,
+  WIF_DECODE_PARAMETERS,
+  GENERATE_MNEMONIC_PARAMETERS,
+} from "./tool-schemas.ts";
 
 type ReadonlyObjectSchema = Readonly<TSchema> & {
   readonly type: "object";
@@ -181,6 +186,15 @@ const tools: readonly ToolDefinition[] = [
         args["addressType"],
         args["network"],
       ),
+  },
+  {
+    name: "keys_generate_mnemonic",
+    title: "Generate BIP39 Mnemonic",
+    description:
+      "Generate a random English BIP39 mnemonic for tests or disposable wallets. The result enters the transcript. Never use it for real funds.",
+    inputSchema: GENERATE_MNEMONIC_PARAMETERS,
+    annotations: SENSITIVE_CREATE,
+    execute: (args) => generateBip39Mnemonic(args["words"]),
   },
   {
     name: "keys_inspect_mnemonic",

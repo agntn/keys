@@ -12,12 +12,14 @@ import {
   TOOL_ADDRESS_TYPES_BY_CHAIN,
   TOOL_CHAINS,
   TOOL_NETWORKS,
+  TOOL_MNEMONIC_WORD_COUNTS,
   TOOL_WIF_CHAINS,
   type ToolChain,
   type ToolNetwork,
 } from "./tool-parameters.ts";
 import {
   entropyToMnemonic,
+  generateMnemonic,
   getMnemonicWordCandidates,
   lookupBIP39Indices,
   lookupBIP39Words,
@@ -74,6 +76,12 @@ export interface MnemonicInspectionDetails {
   valid: boolean;
   words: number;
   entropy?: string;
+}
+
+/** Fresh disposable mnemonic and its word count. */
+export interface GeneratedMnemonicDetails {
+  words: number;
+  mnemonic: string;
 }
 
 /** Mnemonic generated from supplied entropy. */
@@ -437,6 +445,26 @@ export async function deriveHdWallet(
       ].join("\n"),
     ),
     details,
+  };
+}
+
+/**
+ * Generate a disposable English mnemonic using the library's cryptographic randomness.
+ * @param wordsValue - Word count, defaulting to 12.
+ * @returns {ToolResult<GeneratedMnemonicDetails>} Mnemonic, word count and transcript warning.
+ */
+export function generateBip39Mnemonic(
+  wordsValue: unknown = 12,
+): ToolResult<GeneratedMnemonicDetails> {
+  if (typeof wordsValue !== "number" || !TOOL_MNEMONIC_WORD_COUNTS.includes(wordsValue)) {
+    throw new RangeError("BIP39 word count must be 12, 15, 18, 21, or 24");
+  }
+  const mnemonic = generateMnemonic((wordsValue / 3) * 32);
+  return {
+    content: content(
+      `Mnemonic: ${mnemonic}\nWords: ${wordsValue}\nThis mnemonic is saved in the transcript. Never use it for real funds.`,
+    ),
+    details: { words: wordsValue, mnemonic },
   };
 }
 

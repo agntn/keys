@@ -1,5 +1,18 @@
 import { Type } from "typebox";
-import { TOOL_WIF_CHAINS, TOOL_NETWORKS } from "./tool-parameters.ts";
+import { TOOL_WIF_CHAINS, TOOL_NETWORKS, TOOL_MNEMONIC_WORD_COUNTS } from "./tool-parameters.ts";
+
+/** Shared MCP and Pi schema for generating a disposable English mnemonic. */
+export const GENERATE_MNEMONIC_PARAMETERS = Type.Object(
+  {
+    words: Type.Optional(
+      Type.Integer({
+        enum: TOOL_MNEMONIC_WORD_COUNTS,
+        description: "Mnemonic word count: 12, 15, 18, 21 or 24. Default: 12",
+      }),
+    ),
+  },
+  { additionalProperties: false },
+);
 
 const wifContext = {
   chain: Type.String({

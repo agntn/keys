@@ -4,6 +4,7 @@ import { Value } from "typebox/value";
 import { describe, expect, it } from "vitest";
 import { litecoinTestVectors, decredTestVectors, wifTestVectors } from "./fixtures.ts";
 import keysExtension from "../packages/pi/extensions/keys.ts";
+import { mnemonicToEntropy, validateMnemonic } from "../src/utils/bip39/index.ts";
 
 interface RegisteredTool {
   readonly name: string;
@@ -33,6 +34,34 @@ function registerTools(): ReadonlyMap<string, RegisteredTool> {
 }
 
 describe("keys Pi extension", () => {
+  it.each([12, 15, 18, 21, 24])(
+    "generates a disposable %i-word mnemonic through Pi",
+    async (words) => {
+      const tool = registerTools().get("keys_generate_mnemonic");
+      if (!tool) throw new Error("keys_generate_mnemonic was not registered");
+      expect(Value.Check(tool.parameters, { words })).toBe(true);
+      const result = await tool.execute("generate", { words });
+      const mnemonic = result.content[0]?.text?.match(/Mnemonic: ([a-z ]+)/)?.[1];
+      if (!mnemonic) throw new Error("Missing mnemonic");
+      expect(validateMnemonic(mnemonic)).toBe(true);
+      expect(mnemonic.split(" ")).toHaveLength(words);
+      expect(mnemonicToEntropy(mnemonic)).toHaveLength((words / 3) * 4);
+      expect(result).toMatchObject({ details: { words, mnemonic } });
+      expect(result.content[0]?.text).toContain("Never use it for real funds");
+    },
+  );
+
+  it("rejects invalid mnemonic lengths even when Pi skips schemas", async () => {
+    const tool = registerTools().get("keys_generate_mnemonic");
+    if (!tool) throw new Error("keys_generate_mnemonic was not registered");
+    for (const words of [0, 11, 13, 25, 12.5, "12", null, true, NaN, Infinity]) {
+      expect(Value.Check(tool.parameters, { words })).toBe(false);
+      await expect(tool.execute("invalid", { words })).rejects.toThrow(
+        "BIP39 word count must be 12, 15, 18, 21, or 24",
+      );
+    }
+  });
+
   it.each(wifTestVectors)("converts $chain $network WIF through Pi", async (vector) => {
     const tools = registerTools();
     const encode = tools.get("keys_encode_wif");
