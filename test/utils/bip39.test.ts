@@ -10,6 +10,7 @@ import {
   isBIP39Language,
   lookupBIP39Indices,
   lookupBIP39Words,
+  loadBIP39Wordlist,
 } from "../../src/utils/bip39";
 import { hexToBytes } from "@noble/hashes/utils.js";
 import { bip39TestVectors } from "../fixtures";
@@ -57,6 +58,18 @@ describe("BIP39 Utils", () => {
     const lookups = await lookupBIP39Words([word], language);
 
     expect(lookups).toEqual([{ word: word.toLowerCase().normalize("NFKD"), zeroBasedIndex: 0 }]);
+  });
+
+  it("loads English by default and rejects unknown word lists", async () => {
+    const words = await loadBIP39Wordlist();
+    expect(words[0]).toBe("abandon");
+    words[0] = "changed";
+    expect((await loadBIP39Wordlist())[0]).toBe("abandon");
+    for (const language of ["unknown", "constructor", "__proto__"]) {
+      await expect(Reflect.apply(loadBIP39Wordlist, undefined, [language])).rejects.toThrow(
+        "Unknown BIP39 language",
+      );
+    }
   });
 
   it("publishes every official BIP39 language key", () => {

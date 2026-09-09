@@ -1,9 +1,21 @@
 import { Type } from "typebox";
 import { TOOL_WIF_CHAINS, TOOL_NETWORKS, TOOL_MNEMONIC_WORD_COUNTS } from "./tool-parameters.ts";
+import { BIP39_LANGUAGES } from "./utils/bip39/languages.ts";
 
-/** Shared MCP and Pi schema for generating a disposable English mnemonic. */
+/** The default list is English. Language is never inferred. */
+export const BIP39_LANGUAGE_PARAMETER = Type.Optional(
+  Type.String({
+    enum: BIP39_LANGUAGES,
+    minLength: 1,
+    maxLength: 19,
+    description: "Official BIP39 language key. Default: english",
+  }),
+);
+
+/** Shared MCP and Pi schema for generating a disposable mnemonic. */
 export const GENERATE_MNEMONIC_PARAMETERS = Type.Object(
   {
+    language: BIP39_LANGUAGE_PARAMETER,
     words: Type.Optional(
       Type.Integer({
         enum: TOOL_MNEMONIC_WORD_COUNTS,

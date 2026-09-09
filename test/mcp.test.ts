@@ -1,7 +1,12 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterEach, describe, expect, it } from "vitest";
-import { litecoinTestVectors, decredTestVectors, wifTestVectors } from "./fixtures.ts";
+import {
+  litecoinTestVectors,
+  decredTestVectors,
+  wifTestVectors,
+  localizedMnemonicVectors,
+} from "./fixtures.ts";
 import { createMcpServer } from "../src/mcp.ts";
 
 const TOOL_NAMES = [
@@ -45,6 +50,50 @@ afterEach(async () => {
 });
 
 describe("keys MCP server", () => {
+  it("encodes and inspects localized mnemonics through MCP", async () => {
+    const client = await connectTestClient();
+    for (const { language, entropy, mnemonic } of localizedMnemonicVectors) {
+      const encoded = await client.callTool({
+        name: "keys_encode_bip39_entropy",
+        arguments: { language, entropy },
+      });
+      expect(encoded.isError).not.toBe(true);
+      expect(text(encoded.content)).toContain(`Language: ${language}`);
+      expect(text(encoded.content)).toContain(`Mnemonic: ${mnemonic}`);
+      const inspected = await client.callTool({
+        name: "keys_inspect_mnemonic",
+        arguments: { language, mnemonic },
+      });
+      expect(inspected.isError).not.toBe(true);
+      expect(text(inspected.content)).toContain(`Language: ${language}`);
+      expect(text(inspected.content)).toContain(`Entropy: ${entropy}`);
+    }
+    const generated = await client.callTool({
+      name: "keys_generate_mnemonic",
+      arguments: { language: "japanese", words: 15 },
+    });
+    expect(generated.isError).not.toBe(true);
+    const mnemonic = /Mnemonic: ([^\n]+)/u.exec(text(generated.content))?.[1];
+    expect(mnemonic?.split("\u3000")).toHaveLength(15);
+    const inspected = await client.callTool({
+      name: "keys_inspect_mnemonic",
+      arguments: { language: "japanese", mnemonic },
+    });
+    expect(text(inspected.content)).toContain("Valid BIP39: yes");
+    for (const [name, args] of [
+      ["keys_generate_mnemonic", {}],
+      ["keys_inspect_mnemonic", { mnemonic }],
+      ["keys_encode_bip39_entropy", { entropy: "00".repeat(16) }],
+    ] as const) {
+      const result = await client.callTool({
+        name,
+        arguments: { ...args, language: "unsupported-secret" },
+      });
+      expect(result.isError).toBe(true);
+      expect(text(result.content)).not.toContain("unsupported-secret");
+    }
+  });
+
   it("generates fresh mnemonics with a default length through MCP", async () => {
     const client = await connectTestClient();
     const mnemonics: string[] = [];

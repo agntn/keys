@@ -13,7 +13,6 @@ import {
   TOOL_CHAINS,
   TOOL_NETWORKS,
 } from "./tool-parameters.ts";
-import { BIP39_LANGUAGES } from "./utils/bip39/languages.ts";
 import {
   BIP39_ENTROPY_SCHEMA_PATTERN,
   BIP39_WORD_SCHEMA_PATTERN,
@@ -43,6 +42,7 @@ import {
   WIF_ENCODE_PARAMETERS,
   WIF_DECODE_PARAMETERS,
   GENERATE_MNEMONIC_PARAMETERS,
+  BIP39_LANGUAGE_PARAMETER,
 } from "./tool-schemas.ts";
 
 type ReadonlyObjectSchema = Readonly<TSchema> & {
@@ -191,20 +191,21 @@ const tools: readonly ToolDefinition[] = [
     name: "keys_generate_mnemonic",
     title: "Generate BIP39 Mnemonic",
     description:
-      "Generate a random English BIP39 mnemonic for tests or disposable wallets. The result enters the transcript. Never use it for real funds.",
+      "Generate a random BIP39 mnemonic for tests or disposable wallets. The result enters the transcript. Never use it for real funds.",
     inputSchema: GENERATE_MNEMONIC_PARAMETERS,
     annotations: SENSITIVE_CREATE,
-    execute: (args) => generateBip39Mnemonic(args["words"]),
+    execute: (args) => generateBip39Mnemonic(args["words"], args["language"]),
   },
   {
     name: "keys_inspect_mnemonic",
     title: "Inspect Mnemonic",
     description:
-      "Validate an English BIP39 mnemonic and recover its entropy when valid. The phrase enters the MCP transcript, so use only public or disposable candidates.",
+      "Validate a BIP39 mnemonic and recover its entropy when valid. The phrase enters the MCP transcript, so use only public or disposable candidates.",
     inputSchema: Type.Object(
       {
+        language: BIP39_LANGUAGE_PARAMETER,
         mnemonic: Type.String({
-          description: "English BIP39 mnemonic candidate",
+          description: "BIP39 mnemonic candidate",
           minLength: 1,
           pattern: "\\S",
         }),
@@ -212,15 +213,16 @@ const tools: readonly ToolDefinition[] = [
       { additionalProperties: false },
     ),
     annotations: LOCAL_READ,
-    execute: (args) => inspectMnemonic(args["mnemonic"]),
+    execute: (args) => inspectMnemonic(args["mnemonic"], args["language"]),
   },
   {
     name: "keys_encode_bip39_entropy",
     title: "Encode BIP39 Entropy",
     description:
-      "Encode 16, 20, 24, 28, or 32 bytes of hexadecimal entropy as an English BIP39 mnemonic. Both forms enter the MCP transcript, so use only public or disposable material.",
+      "Encode 16, 20, 24, 28, or 32 bytes of hexadecimal entropy as a BIP39 mnemonic. Both forms enter the MCP transcript, so use only public or disposable material.",
     inputSchema: Type.Object(
       {
+        language: BIP39_LANGUAGE_PARAMETER,
         entropy: Type.String({
           description: "BIP39 entropy as 32, 40, 48, 56, or 64 hexadecimal characters",
           pattern: BIP39_ENTROPY_SCHEMA_PATTERN,
@@ -229,7 +231,7 @@ const tools: readonly ToolDefinition[] = [
       { additionalProperties: false },
     ),
     annotations: LOCAL_READ,
-    execute: (args) => encodeBip39Entropy(args["entropy"]),
+    execute: (args) => encodeBip39Entropy(args["entropy"], args["language"]),
   },
   {
     name: "keys_lookup_bip39_indices",
@@ -246,14 +248,7 @@ const tools: readonly ToolDefinition[] = [
           }),
           { minItems: 1, maxItems: MAX_BIP39_LOOKUP_ITEMS },
         ),
-        language: Type.Optional(
-          Type.String({
-            description: "Official BIP39 language key. Default: english",
-            enum: BIP39_LANGUAGES,
-            minLength: 1,
-            maxLength: 19,
-          }),
-        ),
+        language: BIP39_LANGUAGE_PARAMETER,
         indexBase: Type.Optional(
           Type.Union([Type.Literal(0), Type.Literal(1)], {
             description: "Whether positions start at 0 or 1. Default: 0",
@@ -281,14 +276,7 @@ const tools: readonly ToolDefinition[] = [
           }),
           { minItems: 1, maxItems: MAX_BIP39_LOOKUP_ITEMS },
         ),
-        language: Type.Optional(
-          Type.String({
-            description: "Official BIP39 language key. Default: english",
-            enum: BIP39_LANGUAGES,
-            minLength: 1,
-            maxLength: 19,
-          }),
-        ),
+        language: BIP39_LANGUAGE_PARAMETER,
       },
       { additionalProperties: false },
     ),

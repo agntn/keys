@@ -6,11 +6,11 @@ import { Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import type * as KeysTools from "../../../dist/tool-operations.d.mts";
 import { TOOL_ADDRESS_TYPES, TOOL_CHAINS, TOOL_NETWORKS } from "../../../src/tool-parameters.ts";
-import { BIP39_LANGUAGES } from "../../../src/utils/bip39/languages.ts";
 import {
   WIF_ENCODE_PARAMETERS,
   WIF_DECODE_PARAMETERS,
   GENERATE_MNEMONIC_PARAMETERS,
+  BIP39_LANGUAGE_PARAMETER,
 } from "../../../src/tool-schemas.ts";
 
 const sourceModuleUrl = new URL("../../../src/tool-operations.ts", import.meta.url);
@@ -194,9 +194,10 @@ export default function keysExtension(pi: ExtensionAPI) {
   pi.registerTool({
     name: "keys_generate_mnemonic",
     label: "Generate BIP39 Mnemonic",
-    description: "Generate a random English BIP39 mnemonic for tests or disposable wallets",
+    description: "Generate a random BIP39 mnemonic for tests or disposable wallets",
     promptSnippet: "Use when a test needs a fresh BIP39 mnemonic rather than supplied entropy.",
     promptGuidelines: [
+      "keys_generate_mnemonic accepts an explicit BIP39 language; omission means english, not automatic detection",
       "Choose 12, 15, 18, 21 or 24 words. Default: 12",
       "The result is saved in the transcript. Never use it for real funds",
     ],
@@ -205,46 +206,50 @@ export default function keysExtension(pi: ExtensionAPI) {
       return new Text("🧩 Generate disposable BIP39 mnemonic", 0, 0);
     },
     async execute(_toolCallId, params) {
-      return (await loadToolOperations()).generateBip39Mnemonic(params.words);
+      return (await loadToolOperations()).generateBip39Mnemonic(params.words, params.language);
     },
   });
 
   pi.registerTool({
     name: "keys_inspect_mnemonic",
     label: "Inspect Mnemonic",
-    description: "Validate an English BIP39 mnemonic and recover its entropy",
+    description: "Validate a BIP39 mnemonic and recover its entropy",
     promptSnippet: "Use to check mnemonic candidates from public crypto puzzles.",
     promptGuidelines: [
-      "Provide an English BIP39 mnemonic",
+      "keys_inspect_mnemonic accepts an explicit BIP39 language; omission means english, not automatic detection",
+      "Provide a BIP39 mnemonic",
       "Use only public or disposable candidates because tool arguments are saved in the transcript",
       "Returns checksum validity, word count, and entropy for valid mnemonics",
     ],
     parameters: Type.Object({
+      language: BIP39_LANGUAGE_PARAMETER,
       mnemonic: Type.String({
         minLength: 1,
         pattern: "\\S",
-        description: "English BIP39 mnemonic candidate",
+        description: "BIP39 mnemonic candidate",
       }),
     }),
     renderCall(_args, _theme) {
       return new Text("🧩 Inspect BIP39 mnemonic", 0, 0);
     },
     async execute(_toolCallId, params) {
-      return (await loadToolOperations()).inspectMnemonic(params.mnemonic);
+      return (await loadToolOperations()).inspectMnemonic(params.mnemonic, params.language);
     },
   });
 
   pi.registerTool({
     name: "keys_encode_bip39_entropy",
     label: "Encode BIP39 Entropy",
-    description: "Encode hexadecimal entropy as an English BIP39 mnemonic",
+    description: "Encode hexadecimal entropy as a BIP39 mnemonic",
     promptSnippet: "Use to turn public puzzle entropy into BIP39 words.",
     promptGuidelines: [
+      "keys_encode_bip39_entropy accepts an explicit BIP39 language; omission means english, not automatic detection",
       "Provide 16, 20, 24, 28, or 32 bytes as hexadecimal text",
       "Use only public or disposable entropy because tool arguments are saved in the transcript",
-      "Returns the canonical English mnemonic with its word count",
+      "Returns the canonical mnemonic with its word count",
     ],
     parameters: Type.Object({
+      language: BIP39_LANGUAGE_PARAMETER,
       entropy: Type.String({
         pattern: BIP39_ENTROPY_SCHEMA_PATTERN,
         description: "BIP39 entropy as 32, 40, 48, 56, or 64 hexadecimal characters",
@@ -254,7 +259,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       return new Text("🧩 Encode BIP39 entropy", 0, 0);
     },
     async execute(_toolCallId, params) {
-      return (await loadToolOperations()).encodeBip39Entropy(params.entropy);
+      return (await loadToolOperations()).encodeBip39Entropy(params.entropy, params.language);
     },
   });
 
@@ -278,14 +283,7 @@ export default function keysExtension(pi: ExtensionAPI) {
         }),
         { minItems: 1, maxItems: MAX_BIP39_LOOKUP_ITEMS },
       ),
-      language: Type.Optional(
-        Type.String({
-          enum: BIP39_LANGUAGES,
-          minLength: 1,
-          maxLength: 19,
-          description: "Official BIP39 language key. Default: english",
-        }),
-      ),
+      language: BIP39_LANGUAGE_PARAMETER,
       indexBase: Type.Optional(
         Type.Union([Type.Literal(0), Type.Literal(1)], {
           description: "Whether positions start at 0 or 1. Default: 0",
@@ -325,14 +323,7 @@ export default function keysExtension(pi: ExtensionAPI) {
         }),
         { minItems: 1, maxItems: MAX_BIP39_LOOKUP_ITEMS },
       ),
-      language: Type.Optional(
-        Type.String({
-          enum: BIP39_LANGUAGES,
-          minLength: 1,
-          maxLength: 19,
-          description: "Official BIP39 language key. Default: english",
-        }),
-      ),
+      language: BIP39_LANGUAGE_PARAMETER,
     }),
     renderCall(args, _theme) {
       return new Text(`🧩 Lookup ${args.words.length} BIP39 words`, 0, 0);
