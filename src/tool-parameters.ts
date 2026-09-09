@@ -1,3 +1,5 @@
+import type { WIFChain } from "./utils/wif.ts";
+
 /** Require either parse mode by itself or generation mode with its optional indices. */
 export const BIP44_PATH_MODE_SCHEMA = {
   oneOf: [
@@ -60,3 +62,10 @@ export const TOOL_ADDRESS_TYPES_BY_CHAIN: Readonly<Record<ToolChain, readonly st
   sui: SUI_ADDRESS_TYPES,
   cardano: CARDANO_ADDRESS_TYPES,
 };
+
+/** Native WIF chains exposed by both agent transports. */
+export const TOOL_WIF_CHAINS = [
+  "bitcoin",
+  "litecoin",
+  "decred",
+] as const satisfies readonly WIFChain[];

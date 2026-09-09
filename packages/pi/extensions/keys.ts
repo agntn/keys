@@ -7,6 +7,7 @@ import { Type } from "typebox";
 import type * as KeysTools from "../../../dist/tool-operations.d.mts";
 import { TOOL_ADDRESS_TYPES, TOOL_CHAINS, TOOL_NETWORKS } from "../../../src/tool-parameters.ts";
 import { BIP39_LANGUAGES } from "../../../src/utils/bip39/languages.ts";
+import { WIF_ENCODE_PARAMETERS, WIF_DECODE_PARAMETERS } from "../../../src/tool-schemas.ts";
 
 const sourceModuleUrl = new URL("../../../src/tool-operations.ts", import.meta.url);
 const distributionModuleUrl = new URL("../../../dist/tool-operations.mjs", import.meta.url);
@@ -42,6 +43,37 @@ const ADDRESS_TYPE_PARAMETER = Type.Optional(
 );
 
 export default function keysExtension(pi: ExtensionAPI) {
+  pi.registerTool({
+    name: "keys_encode_wif",
+    label: "Encode WIF",
+    description:
+      "Encode a disposable private key as Bitcoin, Litecoin or Decred ECDSA WIF. WIF is not encryption; inputs and results enter the transcript. Never use keys controlling real funds.",
+    parameters: WIF_ENCODE_PARAMETERS,
+    renderCall() {
+      return new Text("🔐 Encode WIF", 0, 0);
+    },
+    async execute(_toolCallId, params) {
+      return (await loadToolOperations()).encodeWif(
+        params.chain,
+        params.privateKey,
+        params.network,
+        params.compressed,
+      );
+    },
+  });
+  pi.registerTool({
+    name: "keys_decode_wif",
+    label: "Decode WIF",
+    description:
+      "Decode public or disposable Bitcoin, Litecoin or Decred ECDSA WIF into a hex private key and wallet options. Specify the expected chain and network; Bitcoin and Litecoin testnet WIFs overlap. Both forms enter the transcript.",
+    parameters: WIF_DECODE_PARAMETERS,
+    renderCall() {
+      return new Text("🔐 Decode WIF", 0, 0);
+    },
+    async execute(_toolCallId, params) {
+      return (await loadToolOperations()).decodeWif(params.chain, params.wif, params.network);
+    },
+  });
   // ─── generate_wallet ────────────────────────────────────────────────────
   pi.registerTool({
     name: "keys_generate_wallet",

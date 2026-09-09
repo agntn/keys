@@ -1,6 +1,6 @@
 # @agntn/keys: Pi extension
 
-Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as 13 agent tools for key generation, BIP39 entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across 8 blockchains (Bitcoin, Ethereum, Base, Solana, Aptos, TRON, SUI, Cardano).
+Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as 15 agent tools for key generation, WIF conversion, BIP39 entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across 10 blockchains (Bitcoin, Litecoin, Decred, Ethereum, Base, Solana, Aptos, TRON, SUI, Cardano).
 
 > [!WARNING]
 > **This extension is experimental.** The package name, public API, provider model, CLI flags, and tool surfaces may change before the first stable release. Pin exact versions if you build on it now.
@@ -9,6 +9,8 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 
 | Tool                         | Purpose                                                        |
 | ---------------------------- | -------------------------------------------------------------- |
+| `keys_encode_wif`            | Export a disposable private key as native BTC, LTC or DCR WIF  |
+| `keys_decode_wif`            | Read native WIF into a hex key, network and compression flag   |
 | `keys_generate_wallet`       | Generate private key + public key + address for a chain        |
 | `keys_derive_wallet`         | Derive public key + address from an existing private key       |
 | `keys_derive_hd_wallet`      | Derive public key + address from a mnemonic and path           |
@@ -34,9 +36,11 @@ The extension loads the shared executors from `dist/tool-operations.mjs`; in a c
 - A built library (`pnpm build`) for production resolution of the `@agntn/keys` import.
 - Dev deps `@earendil-works/pi-coding-agent`, `@earendil-works/pi-tui`, `typebox`.
 
+Both WIF tools require a chain and default to mainnet. Encoding defaults to compressed keys; decoding preserves the encoded flag. Bitcoin and Litecoin testnet WIFs overlap, so decoding checks the requested context rather than identifying ownership. Decred supports compressed ECDSA keys only.
+
 ## Security note
 
-`keys_generate_wallet` returns a plaintext private key, while `keys_derive_wallet` and `keys_sign_message` accept one. The BIP39 tools accept words or complete and partial phrases, and may return equivalent entropy, indices, or words allowed by the checksum. Tool arguments and output land in the agent transcript.
+`keys_generate_wallet` returns a plaintext private key, while `keys_derive_wallet` and `keys_sign_message` accept one. The BIP39 tools accept words or complete and partial phrases, and may return equivalent entropy, indices, or words allowed by the checksum. WIF tools convert between two equivalent secret representations, neither encrypted. Tool arguments and output land in the agent transcript.
 
 > [!CAUTION]
 > **Never use this with real funds or with any wallet that has ever been used.** Treat every key it touches as burned the moment it appears in tool output. Generate fresh throwaway keys for testing only; assume anything passing through this extension is compromised and discard it. Keys that control real funds belong on a hardware wallet, never in an agent transcript.
