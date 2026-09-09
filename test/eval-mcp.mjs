@@ -99,6 +99,19 @@ try {
   await call("keys_inspect_mnemonic", { mnemonic: generatedMnemonic }, /Valid BIP39: yes/);
   await call("keys_inspect_mnemonic", { mnemonic }, /Valid BIP39: yes/);
   await call("keys_encode_bip39_entropy", { entropy: "00".repeat(16) }, /Words: 12/);
+  for (const name of ["keys_generate_mnemonic", "keys_encode_bip39_entropy"]) {
+    const args = name === "keys_generate_mnemonic" ? { words: 15 } : { entropy: "00".repeat(20) };
+    const result = await call(name, { ...args, language: "japanese" }, /Words: 15/);
+    const localized = /Mnemonic: ([^\n]+)/u.exec(result)?.[1];
+    if (!localized || localized.split("\u3000").length !== 15) {
+      throw new Error(`${name} did not return 15 Japanese words`);
+    }
+    await call(
+      "keys_inspect_mnemonic",
+      { mnemonic: localized, language: "japanese" },
+      /Valid BIP39: yes/,
+    );
+  }
   await call("keys_lookup_bip39_indices", { indices: [0, 2047] }, /2047: zoo/);
   await call("keys_lookup_bip39_words", { words: ["skill", "zoo"] }, /zero-based 1619/);
   await call("keys_recover_mnemonic_word", { mnemonic: missing }, /Candidates \(128\):/);

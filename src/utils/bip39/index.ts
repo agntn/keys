@@ -1,6 +1,6 @@
 import * as bip39 from "@scure/bip39";
 import * as english from "@scure/bip39/wordlists/english.js";
-import type { BIP39Language } from "./languages.js";
+import { isBIP39Language, type BIP39Language } from "./languages.js";
 
 export { BIP39_LANGUAGES, isBIP39Language } from "./languages.js";
 export type { BIP39Language } from "./languages.js";
@@ -38,6 +38,17 @@ const BIP39_WORDLIST_LOADERS = {
 } satisfies Record<BIP39Language, () => Promise<BIP39WordlistModule>>;
 
 /**
+ * Loads a copy of one official word list for the exported bip39 codec.
+ * @param language - Official language key, defaulting to English
+ * @returns {Promise<string[]>} The selected BIP39 word list
+ */
+export async function loadBIP39Wordlist(language: BIP39Language = "english"): Promise<string[]> {
+  if (!isBIP39Language(language)) throw new RangeError("Unknown BIP39 language");
+  const { wordlist: selectedWordlist } = await BIP39_WORDLIST_LOADERS[language]();
+  return [...selectedWordlist];
+}
+
+/**
  * Finds words in one official BIP39 list after Unicode NFKD normalization.
  * @param words - Words to look up
  * @param language - Official BIP39 language key
@@ -47,7 +58,7 @@ export async function lookupBIP39Words(
   words: readonly string[],
   language: BIP39Language = "english",
 ): Promise<readonly BIP39WordLookup[]> {
-  const { wordlist: selectedWordlist } = await BIP39_WORDLIST_LOADERS[language]();
+  const selectedWordlist = await loadBIP39Wordlist(language);
   return words.map((word) => {
     const normalizedWord = word.normalize("NFKD").toLowerCase().normalize("NFKD");
     const zeroBasedIndex = selectedWordlist.indexOf(normalizedWord);
@@ -74,7 +85,7 @@ export async function lookupBIP39Indices(
     throw new RangeError("BIP39 index base must be 0 or 1");
   }
 
-  const { wordlist: selectedWordlist } = await BIP39_WORDLIST_LOADERS[language]();
+  const selectedWordlist = await loadBIP39Wordlist(language);
   return indices.map((index) => ({
     index,
     word: selectedWordlist[index - indexBase] ?? null,

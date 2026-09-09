@@ -18,15 +18,13 @@ import {
   type ToolNetwork,
 } from "./tool-parameters.ts";
 import {
-  entropyToMnemonic,
-  generateMnemonic,
+  bip39,
+  loadBIP39Wordlist,
   getMnemonicWordCandidates,
   lookupBIP39Indices,
   lookupBIP39Words,
-  mnemonicToEntropy,
-  validateMnemonic,
 } from "./utils/bip39/index.ts";
-import { BIP39_LANGUAGES, isBIP39Language } from "./utils/bip39/languages.ts";
+import { BIP39_LANGUAGES, isBIP39Language, type BIP39Language } from "./utils/bip39/languages.ts";
 
 /** Maximum number of words or indices accepted by one BIP39 lookup. */
 export const MAX_BIP39_LOOKUP_ITEMS = 100;
@@ -73,6 +71,7 @@ export interface DerivedWalletDetails {
 
 /** BIP39 inspection result without the supplied mnemonic. */
 export interface MnemonicInspectionDetails {
+  language: BIP39Language;
   valid: boolean;
   words: number;
   entropy?: string;
@@ -80,12 +79,14 @@ export interface MnemonicInspectionDetails {
 
 /** Fresh disposable mnemonic and its word count. */
 export interface GeneratedMnemonicDetails {
+  language: BIP39Language;
   words: number;
   mnemonic: string;
 }
 
 /** Mnemonic generated from supplied entropy. */
 export interface EncodedEntropyDetails {
+  language: BIP39Language;
   words: number;
   mnemonic: string;
 }
@@ -232,6 +233,14 @@ function integerArray(value: unknown, name: string): readonly number[] {
     integers.push(item);
   }
   return integers;
+}
+
+function parseBIP39Language(value: unknown): BIP39Language {
+  const language = optionalString(value, "BIP39 language") ?? "english";
+  if (!isBIP39Language(language)) {
+    throw new RangeError(`Unknown BIP39 language. Supported: ${BIP39_LANGUAGES.join(", ")}`);
+  }
+  return language;
 }
 
 function normalizedMnemonic(value: unknown): string {
@@ -449,39 +458,52 @@ export async function deriveHdWallet(
 }
 
 /**
- * Generate a disposable English mnemonic using the library's cryptographic randomness.
+ * Generate a disposable mnemonic using the library's cryptographic randomness.
  * @param wordsValue - Word count, defaulting to 12.
- * @returns {ToolResult<GeneratedMnemonicDetails>} Mnemonic, word count and transcript warning.
+ * @param languageValue - Optional official BIP39 language key.
+ * @returns {Promise<ToolResult<GeneratedMnemonicDetails>>} Mnemonic and transcript warning.
  */
-export function generateBip39Mnemonic(
+export async function generateBip39Mnemonic(
   wordsValue: unknown = 12,
-): ToolResult<GeneratedMnemonicDetails> {
+  languageValue?: unknown,
+): Promise<ToolResult<GeneratedMnemonicDetails>> {
   if (typeof wordsValue !== "number" || !TOOL_MNEMONIC_WORD_COUNTS.includes(wordsValue)) {
     throw new RangeError("BIP39 word count must be 12, 15, 18, 21, or 24");
   }
-  const mnemonic = generateMnemonic((wordsValue / 3) * 32);
+  const language = parseBIP39Language(languageValue);
+  const wordlist = await loadBIP39Wordlist(language);
+  const mnemonic = bip39.generateMnemonic(wordlist, (wordsValue / 3) * 32);
   return {
     content: content(
-      `Mnemonic: ${mnemonic}\nWords: ${wordsValue}\nThis mnemonic is saved in the transcript. Never use it for real funds.`,
+      `Language: ${language}\nMnemonic: ${mnemonic}\nWords: ${wordsValue}\nThis mnemonic is saved in the transcript. Never use it for real funds.`,
     ),
-    details: { words: wordsValue, mnemonic },
+    details: { language, words: wordsValue, mnemonic },
   };
 }
 
 /**
- * Validate an English BIP39 mnemonic and recover its entropy when valid.
- * @param mnemonicValue - English BIP39 mnemonic candidate.
- * @returns {ToolResult<MnemonicInspectionDetails>} Validity, word count, and optional entropy.
+ * Validate a BIP39 mnemonic against the selected list and recover its entropy when valid.
+ * @param mnemonicValue - BIP39 mnemonic candidate.
+ * @param languageValue - Optional official BIP39 language key.
+ * @returns {Promise<ToolResult<MnemonicInspectionDetails>>} Validity and optional entropy.
  */
-export function inspectMnemonic(mnemonicValue: unknown): ToolResult<MnemonicInspectionDetails> {
+export async function inspectMnemonic(
+  mnemonicValue: unknown,
+  languageValue?: unknown,
+): Promise<ToolResult<MnemonicInspectionDetails>> {
   const mnemonic = normalizedMnemonic(mnemonicValue);
-  const words = mnemonic === "" ? 0 : mnemonic.split(" ").length;
-  const valid = validateMnemonic(mnemonic);
-  const entropy = valid ? Buffer.from(mnemonicToEntropy(mnemonic)).toString("hex") : undefined;
-  const details = { valid, words, ...(entropy === undefined ? {} : { entropy }) };
+  const language = parseBIP39Language(languageValue);
+  const wordlist = await loadBIP39Wordlist(language);
+  const words = mnemonic.split(" ").length;
+  const valid = bip39.validateMnemonic(mnemonic, wordlist);
+  const entropy = valid
+    ? Buffer.from(bip39.mnemonicToEntropy(mnemonic, wordlist)).toString("hex")
+    : undefined;
+  const details = { language, valid, words, ...(entropy === undefined ? {} : { entropy }) };
   return {
     content: content(
       [
+        `Language: ${language}`,
         `Valid BIP39: ${valid ? "yes" : "no"}`,
         `Words: ${words}`,
         entropy === undefined ? undefined : `Entropy: ${entropy}`,
@@ -494,11 +516,15 @@ export function inspectMnemonic(mnemonicValue: unknown): ToolResult<MnemonicInsp
 }
 
 /**
- * Encode a supported BIP39 entropy length as an English mnemonic.
+ * Encode a supported BIP39 entropy length using the selected word list.
  * @param entropyValue - BIP39 entropy as hexadecimal text.
- * @returns {ToolResult<EncodedEntropyDetails>} Canonical English mnemonic.
+ * @param languageValue - Optional official BIP39 language key.
+ * @returns {Promise<ToolResult<EncodedEntropyDetails>>} Canonical mnemonic and language.
  */
-export function encodeBip39Entropy(entropyValue: unknown): ToolResult<EncodedEntropyDetails> {
+export async function encodeBip39Entropy(
+  entropyValue: unknown,
+  languageValue?: unknown,
+): Promise<ToolResult<EncodedEntropyDetails>> {
   const entropyText = requiredString(entropyValue, "BIP39 entropy");
   if (!BIP39_ENTROPY_PATTERN.test(entropyText)) {
     throw new TypeError("BIP39 entropy must be a hexadecimal string");
@@ -506,11 +532,13 @@ export function encodeBip39Entropy(entropyValue: unknown): ToolResult<EncodedEnt
   if (!BIP39_ENTROPY_BYTE_LENGTHS.includes(entropyText.length / 2)) {
     throw new RangeError("BIP39 entropy must be 16, 20, 24, 28, or 32 bytes");
   }
-  const mnemonic = entropyToMnemonic(Buffer.from(entropyText, "hex"));
-  const words = mnemonic.split(" ").length;
+  const language = parseBIP39Language(languageValue);
+  const wordlist = await loadBIP39Wordlist(language);
+  const mnemonic = bip39.entropyToMnemonic(Buffer.from(entropyText, "hex"), wordlist);
+  const words = mnemonic.split(/\s+/u).length;
   return {
-    content: content(`Words: ${words}\nMnemonic: ${mnemonic}`),
-    details: { words, mnemonic },
+    content: content(`Language: ${language}\nWords: ${words}\nMnemonic: ${mnemonic}`),
+    details: { language, words, mnemonic },
   };
 }
 
@@ -530,10 +558,7 @@ export async function lookupBip39Indices(
   assertLookupSize(indices.length, "indices");
   const indexBase = parseIndexBase(indexBaseValue);
   assertIndexRange(indices, indexBase);
-  const language = optionalString(languageValue, "BIP39 language") ?? "english";
-  if (!isBIP39Language(language)) {
-    throw new RangeError(`Unknown BIP39 language. Supported: ${BIP39_LANGUAGES.join(", ")}`);
-  }
+  const language = parseBIP39Language(languageValue);
   const lookups = await lookupBIP39Indices(indices, language, indexBase);
   return {
     content: content(
@@ -562,10 +587,7 @@ export async function lookupBip39Words(
   if (words.some((word) => !BIP39_WORD_PATTERN.test(word))) {
     throw new TypeError("BIP39 lookup words must contain letters and combining marks only");
   }
-  const language = optionalString(languageValue, "BIP39 language") ?? "english";
-  if (!isBIP39Language(language)) {
-    throw new RangeError(`Unknown BIP39 language. Supported: ${BIP39_LANGUAGES.join(", ")}`);
-  }
+  const language = parseBIP39Language(languageValue);
   const found = await lookupBIP39Words(words, language);
   const lookups = found.map((lookup) => ({
     word: lookup.word,

@@ -200,3 +200,62 @@ export const wifTestVectors = [
     compressed: true,
   },
 ] as const;
+
+/** trezor/python-mnemonic vectors.json, blob d362a5d4eb1ba800a52aec30116915cd4576e1fd. */
+export const localizedMnemonicVectors = [
+  {
+    language: "czech",
+    entropy: "00000000000000000000000000000000",
+    mnemonic:
+      "abdikace abdikace abdikace abdikace abdikace abdikace abdikace abdikace abdikace abdikace abdikace agrese",
+  },
+  {
+    language: "english",
+    entropy: "00000000000000000000000000000000",
+    mnemonic:
+      "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+  },
+  {
+    language: "french",
+    entropy: "00000000000000000000000000000000",
+    mnemonic:
+      "abaisser abaisser abaisser abaisser abaisser abaisser abaisser abaisser abaisser abaisser abaisser abeille",
+  },
+  {
+    language: "italian",
+    entropy: "00000000000000000000000000000000",
+    mnemonic: "abaco abaco abaco abaco abaco abaco abaco abaco abaco abaco abaco abete",
+  },
+  {
+    language: "japanese",
+    entropy: "00000000000000000000000000000000",
+    mnemonic:
+      "あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あおぞら",
+  },
+  {
+    language: "korean",
+    entropy: "00000000000000000000000000000000",
+    mnemonic: "가격 가격 가격 가격 가격 가격 가격 가격 가격 가격 가격 가능",
+  },
+  {
+    language: "portuguese",
+    entropy: "00000000000000000000000000000000",
+    mnemonic:
+      "abacate abacate abacate abacate abacate abacate abacate abacate abacate abacate abacate abater",
+  },
+  {
+    language: "simplified-chinese",
+    entropy: "7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f",
+    mnemonic: "枪 疫 霉 尝 俩 闹 饿 贤 枪 疫 霉 卿",
+  },
+  {
+    language: "spanish",
+    entropy: "00000000000000000000000000000000",
+    mnemonic: "ábaco ábaco ábaco ábaco ábaco ábaco ábaco ábaco ábaco ábaco ábaco abierto",
+  },
+  {
+    language: "traditional-chinese",
+    entropy: "7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f",
+    mnemonic: "槍 疫 黴 嘗 倆 鬧 餓 賢 槍 疫 黴 卿",
+  },
+] as const;

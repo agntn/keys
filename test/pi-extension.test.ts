@@ -2,7 +2,12 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
 import { describe, expect, it } from "vitest";
-import { litecoinTestVectors, decredTestVectors, wifTestVectors } from "./fixtures.ts";
+import {
+  litecoinTestVectors,
+  decredTestVectors,
+  wifTestVectors,
+  localizedMnemonicVectors,
+} from "./fixtures.ts";
 import keysExtension from "../packages/pi/extensions/keys.ts";
 import { mnemonicToEntropy, validateMnemonic } from "../src/utils/bip39/index.ts";
 
@@ -34,6 +39,90 @@ function registerTools(): ReadonlyMap<string, RegisteredTool> {
 }
 
 describe("keys Pi extension", () => {
+  it.each(localizedMnemonicVectors)(
+    "encodes and inspects $language mnemonics through Pi",
+    async ({ language, entropy, mnemonic }) => {
+      const tools = registerTools();
+      const encode = tools.get("keys_encode_bip39_entropy");
+      const inspect = tools.get("keys_inspect_mnemonic");
+      if (!encode || !inspect) throw new Error("Missing mnemonic tools");
+      const encoded = await encode.execute("encode", { entropy, language });
+      expect(encoded).toMatchObject({ details: { language, words: 12, mnemonic } });
+      expect(encoded.content[0]?.text).toContain(`Language: ${language}`);
+      expect(encoded.content[0]?.text).toContain(`Mnemonic: ${mnemonic}`);
+      const inspected = await inspect.execute("inspect", {
+        mnemonic: mnemonic.normalize("NFC"),
+        language,
+      });
+      expect(inspected).toMatchObject({ details: { language, valid: true, words: 12, entropy } });
+      expect(inspected.content[0]?.text).toContain(`Language: ${language}`);
+      expect(inspected.content[0]?.text).not.toContain(mnemonic);
+      for (const [tool, args] of [
+        [encode, { entropy }],
+        [inspect, { mnemonic }],
+      ] as const) {
+        expect(Value.Check(tool.parameters, { ...args, language })).toBe(true);
+      }
+    },
+  );
+
+  it.each(localizedMnemonicVectors)(
+    "generates a $language mnemonic through Pi",
+    async ({ language }) => {
+      const tools = registerTools();
+      const generate = tools.get("keys_generate_mnemonic");
+      const inspect = tools.get("keys_inspect_mnemonic");
+      if (!generate || !inspect) throw new Error("Missing mnemonic tools");
+      expect(Value.Check(generate.parameters, { words: 24, language })).toBe(true);
+      const generated = await generate.execute("generate", { words: 24, language });
+      const fresh = generated.content[0]?.text?.match(/Mnemonic: ([^\n]+)/u)?.[1];
+      if (!fresh) throw new Error("Missing generated mnemonic");
+      expect(generated).toMatchObject({ details: { language, words: 24, mnemonic: fresh } });
+      expect(generated.content[0]?.text).toContain("Never use it for real funds");
+      expect(
+        await inspect.execute("inspect-generated", { mnemonic: fresh, language }),
+      ).toMatchObject({
+        details: { language, valid: true, words: 24 },
+      });
+    },
+  );
+
+  it("rejects unsupported languages even when Pi skips schemas", async () => {
+    const tools = registerTools();
+    for (const [name, args] of [
+      ["keys_generate_mnemonic", {}],
+      ["keys_inspect_mnemonic", { mnemonic: localizedMnemonicVectors[8].mnemonic }],
+      ["keys_encode_bip39_entropy", { entropy: "00".repeat(16) }],
+    ] as const) {
+      const tool = tools.get(name);
+      if (!tool) throw new Error(`Missing ${name}`);
+      for (const language of ["unknown", "constructor", "__proto__", "", null, 42]) {
+        expect(Value.Check(tool.parameters, { ...args, language })).toBe(false);
+        await expect(tool.execute("invalid", { ...args, language })).rejects.toThrow(
+          /BIP39 language/u,
+        );
+      }
+    }
+  });
+
+  it("does not guess a language or repair invalid localized phrases", async () => {
+    const tool = registerTools().get("keys_inspect_mnemonic");
+    if (!tool) throw new Error("Missing inspection tool");
+    const { mnemonic } = localizedMnemonicVectors[8];
+    for (const args of [
+      { mnemonic },
+      { mnemonic, language: "french" },
+      { mnemonic: mnemonic.replace("abierto", "ábaco"), language: "spanish" },
+      { mnemonic: mnemonic.toUpperCase(), language: "spanish" },
+      { mnemonic: mnemonic.replaceAll("á", "a"), language: "spanish" },
+    ]) {
+      const result = await tool.execute("invalid-phrase", args);
+      expect(result).toMatchObject({ details: { valid: false, words: 12 } });
+      expect(result.content[0]?.text).not.toContain("Entropy:");
+      expect(result.content[0]?.text).not.toContain(args.mnemonic);
+    }
+  });
+
   it.each([12, 15, 18, 21, 24])(
     "generates a disposable %i-word mnemonic through Pi",
     async (words) => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DecodedWIF, WIFOptions } from "@agntn/keys";
-import { wifTestVectors } from "./fixtures.ts";
+import { wifTestVectors, localizedMnemonicVectors } from "./fixtures.ts";
 
 const EXPORTS = [
   ["@agntn/keys/bip32", "/dist/utils/bip32/index.mjs"],
@@ -23,6 +23,20 @@ describe("Public WIF exports", () => {
 });
 
 describe("Public derivation exports", () => {
+  it("loads localized lists for the published BIP39 codec", async () => {
+    const { loadBIP39Wordlist, bip39, generateMnemonic, validateMnemonic } =
+      await import("@agntn/keys/bip39");
+    expect(validateMnemonic(generateMnemonic())).toBe(true);
+    for (const { language, entropy, mnemonic } of localizedMnemonicVectors) {
+      const wordlist = await loadBIP39Wordlist(language);
+      expect(bip39.entropyToMnemonic(Buffer.from(entropy, "hex"), wordlist)).toBe(mnemonic);
+      expect(bip39.validateMnemonic(mnemonic.normalize("NFC"), wordlist)).toBe(true);
+      expect(Buffer.from(bip39.mnemonicToEntropy(mnemonic, wordlist)).toString("hex")).toBe(
+        entropy,
+      );
+    }
+  });
+
   it.each(EXPORTS)("resolves %s", (specifier, path) => {
     expect(import.meta.resolve(specifier).endsWith(path)).toBe(true);
   });

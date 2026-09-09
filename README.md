@@ -199,6 +199,24 @@ const indexMatches = await lookupBIP39Indices([1, 1179, 2048], "italian", 1);
 
 Language keys cover the 10 official BIP39 lists. Word lookup is case-insensitive and normalizes Unicode to NFKD. Index lookup uses base 0 by default and accepts base 1 explicitly.
 
+### Generate and inspect localized mnemonics
+
+```ts
+import { bip39, loadBIP39Wordlist } from "@agntn/keys/bip39";
+
+const words = await loadBIP39Wordlist("spanish");
+const mnemonic = bip39.generateMnemonic(words, 128);
+const valid = bip39.validateMnemonic(mnemonic, words);
+const entropy = bip39.mnemonicToEntropy(mnemonic, words);
+const restored = bip39.entropyToMnemonic(entropy, words);
+```
+
+Localized lists load on demand; each call returns a copy. Existing synchronous helpers such as `generateMnemonic()` and `validateMnemonic()` still use English. The `bip39` codec handles Unicode NFKD and emits Japanese mnemonics with ideographic spaces.
+
+In MCP and Pi, `keys_generate_mnemonic`, `keys_inspect_mnemonic` and `keys_encode_bip39_entropy` accept the same optional `language` key and report the selected language. Omit it for English; there is no automatic language detection. A checksum match is not proof of a language, since some lists share words. Inspection does not change case or guess missing accents.
+
+`keys_derive_hd_wallet` and `keys_recover_mnemonic_word` still require English. Re-encoding entropy in another language can change the BIP39 seed; it is not a safe shortcut to an English wallet.
+
 ## MCP server
 
 The package includes a stdio MCP server with the same 16 operations used by the Pi extension. After installing the package, configure an MCP client to run `keys mcp`. A checkout can run the built entry directly:
@@ -216,7 +234,7 @@ The package includes a stdio MCP server with the same 16 operations used by the 
 
 Hosts that own their transport can import `createMcpServer` from `@agntn/keys/mcp`.
 
-Use `keys_generate_mnemonic` with `{ "words": 24 }` for a fresh English BIP39 mnemonic, or `{}` for 12 words. It also accepts 15, 18 and 21 words. Generation uses the library's cryptographic randomness, not entropy supplied by the model. The result is saved in the transcript, so it is for tests and disposable wallets only.
+Use `keys_generate_mnemonic` with `{ "words": 24 }` for a fresh English BIP39 mnemonic, or `{}` for 12 words. Add `"language": "japanese"`, for example, to select another official list. It also accepts 15, 18 and 21 words. Generation uses the library's cryptographic randomness, not entropy supplied by the model. The result is saved in the transcript, so it is for tests and disposable wallets only.
 
 The server handles private keys, mnemonics, entropy, messages, and signatures as plaintext MCP arguments or results. They enter client transcripts. Use only public puzzle material or disposable test keys, never a wallet that controls real funds.
 
