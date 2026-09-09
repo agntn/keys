@@ -20,7 +20,7 @@ Typed key generation, address derivation, and message signing across ten blockch
 - 🛤️ **BIP44 paths** - derivation path utilities for all supported chains
 - 🧩 **BIP39 puzzles** - validate phrases, narrow one missing word, and map words or indices across all 10 official lists
 - 🔌 **Lazy loading** - blockchain implementations load on demand for smaller bundles
-- 🤖 **MCP server** - the same 15 key, mnemonic, address, and signing tools over stdio
+- 🤖 **MCP server** - the same 16 key, mnemonic, address, and signing tools over stdio
 - 📐 **Fully typed** - TypeScript definitions for every interface
 
 ## Install
@@ -201,7 +201,7 @@ Language keys cover the 10 official BIP39 lists. Word lookup is case-insensitive
 
 ## MCP server
 
-The package includes a stdio MCP server with the same 15 operations used by the Pi extension. After installing the package, configure an MCP client to run `keys mcp`. A checkout can run the built entry directly:
+The package includes a stdio MCP server with the same 16 operations used by the Pi extension. After installing the package, configure an MCP client to run `keys mcp`. A checkout can run the built entry directly:
 
 ```json
 {
@@ -215,6 +215,8 @@ The package includes a stdio MCP server with the same 15 operations used by the 
 ```
 
 Hosts that own their transport can import `createMcpServer` from `@agntn/keys/mcp`.
+
+Use `keys_generate_mnemonic` with `{ "words": 24 }` for a fresh English BIP39 mnemonic, or `{}` for 12 words. It also accepts 15, 18 and 21 words. Generation uses the library's cryptographic randomness, not entropy supplied by the model. The result is saved in the transcript, so it is for tests and disposable wallets only.
 
 The server handles private keys, mnemonics, entropy, messages, and signatures as plaintext MCP arguments or results. They enter client transcripts. Use only public puzzle material or disposable test keys, never a wallet that controls real funds.
 

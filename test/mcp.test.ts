@@ -10,6 +10,7 @@ const TOOL_NAMES = [
   "keys_generate_wallet",
   "keys_derive_wallet",
   "keys_derive_hd_wallet",
+  "keys_generate_mnemonic",
   "keys_inspect_mnemonic",
   "keys_encode_bip39_entropy",
   "keys_lookup_bip39_indices",
@@ -44,6 +45,34 @@ afterEach(async () => {
 });
 
 describe("keys MCP server", () => {
+  it("generates fresh mnemonics with a default length through MCP", async () => {
+    const client = await connectTestClient();
+    const mnemonics: string[] = [];
+    for (const args of [{}, {}, { words: 24 }]) {
+      const result = await client.callTool({ name: "keys_generate_mnemonic", arguments: args });
+      expect(result.isError).not.toBe(true);
+      const mnemonic = /Mnemonic: ([a-z ]+)/.exec(text(result.content))?.[1];
+      if (!mnemonic) throw new Error("Missing mnemonic");
+      expect(mnemonic.split(" ")).toHaveLength(args.words ?? 12);
+      expect(text(result.content)).toContain("Never use it for real funds");
+      const inspected = await client.callTool({
+        name: "keys_inspect_mnemonic",
+        arguments: { mnemonic },
+      });
+      expect(text(inspected.content)).toContain("Valid BIP39: yes");
+      mnemonics.push(mnemonic);
+    }
+    expect(new Set(mnemonics).size).toBe(3);
+    const listed = await client.listTools();
+    expect(
+      listed.tools.find((tool) => tool.name === "keys_generate_mnemonic")?.annotations,
+    ).toMatchObject({ readOnlyHint: false, idempotentHint: false, openWorldHint: false });
+    for (const args of [{ words: 13 }, { words: "12" }, { words: null }, { extra: true }]) {
+      const result = await client.callTool({ name: "keys_generate_mnemonic", arguments: args });
+      expect(result.isError).toBe(true);
+    }
+  });
+
   it.each(wifTestVectors)("converts $chain $network WIF through MCP", async (vector) => {
     const client = await connectTestClient();
     const { chain, network, compressed, privateKey, wif } = vector;

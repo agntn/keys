@@ -15,6 +15,9 @@ export const BIP44_PATH_MODE_SCHEMA = {
   ],
 } as const;
 
+/** Supported BIP39 mnemonic lengths for generation tools. */
+export const TOOL_MNEMONIC_WORD_COUNTS: readonly number[] = [12, 15, 18, 21, 24];
+
 /** Every blockchain exposed by the tool surfaces. */
 export const TOOL_CHAINS = [
   "bitcoin",

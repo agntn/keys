@@ -7,7 +7,11 @@ import { Type } from "typebox";
 import type * as KeysTools from "../../../dist/tool-operations.d.mts";
 import { TOOL_ADDRESS_TYPES, TOOL_CHAINS, TOOL_NETWORKS } from "../../../src/tool-parameters.ts";
 import { BIP39_LANGUAGES } from "../../../src/utils/bip39/languages.ts";
-import { WIF_ENCODE_PARAMETERS, WIF_DECODE_PARAMETERS } from "../../../src/tool-schemas.ts";
+import {
+  WIF_ENCODE_PARAMETERS,
+  WIF_DECODE_PARAMETERS,
+  GENERATE_MNEMONIC_PARAMETERS,
+} from "../../../src/tool-schemas.ts";
 
 const sourceModuleUrl = new URL("../../../src/tool-operations.ts", import.meta.url);
 const distributionModuleUrl = new URL("../../../dist/tool-operations.mjs", import.meta.url);
@@ -184,6 +188,24 @@ export default function keysExtension(pi: ExtensionAPI) {
         params.addressType,
         params.network,
       );
+    },
+  });
+
+  pi.registerTool({
+    name: "keys_generate_mnemonic",
+    label: "Generate BIP39 Mnemonic",
+    description: "Generate a random English BIP39 mnemonic for tests or disposable wallets",
+    promptSnippet: "Use when a test needs a fresh BIP39 mnemonic rather than supplied entropy.",
+    promptGuidelines: [
+      "Choose 12, 15, 18, 21 or 24 words. Default: 12",
+      "The result is saved in the transcript. Never use it for real funds",
+    ],
+    parameters: GENERATE_MNEMONIC_PARAMETERS,
+    renderCall(_args, _theme) {
+      return new Text("🧩 Generate disposable BIP39 mnemonic", 0, 0);
+    },
+    async execute(_toolCallId, params) {
+      return (await loadToolOperations()).generateBip39Mnemonic(params.words);
     },
   });
 

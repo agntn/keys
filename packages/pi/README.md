@@ -1,6 +1,6 @@
 # @agntn/keys: Pi extension
 
-Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as 15 agent tools for key generation, WIF conversion, BIP39 entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across 10 blockchains (Bitcoin, Litecoin, Decred, Ethereum, Base, Solana, Aptos, TRON, SUI, Cardano).
+Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as 16 agent tools for key generation, WIF conversion, BIP39 generation, entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across 10 blockchains (Bitcoin, Litecoin, Decred, Ethereum, Base, Solana, Aptos, TRON, SUI, Cardano).
 
 > [!WARNING]
 > **This extension is experimental.** The package name, public API, provider model, CLI flags, and tool surfaces may change before the first stable release. Pin exact versions if you build on it now.
@@ -14,6 +14,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 | `keys_generate_wallet`       | Generate private key + public key + address for a chain        |
 | `keys_derive_wallet`         | Derive public key + address from an existing private key       |
 | `keys_derive_hd_wallet`      | Derive public key + address from a mnemonic and path           |
+| `keys_generate_mnemonic`     | Generate a disposable English BIP39 mnemonic                   |
 | `keys_inspect_mnemonic`      | Validate a BIP39 mnemonic and recover its entropy              |
 | `keys_encode_bip39_entropy`  | Encode hexadecimal entropy as an English BIP39 mnemonic        |
 | `keys_lookup_bip39_indices`  | Map numeric positions to words in an official BIP39 list       |
@@ -38,9 +39,11 @@ The extension loads the shared executors from `dist/tool-operations.mjs`; in a c
 
 Both WIF tools require a chain and default to mainnet. Encoding defaults to compressed keys; decoding preserves the encoded flag. Bitcoin and Litecoin testnet WIFs overlap, so decoding checks the requested context rather than identifying ownership. Decred supports compressed ECDSA keys only.
 
+`keys_generate_mnemonic` accepts `{ "words": 24 }` for 24 words, or `{}` for the default 12. The other supported lengths are 15, 18 and 21 words. It generates fresh cryptographic randomness rather than asking the model for entropy.
+
 ## Security note
 
-`keys_generate_wallet` returns a plaintext private key, while `keys_derive_wallet` and `keys_sign_message` accept one. The BIP39 tools accept words or complete and partial phrases, and may return equivalent entropy, indices, or words allowed by the checksum. WIF tools convert between two equivalent secret representations, neither encrypted. Tool arguments and output land in the agent transcript.
+`keys_generate_wallet` returns a plaintext private key, while `keys_derive_wallet` and `keys_sign_message` accept one. `keys_generate_mnemonic` returns a plaintext mnemonic. Other BIP39 tools accept words or complete and partial phrases, and may return equivalent entropy, indices, or words allowed by the checksum. WIF tools convert between two equivalent secret representations, neither encrypted. Tool arguments and output land in the agent transcript.
 
 > [!CAUTION]
 > **Never use this with real funds or with any wallet that has ever been used.** Treat every key it touches as burned the moment it appears in tool output. Generate fresh throwaway keys for testing only; assume anything passing through this extension is compromised and discard it. Keys that control real funds belong on a hardware wallet, never in an agent transcript.
