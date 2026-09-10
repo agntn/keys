@@ -20,6 +20,7 @@ import {
   convertPublicKey,
   DERIVATION_PATH_SCHEMA_PATTERN,
   deriveHdWallet,
+  deriveBip39Seed,
   deriveWallet,
   encodeBip39Entropy,
   encodeWif,
@@ -44,6 +45,7 @@ import {
   WIF_ENCODE_PARAMETERS,
   WIF_DECODE_PARAMETERS,
   GENERATE_MNEMONIC_PARAMETERS,
+  DERIVE_BIP39_SEED_PARAMETERS,
   BIP39_LANGUAGE_PARAMETER,
 } from "./tool-schemas.ts";
 
@@ -106,6 +108,15 @@ const addressTypeArgument = Type.Optional(
 );
 
 const tools: readonly ToolDefinition[] = [
+  {
+    name: "keys_derive_bip39_seed",
+    title: "Derive BIP39 Seed",
+    description:
+      "Derive a 64-byte BIP39 seed from a valid mnemonic and optional passphrase. Not a BIP32 master key. Inputs and seed enter the transcript; use only public or disposable material, never keys controlling real funds.",
+    inputSchema: DERIVE_BIP39_SEED_PARAMETERS,
+    annotations: LOCAL_READ,
+    execute: (args) => deriveBip39Seed(args["mnemonic"], args["passphrase"], args["language"]),
+  },
   {
     name: "keys_convert_public_key",
     title: "Convert Public Key",

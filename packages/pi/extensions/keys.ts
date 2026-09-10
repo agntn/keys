@@ -11,6 +11,7 @@ import {
   WIF_ENCODE_PARAMETERS,
   WIF_DECODE_PARAMETERS,
   GENERATE_MNEMONIC_PARAMETERS,
+  DERIVE_BIP39_SEED_PARAMETERS,
   BIP39_LANGUAGE_PARAMETER,
 } from "../../../src/tool-schemas.ts";
 
@@ -48,6 +49,23 @@ const ADDRESS_TYPE_PARAMETER = Type.Optional(
 );
 
 export default function keysExtension(pi: ExtensionAPI) {
+  pi.registerTool({
+    name: "keys_derive_bip39_seed",
+    label: "Derive BIP39 Seed",
+    description:
+      "Derive a 64-byte BIP39 seed from a valid mnemonic and optional passphrase. Not a BIP32 master key. Inputs and seed enter the transcript; use only public or disposable material, never keys controlling real funds.",
+    parameters: DERIVE_BIP39_SEED_PARAMETERS,
+    renderCall() {
+      return new Text("Derive BIP39 seed", 0, 0);
+    },
+    async execute(_toolCallId, params) {
+      return (await loadToolOperations()).deriveBip39Seed(
+        params.mnemonic,
+        params.passphrase,
+        params.language,
+      );
+    },
+  });
   pi.registerTool({
     name: "keys_convert_public_key",
     label: "Convert Public Key",

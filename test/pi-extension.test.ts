@@ -3,6 +3,7 @@ import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
 import { describe, expect, it } from "vitest";
 import {
+  bip39TestVectors,
   publicKeyEncodingVector,
   litecoinTestVectors,
   decredTestVectors,
@@ -11,7 +12,7 @@ import {
   invalidChecksumPuzzle,
 } from "./fixtures.ts";
 import keysExtension from "../packages/pi/extensions/keys.ts";
-import { mnemonicToEntropy, validateMnemonic } from "../src/utils/bip39/index.ts";
+import { mnemonicToSeed, mnemonicToEntropy, validateMnemonic } from "../src/utils/bip39/index.ts";
 
 interface RegisteredTool {
   readonly name: string;
@@ -41,6 +42,83 @@ function registerTools(): ReadonlyMap<string, RegisteredTool> {
 }
 
 describe("keys Pi extension", () => {
+  it("derives disposable BIP39 seeds without echoing the input", async () => {
+    const tool = registerTools().get("keys_derive_bip39_seed");
+    if (!tool) throw new Error("Missing BIP39 seed tool");
+    const { mnemonic, passphrase, seed, seedWithPassphrase } = bip39TestVectors;
+    for (const [args, expected] of [
+      [{ mnemonic }, seed],
+      [{ mnemonic: `  ${mnemonic.replaceAll(" ", "\n\t")}  `, passphrase }, seedWithPassphrase],
+    ] as const) {
+      expect(Value.Check(tool.parameters, args)).toBe(true);
+      const result = await tool.execute("seed", args);
+      expect(result).toMatchObject({ details: { language: "english", seed: expected } });
+      expect(result.content[0]?.text).toContain(`Seed: ${expected}`);
+      expect(result.content[0]?.text).toContain("Never use it for real funds");
+      expect(JSON.stringify(result)).not.toContain(mnemonic);
+      expect(JSON.stringify(result)).not.toContain(passphrase);
+    }
+    const composed = await tool.execute("seed", { mnemonic, passphrase: " café " });
+    expect(composed).toEqual(await tool.execute("seed", { mnemonic, passphrase: " cafe\u0301 " }));
+    expect(composed).not.toEqual(await tool.execute("seed", { mnemonic, passphrase: "café" }));
+  });
+
+  it("shares the JSON Schema character limit with the seed executor", async () => {
+    const tool = registerTools().get("keys_derive_bip39_seed");
+    if (!tool) throw new Error("Missing BIP39 seed tool");
+    for (const character of ["x", "😀"]) {
+      const args = { mnemonic: bip39TestVectors.mnemonic, passphrase: character.repeat(4096) };
+      expect(Value.Check(tool.parameters, args)).toBe(true);
+      const result = await tool.execute("boundary", args);
+      expect(result.content[0]?.text).toMatch(/Seed: [0-9a-f]{128}\n/u);
+      const over = { ...args, passphrase: args.passphrase + character };
+      expect(Value.Check(tool.parameters, over)).toBe(false);
+      await expect(tool.execute("boundary", over)).rejects.toThrow("4096");
+    }
+  });
+
+  it.each(localizedMnemonicVectors)(
+    "derives seeds for the $language list",
+    async ({ language, mnemonic }) => {
+      const tool = registerTools().get("keys_derive_bip39_seed");
+      if (!tool) throw new Error("Missing BIP39 seed tool");
+      const result = await tool.execute("seed", { language, mnemonic: mnemonic.normalize("NFC") });
+      expect(result).toMatchObject({
+        details: { language, seed: Buffer.from(mnemonicToSeed(mnemonic)).toString("hex") },
+      });
+    },
+  );
+
+  it("rejects malformed seed inputs even when the host skips schemas", async () => {
+    const tool = registerTools().get("keys_derive_bip39_seed");
+    if (!tool) throw new Error("Missing BIP39 seed tool");
+    for (const args of [
+      { mnemonic: null },
+      { mnemonic: " " },
+      { mnemonic: "abandon" },
+      { mnemonic: "abandon ".repeat(12).trim() },
+      { mnemonic: "unknown-secret ".repeat(12).trim() },
+      { mnemonic: bip39TestVectors.mnemonic, passphrase: null },
+      { mnemonic: bip39TestVectors.mnemonic, language: "unknown-secret" },
+      { mnemonic: bip39TestVectors.mnemonic, language: "japanese" },
+      { mnemonic: "x".repeat(4097) },
+      { mnemonic: bip39TestVectors.mnemonic, passphrase: "x".repeat(4097) },
+    ]) {
+      const result = tool.execute("invalid", args);
+      await expect(result).rejects.toThrow();
+      await expect(result).rejects.not.toThrow("unknown-secret");
+    }
+    expect(
+      Value.Check(tool.parameters, { mnemonic: bip39TestVectors.mnemonic, passphrase: null }),
+    ).toBe(false);
+    expect(
+      Value.Check(tool.parameters, {
+        mnemonic: bip39TestVectors.mnemonic,
+        passphrase: "x".repeat(4097),
+      }),
+    ).toBe(false);
+  });
+
   it("converts public keys and validates inputs when Pi skips its schema", async () => {
     const tool = registerTools().get("keys_convert_public_key");
     if (!tool) throw new Error("Missing public key conversion tool");

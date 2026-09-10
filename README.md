@@ -251,9 +251,24 @@ In MCP and Pi, `keys_generate_mnemonic`, `keys_inspect_mnemonic` and `keys_encod
 
 `keys_derive_hd_wallet` and `keys_recover_mnemonic_word` still require English. Re-encoding entropy in another language can change the BIP39 seed; it is not a safe shortcut to an English wallet.
 
+### Derive a BIP39 seed through a tool
+
+`keys_derive_bip39_seed` exposes the library's BIP39 KDF in MCP and Pi without requiring a chain or derivation path:
+
+```json
+{
+  "mnemonic": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+  "passphrase": "TREZOR"
+}
+```
+
+The result is 64 bytes of seed as hex, not a BIP32 master private key or the mnemonic's entropy. `language` defaults to English and accepts all 10 official lists. The tool requires a valid checksum, collapses mnemonic whitespace and applies NFKD. Passphrase whitespace is preserved. Both text inputs are limited to 4096 characters each. For library callers, `mnemonicToSeed` is already exported from `@agntn/keys/bip39`.
+
+Use only public test vectors or disposable material. The seed is a secret and enters the transcript along with the inputs.
+
 ## MCP server
 
-The package includes a stdio MCP server with the same 17 operations used by the Pi extension. After installing the package, configure an MCP client to run `keys mcp`. A checkout can run the built entry directly:
+The package includes a stdio MCP server with the same 18 operations used by the Pi extension. After installing the package, configure an MCP client to run `keys mcp`. A checkout can run the built entry directly:
 
 ```json
 {

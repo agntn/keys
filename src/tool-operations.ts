@@ -14,6 +14,7 @@ import {
   TOOL_CHAINS,
   TOOL_NETWORKS,
   TOOL_MNEMONIC_WORD_COUNTS,
+  MAX_BIP39_SEED_INPUT_LENGTH,
   TOOL_WIF_CHAINS,
   type ToolChain,
   type ToolNetwork,
@@ -70,6 +71,12 @@ export interface DerivedWalletDetails {
   address: string;
   path?: string;
   warnings?: readonly string[];
+}
+
+/** A disposable BIP39 seed, never a BIP32 master private key. */
+export interface DerivedBIP39SeedDetails {
+  language: BIP39Language;
+  seed: string;
 }
 
 /** BIP39 inspection result without the supplied mnemonic. */
@@ -473,6 +480,43 @@ export async function deriveHdWallet(
       ].join("\n"),
     ),
     details,
+  };
+}
+
+/**
+ * Derive a disposable seed after validating the mnemonic against the selected list.
+ * @param mnemonicValue - Public or disposable BIP39 mnemonic.
+ * @param passphraseValue - BIP39 passphrase, defaulting to empty.
+ * @param languageValue - Optional official BIP39 language key.
+ * @returns {Promise<ToolResult<DerivedBIP39SeedDetails>>} Seed hex and transcript warning.
+ */
+export async function deriveBip39Seed(
+  mnemonicValue: unknown,
+  passphraseValue?: unknown,
+  languageValue?: unknown,
+): Promise<ToolResult<DerivedBIP39SeedDetails>> {
+  const input = requiredString(mnemonicValue, "BIP39 mnemonic");
+  const passphrase = optionalString(passphraseValue, "BIP39 passphrase") ?? "";
+  if (
+    Array.from(input).length > MAX_BIP39_SEED_INPUT_LENGTH ||
+    Array.from(passphrase).length > MAX_BIP39_SEED_INPUT_LENGTH
+  ) {
+    throw new RangeError(
+      `BIP39 mnemonic and passphrase must not exceed ${MAX_BIP39_SEED_INPUT_LENGTH} characters each`,
+    );
+  }
+  const mnemonic = normalizedMnemonic(input);
+  const language = parseBIP39Language(languageValue);
+  const wordlist = await loadBIP39Wordlist(language);
+  if (!inspectBIP39Mnemonic(mnemonic, wordlist).valid) {
+    throw new TypeError("Invalid BIP39 mnemonic for the selected language");
+  }
+  const seed = Buffer.from(await bip39.mnemonicToSeed(mnemonic, passphrase)).toString("hex");
+  return {
+    content: content(
+      `Language: ${language}\nSeed: ${seed}\nThis seed is saved in the transcript. Never use it for real funds.`,
+    ),
+    details: { language, seed },
   };
 }
 

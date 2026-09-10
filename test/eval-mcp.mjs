@@ -3,7 +3,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import path from "node:path";
-import { invalidChecksumPuzzle, publicKeyEncodingVector } from "./fixtures.ts";
+import { invalidChecksumPuzzle, publicKeyEncodingVector, bip39TestVectors } from "./fixtures.ts";
 
 const server = path.resolve(import.meta.dirname, "../dist/cli.mjs");
 const transport = new StdioClientTransport({ command: process.execPath, args: [server, "mcp"] });
@@ -63,7 +63,7 @@ await client.connect(transport);
 
 try {
   const listed = await client.listTools();
-  if (listed.tools.length !== 17) throw new Error(`Expected 17 tools, got ${listed.tools.length}`);
+  if (listed.tools.length !== 18) throw new Error(`Expected 18 tools, got ${listed.tools.length}`);
 
   await call(
     "keys_convert_public_key",
@@ -74,6 +74,11 @@ try {
   const privateKey = "0000000000000000000000000000000000000000000000000000000000000001";
   const mnemonic =
     "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+  await call(
+    "keys_derive_bip39_seed",
+    { mnemonic, passphrase: bip39TestVectors.passphrase },
+    new RegExp(bip39TestVectors.seedWithPassphrase),
+  );
   const missing =
     "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon ?";
 
