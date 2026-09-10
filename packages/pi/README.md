@@ -1,6 +1,6 @@
 # @agntn/keys: Pi extension
 
-Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as 17 agent tools for key generation, WIF conversion, BIP39 generation, entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across 10 blockchains (Bitcoin, Litecoin, Decred, Ethereum, Base, Solana, Aptos, TRON, SUI, Cardano).
+Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as 18 agent tools for key generation, WIF conversion, BIP39 generation, entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across 10 blockchains (Bitcoin, Litecoin, Decred, Ethereum, Base, Solana, Aptos, TRON, SUI, Cardano).
 
 > [!WARNING]
 > **This extension is experimental.** The package name, public API, provider model, CLI flags, and tool surfaces may change before the first stable release. Pin exact versions if you build on it now.
@@ -9,6 +9,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 
 | Tool                         | Purpose                                                        |
 | ---------------------------- | -------------------------------------------------------------- |
+| `keys_derive_bip39_seed`     | Derive seed hex from a valid mnemonic and optional passphrase  |
 | `keys_convert_public_key`    | Convert secp256k1 public keys between SEC1 encodings           |
 | `keys_encode_wif`            | Export a disposable private key as native BTC, LTC or DCR WIF  |
 | `keys_decode_wif`            | Read native WIF into a hex key, network and compression flag   |
@@ -26,6 +27,10 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 | `keys_sign_message`          | Sign a message with a private key (secp256k1/ed25519)          |
 | `keys_verify_message`        | Verify a signature against message + public key                |
 | `keys_bip44_path`            | Generate or parse a BIP44 derivation path                      |
+
+## BIP39 seed
+
+`keys_derive_bip39_seed` takes `mnemonic`, optional `passphrase` and optional `language` (English by default). It returns a 64-byte seed as hex, not a master private key. All 10 official lists are supported, with checksum validation required. Mnemonic whitespace is collapsed, passphrase whitespace is preserved, and NFKD applies to both. Each text input is capped at 4096 characters. Inputs and the returned seed enter the transcript, so use only public or disposable material.
 
 ## Puzzle checksum override
 

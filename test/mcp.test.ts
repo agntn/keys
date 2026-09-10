@@ -2,6 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  bip39TestVectors,
   publicKeyEncodingVector,
   litecoinTestVectors,
   decredTestVectors,
@@ -12,6 +13,7 @@ import {
 import { createMcpServer } from "../src/mcp.ts";
 
 const TOOL_NAMES = [
+  "keys_derive_bip39_seed",
   "keys_convert_public_key",
   "keys_encode_wif",
   "keys_decode_wif",
@@ -53,6 +55,31 @@ afterEach(async () => {
 });
 
 describe("keys MCP server", () => {
+  it("derives a BIP39 seed through MCP", async () => {
+    const client = await connectTestClient();
+    const result = await client.callTool({
+      name: "keys_derive_bip39_seed",
+      arguments: { mnemonic: bip39TestVectors.mnemonic },
+    });
+    expect(result.isError).not.toBe(true);
+    expect(text(result.content)).toContain(bip39TestVectors.seed);
+  });
+
+  it("rejects invalid seed inputs without echoing secrets through MCP", async () => {
+    const client = await connectTestClient();
+    for (const args of [
+      { mnemonic: "abandon ".repeat(12).trim() },
+      { mnemonic: "unknown-secret" },
+      { mnemonic: bip39TestVectors.mnemonic, passphrase: false },
+      { mnemonic: bip39TestVectors.mnemonic, language: "unknown-secret" },
+      { mnemonic: bip39TestVectors.mnemonic, extra: "unknown-secret" },
+    ]) {
+      const result = await client.callTool({ name: "keys_derive_bip39_seed", arguments: args });
+      expect(result.isError).toBe(true);
+      expect(text(result.content)).not.toContain("unknown-secret");
+    }
+  });
+
   it("converts public keys through MCP and rejects invalid points", async () => {
     const client = await connectTestClient();
     const { compressed, uncompressed } = publicKeyEncodingVector;
