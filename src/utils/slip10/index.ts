@@ -3,8 +3,7 @@ import { HDKey } from "micro-key-producer/slip10.js";
 // Reexport the SLIP10 implementation
 export { HDKey };
 
-// SLIP-0010 hardened offset constant - same as BIP32
-export const HARDENED_OFFSET = 0x80_00_00_00;
+export { HARDENED_OFFSET, hardenedIndex, isHardenedIndex, formatIndex } from "../hd-index.ts";
 
 /**
  * Creates a SLIP-0010 master key from seed bytes
@@ -34,31 +33,4 @@ export function deriveHDKey(parent: HDKey, path: string, forceHardened = true): 
  */
 export function deriveHDChild(parent: HDKey, index: number): HDKey {
   return parent.deriveChild(index);
-}
-
-/**
- * Creates a hardened child index
- * @param index - Non-hardened index
- * @returns {number} Hardened index
- */
-export function hardenedIndex(index: number): number {
-  return index + HARDENED_OFFSET;
-}
-
-/**
- * Checks if an index is hardened
- * @param index - Index to check
- * @returns {boolean} True if index is hardened
- */
-export function isHardenedIndex(index: number): boolean {
-  return index >= HARDENED_OFFSET;
-}
-
-/**
- * Formats an index to a string representation, appending ' to hardened indices
- * @param index - Index to format
- * @returns {string} Formatted string representation
- */
-export function formatIndex(index: number): string {
-  return isHardenedIndex(index) ? `${index - HARDENED_OFFSET}'` : `${index}`;
 }

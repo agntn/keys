@@ -1,8 +1,7 @@
 import { HDKey } from "@scure/bip32";
 export { HDKey };
 
-// BIP32 hardened offset constant
-export const HARDENED_OFFSET = 0x80_00_00_00;
+export { HARDENED_OFFSET, hardenedIndex, isHardenedIndex, formatIndex } from "../hd-index.ts";
 
 /**
  * Creates a BIP32 master key from seed bytes
@@ -40,31 +39,4 @@ export function deriveHDKey(parent: HDKey, path: string): HDKey {
  */
 export function deriveHDChild(parent: HDKey, index: number): HDKey {
   return parent.deriveChild(index);
-}
-
-/**
- * Creates a hardened child index
- * @param index - Non-hardened index
- * @returns {number} Hardened index
- */
-export function hardenedIndex(index: number): number {
-  return index + HARDENED_OFFSET;
-}
-
-/**
- * Checks if an index is hardened
- * @param index - Index to check
- * @returns {boolean} True if index is hardened
- */
-export function isHardenedIndex(index: number): boolean {
-  return index >= HARDENED_OFFSET;
-}
-
-/**
- * Formats an index to a string representation, appending ' to hardened indices
- * @param index - Index to format
- * @returns {string} Formatted string representation
- */
-export function formatIndex(index: number): string {
-  return isHardenedIndex(index) ? `${index - HARDENED_OFFSET}'` : `${index}`;
 }
