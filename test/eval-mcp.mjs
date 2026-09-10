@@ -3,7 +3,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import path from "node:path";
-import { invalidChecksumPuzzle } from "./fixtures.ts";
+import { invalidChecksumPuzzle, publicKeyEncodingVector } from "./fixtures.ts";
 
 const server = path.resolve(import.meta.dirname, "../dist/cli.mjs");
 const transport = new StdioClientTransport({ command: process.execPath, args: [server, "mcp"] });
@@ -63,7 +63,13 @@ await client.connect(transport);
 
 try {
   const listed = await client.listTools();
-  if (listed.tools.length !== 16) throw new Error(`Expected 16 tools, got ${listed.tools.length}`);
+  if (listed.tools.length !== 17) throw new Error(`Expected 17 tools, got ${listed.tools.length}`);
+
+  await call(
+    "keys_convert_public_key",
+    { publicKey: publicKeyEncodingVector.compressed, compressed: false },
+    new RegExp(publicKeyEncodingVector.uncompressed),
+  );
 
   const privateKey = "0000000000000000000000000000000000000000000000000000000000000001";
   const mnemonic =

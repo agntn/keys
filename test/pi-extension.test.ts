@@ -3,6 +3,7 @@ import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
 import { describe, expect, it } from "vitest";
 import {
+  publicKeyEncodingVector,
   litecoinTestVectors,
   decredTestVectors,
   wifTestVectors,
@@ -40,6 +41,28 @@ function registerTools(): ReadonlyMap<string, RegisteredTool> {
 }
 
 describe("keys Pi extension", () => {
+  it("converts public keys and validates inputs when Pi skips its schema", async () => {
+    const tool = registerTools().get("keys_convert_public_key");
+    if (!tool) throw new Error("Missing public key conversion tool");
+    const { compressed, uncompressed } = publicKeyEncodingVector;
+    expect(await tool.execute("compress", { publicKey: uncompressed })).toMatchObject({
+      details: { publicKey: compressed, compressed: true },
+    });
+    expect(
+      await tool.execute("decompress", { publicKey: compressed, compressed: false }),
+    ).toMatchObject({
+      details: { publicKey: uncompressed, compressed: false },
+    });
+    for (const value of [null, "false", 0, {}]) {
+      const args = { publicKey: compressed, compressed: value };
+      expect(Value.Check(tool.parameters, args)).toBe(false);
+      await expect(tool.execute("invalid", args)).rejects.toThrow("Compressed must be a boolean");
+    }
+    for (const publicKey of [null, 1, {}, "02" + "ff".repeat(32), "04" + "00".repeat(64)]) {
+      await expect(tool.execute("invalid", { publicKey })).rejects.toThrow();
+    }
+  });
+
   it.each(localizedMnemonicVectors)(
     "encodes and inspects $language mnemonics through Pi",
     async ({ language, entropy, mnemonic }) => {

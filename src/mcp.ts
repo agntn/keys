@@ -17,6 +17,7 @@ import {
   BIP39_ENTROPY_SCHEMA_PATTERN,
   BIP39_WORD_SCHEMA_PATTERN,
   bip44Path,
+  convertPublicKey,
   DERIVATION_PATH_SCHEMA_PATTERN,
   deriveHdWallet,
   deriveWallet,
@@ -39,6 +40,7 @@ import {
 } from "./tool-operations.ts";
 import { version } from "./version.ts";
 import {
+  CONVERT_PUBLIC_KEY_PARAMETERS,
   WIF_ENCODE_PARAMETERS,
   WIF_DECODE_PARAMETERS,
   GENERATE_MNEMONIC_PARAMETERS,
@@ -104,6 +106,15 @@ const addressTypeArgument = Type.Optional(
 );
 
 const tools: readonly ToolDefinition[] = [
+  {
+    name: "keys_convert_public_key",
+    title: "Convert Public Key",
+    description:
+      "Convert a secp256k1 public key between compressed and uncompressed SEC1 hex. No private key required. Rejects hybrid and x-only encodings.",
+    inputSchema: CONVERT_PUBLIC_KEY_PARAMETERS,
+    annotations: LOCAL_READ,
+    execute: (args) => convertPublicKey(args["publicKey"], args["compressed"]),
+  },
   {
     name: "keys_encode_wif",
     title: "Encode WIF",

@@ -69,3 +69,19 @@ export const WIF_DECODE_PARAMETERS = Type.Object(
   },
   { additionalProperties: false },
 );
+
+/** Shared MCP and Pi schema for SEC1 public key conversion. */
+export const CONVERT_PUBLIC_KEY_PARAMETERS = Type.Object(
+  {
+    publicKey: Type.String({
+      minLength: 66,
+      maxLength: 130,
+      pattern: "^(?:0[23][0-9A-Fa-f]{64}|04[0-9A-Fa-f]{128})$",
+      description: "Compressed or uncompressed SEC1 secp256k1 public key as hex, without 0x",
+    }),
+    compressed: Type.Optional(
+      Type.Boolean({ description: "Output compressed SEC1 encoding. Default: true" }),
+    ),
+  },
+  { additionalProperties: false },
+);

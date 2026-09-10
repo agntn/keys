@@ -268,3 +268,11 @@ export const localizedMnemonicVectors = [
     mnemonic: "槍 疫 黴 嘗 倆 鬧 餓 賢 槍 疫 黴 卿",
   },
 ] as const;
+
+/** SEC 2 v2 section 2.4.1: secp256k1 generator G, in SEC1 encodings. */
+export const publicKeyEncodingVector = {
+  compressed: "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+  uncompressed:
+    "0479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798" +
+    "483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8",
+};
