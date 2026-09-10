@@ -66,7 +66,15 @@ describe("SLIP-0010 Utils", () => {
   it("creates hardened index", () => {
     expect(hardenedIndex(0)).toBe(0x80_00_00_00);
     expect(hardenedIndex(44)).toBe(0x80_00_00_2c);
+    expect(hardenedIndex(0x7f_ff_ff_ff)).toBe(0xff_ff_ff_ff);
   });
+
+  it.each([-1, 0.5, 0x80_00_00_00, Number.NaN, Infinity, -Infinity])(
+    "rejects invalid index %s before hardening",
+    (index) => {
+      expect(() => hardenedIndex(index)).toThrow(RangeError);
+    },
+  );
 
   it("checks if index is hardened", () => {
     expect(isHardenedIndex(0)).toBe(false);
