@@ -20,7 +20,7 @@ Typed key generation, address derivation, and message signing across ten blockch
 - 🛤️ **BIP44 paths** - derivation path utilities for all supported chains
 - 🧩 **BIP39 puzzles** - validate phrases, narrow one missing word, and map words or indices across all 10 official lists
 - 🔌 **Lazy loading** - blockchain implementations load on demand for smaller bundles
-- 🤖 **MCP server** - the same 16 key, mnemonic, address, and signing tools over stdio
+- 🤖 **MCP server** - the same 17 key, mnemonic, address, and signing tools over stdio
 - 📐 **Fully typed** - TypeScript definitions for every interface
 
 ## Install
@@ -67,6 +67,20 @@ btc.getAddress(publicKey, "p2wsh"); // witness script hash
 const testnet = useBlockchain(await blockchains.bitcoin({ network: "testnet" })());
 testnet.getAddress(publicKey, "segwit"); // tb1q...
 ```
+
+### Convert public key encodings
+
+`convertSecp256k1PublicKey` changes the SEC1 representation of a public point without needing its private key. It accepts compressed (33-byte) or uncompressed (65-byte) hex without `0x` and returns lowercase hex. Hybrid, x-only and invalid curve points are rejected rather than guessed.
+
+```ts
+import { convertSecp256k1PublicKey } from "@agntn/keys";
+
+const compressed = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+const uncompressed = convertSecp256k1PublicKey(compressed, { compressed: false });
+const original = convertSecp256k1PublicKey(uncompressed);
+```
+
+MCP and Pi expose `keys_convert_public_key` with `publicKey` and optional `compressed` (default `true`). The result contains `{ publicKey, compressed }`. Choose the encoding deliberately before passing it to `keys_get_address`: legacy Bitcoin addresses hash the serialized key, so the two encodings produce different addresses.
 
 ### Import and export WIF
 
@@ -239,7 +253,7 @@ In MCP and Pi, `keys_generate_mnemonic`, `keys_inspect_mnemonic` and `keys_encod
 
 ## MCP server
 
-The package includes a stdio MCP server with the same 16 operations used by the Pi extension. After installing the package, configure an MCP client to run `keys mcp`. A checkout can run the built entry directly:
+The package includes a stdio MCP server with the same 17 operations used by the Pi extension. After installing the package, configure an MCP client to run `keys mcp`. A checkout can run the built entry directly:
 
 ```json
 {

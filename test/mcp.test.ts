@@ -2,6 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  publicKeyEncodingVector,
   litecoinTestVectors,
   decredTestVectors,
   wifTestVectors,
@@ -11,6 +12,7 @@ import {
 import { createMcpServer } from "../src/mcp.ts";
 
 const TOOL_NAMES = [
+  "keys_convert_public_key",
   "keys_encode_wif",
   "keys_decode_wif",
   "keys_generate_wallet",
@@ -51,6 +53,30 @@ afterEach(async () => {
 });
 
 describe("keys MCP server", () => {
+  it("converts public keys through MCP and rejects invalid points", async () => {
+    const client = await connectTestClient();
+    const { compressed, uncompressed } = publicKeyEncodingVector;
+    for (const [publicKey, flag, expected] of [
+      [compressed, false, uncompressed],
+      [uncompressed, true, compressed],
+    ] as const) {
+      const result = await client.callTool({
+        name: "keys_convert_public_key",
+        arguments: { publicKey, compressed: flag },
+      });
+      expect(result.isError).not.toBe(true);
+      expect(JSON.parse(text(result.content))).toEqual({ publicKey: expected, compressed: flag });
+    }
+    for (const args of [
+      { publicKey: "02" + "ff".repeat(32) },
+      { publicKey: compressed, compressed: "false" },
+      { publicKey: compressed, chain: "bitcoin" },
+    ]) {
+      const result = await client.callTool({ name: "keys_convert_public_key", arguments: args });
+      expect(result.isError).toBe(true);
+    }
+  });
+
   it("encodes and inspects localized mnemonics through MCP", async () => {
     const client = await connectTestClient();
     for (const { language, entropy, mnemonic } of localizedMnemonicVectors) {

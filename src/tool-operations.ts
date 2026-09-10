@@ -5,6 +5,7 @@
  * Errors never echo secret inputs; conversion results contain the equivalent secret.
  */
 
+import { convertSecp256k1PublicKey } from "./utils/public-key.ts";
 import { encodeWIF, decodeWIF, type DecodedWIF, type WIFNetworkOptions } from "./utils/wif.ts";
 import type { AbstractBlockchain } from "./blockchain.ts";
 import { blockchains, getBlockchainPath, parseBIP44Path, useBlockchain } from "./index.ts";
@@ -867,5 +868,30 @@ export function decodeWif(
 ): ToolResult<DecodedWIF> {
   const options = parseWIFContext(chainValue, networkValue);
   const details = decodeWIF(requiredString(wifValue, "WIF"), options);
+  return { content: content(JSON.stringify(details)), details };
+}
+
+/** Output from a SEC1 public key conversion. */
+export interface ConvertedPublicKeyDetails {
+  publicKey: string;
+  compressed: boolean;
+}
+
+/**
+ * Convert a public secp256k1 point between SEC1 encodings.
+ * @param publicKeyValue - SEC1 hex input.
+ * @param compressedValue - Optional output compression flag.
+ * @returns {ToolResult<ConvertedPublicKeyDetails>} Converted public key and output encoding.
+ */
+export function convertPublicKey(
+  publicKeyValue: unknown,
+  compressedValue?: unknown,
+): ToolResult<ConvertedPublicKeyDetails> {
+  const compressed = compressedValue === undefined ? true : compressedValue;
+  if (typeof compressed !== "boolean") throw new TypeError("Compressed must be a boolean");
+  const publicKey = convertSecp256k1PublicKey(requiredString(publicKeyValue, "Public key"), {
+    compressed,
+  });
+  const details = { publicKey, compressed };
   return { content: content(JSON.stringify(details)), details };
 }

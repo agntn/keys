@@ -7,6 +7,7 @@ import { Type } from "typebox";
 import type * as KeysTools from "../../../dist/tool-operations.d.mts";
 import { TOOL_ADDRESS_TYPES, TOOL_CHAINS, TOOL_NETWORKS } from "../../../src/tool-parameters.ts";
 import {
+  CONVERT_PUBLIC_KEY_PARAMETERS,
   WIF_ENCODE_PARAMETERS,
   WIF_DECODE_PARAMETERS,
   GENERATE_MNEMONIC_PARAMETERS,
@@ -47,6 +48,19 @@ const ADDRESS_TYPE_PARAMETER = Type.Optional(
 );
 
 export default function keysExtension(pi: ExtensionAPI) {
+  pi.registerTool({
+    name: "keys_convert_public_key",
+    label: "Convert Public Key",
+    description:
+      "Convert a secp256k1 public key between compressed and uncompressed SEC1 hex. No private key required. Rejects hybrid and x-only encodings.",
+    parameters: CONVERT_PUBLIC_KEY_PARAMETERS,
+    renderCall() {
+      return new Text("Convert public key", 0, 0);
+    },
+    async execute(_toolCallId, params) {
+      return (await loadToolOperations()).convertPublicKey(params.publicKey, params.compressed);
+    },
+  });
   pi.registerTool({
     name: "keys_encode_wif",
     label: "Encode WIF",
