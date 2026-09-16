@@ -10,12 +10,16 @@ docs/
 ├── app/app.config.ts              # title, github, theme
 ├── app/app.css                    # theme tokens (light + .dark), shared `keys-*` classes
 ├── app/components/                # Docus overrides: AppHeaderLogo, AppHeaderCTA (nav), AppFooterLeft, DocsAsideLeftBody
+├── app/components/OgImage/        # Docs and Landing Takumi templates, theme colours as literals
+├── app/assets/fonts.css           # @font-face for the TTFs in public/fonts, shared by the site and the OG images
 ├── app/components/content/        # MDC components (`::landing-home`, `::keyspace-explorer`, `::chain-facts`)
 ├── app/composables/               # useLandingKey (live key walk), useSubNavigation (sidebar icons)
 ├── app/utils/                     # parse-key (range, stepping), derive (rows per chain), format
 ├── content/index.md               # landing
 ├── content/1.guide/               # getting started
 ├── content/2.blockchains/         # one page per chain
+├── public/                        # favicon.svg and the files cut from it, site.webmanifest, fonts/
+├── server/routes/sitemap.xml.ts   # Docus sitemap plus the Vue pages
 └── app/pages/keyspace.vue         # explorer, own route outside the docs layout
 ```
 
@@ -46,6 +50,20 @@ Three resolution traps, all because the repo root is its own pnpm workspace:
 `test/docs-parse-key.test.ts` and `test/docs-landing.test.ts` in the repo root cover `app/utils/` and run with the root suite, no docs install needed. The root `vitest.config.ts` transforms them with the root tsconfig, because `docs/tsconfig.json` only references files Nuxt generates. `derive.ts` takes the library module as an argument and imports its types from `../src` by path, so a root test passes `src/index.ts` and never needs the `@agntn/keys` alias; `test/public-exports.test.ts` keeps that name for the built package. Keep pure helpers in `app/utils/` so they stay testable from the root; anything that touches `ref` or `onMounted` belongs in `app/composables/`.
 
 The landing renders before the library loads, so `app/utils/landing.ts` records private key 1 on every row, the Bitcoin pipeline and the first HD sample as fixtures. `test/docs-landing.test.ts` derives the same values from `src/` and fails when they drift, so a fixture edit without a library change is a lie the test catches.
+
+## SEO
+
+- `seo.schema` in `app/app.config.ts` emits the landing JSON-LD: `WebSite`, the agntn `Organization` as publisher, and a free `SoftwareApplication` with `sameAs` on GitHub and npm. Docs pages get `Article` plus `BreadcrumbList` from Docus on their own.
+- `app/pages/keyspace.vue` sits outside `content/`, so it calls `useSeo` and `defineOgImage("Docs", props, { alt })` itself, `server/routes/sitemap.xml.ts` appends it to the Docus sitemap and `llms.sections` in `nuxt.config.ts` lists it for `llms.txt`. A new page under `app/pages/` needs all three or crawlers and agents never see it.
+- Docus links `/favicon.ico` without shipping one. `public/favicon.svg` is the source, the PNGs and the `.ico` are cut from it with ImageMagick (`magick -background none favicon.svg -resize 512x512 icon-512.png`, `-define icon:auto-resize=48,32,16 favicon.ico`), `app.head` in `nuxt.config.ts` links them with the manifest, theme colours, `og:locale` and `author`.
+- Audit on `.output/public/*.html` with grep for `<meta`, `<link rel="canonical"` and `"@type"`, not by impression.
+
+## OG images
+
+- `app/components/OgImage/Docs.takumi.vue` and `Landing.takumi.vue` override the Docus templates of the same name and are rendered by Takumi at build time. Takumi has no CSS variables, so the theme colours from `app.css` are repeated there as literals.
+- nuxt-og-image doesn't see the faces `@nuxt/fonts` generates, but it parses `@font-face` rules from the files in `css`. That's why `app/assets/fonts.css` declares the five TTFs in `public/fonts` and `fonts.families` uses the `local` provider. Site and OG images share the files.
+- Docus encodes title and description in the OG file name and a comma is a separator there, so the template gets descriptions without commas. Frontmatter descriptions use periods and `and` instead, and stay under 160 characters.
+- The landing OG file is named from the SEO description and Nitro refuses a prerender path containing `..`, so a description ending in a period is silently skipped and the landing ships with a dead `og:image`. Keep the description in `content/index.md` without a trailing period and check `grep c_Landing` in the build log has no `(skipped)`.
 
 ## Constraints
 

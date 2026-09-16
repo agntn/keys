@@ -2,10 +2,24 @@ export default defineAppConfig({
   docus: {
     colorMode: "dark",
   },
+  /** Landing JSON-LD: a free SoftwareApplication published by agntn, sameAs GitHub and npm. */
   seo: {
     title: "@agntn/keys",
     description:
       "Cryptographic key generation, derivation, addresses, and message signing across blockchains.",
+    schema: {
+      type: "SoftwareApplication",
+      applicationCategory: "DeveloperApplication",
+      operatingSystem: "Node.js",
+      price: 0,
+      sameAs: ["https://github.com/agntn/keys", "https://www.npmjs.com/package/@agntn/keys"],
+      organization: {
+        name: "agntn",
+        url: "https://agntn.dev",
+        logo: "https://agntn.dev/icon-512.png",
+        sameAs: ["https://github.com/agntn", "https://www.npmjs.com/org/agntn"],
+      },
+    },
   },
   header: {
     title: "@agntn/keys",

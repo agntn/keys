@@ -68,6 +68,21 @@ export default defineNuxtConfig({
   },
   llms: {
     domain: "https://keys.agntn.dev",
+    title: "@agntn/keys",
+    description:
+      "Keys to addresses to signatures on ten chains from a mnemonic or from nothing at all",
+    sections: [
+      {
+        title: "Explorer",
+        links: [
+          {
+            title: "Keyspace",
+            href: "https://keys.agntn.dev/keyspace",
+            description: "Walk secp256k1 private keys in the browser and derive addresses for ten chains",
+          },
+        ],
+      },
+    ],
   },
   icon: {
     clientBundle: {
@@ -95,7 +110,6 @@ export default defineNuxtConfig({
         "lucide:zap",
         "simple-icons:bitcoin",
         "simple-icons:cardano",
-        "simple-icons:coinbase",
         "simple-icons:ethereum",
         "simple-icons:github",
         "simple-icons:litecoin",
@@ -111,6 +125,27 @@ export default defineNuxtConfig({
   },
   colorMode: {
     preference: "dark",
+  },
+  app: {
+    head: {
+      link: [
+        { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+        { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
+        { rel: "manifest", href: "/site.webmanifest" },
+      ],
+      meta: [
+        { name: "theme-color", media: "(prefers-color-scheme: dark)", content: "#0b0d10" },
+        { name: "theme-color", media: "(prefers-color-scheme: light)", content: "#eef1f4" },
+        { name: "apple-mobile-web-app-title", content: "keys" },
+        { property: "og:locale", content: "en_US" },
+        { name: "author", content: "oritwoen" },
+      ],
+    },
+  },
+  ogImage: {
+    defaults: {
+      alt: "@agntn/keys. Keys to addresses to signatures on ten chains",
+    },
   },
   /** Docus ships an MCP endpoint that wants the Cloudflare Agents SDK on Workers. Not used. */
   mcp: {
@@ -129,10 +164,12 @@ export default defineNuxtConfig({
     },
   },
   compatibilityDate: "2026-09-03",
+  /** Fonts live in public/fonts and app/assets/fonts.css, where nuxt-og-image reads them from. */
+  css: ["~/assets/fonts.css"],
   fonts: {
     families: [
-      { name: "Space Grotesk", weights: [400, 500, 600] },
-      { name: "Space Mono", weights: [400, 700] },
+      { name: "Space Grotesk", provider: "local", weights: [400, 500, 600] },
+      { name: "Space Mono", provider: "local", weights: [400, 700] },
     ],
   },
   content: {

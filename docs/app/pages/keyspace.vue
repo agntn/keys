@@ -1,10 +1,17 @@
 <script setup lang="ts">
 definePageMeta({ layout: "default" });
 
-useSeoMeta({
-  title: "Keyspace · @agntn/keys",
-  description: "Walk secp256k1 private keys in the browser and derive addresses for ten chains.",
-});
+const title = "Keyspace";
+const description =
+  "Walk secp256k1 private keys in the browser and derive addresses for ten chains. Nothing is stored or sent.";
+
+useSeo({ title, description, type: "article" });
+
+defineOgImage(
+  "Docs",
+  { headline: "Explorer", title, description },
+  { alt: "Keyspace explorer. Walk secp256k1 private keys in the browser" },
+);
 </script>
 
 <template>
