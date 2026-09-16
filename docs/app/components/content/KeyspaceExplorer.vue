@@ -11,6 +11,7 @@ import {
   parseDecimalKey,
   parseHexKey,
   stepKey,
+  type ParseError,
   type ParsedKey,
 } from "../../utils/parse-key";
 import { diffBytes } from "../../utils/landing";
@@ -125,22 +126,26 @@ async function copy(label: string, value: string) {
   }, 1200);
 }
 
-function keyFromHash(): ParsedKey | undefined {
+/** The fragment is the shareable key. A bad one shows as typed instead of turning into key 1. */
+function keyFromHash(): ParsedKey | ParseError | undefined {
   if (!import.meta.client) {
     return undefined;
   }
   const hash = window.location.hash.replace(/^#/u, "");
-  if (hash === "") {
-    return undefined;
-  }
-  const parsed = parseHexKey(hash);
-  return isParsedKey(parsed) ? parsed : undefined;
+  return hash === "" ? undefined : parseHexKey(hash);
 }
 
 onMounted(async () => {
   try {
     chains = await loadExplorerChains(await import("@agntn/keys"));
-    applyKey(keyFromHash() ?? current, false);
+    const linked = keyFromHash();
+    if (linked && !isParsedKey(linked)) {
+      hexInput.value = window.location.hash.replace(/^#/u, "");
+      error.value = `The key in the link was rejected. ${linked.error}`;
+      derivation.value = null;
+    } else {
+      applyKey(linked ?? current, false);
+    }
   } catch (cause) {
     loadError.value = cause instanceof Error ? cause.message : "Failed to load blockchains.";
   } finally {
