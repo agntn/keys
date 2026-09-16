@@ -61,7 +61,7 @@
 - **evm:** Extract preamble hashing into helper ([8be0864](https://github.com/agntn/keys/commit/8be0864))
 - **blockchains:** DRY lazy factories ([#3](https://github.com/agntn/keys/pull/3))
 - Clean up verify error handling ([#5](https://github.com/agntn/keys/pull/5))
-- ⚠️  Use abstract blockchain classes ([#19](https://github.com/agntn/keys/pull/19))
+- ⚠️ Use abstract blockchain classes ([#19](https://github.com/agntn/keys/pull/19))
 
 ### 📖 Documentation
 
@@ -88,7 +88,7 @@
 
 #### ⚠️ Breaking Changes
 
-- ⚠️  Use abstract blockchain classes ([#19](https://github.com/agntn/keys/pull/19))
+- ⚠️ Use abstract blockchain classes ([#19](https://github.com/agntn/keys/pull/19))
 
 ### ❤️ Contributors
 
