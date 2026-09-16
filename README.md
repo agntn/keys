@@ -186,7 +186,7 @@ Balances, transactions, broadcasting, anything that needs a node. [@agntn/explor
 
 ## 🔐 Security
 
-Everything cryptographic comes from [@paulmillr](https://github.com/paulmillr): [@noble/curves](https://github.com/paulmillr/noble-curves) and [@noble/hashes](https://github.com/paulmillr/noble-hashes), [@scure/base](https://github.com/paulmillr/scure-base), [@scure/bip32](https://github.com/paulmillr/scure-bip32) and [@scure/bip39](https://github.com/paulmillr/scure-bip39), [micro-key-producer](https://github.com/paulmillr/micro-key-producer) for SLIP-10. Random bytes come from `webcrypto` imported statically from `node:crypto`, and that one import is why a browser bundle needs a shim for it.
+Everything cryptographic comes from [@paulmillr](https://github.com/paulmillr): [@noble/curves](https://github.com/paulmillr/noble-curves) and [@noble/hashes](https://github.com/paulmillr/noble-hashes), [@scure/base](https://github.com/paulmillr/scure-base), [@scure/bip32](https://github.com/paulmillr/scure-bip32) and [@scure/bip39](https://github.com/paulmillr/scure-bip39), [micro-key-producer](https://github.com/paulmillr/micro-key-producer) for SLIP-10. Random bytes come from `globalThis.crypto` through noble's `randomSecretKey`, so there's no `node:` import in the library and a browser bundle needs no shim.
 
 > [!CAUTION]
 > **Never use this with real funds or with any wallet that has ever been used.** Generated and signed material is handled as plaintext. Treat every key it touches as burned the moment it is produced. Generate fresh throwaway keys for testing only and assume anything passing through `@agntn/keys` is compromised. Keys that control real funds belong on a hardware wallet, never in a process, log, or agent transcript.
