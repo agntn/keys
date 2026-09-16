@@ -1,6 +1,6 @@
 ---
 title: Litecoin
-icon: i-simple-icons-litecoin
+icon: i-token-ltc
 description: Bitcoin's driver with Litecoin's prefixes. Five address formats on mainnet and testnet and its own signed message preamble.
 ---
 

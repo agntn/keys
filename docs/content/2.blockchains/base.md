@@ -1,6 +1,6 @@
 ---
 title: Base
-icon: i-lucide-layers
+icon: i-token-base
 description: Ethereum's driver under another name. Same key. Same address. Same signatures.
 ---
 

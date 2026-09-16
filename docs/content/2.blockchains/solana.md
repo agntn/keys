@@ -1,6 +1,6 @@
 ---
 title: Solana
-icon: i-simple-icons-solana
+icon: i-token-sol
 description: ed25519. The address is the public key itself in base58 with nothing hashed.
 ---
 

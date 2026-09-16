@@ -1,6 +1,6 @@
 ---
 title: Ethereum
-icon: i-simple-icons-ethereum
+icon: i-token-eth
 description: secp256k1 with EIP-55 checksummed addresses and personal_sign message signatures.
 ---
 

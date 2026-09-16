@@ -1,6 +1,6 @@
 ---
 title: Cardano
-icon: i-simple-icons-cardano
+icon: i-token-ada
 description: ed25519 with base and enterprise and stake addresses in bech32. Mnemonic derivation is refused on purpose.
 ---
 

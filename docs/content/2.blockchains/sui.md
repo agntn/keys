@@ -1,6 +1,6 @@
 ---
 title: Sui
-icon: i-simple-icons-sui
+icon: i-token-sui
 description: ed25519 or secp256k1 on one chain. Blake2b over a flag byte and the public key.
 ---
 

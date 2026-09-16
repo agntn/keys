@@ -71,4 +71,5 @@ The landing renders before the library loads, so `app/utils/landing.ts` records 
 - Do not log, persist, or send key material.
 - secp256k1 keyspace is `1 .. n-1`. ed25519 rows reuse the same 32 bytes as a secret; label that.
 - Keep Node demos in `playground/`.
+- Icons: `token` (Web3 Icons, monochrome) for chains by ticker (`i-token-btc`), Lucide for the interface, `simple-icons` for GitHub and npm, `vscode-icons` for file types in code block headers. A chain icon that only exists in colour is not a reason to mix sets.
 - Chains are listed by hand: rows and `loadExplorerChains` in `app/utils/derive.ts`, fixtures in `app/utils/landing.ts`, the grid in `LandingHome.vue`, `LandingToolCall.vue`, `LandingRotatingCode.vue`, sidebar icons in `useSubNavigation.ts`, the icon bundle in `nuxt.config.ts`. A new chain in `src/_blockchains.ts` needs all of them plus a page under `content/2.blockchains/`.

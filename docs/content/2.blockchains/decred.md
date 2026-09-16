@@ -1,6 +1,6 @@
 ---
 title: Decred
-icon: i-lucide-ticket
+icon: i-token-dcr
 description: secp256k1 with BLAKE-256 in every hash. Addresses start with Ds. No mnemonic derivation and that's on purpose.
 ---
 

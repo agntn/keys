@@ -1,6 +1,6 @@
 ---
 title: Aptos
-icon: i-lucide-hexagon
+icon: i-token-apt
 description: ed25519 with addresses from SHA3-256 over the public key and a scheme byte.
 ---
 

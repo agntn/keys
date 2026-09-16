@@ -1,6 +1,6 @@
 ---
 title: Bitcoin
-icon: i-simple-icons-bitcoin
+icon: i-token-btc
 description: secp256k1 with five address formats from legacy to taproot on mainnet and testnet.
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: TRON
-icon: i-lucide-zap
+icon: i-token-trx
 description: secp256k1 with Ethereum's 20 byte hash wrapped in base58check so every address starts with T.
 ---
 

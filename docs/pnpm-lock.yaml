@@ -42,6 +42,9 @@ importers:
       '@iconify-json/simple-icons':
         specifier: 1.2.94
         version: 1.2.94
+      '@iconify-json/token':
+        specifier: 1.2.40
+        version: 1.2.40
       '@iconify-json/vscode-icons':
         specifier: 1.2.76
         version: 1.2.76
@@ -1029,6 +1032,9 @@ packages:
 
   '@iconify-json/simple-icons@1.2.94':
     resolution: {integrity: sha512-l8UWzVxKaqZd9ABsE/M/9p6NyGkQnmCnOoZyhQmjlXCtY5PuL2rcWxOFk2l9pk7ux3ERMPkTLE4jl6kQpTkwxA==}
+
+  '@iconify-json/token@1.2.40':
+    resolution: {integrity: sha512-vghgitib0CqXiMuGoIai/sT68sDC6+0hU/i3pvY/mkBiw3yloXk7KaJ+/W1EIXdx2s1HcCi4eVgo+34mCm+4tA==}
 
   '@iconify-json/vscode-icons@1.2.76':
     resolution: {integrity: sha512-gSu20bZiegbMFLSPHHtmliUJoOPhovTT77RNkMfr6u9ns5uC2bVZ4K5T7wUlywRAzQk4qgG7t4AULaucSsta4w==}
@@ -8046,6 +8052,10 @@ snapshots:
       '@iconify/types': 2.0.0
 
   '@iconify-json/simple-icons@1.2.94':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-json/token@1.2.40':
     dependencies:
       '@iconify/types': 2.0.0
 

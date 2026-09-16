@@ -9,16 +9,16 @@ const stats = [
 ] as const;
 
 const chains = [
-  { label: "Bitcoin", curve: "secp256k1", icon: "i-simple-icons-bitcoin", to: "/blockchains/bitcoin" },
-  { label: "Litecoin", curve: "secp256k1", icon: "i-simple-icons-litecoin", to: "/blockchains/litecoin" },
-  { label: "Decred", curve: "secp256k1", icon: "i-lucide-ticket", to: "/blockchains/decred" },
-  { label: "Ethereum", curve: "secp256k1", icon: "i-simple-icons-ethereum", to: "/blockchains/ethereum" },
-  { label: "Base", curve: "secp256k1", icon: "i-lucide-layers", to: "/blockchains/base" },
-  { label: "TRON", curve: "secp256k1", icon: "i-lucide-zap", to: "/blockchains/tron" },
-  { label: "Solana", curve: "ed25519", icon: "i-simple-icons-solana", to: "/blockchains/solana" },
-  { label: "Aptos", curve: "ed25519", icon: "i-lucide-hexagon", to: "/blockchains/aptos" },
-  { label: "Sui", curve: "ed25519 · secp256k1", icon: "i-simple-icons-sui", to: "/blockchains/sui" },
-  { label: "Cardano", curve: "ed25519", icon: "i-simple-icons-cardano", to: "/blockchains/cardano" },
+  { label: "Bitcoin", curve: "secp256k1", icon: "i-token-btc", to: "/blockchains/bitcoin" },
+  { label: "Litecoin", curve: "secp256k1", icon: "i-token-ltc", to: "/blockchains/litecoin" },
+  { label: "Decred", curve: "secp256k1", icon: "i-token-dcr", to: "/blockchains/decred" },
+  { label: "Ethereum", curve: "secp256k1", icon: "i-token-eth", to: "/blockchains/ethereum" },
+  { label: "Base", curve: "secp256k1", icon: "i-token-base", to: "/blockchains/base" },
+  { label: "TRON", curve: "secp256k1", icon: "i-token-trx", to: "/blockchains/tron" },
+  { label: "Solana", curve: "ed25519", icon: "i-token-sol", to: "/blockchains/solana" },
+  { label: "Aptos", curve: "ed25519", icon: "i-token-apt", to: "/blockchains/aptos" },
+  { label: "Sui", curve: "ed25519 · secp256k1", icon: "i-token-sui", to: "/blockchains/sui" },
+  { label: "Cardano", curve: "ed25519", icon: "i-token-ada", to: "/blockchains/cardano" },
 ] as const;
 
 const path = computed(() => [
