@@ -73,7 +73,7 @@ function applyKey(parsed: ParsedKey, writeHash = true) {
   }
   if (writeHash && import.meta.client) {
     const shortHex = parsed.hex.replace(/^0+/u, "") || "0";
-    history.replaceState(null, "", `#${shortHex}`);
+    history.replaceState(history.state, "", `#${shortHex}`);
   }
 }
 
