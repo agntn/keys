@@ -8,15 +8,30 @@ importers:
 
   .:
     dependencies:
-      '@agntn/keys':
-        specifier: file:..
-        version: file:..(supports-color@10.2.2)(zod@4.5.4)
+      '@noble/curves':
+        specifier: 2.4.0
+        version: 2.4.0
+      '@noble/hashes':
+        specifier: 2.4.0
+        version: 2.4.0
+      '@scure/base':
+        specifier: 2.4.0
+        version: 2.4.0
+      '@scure/bip32':
+        specifier: 2.4.0
+        version: 2.4.0
+      '@scure/bip39':
+        specifier: 2.4.0
+        version: 2.4.0
       better-sqlite3:
         specifier: 12.11.1
         version: 12.11.1
       docus:
         specifier: 5.13.0
         version: 5.13.0(01aea074982e784471528f9307a3ac46)
+      micro-key-producer:
+        specifier: 0.10.2
+        version: 0.10.2
       nuxt:
         specifier: 4.5.2
         version: 4.5.2(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@oxc-project/types@0.147.0)(@types/node@26.4.0)(@vue/compiler-sfc@3.5.42)(better-sqlite3@12.11.1)(db0@0.3.4(better-sqlite3@12.11.1))(esbuild@0.28.2)(eslint@10.9.1(jiti@2.7.0)(supports-color@10.2.2))(ioredis@5.11.1(supports-color@10.2.2))(lightningcss@1.33.0)(magicast@0.5.4)(optionator@0.9.4)(oxc-parser@0.143.0)(rolldown@1.2.6)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.6)(rollup@4.63.1))(rollup@4.63.1)(srvx@0.11.22)(supports-color@10.2.2)(terser@5.51.2)(typescript@5.9.3)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.0))(yaml@2.9.0)
@@ -35,11 +50,6 @@ importers:
         version: 4.128.0
 
 packages:
-
-  '@agntn/keys@file:..':
-    resolution: {directory: .., type: directory}
-    engines: {node: '>=24'}
-    hasBin: true
 
   '@ai-sdk/gateway@4.0.70':
     resolution: {integrity: sha512-0tzAH2vwXOs/kVktAZRS04dATEQJk1hf1QR+VuVfvo9QmW3UPgcjhhJD9QFgP8HZLxkrEGDImwLIQ7sUfQTIsA==}
@@ -6670,9 +6680,6 @@ packages:
   type-level-regexp@0.1.17:
     resolution: {integrity: sha512-wTk4DH3cxwk196uGLK/E9pE45aLfeKJacKmcEgEOA/q5dnPGNxXt0cfYdFxb57L+sEpf1oJH4Dnx/pnRcku9jg==}
 
-  typebox@1.3.23:
-    resolution: {integrity: sha512-eMDZIb3EhHxm/tQ+xfbb++B+1KMpquxYoRQ0nHWukMmNxrYHsbRQwW15chb2doi0FdJ/MxDXpgZRFJUyizMkkw==}
-
   typed-array-buffer@1.0.3:
     resolution: {integrity: sha512-nAYYwfY3qnzX30IkA6AQZjVbtK6duGontcQm1WSG1MD94YLqK0515GNApXkoxKOWMusVssAHWLh9SeaoefYFGw==}
     engines: {node: '>= 0.4'}
@@ -7315,23 +7322,6 @@ packages:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
 snapshots:
-
-  '@agntn/keys@file:..(supports-color@10.2.2)(zod@4.5.4)':
-    dependencies:
-      '@modelcontextprotocol/sdk': 1.30.0(supports-color@10.2.2)(zod@4.5.4)
-      '@noble/curves': 2.4.0
-      '@noble/hashes': 2.4.0
-      '@scure/base': 2.4.0
-      '@scure/bip32': 2.4.0
-      '@scure/bip39': 2.4.0
-      citty: 0.2.2
-      consola: 3.4.2
-      micro-key-producer: 0.10.2
-      typebox: 1.3.23
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - supports-color
-      - zod
 
   '@ai-sdk/gateway@4.0.70(zod@4.5.4)':
     dependencies:
@@ -15041,8 +15031,6 @@ snapshots:
       mime-types: 3.0.2
 
   type-level-regexp@0.1.17: {}
-
-  typebox@1.3.23: {}
 
   typed-array-buffer@1.0.3:
     dependencies:
