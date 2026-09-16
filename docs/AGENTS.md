@@ -41,6 +41,10 @@ Three resolution traps, all because the repo root is its own pnpm workspace:
 - `nuxt.config.ts` pins `workspaceDir` to `docs/` and disables devtools and telemetry, which would otherwise resolve from the root.
 - `vite.server.fs.allow` in `nuxt.config.ts` adds `../src`. Vite serves only directories on that list, and with `workspaceDir` pinned to `docs/` the library sits outside it, so `pnpm dev` couldn't load it otherwise.
 
+## Tests
+
+`test/docs-parse-key.test.ts` in the repo root covers `app/utils/parse-key.ts` and runs with the root suite, no docs install needed. The root `vitest.config.ts` transforms it with the root tsconfig, because `docs/tsconfig.json` only references files Nuxt generates. Keep pure helpers in `app/utils/` so they stay testable from the root.
+
 ## Constraints
 
 - Derivation runs in the browser only. Do not add a server route that accepts private keys or mnemonics.
