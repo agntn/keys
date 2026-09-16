@@ -3,18 +3,19 @@ import type { AddressRow } from "../../utils/derive";
 
 const props = defineProps<{ rows: readonly AddressRow[]; publicKey: string; tick: number }>();
 
+/** `row` is the derive.ts row that answers the request, so result and address type agree. */
 const SECP = [
-  { chain: "Bitcoin", slug: "bitcoin", addressType: "segwit" },
-  { chain: "Litecoin", slug: "litecoin", addressType: "segwit" },
-  { chain: "Decred", slug: "decred" },
-  { chain: "Ethereum", slug: "ethereum" },
-  { chain: "Base", slug: "base" },
-  { chain: "TRON", slug: "tron" },
+  { row: "btc-segwit", slug: "bitcoin", addressType: "segwit" },
+  { row: "ltc-segwit", slug: "litecoin", addressType: "segwit" },
+  { row: "dcr", slug: "decred" },
+  { row: "eth", slug: "ethereum" },
+  { row: "base", slug: "base" },
+  { row: "tron", slug: "tron" },
 ] as const;
 
 const current = computed(() => SECP[props.tick % SECP.length]!);
 const address = computed(
-  () => props.rows.find((row) => row.chain === current.value.chain)?.address ?? "",
+  () => props.rows.find((row) => row.id === current.value.row)?.address ?? "",
 );
 const shortKey = computed(() => `${props.publicKey.slice(0, 18)}…${props.publicKey.slice(-6)}`);
 </script>
