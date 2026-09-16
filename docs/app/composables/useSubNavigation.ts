@@ -12,7 +12,7 @@ const NAV_ICONS: Record<string, string> = {
   "/blockchains/litecoin": "i-simple-icons-litecoin",
   "/blockchains/decred": "i-lucide-ticket",
   "/blockchains/ethereum": "i-simple-icons-ethereum",
-  "/blockchains/base": "i-simple-icons-coinbase",
+  "/blockchains/base": "i-lucide-layers",
   "/blockchains/solana": "i-simple-icons-solana",
   "/blockchains/cardano": "i-simple-icons-cardano",
   "/blockchains/sui": "i-simple-icons-sui",
