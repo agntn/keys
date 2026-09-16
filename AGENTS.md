@@ -61,7 +61,7 @@ keys/
 ## ANTI-PATTERNS
 
 - **No type assertions in src/** - zero `as any`, `@ts-ignore`, `@ts-expect-error` in source code (`@ts-expect-error` exists in tests only, for intentional invalid input testing)
-- **No non-noble crypto** - never use Node `crypto` module for hashing/signing (only `webcrypto.getRandomValues` for key generation)
+- **No non-noble crypto** - never import Node `crypto`, not even for randomness. Keys come from the curve's `utils.randomSecretKey()`
 - **No logic in index.ts** - only re-exports
 - **Don't bypass the lazy registry by accident** - use `blockchains.chain(options)()` for routine public loading; direct constructors are for explicit per-chain imports and subclassing
 - **Don't mix signing utils** - secp256k1 chains must use `evmSignMessage`, ed25519 chains must use `ed25519SignMessage` or chain-specific variant

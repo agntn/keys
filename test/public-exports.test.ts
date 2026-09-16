@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { DecodedWIF, WIFOptions, HDWalletOptions } from "@agntn/keys";
 import type { BIP39MnemonicInspection } from "@agntn/keys/bip39";
@@ -8,6 +11,9 @@ const EXPORTS = [
   ["@agntn/keys/bip39", "/dist/utils/bip39/index.mjs"],
   ["@agntn/keys/slip10", "/dist/utils/slip10/index.mjs"],
 ] as const;
+
+/** Static and dynamic import specifiers in the built ESM. */
+const IMPORT_SPECIFIER = /(?:from|import)\s*\(?\s*["']([^"']+)["']/g;
 
 describe("Public WIF exports", () => {
   it("imports the built API and preserves compression when deriving a wallet", async () => {
@@ -59,5 +65,26 @@ describe("Public derivation exports", () => {
 
   it.each(EXPORTS)("resolves %s", (specifier, path) => {
     expect(import.meta.resolve(specifier).endsWith(path)).toBe(true);
+  });
+
+  it("imports no Node builtin anywhere the library entry reaches", () => {
+    const specifiers = new Set<string>();
+    const visited = new Set<string>();
+    const walk = (file: string): void => {
+      if (visited.has(file)) {
+        return;
+      }
+      visited.add(file);
+      for (const [, specifier = ""] of readFileSync(file, "utf8").matchAll(IMPORT_SPECIFIER)) {
+        if (specifier.startsWith(".")) {
+          walk(resolve(dirname(file), specifier));
+        } else if (specifier !== "") {
+          specifiers.add(specifier);
+        }
+      }
+    };
+    walk(fileURLToPath(import.meta.resolve("@agntn/keys")));
+    expect(visited.size).toBeGreaterThan(1);
+    expect([...specifiers].filter((specifier) => specifier.startsWith("node:"))).toEqual([]);
   });
 });
