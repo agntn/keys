@@ -1,293 +1,144 @@
 # @agntn/keys
 
-[![npm version](https://img.shields.io/npm/v/%40agntn%2Fkeys?style=flat&colorA=130f40&colorB=474787)](https://npmjs.com/package/@agntn/keys)
-[![npm downloads](https://img.shields.io/npm/dm/%40agntn%2Fkeys?style=flat&colorA=130f40&colorB=474787)](https://npm.chart.dev/@agntn/keys)
-[![license](https://img.shields.io/github/license/agntn/keys?style=flat&colorA=130f40&colorB=474787)](https://github.com/agntn/keys/blob/main/LICENSE.md)
+[![npm version](https://npmx.dev/api/registry/badge/version/@agntn/keys)](https://npmx.dev/package/@agntn/keys)
+[![npm downloads](https://npmx.dev/api/registry/badge/downloads/@agntn/keys)](https://npmx.dev/package/@agntn/keys)
+[![license](https://npmx.dev/api/registry/badge/license/@agntn/keys)](https://npmx.dev/package/@agntn/keys)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/agntn/keys)
 
-Typed key generation, address derivation, and message signing across ten blockchains and two curves.
+🔑 Keys, addresses and signatures for ten chains, from a mnemonic or from nothing at all. Bitcoin gets its five address types, Solana gets ed25519, your agent gets 18 tools, and none of it should ever meet real money.
 
 > [!WARNING]
-> **@agntn/keys is experimental.** The package name, public API, provider model, and tool surfaces may change before the first stable release. Pin exact versions if you build on it now.
+> **@agntn/keys is experimental.** The public API and the tool surfaces can still move before the first stable release. Pin exact versions if you build on it now.
 
-## Features
+## Why?
 
-- 🔑 **Key generation** - cryptographically secure private keys via Web Crypto API
-- 📫 **Address generation** - all major formats per chain (legacy, segwit, taproot, base58, hex)
-- ✅ **Address validation** - verify validity and checksums for every supported format
-- 💼 **Wallet construction** - generate a new wallet, or derive one from a private key or from a BIP39 mnemonic and derivation path
-- ✍️ **Message signing** - sign and verify with secp256k1 or ed25519
-- 🛤️ **BIP44 paths** - derivation path utilities for all supported chains
-- 🧩 **BIP39 puzzles** - validate phrases, narrow one missing word, and map words or indices across all 10 official lists
-- 🔌 **Lazy loading** - blockchain implementations load on demand for smaller bundles
-- 🤖 **MCP server** - the same 17 key, mnemonic, address, and signing tools over stdio
-- 📐 **Fully typed** - TypeScript definitions for every interface
+Every chain has its own wallet library and its own idea of what a key is. One wants a Buffer, one wants a Uint8Array, one has a KeyPair class and a second one for testnet. Then a mnemonic shows up from a puzzle instead of a wallet app and all of them answer "invalid checksum" and stop talking to you. So this is one `Blockchain` interface over noble curves, the same `generateWallet()` on every chain, and the puzzle cases live in the API instead of in a fork.
 
-## Install
+The docs live at [keys.agntn.dev](https://keys.agntn.dev), with a keyspace explorer that runs this very library in your browser.
+
+## ✨ Features
+
+- ⛓️ **Ten chains, one interface.** Bitcoin, Litecoin, Decred, Ethereum, Base, Solana, Aptos, Cardano, Sui and TRON, each a class with the same methods on it.
+- 🧬 **Two curves.** secp256k1 and ed25519, and Sui will take either.
+- 🏠 **Bitcoin the way Bitcoin wants it.** Legacy, P2SH, segwit, P2WSH and taproot, testnet included, and the purpose level of your path picks the type for you.
+- 🌱 **Mnemonic in, wallet out.** BIP39 into BIP32 on secp256k1 and SLIP-10 on ed25519, passphrase optional.
+- 🧩 **Puzzle mnemonics are welcome.** Wrong checksum? Derive anyway and get a warning with the wallet, or ask which words would make it valid.
+- 🌍 **All ten BIP39 word lists.** Look a word up in Italian, generate in Japanese with the ideographic spaces, map indices from base 0 or base 1.
+- ✍️ **Signatures other wallets accept.** Bitcoin, Litecoin and Decred sign like Core, EVM chains sign like ethers, ed25519 chains sign the raw bytes, and there are tests against both to keep it that way.
+- 🔌 **Loads one chain at a time.** `blockchains.solana()()` imports Solana and nothing else, so a Bitcoin tool never pays for Cardano.
+- 🤖 **18 agent tools.** MCP over stdio and a Pi extension run the same code, and a generated mnemonic comes back with a note that it's in the transcript now.
+
+## 📦 Install
 
 ```bash
 pnpm add @agntn/keys
 ```
 
-## Usage
+Node.js 24 or newer. Pure JavaScript all the way down, nothing to compile.
 
-Concrete blockchain classes are lazy-loaded. The double-call pattern `blockchains.chain(options)()` first passes config, then imports and constructs the class.
-
-### Generate a wallet
+## 🚀 First wallet
 
 ```ts
-import { useBlockchain, blockchains } from "@agntn/keys";
-
-const ethereum = await blockchains.ethereum()();
-const chain = useBlockchain(ethereum);
-
-const wallet = chain.generateWallet();
-console.log(wallet.keys.private); // hex private key
-console.log(wallet.keys.public); // hex public key
-console.log(wallet.address); // 0x... checksum address
-```
-
-### Bitcoin address types
-
-```ts
-import { useBlockchain, blockchains } from "@agntn/keys";
-
-const btc = useBlockchain(await blockchains.bitcoin()());
-
-const privateKey = btc.generateKeyPrivate();
-const publicKey = btc.getKeyPublic(privateKey);
-
-btc.getAddress(publicKey); // legacy (1...)
-btc.getAddress(publicKey, "segwit"); // native segwit (bc1q...)
-btc.getAddress(publicKey, "taproot"); // taproot (bc1p...)
-btc.getAddress(publicKey, "p2sh"); // pay-to-script-hash (3...)
-btc.getAddress(publicKey, "p2wsh"); // witness script hash
-
-// testnet
-const testnet = useBlockchain(await blockchains.bitcoin({ network: "testnet" })());
-testnet.getAddress(publicKey, "segwit"); // tb1q...
-```
-
-### Convert public key encodings
-
-`convertSecp256k1PublicKey` changes the SEC1 representation of a public point without needing its private key. It accepts compressed (33-byte) or uncompressed (65-byte) hex without `0x` and returns lowercase hex. Hybrid, x-only and invalid curve points are rejected rather than guessed.
-
-```ts
-import { convertSecp256k1PublicKey } from "@agntn/keys";
-
-const compressed = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
-const uncompressed = convertSecp256k1PublicKey(compressed, { compressed: false });
-const original = convertSecp256k1PublicKey(uncompressed);
-```
-
-MCP and Pi expose `keys_convert_public_key` with `publicKey` and optional `compressed` (default `true`). The result contains `{ publicKey, compressed }`. Choose the encoding deliberately before passing it to `keys_get_address`: legacy Bitcoin addresses hash the serialized key, so the two encodings produce different addresses.
-
-### Import and export WIF
-
-```ts
-import { encodeWIF, decodeWIF, blockchains } from "@agntn/keys";
-
-const privateKey = "00".repeat(31) + "01";
-const wif = encodeWIF(privateKey, { chain: "bitcoin" });
-const decoded = decodeWIF(wif, { chain: "bitcoin" });
-const btc = await blockchains.bitcoin()();
-const wallet = btc.deriveWallet(decoded.privateKey, { compressed: decoded.compressed });
-```
-
-Choose `chain: "bitcoin"`, `"litecoin"` or `"decred"`, the three chains in this package with native WIF support. Both functions default to `network: "mainnet"`; pass `network: "testnet"` for testnet (testnet3 on Decred). `encodeWIF` takes exactly 64 hex characters without `0x` and defaults to `compressed: true`. Bitcoin and Litecoin also accept `compressed: false`. Decred uses its native BLAKE-256 checksum and ECDSA scheme, and rejects uncompressed exports or other signature schemes.
-
-`decodeWIF` checks the selected chain/network and returns `{ privateKey, chain, network, compressed }`. Both functions reject invalid secp256k1 scalars; decoding also checks the checksum, payload length and compression marker. Bitcoin and Litecoin share a testnet prefix, so the returned chain is the requested context, not proof of ownership. Other chains, networks and BIP38 encrypted keys are not supported.
-
-Agents can use `keys_encode_wif` and `keys_decode_wif` through MCP or Pi with the same chain/network choices. Encoding accepts `privateKey` and optional `compressed`; decoding accepts `wif`. Both return the converted secret and effective wallet options.
-
-Preserve `compressed` when deriving a wallet: the same private key can produce a different address without it. WIF is not encryption. Use disposable test keys only.
-
-### Litecoin
-
-```ts
-import { blockchains } from "@agntn/keys";
-
-const mnemonic =
-  "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
-const ltc = await blockchains.litecoin()();
-const wallet = ltc.deriveHDWallet(mnemonic, "m/84'/2'/0'/0/0");
-const testnet = await blockchains.litecoin({ network: "testnet" })();
-```
-
-Litecoin uses the same five address types as Bitcoin, with `L`/`M`/`ltc1` on mainnet and `m` or `n`/`Q`/`tltc1` on testnet. Old P2SH prefixes (`3` and `2`) are accepted, not generated. Those old addresses overlap with Bitcoin, so validation alone cannot identify the chain. MWEB and regtest are outside this implementation.
-
-Message signing uses the Litecoin Core message digest and returns a compact signature of 64 bytes as hex, not Core's recoverable base64 format. Verify against the public key with `verifyMessage`.
-
-### Decred
-
-```ts
-import { blockchains } from "@agntn/keys";
-
-const dcr = await blockchains.decred()();
-const wallet = dcr.generateWallet();
-const testnet = await blockchains.decred({ network: "testnet" })();
-```
-
-Decred supports ECDSA P2PKH addresses (`legacy`), with `Ds` on mainnet and `Ts` on testnet3. Both compressed and uncompressed public keys work. Other address formats and signature schemes are outside this implementation.
-
-Message signing uses the Decred message digest and returns 64 bytes of compact r/s as hex, not the recoverable base64 format used by dcrd. Use `verifyMessage` with the public key. `deriveHDWallet` throws: Decred's HD derivation strips leading zeros, so ordinary BIP32 is not a safe substitute. BIP44 path generation uses coin type 42, not the historical type 20.
-
-### Sign and verify messages
-
-```ts
-import { useBlockchain, blockchains } from "@agntn/keys";
-
-const chain = useBlockchain(await blockchains.solana()());
-
-const { keys } = chain.generateKeys();
-const signature = chain.signMessage("hello", keys.private);
-const valid = chain.verifyMessage("hello", signature, keys.public); // true
-```
-
-### EVM chains share addresses
-
-```ts
-import { useBlockchain, blockchains } from "@agntn/keys";
+import { blockchains, useBlockchain } from "@agntn/keys";
 
 const eth = useBlockchain(await blockchains.ethereum()());
-const base = useBlockchain(await blockchains.base()());
-
-const privateKey = eth.generateKeyPrivate();
-const pubKey = eth.getKeyPublic(privateKey);
-
-eth.getAddress(pubKey) === base.getAddress(pubKey); // true
+console.log(eth.generateWallet());
 ```
 
-### Derive HD keys
-
-```ts
-import { mnemonicToSeed } from "@agntn/keys/bip39";
-import { getMasterKeyFromSeed, deriveHDKey } from "@agntn/keys/bip32";
-
-const seed = mnemonicToSeed(
-  "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
-);
-const master = getMasterKeyFromSeed(seed);
-const account = deriveHDKey(master, "m/84'/0'/0'/0/0");
+```
+{
+  keys: {
+    private: 'ce4d2129932b3d254d080c5d2cd6d23ed450c59d01718602ee7b2defd118c089',
+    public: '027d45d17b53cbbd7e94562b96adfce14689ade4d47a5b058dce2b83c08d9563fa'
+  },
+  address: '0xc792A6d3c616EfDc6684e5C82cd9397E35B50846'
+}
 ```
 
-Use `@agntn/keys/slip10` instead of `@agntn/keys/bip32` for ed25519 derivation.
+That private key now lives in a README on GitHub, which makes it the most burned key you'll see today. Good, that is the only kind this package is for, see the caution at the bottom. The double call is the lazy loader: `blockchains.ethereum(options)` takes the config, the second `()` imports the chain and builds it. No network anywhere, it's all math, so it runs the same offline and in the browser.
 
-### Derive a wallet from a mnemonic
+The most public mnemonic on earth, one path per address type:
 
 ```ts
-import { useBlockchain, blockchains } from "@agntn/keys";
-
 const mnemonic =
   "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
-
 const btc = useBlockchain(await blockchains.bitcoin()());
-btc.deriveHDWallet(mnemonic, "m/84'/0'/0'/0/0").address; // bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu
+
+for (const path of ["m/44'/0'/0'/0/0", "m/49'/0'/0'/0/0", "m/84'/0'/0'/0/0", "m/86'/0'/0'/0/0"]) {
+  console.log(path, btc.deriveHDWallet(mnemonic, path).address);
+}
+```
+
+```
+m/44'/0'/0'/0/0 1LqBGSKuX5yYUonjxT5qGfpUsXKYYWeabA
+m/49'/0'/0'/0/0 37VucYSaXLCAsxYyAPfbSi9eh4iEcbShgf
+m/84'/0'/0'/0/0 bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu
+m/86'/0'/0'/0/0 bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr
+```
+
+Nobody passed an address type. 44 is legacy, 49 is P2SH, 84 is segwit, 86 is taproot, the path already says which one you meant. You can still pass one as the fourth argument if you disagree with your own path.
+
+## 🧠 Library
+
+```ts
+import { blockchains, useBlockchain, encodeWIF, convertSecp256k1PublicKey } from "@agntn/keys";
 
 const sol = useBlockchain(await blockchains.solana()());
-sol.deriveHDWallet(mnemonic, "m/44'/501'/0'/0'", { passphrase: "TREZOR" }).address;
+const wallet = sol.deriveHDWallet(mnemonic, "m/44'/501'/0'/0'", { passphrase: "TREZOR" });
+const signature = sol.signMessage("hello", wallet.keys.private);
+sol.verifyMessage("hello", signature, wallet.keys.public); // true
+sol.validateAddress(wallet.address); // true
+
+const btc = useBlockchain(await blockchains.bitcoin()());
+const { keys } = btc.generateWallet();
+encodeWIF(keys.private, { chain: "bitcoin" }); // K... or L..., compressed
+convertSecp256k1PublicKey(keys.public, { compressed: false }); // 04..., 130 hex chars
 ```
 
-secp256k1 chains walk BIP32 and ed25519 chains walk SLIP-10, which accepts hardened segments only. Bitcoin and Litecoin read the address type off the purpose level (44, 49, 84, 86) unless one is passed. Decred throws because its HD derivation differs from standard BIP32. Cardano throws, because CIP-1852 starts from the entropy rather than the BIP39 seed.
+There isn't much more to it. Every chain has `generateKeyPrivate`, `getKeyPublic`, `getAddress`, `validateAddress`, `signMessage` and `verifyMessage`, the HD walk is BIP32 on secp256k1 and SLIP-10 on ed25519, so Solana paths are hardened all the way down. Ethereum and Base give the same address for the same key, as they should. WIF goes both ways on Bitcoin, Litecoin and Decred, and `convertSecp256k1PublicKey` flips compressed to uncompressed and back. Mind that a legacy address hashes those bytes, so the two encodings are two different addresses from one key, keep the `compressed` flag next to it. Everything else, traps included: [Keys](https://keys.agntn.dev/guide/keys), [Addresses](https://keys.agntn.dev/guide/addresses), [Wallets](https://keys.agntn.dev/guide/wallets), [EVM chains](https://keys.agntn.dev/guide/evm).
 
-### Puzzle phrases with an invalid checksum
+## 🧩 Puzzles
 
-A bad checksum does not always mean a wrong puzzle answer. The [claimed Bitcoin Movie Enigma solution](https://github.com/floflo777/open-crypto-puzzles/issues/24) has one. Repairing its last word derives a different wallet.
-
-`deriveHDWallet` rejects invalid checksums by default. Set `allowInvalidChecksum: true` explicitly to derive from the supplied words:
+A puzzle mnemonic with a broken checksum is not a wrong answer, it's Tuesday. The [claimed Movie Enigma solution](https://github.com/floflo777/open-crypto-puzzles/issues/24) has one:
 
 ```ts
-const puzzleMnemonic =
+import { inspectBIP39Mnemonic, getMnemonicWordCandidates } from "@agntn/keys/bip39";
+
+const puzzle =
   "path mad alien apology escape spare miss goddess leopard crime visit clock start first blade guard close barrel term screen matrix toy ghost shine";
-const puzzleWallet = btc.deriveHDWallet(puzzleMnemonic, "m/84'/0'/0'/0/0", {
-  allowInvalidChecksum: true,
-});
-console.log(puzzleWallet.address);
-console.log(puzzleWallet.warnings);
+
+console.log(inspectBIP39Mnemonic(puzzle));
+const wallet = btc.deriveHDWallet(puzzle, "m/84'/0'/0'/0/0", { allowInvalidChecksum: true });
+console.log(wallet.address);
+console.log(wallet.warnings);
+console.log(getMnemonicWordCandidates(puzzle.replace(/shine$/, "?")));
 ```
 
-This public, burned example produces `bc1q94ecsn0qk8lap2gefrycnms3ruepy889z969a6` and a checksum warning. The override still requires English BIP39 words and a count of 12, 15, 18, 21 or 24. It does not bypass path or chain restrictions. Whitespace collapsing and BIP39 NFKD normalization still apply. This is not arbitrary text hashing.
-
-MCP and Pi expose the same `allowInvalidChecksum` boolean on `keys_derive_hd_wallet`, defaulting to `false`. Warnings appear in tool text and Pi details. `keys_inspect_mnemonic` and the library's `inspectBIP39Mnemonic` export from `@agntn/keys/bip39` report `wordCountValid`, `wordlistValid` and `checksumValid` separately. A `null` checksum verdict means the shape or dictionary check failed. Entropy is returned by the inspection tool only for a fully valid mnemonic. The tool respects its `language` option. The library inspector defaults to English; pass a list from `loadBIP39Wordlist(language)` as its second argument to inspect another language.
-
-### Recover one missing BIP39 word
-
-```ts
-import { getMnemonicWordCandidates } from "@agntn/keys/bip39";
-
-const candidates = getMnemonicWordCandidates(
-  "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon ?",
-);
 ```
-
-The result only satisfies the BIP39 checksum. It does not prove that a candidate belongs to the wallet or puzzle target. Use this filter only when canonical BIP39 generation is established. It excludes the actual last word from the Movie Enigma solution above.
-
-### Map localized BIP39 words and indices
-
-```ts
-import { lookupBIP39Indices, lookupBIP39Words } from "@agntn/keys/bip39";
-
-const wordMatches = await lookupBIP39Words(["orologio", "civetta"], "italian");
-const indexMatches = await lookupBIP39Indices([1, 1179, 2048], "italian", 1);
-```
-
-Language keys cover the 10 official BIP39 lists. Word lookup is case-insensitive and normalizes Unicode to NFKD. Index lookup uses base 0 by default and accepts base 1 explicitly.
-
-### Generate and inspect localized mnemonics
-
-```ts
-import { bip39, loadBIP39Wordlist } from "@agntn/keys/bip39";
-
-const words = await loadBIP39Wordlist("spanish");
-const mnemonic = bip39.generateMnemonic(words, 128);
-const valid = bip39.validateMnemonic(mnemonic, words);
-const entropy = bip39.mnemonicToEntropy(mnemonic, words);
-const restored = bip39.entropyToMnemonic(entropy, words);
-```
-
-Localized lists load on demand; each call returns a copy. Existing synchronous helpers such as `generateMnemonic()` and `validateMnemonic()` still use English. The `bip39` codec handles Unicode NFKD and emits Japanese mnemonics with ideographic spaces.
-
-In MCP and Pi, `keys_generate_mnemonic`, `keys_inspect_mnemonic` and `keys_encode_bip39_entropy` accept the same optional `language` key and report the selected language. Omit it for English; there is no automatic language detection. A checksum match is not proof of a language, since some lists share words. Inspection does not change case or guess missing accents.
-
-`keys_derive_hd_wallet` and `keys_recover_mnemonic_word` still require English. Re-encoding entropy in another language can change the BIP39 seed; it is not a safe shortcut to an English wallet.
-
-### Derive a BIP39 seed through a tool
-
-`keys_derive_bip39_seed` exposes the library's BIP39 KDF in MCP and Pi without requiring a chain or derivation path:
-
-```json
 {
-  "mnemonic": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
-  "passphrase": "TREZOR"
+  valid: false,
+  words: 24,
+  wordCountValid: true,
+  wordlistValid: true,
+  checksumValid: false
 }
+bc1q94ecsn0qk8lap2gefrycnms3ruepy889z969a6
+[
+  'BIP39 checksum is invalid. Derived from the supplied words without repairing the checksum.'
+]
+[
+  'aware',  'divide',
+  'embark', 'globe',
+  'pact',   'roof',
+  'solve',  'today'
+]
 ```
 
-The result is 64 bytes of seed as hex, not a BIP32 master private key or the mnemonic's entropy. `language` defaults to English and accepts all 10 official lists. The tool requires a valid checksum, collapses mnemonic whitespace and applies NFKD. Passphrase whitespace is preserved. Both text inputs are limited to 4096 characters each. For library callers, `mnemonicToSeed` is already exported from `@agntn/keys/bip39`.
+Without the flag `deriveHDWallet` throws. With it you get the wallet and a warning, the words exactly as given, nothing repaired. Ask the checksum which last words it would accept and you get eight, `shine` is not one of them, and each of the eight opens a different wallet. That is how a "fixed" mnemonic loses a puzzle, so the fixing stays with you, not with the library.
 
-Use only public test vectors or disposable material. The seed is a secret and enters the transcript along with the inputs.
+`inspectBIP39Mnemonic` splits the verdict three ways, count, dictionary and checksum, so you see which one failed. The candidate filter and `deriveHDWallet` are English only. The other nine word lists are there for lookups and generation: `lookupBIP39Words(["orologio", "civetta"], "italian")` finds them, orologio at 1178 and civetta at 361 counting from zero, and `loadBIP39Wordlist("japanese")` fed to the `bip39` codec gives you mnemonics with the ideographic spaces the spec asks for. The flag in the docs: [Wallets](https://keys.agntn.dev/guide/wallets).
 
-## MCP server
-
-The package includes a stdio MCP server with the same 18 operations used by the Pi extension. After installing the package, configure an MCP client to run `keys mcp`. A checkout can run the built entry directly:
-
-```json
-{
-  "mcpServers": {
-    "keys": {
-      "command": "node",
-      "args": ["/absolute/path/to/keys/dist/cli.mjs", "mcp"]
-    }
-  }
-}
-```
-
-Hosts that own their transport can import `createMcpServer` from `@agntn/keys/mcp`.
-
-Use `keys_generate_mnemonic` with `{ "words": 24 }` for a fresh English BIP39 mnemonic, or `{}` for 12 words. Add `"language": "japanese"`, for example, to select another official list. It also accepts 15, 18 and 21 words. Generation uses the library's cryptographic randomness, not entropy supplied by the model. The result is saved in the transcript, so it is for tests and disposable wallets only.
-
-The server handles private keys, mnemonics, entropy, messages, and signatures as plaintext MCP arguments or results. They enter client transcripts. Use only public puzzle material or disposable test keys, never a wallet that controls real funds.
-
-## Supported Blockchains
+## ⛓️ Chains
 
 | Chain        | Curve              | Address Formats                      | Testnet |
 | ------------ | ------------------ | ------------------------------------ | ------- |
@@ -302,21 +153,64 @@ The server handles private keys, mnemonics, entropy, messages, and signatures as
 | **SUI**      | ed25519, secp256k1 | 0x-prefixed hex (blake2b)            | -       |
 | **TRON**     | secp256k1          | base58check                          | ✅      |
 
-All chains support key generation, address derivation, address validation, and message signing.
+Decred and Cardano throw on `deriveHDWallet`, on purpose, `deriveWallet` with a private key works on both. Sui is ed25519 unless you ask for secp256k1. Testnet is a constructor option, `blockchains.bitcoin({ network: "testnet" })()` and your segwit addresses start with `tb1q`. Chain pages with prefixes and testnets: [Blockchains](https://keys.agntn.dev/blockchains).
 
-## Security
+## 🤖 Agents
 
-Built on audited cryptographic packages from [@paulmillr](https://github.com/paulmillr):
+```bash
+npx -y @agntn/keys mcp
+```
 
-- [@noble/curves](https://github.com/paulmillr/noble-curves) - elliptic curve implementations (secp256k1, ed25519)
-- [@noble/hashes](https://github.com/paulmillr/noble-hashes) - SHA-256, Keccak, BLAKE-256, BLAKE2b, SHA3
-- [@scure/base](https://github.com/paulmillr/scure-base) - base58, bech32, hex encoding
-- [@scure/bip32](https://github.com/paulmillr/scure-bip32) - HD wallet key derivation
-- [micro-key-producer](https://github.com/paulmillr/micro-key-producer) - SLIP-0010 for ed25519
+```json
+{
+  "mcpServers": {
+    "keys": { "command": "npx", "args": ["-y", "@agntn/keys", "mcp"] }
+  }
+}
+```
+
+18 tools, `keys_generate_wallet` through `keys_bip44_path`, and the Pi extension in [`packages/pi`](./packages/pi) runs the exact same executors from a checkout. Ask for a mnemonic and this is the whole answer:
+
+```
+Language: english
+Mnemonic: problem install faint crime flee local figure deny hurdle ten dragon search
+Words: 12
+This mnemonic is saved in the transcript. Never use it for real funds.
+```
+
+That last line is not decoration. Keys, seeds, signatures, all of it crosses the model's context as plain text and stays in the transcript. Public puzzle material and throwaway keys only, the same rule as everywhere else in this package.
+
+## 🚫 What this does not do
+
+Balances, transactions, broadcasting, anything that needs a node. [@agntn/explorers](https://github.com/agntn/explorers) reads chains and [@agntn/chains](https://github.com/agntn/chains) describes them, this one only makes keys. It doesn't keep them either: no keystore, no encryption, a private key here is a hex string in a variable and WIF is just another spelling of it.
+
+## 🔐 Security
+
+Everything cryptographic comes from [@paulmillr](https://github.com/paulmillr): [@noble/curves](https://github.com/paulmillr/noble-curves) and [@noble/hashes](https://github.com/paulmillr/noble-hashes), [@scure/base](https://github.com/paulmillr/scure-base), [@scure/bip32](https://github.com/paulmillr/scure-bip32) and [@scure/bip39](https://github.com/paulmillr/scure-bip39), [micro-key-producer](https://github.com/paulmillr/micro-key-producer) for SLIP-10. Web Crypto supplies the random bytes and nothing else.
 
 > [!CAUTION]
-> **Never use this with real funds or with any wallet that has ever been used.** Generated and signed material is handled as plaintext; treat every key it touches as burned the moment it is produced. Generate fresh throwaway keys for testing only and assume anything passing through `@agntn/keys` is compromised. Keys that control real funds belong on a hardware wallet, never in a process, log, or agent transcript.
+> **Never use this with real funds or with any wallet that has ever been used.** Generated and signed material is handled as plaintext. Treat every key it touches as burned the moment it is produced. Generate fresh throwaway keys for testing only and assume anything passing through `@agntn/keys` is compromised. Keys that control real funds belong on a hardware wallet, never in a process, log, or agent transcript.
 
-## License
+## ➕ Adding a chain
+
+Want an eleventh? Extend `AbstractBlockchain`, or `AbstractEVMBlockchain` if it's EVM, where a `name` and a `bip44` coin type is the whole class. Register it in the lazy loader, mirror the test file, done. Walkthrough: [Creating custom blockchains](https://keys.agntn.dev/guide/custom).
+
+## 🛠️ Development
+
+```bash
+pnpm install
+pnpm dev          # vitest in watch mode
+pnpm lint         # builds first, then oxlint and oxfmt --check
+pnpm test:types   # tsc over the library and the type tests
+pnpm build        # obuild
+pnpm test:mcp     # builds, then calls all 18 tools over stdio
+pnpm playground playground/bip39-demo.ts
+```
+
+## 💛 Thanks
+
+Building this package was possible thanks to the open source programs from Anthropic and OpenAI, [Claude for Open Source](https://claude.com/contact-sales/claude-for-oss) and [Codex for Open Source](https://developers.openai.com/community/codex-for-oss) <3
+
+## 📄 License
 
 [MIT](./LICENSE.md)
