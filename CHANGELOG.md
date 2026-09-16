@@ -1,5 +1,102 @@
 # Changelog
 
+## v0.3.0
+
+[compare changes](https://github.com/agntn/keys/compare/v0.2.0...v0.3.0)
+
+### 🚀 Enhancements
+
+- **deps:** Upgrade to @noble v2 and vitest 4 ([9c5266c](https://github.com/agntn/keys/commit/9c5266c))
+- Pi extension for ubichain ([#18](https://github.com/agntn/keys/pull/18))
+- **wallets:** Support existing private keys ([#32](https://github.com/agntn/keys/pull/32))
+- **hd:** Expose BIP32, BIP39, and SLIP-10 ([#33](https://github.com/agntn/keys/pull/33))
+- **pi:** Derive wallets from private keys ([#34](https://github.com/agntn/keys/pull/34))
+- **pi:** Add BIP39 mnemonic inspection ([#35](https://github.com/agntn/keys/pull/35))
+- **pi:** Narrow one missing BIP39 word ([#38](https://github.com/agntn/keys/pull/38))
+- **pi:** Look up BIP39 word indices ([#39](https://github.com/agntn/keys/pull/39))
+- **bip39:** Search all official word lists ([#41](https://github.com/agntn/keys/pull/41))
+- **bip39:** Map indices to words ([#42](https://github.com/agntn/keys/pull/42))
+- **pi:** Turn puzzle entropy into BIP39 words ([#43](https://github.com/agntn/keys/pull/43))
+- **hd:** One call from mnemonic to wallet ([#44](https://github.com/agntn/keys/pull/44))
+- **mcp:** Expose key tools over stdio ([#45](https://github.com/agntn/keys/pull/45))
+- Support Litecoin across the library and tools ([#54](https://github.com/agntn/keys/pull/54))
+- **decred:** ECDSA wallets with native address checksums ([#55](https://github.com/agntn/keys/pull/55))
+- Support WIF for Bitcoin, Litecoin and Decred ([#56](https://github.com/agntn/keys/pull/56))
+- Add mnemonic generation to MCP and Pi ([#57](https://github.com/agntn/keys/pull/57))
+- **bip39:** Let mnemonic tools select a language ([#58](https://github.com/agntn/keys/pull/58))
+- **hd:** Allow invalid checksums for puzzle wallets ([#59](https://github.com/agntn/keys/pull/59))
+- Convert public keys without a private key ([#60](https://github.com/agntn/keys/pull/60))
+- **tools:** Add BIP39 seed derivation ([#61](https://github.com/agntn/keys/pull/61))
+- **docs:** Docus site with a keyspace explorer ([#51](https://github.com/agntn/keys/pull/51))
+
+### 🩹 Fixes
+
+- **tests:** Use same key for address comparison ([5724748](https://github.com/agntn/keys/commit/5724748))
+- CODEOWNERS ([e1f9f56](https://github.com/agntn/keys/commit/e1f9f56))
+- **bitcoin:** Use Bitcoin message preamble instead of Ethereum's ([#17](https://github.com/agntn/keys/pull/17))
+- **evm:** Correct hashWithPreamble for Uint8Array input ([#16](https://github.com/agntn/keys/pull/16))
+- **address:** Correct P2SH redeem script buffer size ([#15](https://github.com/agntn/keys/pull/15))
+- **addresses:** Align generated addresses with chain references ([d99c964](https://github.com/agntn/keys/commit/d99c964))
+- Generate valid secp256k1 private keys ([#20](https://github.com/agntn/keys/pull/20))
+- Type SLIP-10 HD keys ([#21](https://github.com/agntn/keys/pull/21))
+- Handle malformed verification keys ([#22](https://github.com/agntn/keys/pull/22))
+- **bip44:** Path parser accepted garbage levels ([#26](https://github.com/agntn/keys/pull/26))
+- **bip44:** Reject invalid generator inputs ([#27](https://github.com/agntn/keys/pull/27))
+- **aptos:** Recognize canonical short addresses ([#28](https://github.com/agntn/keys/pull/28))
+- **bitcoin:** Accept uppercase Bech32 ([#29](https://github.com/agntn/keys/pull/29))
+- **addresses:** Reject invalid public keys ([#30](https://github.com/agntn/keys/pull/30))
+- **pi:** Load packaged keys extension ([#31](https://github.com/agntn/keys/pull/31))
+- **tron:** Generate valid testnet addresses ([#46](https://github.com/agntn/keys/pull/46))
+- **tools:** Reject unsupported wallet options ([#47](https://github.com/agntn/keys/pull/47))
+- Reject ambiguous BIP44 tool inputs ([#48](https://github.com/agntn/keys/pull/48))
+- **solana:** Keep generated addresses valid ([#49](https://github.com/agntn/keys/pull/49))
+- **pi:** Unblock keys tools on Grok ([#50](https://github.com/agntn/keys/pull/50))
+- **bitcoin:** Keep address formats consistent across HD paths ([#53](https://github.com/agntn/keys/pull/53))
+- **hd:** Keep hardened indices in range ([#62](https://github.com/agntn/keys/pull/62))
+- Secp256k1 signatures match Core and ethers ([#63](https://github.com/agntn/keys/pull/63))
+- Ed25519 keys from noble, not node:crypto ([#65](https://github.com/agntn/keys/pull/65))
+
+### 💅 Refactors
+
+- **evm:** Extract preamble hashing into helper ([8be0864](https://github.com/agntn/keys/commit/8be0864))
+- **blockchains:** DRY lazy factories ([#3](https://github.com/agntn/keys/pull/3))
+- Clean up verify error handling ([#5](https://github.com/agntn/keys/pull/5))
+- ⚠️  Use abstract blockchain classes ([#19](https://github.com/agntn/keys/pull/19))
+
+### 📖 Documentation
+
+- README with real output, fewer words ([#64](https://github.com/agntn/keys/pull/64))
+
+### 📦 Build
+
+- Migrate to obuild and typescript 6 ([862dc62](https://github.com/agntn/keys/commit/862dc62))
+
+### 🏡 Chore
+
+- Update README.md ([5c3fe82](https://github.com/agntn/keys/commit/5c3fe82))
+- Add CODEOWNERS ([1d38cf6](https://github.com/agntn/keys/commit/1d38cf6))
+- Add AGENTS.md ([2ec601d](https://github.com/agntn/keys/commit/2ec601d))
+- Rewrite readme, add agents.md, migrate to oxlint + oxfmt ([#12](https://github.com/agntn/keys/pull/12))
+- Update dependencies ([a5c7767](https://github.com/agntn/keys/commit/a5c7767))
+- Rename package to @agntn/keys ([75a4d26](https://github.com/agntn/keys/commit/75a4d26))
+- Refresh dependencies and pnpm ([#23](https://github.com/agntn/keys/pull/23))
+- Adopt @agntn/ox lint config ([#25](https://github.com/agntn/keys/pull/25))
+
+### 🤖 CI
+
+- Publish keys from version tags ([#52](https://github.com/agntn/keys/pull/52))
+
+#### ⚠️ Breaking Changes
+
+- ⚠️  Use abstract blockchain classes ([#19](https://github.com/agntn/keys/pull/19))
+
+### ❤️ Contributors
+
+- Ori ([@oritwoen](https://github.com/oritwoen))
+- Aeitwoen ([@aeitwoen](https://github.com/aeitwoen))
+- Oritwoen ([@oritwoen](https://github.com/oritwoen))
+- Dominik Opyd <dominik.opyd@gmail.com>
+
 ## Unreleased
 
 ### Changed

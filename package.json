@@ -1,6 +1,6 @@
 {
   "name": "@agntn/keys",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Cryptographic key generation, derivation, addresses, and message signing across blockchains",
   "keywords": [
     "addresses",
