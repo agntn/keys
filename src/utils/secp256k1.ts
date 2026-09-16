@@ -29,6 +29,7 @@ export function generateKeyPublic(keyPrivate: string, options: KeyPublicOptions 
 
 /**
  * Signs a message using secp256k1 elliptic curve
+ * Hashing happens here, so `@noble/curves` gets `prehash: false` and doesn't hash again.
  *
  * @param message - The message to sign as a string or Uint8Array
  * @param keyPrivate - The private key as a hex string
@@ -54,7 +55,7 @@ export function signMessage(
   }
 
   // Sign the message (in @noble/curves v2, returns Uint8Array directly)
-  const signature = secp256k1.sign(messageBytes, keyPrivateBytes);
+  const signature = secp256k1.sign(messageBytes, keyPrivateBytes, { prehash: false });
 
   // Return hex string
   return bytesToHex(signature);
@@ -62,6 +63,7 @@ export function signMessage(
 
 /**
  * Verifies a signature using secp256k1 elliptic curve
+ * Same `prehash: false` as signing, so the bytes are checked exactly as hashed here.
  *
  * @param message - The original message as a string or Uint8Array
  * @param signature - The signature as a hex string
@@ -92,5 +94,5 @@ export function verifyMessage(
   }
 
   // Verify the signature
-  return secp256k1.verify(signatureBytes, messageBytes, keyPublicBytes);
+  return secp256k1.verify(signatureBytes, messageBytes, keyPublicBytes, { prehash: false });
 }

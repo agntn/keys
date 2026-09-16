@@ -53,6 +53,28 @@ export const bitcoinTestVectors = {
   },
 };
 
+/**
+ * Key and compact r/s from Bitcoin Core `rpc_signmessagewithprivkey.py`.
+ * Digests serialized and SHA256d hashed independently of the library.
+ */
+export const bitcoinMessageVectors = {
+  wif: "cUeKHd5orzT3mz8P9pxyREHfsWtVfgsfDjiZZBcjUBAaGk1BTj7N",
+  privateKey: "d2b8a0116d641fe7d3036f8464628fb595b480414c13a301b3d4038c811c28b0",
+  address: "mpLQjfK79b7CCV4VMJWEWAj5Mpx8Up5zxB",
+  message: "This is just a test message",
+  signature:
+    "d6d59d6e1ee8f7919acbf6420bbc36ea29beb56391cc686feb17f0e7191b44802e15b26d48f330b3dd02c5c8e3a61919bd0a4134628bec16210cd1a46fd4f92d",
+  messageHashes: [
+    ["", "80e795d4a4caadd7047af389d9f7f220562feb6196032e2131e10563352c4bcc"],
+    ["hello", "cf0447ec85f0ce7150a257db32ebfcb7523dae17c36dbd1be598779fec0484f4"],
+    ["żółw 🐢", "b92600fa044f4cd79dcce11da333de64ebf17ceeb32c4d847226b1e9b5a23c06"],
+    ["a".repeat(252), "b7b164ef991d52735c6bb888642ad7eb6b6939dc984a7fceff4376be041d142f"],
+    ["a".repeat(253), "df167ad249ff5837e6acada677118b2ecc6757ab4cdade39caead99ef0220230"],
+    ["a".repeat(65535), "fade4e6ebe191b9dcf869e37c4ab6a2d5f9ffc1160fbfb84370afb579af7de8d"],
+    ["a".repeat(65536), "d5db7ae9446693355e5674d5d17e7b0a29f13fc174055077d9613e9ab2b462fe"],
+  ],
+} as const;
+
 // Ethereum test vectors
 export const ethereumTestVectors = {
   // Valid addresses for testing

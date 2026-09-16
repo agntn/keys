@@ -2,6 +2,7 @@ import { describe, it, expect, expectTypeOf } from "vitest";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { signMessage, verifyMessage } from "../../src/utils/signing";
 import { hexToBytes, bytesToHex } from "@noble/hashes/utils.js";
+import { sha256 } from "@noble/hashes/sha2.js";
 import { evmSignMessage, evmVerifyMessage } from "../../src/utils/evm";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../../src/utils/ed25519-chains";
 import { secp256k1TestVectors, ed25519TestVectors, testMessages } from "../fixtures";
@@ -34,6 +35,22 @@ describe("Signing utilities", () => {
       });
 
       expect(isValid).toBe(true);
+    });
+
+    it("hashes a secp256k1 message once before signing", () => {
+      const signature = signMessage(testMessage, secp256k1TestPrivateKey, {
+        curve: "secp256k1",
+      });
+      const digest = sha256(new TextEncoder().encode(testMessage));
+
+      expect(
+        secp256k1.verify(hexToBytes(signature), digest, hexToBytes(secp256k1TestPublicKey), {
+          prehash: false,
+        }),
+      ).toBe(true);
+      expect(
+        signMessage(digest, secp256k1TestPrivateKey, { curve: "secp256k1", hash: false }),
+      ).toBe(signature);
     });
 
     it("should sign and verify with ed25519", () => {

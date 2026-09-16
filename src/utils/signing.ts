@@ -8,6 +8,7 @@ export type { SigningOptions } from "../types.ts";
 
 /**
  * Signs a message using the appropriate elliptic curve
+ * `@noble/curves` v2 hashes by default, so the digest built here goes in with `prehash: false`.
  *
  * @param message - The message to sign as a string or Uint8Array
  * @param keyPrivate - The private key as a hex string
@@ -37,7 +38,7 @@ export function signMessage(
     }
 
     // In @noble/curves v2, sign() returns Uint8Array directly (compact format)
-    const signature = secp256k1.sign(messageBytes, keyPrivateBytes);
+    const signature = secp256k1.sign(messageBytes, keyPrivateBytes, { prehash: false });
     return bytesToHex(signature);
   } else if (curve === "ed25519") {
     // Ed25519 doesn't typically prehash the message
@@ -50,6 +51,7 @@ export function signMessage(
 
 /**
  * Verifies a signature using the appropriate elliptic curve
+ * Passes `prehash: false` like `signMessage`, so the bytes are checked exactly as hashed here.
  *
  * @param message - The original message as a string or Uint8Array
  * @param signature - The signature as a hex string
@@ -81,7 +83,7 @@ export function verifyMessage(
       const keyPublicBytes = hexToBytes(keyPublic);
       // In @noble/curves v2, verify() accepts Uint8Array signature directly
       const signatureBytes = hexToBytes(signature);
-      return secp256k1.verify(signatureBytes, messageBytes, keyPublicBytes);
+      return secp256k1.verify(signatureBytes, messageBytes, keyPublicBytes, { prehash: false });
     } catch {
       return false;
     }
