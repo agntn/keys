@@ -32,6 +32,7 @@ export function useLandingKey() {
   let chains: ExplorerChains | undefined;
   let current: ParsedKey = { hex: KEY_ONE_HEX, decimal: 1n };
   let timer: number | undefined;
+  let unmounted = false;
 
   function derive(nextHex: string): { rows: readonly AddressRow[]; pipeline: Pipeline } {
     if (!chains) {
@@ -101,14 +102,22 @@ export function useLandingKey() {
     }, 2400);
   }
 
+  /** The chain modules can land after a quick navigation away; nothing may start then. */
   onMounted(async () => {
-    chains = await loadExplorerChains(await import("@agntn/keys"));
+    const loaded = await loadExplorerChains(await import("@agntn/keys"));
+    if (unmounted) {
+      return;
+    }
+    chains = loaded;
     applyKey(current);
     ready.value = true;
     startWalk();
   });
 
-  onUnmounted(stopWalk);
+  onUnmounted(() => {
+    unmounted = true;
+    stopWalk();
+  });
 
   return { hex, decimal, rows, pipeline, hd, ready, paused, tick, changedBytes, step, randomKey };
 }
