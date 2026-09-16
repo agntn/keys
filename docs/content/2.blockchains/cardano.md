@@ -1,7 +1,7 @@
 ---
 title: Cardano
 icon: i-simple-icons-cardano
-description: ed25519 with bech32 base, enterprise, and stake addresses. Mnemonic derivation is refused on purpose.
+description: ed25519 with base and enterprise and stake addresses in bech32. Mnemonic derivation is refused on purpose.
 ---
 
 ::chain-facts{driver="cardano" curve="ed25519" formats="bech32 base, enterprise, stake" coin="1815"}

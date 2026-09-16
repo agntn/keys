@@ -1,7 +1,7 @@
 ---
 title: Bitcoin
 icon: i-simple-icons-bitcoin
-description: secp256k1 with legacy, p2sh, segwit, p2wsh, and taproot addresses, on mainnet and testnet.
+description: secp256k1 with five address formats from legacy to taproot on mainnet and testnet.
 ---
 
 ::chain-facts{driver="bitcoin" curve="secp256k1" formats="legacy, p2sh, segwit, p2wsh, taproot" coin="0"}

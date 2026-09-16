@@ -1,7 +1,7 @@
 ---
 title: Decred
 icon: i-lucide-ticket
-description: secp256k1 with BLAKE-256 in every hash, base58check addresses that start with Ds, and no mnemonic derivation, on purpose.
+description: secp256k1 with BLAKE-256 in every hash. Addresses start with Ds. No mnemonic derivation and that's on purpose.
 ---
 
 ::chain-facts{driver="decred" curve="secp256k1" formats="legacy ECDSA P2PKH" coin="42"}

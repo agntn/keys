@@ -1,7 +1,7 @@
 ---
 title: TRON
 icon: i-lucide-zap
-description: secp256k1 with Ethereum's 20 byte hash wrapped in base58check, so every address starts with T.
+description: secp256k1 with Ethereum's 20 byte hash wrapped in base58check so every address starts with T.
 ---
 
 ::chain-facts{driver="tron" curve="secp256k1" formats="base58check" coin="195"}

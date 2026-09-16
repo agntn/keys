@@ -1,7 +1,7 @@
 ---
 title: Base
 icon: i-lucide-layers
-description: Ethereum's driver under another name. Same key, same address, same signatures.
+description: Ethereum's driver under another name. Same key. Same address. Same signatures.
 ---
 
 ::chain-facts{driver="base" curve="secp256k1" formats="EIP-55 hex" coin="60"}

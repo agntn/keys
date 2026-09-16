@@ -1,7 +1,7 @@
 ---
 title: Litecoin
 icon: i-simple-icons-litecoin
-description: Bitcoin's driver with Litecoin's prefixes. Five address formats, mainnet and testnet, and its own signed message preamble.
+description: Bitcoin's driver with Litecoin's prefixes. Five address formats on mainnet and testnet and its own signed message preamble.
 ---
 
 ::chain-facts{driver="litecoin" curve="secp256k1" formats="legacy, p2sh, segwit, p2wsh, taproot" coin="2"}

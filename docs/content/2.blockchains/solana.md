@@ -1,7 +1,7 @@
 ---
 title: Solana
 icon: i-simple-icons-solana
-description: ed25519. The address is the public key itself in base58, nothing hashed.
+description: ed25519. The address is the public key itself in base58 with nothing hashed.
 ---
 
 ::chain-facts{driver="solana" curve="ed25519" formats="base58" coin="501"}
