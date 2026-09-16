@@ -26,7 +26,7 @@ const publicKey = ethereumChain.getKeyPublic(privateKey);
 ethereumChain.getAddress(publicKey); // 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf
 ```
 
-Yes, that is the address of private key `1`. It shows up in a lot of test suites.
+Yes, that's the address of private key `1`. It shows up in a lot of test suites.
 
 ## Validation
 
@@ -36,11 +36,11 @@ ethereumChain.validateAddress("0x7e5f4552091a69125d5dfcb7b8c2659029395bdf"); // 
 ethereumChain.validateAddress("0x7e5F4552091A69125d5DfCb7b8C2659029395Bdf"); // false, bad checksum
 ```
 
-Lowercase and uppercase pass, mixed case has to match. A rejected mixed case address is almost always a copy and paste that lost a character somewhere, so treat `false` as "look at it again", not as "this address does not exist".
+Lowercase and uppercase pass, mixed case has to match. A rejected mixed case address is almost always a copy and paste that lost a character somewhere, so treat `false` as "look at it again", not as "this address doesn't exist".
 
 ## Signing
 
-`signMessage` prepends `"\x19Ethereum Signed Message:\n" + length`, hashes with Keccak-256, and signs with secp256k1. That is `personal_sign`, so the signature verifies in MetaMask, ethers, viem, and anything else that follows EIP-191.
+`signMessage` prepends `"\x19Ethereum Signed Message:\n" + length`, hashes with Keccak-256, and signs with secp256k1. That's `personal_sign`, the same hash MetaMask, ethers and viem sign. What comes back is 64 bytes of `r||s` in hex, no recovery byte. `verifyMessage` here doesn't need one, ethers does, so append a `v` before asking it to recover the signer.
 
 ```js
 const signature = ethereumChain.signMessage("hello", privateKey);

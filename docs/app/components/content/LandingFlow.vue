@@ -10,16 +10,16 @@ const props = defineProps<{
 }>();
 
 const W = 1200;
-const H = 420;
-const KEY = { x: 24, y: 150, w: 250, h: 120 };
+const H = 460;
+const KEY = { x: 24, y: 190, w: 250, h: 120 };
 const CURVES = [
-  { id: "secp256k1", label: "secp256k1", note: "BIP32", x: 480, y: 92, w: 190, h: 60 },
-  { id: "ed25519", label: "ed25519", note: "SLIP-10", x: 480, y: 268, w: 190, h: 60 },
+  { id: "secp256k1", label: "secp256k1", note: "BIP32", x: 480, y: 110, w: 190, h: 60 },
+  { id: "ed25519", label: "ed25519", note: "SLIP-10", x: 480, y: 330, w: 190, h: 60 },
 ] as const;
 const CHAIN_X = 890;
 const CHAIN_W = 286;
 const CHAIN_H = 40;
-const CHAIN_GAP = 48;
+const CHAIN_GAP = 44;
 
 const chains = computed(() =>
   props.rows.map((row, index) => ({
@@ -60,7 +60,7 @@ const shortHex = computed(() => `${props.hex.slice(0, 12)}…${props.hex.slice(-
     :viewBox="`0 0 ${W} ${H}`"
     class="keys-flow"
     role="img"
-    aria-label="Private key derives through secp256k1 and ed25519 into eight chain addresses"
+    aria-label="Private key derives through secp256k1 and ed25519 into ten chain addresses"
   >
     <g class="keys-flow-wires">
       <path v-for="(d, index) in trunkPaths" :key="`t${index}`" :d="d" />

@@ -9,6 +9,8 @@ const NAV_ICONS: Record<string, string> = {
   "/guide/custom": "i-lucide-plus",
   "/blockchains": "i-lucide-boxes",
   "/blockchains/bitcoin": "i-simple-icons-bitcoin",
+  "/blockchains/litecoin": "i-simple-icons-litecoin",
+  "/blockchains/decred": "i-lucide-ticket",
   "/blockchains/ethereum": "i-simple-icons-ethereum",
   "/blockchains/base": "i-simple-icons-coinbase",
   "/blockchains/solana": "i-simple-icons-solana",
@@ -31,7 +33,7 @@ function withIcons(items: ContentNavigationItem[]): ContentNavigationItem[] {
   return items.map((item) => ({
     ...item,
     icon: NAV_ICONS[item.path] ?? item.icon,
-    /** Leaf pages match exactly, so /guide is not highlighted together with /guide/keys. */
+    /** Leaf pages match exactly, so /guide isn't highlighted together with /guide/keys. */
     exact: !item.children?.length,
     children: item.children ? withIcons(item.children) : item.children,
   }));

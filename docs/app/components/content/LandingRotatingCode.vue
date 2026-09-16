@@ -6,6 +6,8 @@ const props = defineProps<{ rows: readonly AddressRow[]; tick: number; decimal: 
 
 const SLUGS: Record<string, string> = {
   Bitcoin: "bitcoin",
+  Litecoin: "litecoin",
+  Decred: "decred",
   Ethereum: "ethereum",
   Base: "base",
   TRON: "tron",

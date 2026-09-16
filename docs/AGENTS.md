@@ -33,7 +33,7 @@ pnpm generate         # static output only, no worker
 
 Deployment: Workers Builds with root directory `docs`. It installs `docs/` and nothing else, which is enough because the library is bundled from `../src` (next paragraph). Nitro preset `cloudflare_module`. Nuxt Content needs a D1 binding named `DB`; `wrangler.jsonc` carries the binding and the `NUXT_SITE_URL` var, Nitro merges it into the generated `.output/server/wrangler.json`. The database is `agntn-keys`, created once with `wrangler d1 create agntn-keys`; its id sits in `wrangler.jsonc`.
 
-`@agntn/keys` is an alias in `nuxt.config.ts` for `../src/index.ts`. Vite bundles the checkout's sources for the browser and Nitro gets the same alias for the prerender, so `dist/` and the root `node_modules` are never touched. The subgraph under `src/index.ts` imports from npm: `@noble/curves`, `@noble/hashes`, `@scure/base`, `@scure/bip32`, `@scure/bip39` and `micro-key-producer`. Each one is a dependency of `docs/package.json`, pinned to the root's version, and listed in `vite.resolve.dedupe` in `nuxt.config.ts`, because Vite resolves a bare import from the importer's directory upwards and `../src` never reaches `docs/node_modules`. A new npm import under `src/` that `index.ts` can reach needs both entries or the deploy breaks. The CLI, MCP and tool entries stay out of the alias.
+`@agntn/keys` is an alias in `nuxt.config.ts` for `../src/index.ts`. Vite bundles the checkout's sources for the browser and Nitro gets the same alias for the prerender, so `dist/` and the root `node_modules` are never touched. The subgraph under `src/index.ts` imports from npm: `@noble/curves`, `@noble/hashes`, `@scure/base`, `@scure/bip32`, `@scure/bip39` and `micro-key-producer`. Each one is a dependency of `docs/package.json`, pinned to the root's version, and listed in `vite.resolve.dedupe` in `nuxt.config.ts`, because Vite resolves a bare import from the importer's directory upwards and `../src` never reaches `docs/node_modules`. The exact subpaths `src/` imports, dynamic imports included, sit in `vite.optimizeDeps.include`; without that list dev discovers them when a lazy chain module loads, optimizes again and reloads the page under the explorer. A new npm import under `src/` that `index.ts` can reach needs all three entries or the deploy or the dev server breaks. The CLI, MCP and tool entries stay out of the alias.
 
 Three resolution traps, all because the repo root is its own pnpm workspace:
 
@@ -43,7 +43,9 @@ Three resolution traps, all because the repo root is its own pnpm workspace:
 
 ## Tests
 
-`test/docs-parse-key.test.ts` in the repo root covers `app/utils/parse-key.ts` and runs with the root suite, no docs install needed. The root `vitest.config.ts` transforms it with the root tsconfig, because `docs/tsconfig.json` only references files Nuxt generates. Keep pure helpers in `app/utils/` so they stay testable from the root.
+`test/docs-parse-key.test.ts` and `test/docs-landing.test.ts` in the repo root cover `app/utils/` and run with the root suite, no docs install needed. The root `vitest.config.ts` transforms them with the root tsconfig, because `docs/tsconfig.json` only references files Nuxt generates. `derive.ts` takes the library module as an argument and imports its types from `../src` by path, so a root test passes `src/index.ts` and never needs the `@agntn/keys` alias; `test/public-exports.test.ts` keeps that name for the built package. Keep pure helpers in `app/utils/` so they stay testable from the root; anything that touches `ref` or `onMounted` belongs in `app/composables/`.
+
+The landing renders before the library loads, so `app/utils/landing.ts` records private key 1 on every row, the Bitcoin pipeline and the first HD sample as fixtures. `test/docs-landing.test.ts` derives the same values from `src/` and fails when they drift, so a fixture edit without a library change is a lie the test catches.
 
 ## Constraints
 
@@ -51,3 +53,4 @@ Three resolution traps, all because the repo root is its own pnpm workspace:
 - Do not log, persist, or send key material.
 - secp256k1 keyspace is `1 .. n-1`. ed25519 rows reuse the same 32 bytes as a secret; label that.
 - Keep Node demos in `playground/`.
+- Chains are listed by hand: rows and `loadExplorerChains` in `app/utils/derive.ts`, fixtures in `app/utils/landing.ts`, the grid in `LandingHome.vue`, `LandingToolCall.vue`, `LandingRotatingCode.vue`, sidebar icons in `useSubNavigation.ts`, the icon bundle in `nuxt.config.ts`. A new chain in `src/_blockchains.ts` needs all of them plus a page under `content/2.blockchains/`.

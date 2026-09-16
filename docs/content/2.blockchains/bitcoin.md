@@ -54,7 +54,7 @@ The prefix picks the decoder, then the checksum has to hold. A mainnet driver re
 
 ## Mnemonics
 
-`deriveHDWallet` reads the BIP43 purpose when you do not pass an address type:
+`deriveHDWallet` reads the BIP43 purpose when you don't pass an address type:
 
 ```js
 bitcoinChain.deriveHDWallet(mnemonic, "m/84'/0'/0'/0/0").address; // bc1q..., segwit from purpose 84
@@ -62,12 +62,26 @@ bitcoinChain.deriveHDWallet(mnemonic, "m/86'/0'/0'/0/0").address; // bc1p..., ta
 bitcoinChain.deriveHDWallet(mnemonic, "m/44'/0'/0'/0/0", {}, "segwit"); // explicit type wins
 ```
 
-Purpose 44 is legacy, 49 is p2sh, 84 segwit, 86 taproot. Anything else with no explicit type falls back to legacy.
+Purpose 44 is legacy, 49 is p2sh, 84 segwit, 86 taproot. Anything else with no explicit type falls back to legacy. A puzzle phrase with a broken checksum goes through with `{ allowInvalidChecksum: true }`, the [wallets guide](/guide/wallets#puzzle-mnemonics) has the details.
+
+## WIF
+
+```js
+import { encodeWIF, decodeWIF } from "@agntn/keys";
+
+encodeWIF(privateKey, { chain: "bitcoin" }); // K... or L..., compressed
+encodeWIF(privateKey, { chain: "bitcoin", compressed: false }); // 5...
+encodeWIF(privateKey, { chain: "bitcoin", network: "testnet" }); // c...
+
+decodeWIF("KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgd9M7rFU73sVHnoWn", { chain: "bitcoin" }).compressed; // true
+```
+
+Version `0x80` on mainnet, `0xef` on testnet, a trailing `0x01` when the public key is compressed. `decodeWIF` checks the prefix against the chain and network you name, so a testnet WIF on a mainnet call throws instead of handing you a key for the wrong network.
 
 ## Signing
 
-`signMessage` hashes with the `"\x18Bitcoin Signed Message:\n"` preamble, the same one Bitcoin Core uses, and signs with secp256k1. The result is a hex signature that `verifyMessage` checks against the public key. It is not the base64 recoverable format `bitcoin-cli signmessage` prints, so do not paste one into the other.
+`signMessage` hashes with the `"\x18Bitcoin Signed Message:\n"` preamble, the same one Bitcoin Core uses, and signs with secp256k1. What comes back is 64 bytes of `r||s` in hex, no recovery byte, and `verifyMessage` checks it against the public key. It isn't the base64 recoverable format `bitcoin-cli signmessage` prints, so don't paste one into the other.
 
 ## Where it lives
 
-`src/blockchains/bitcoin.ts` holds the network table and the type dispatch. The hashing and encoding helpers sit in `src/utils/address.ts` and `src/utils/encoding.ts`, shared with TRON and the custom chain example.
+`src/blockchains/bitcoin.ts` holds the network table and the preamble. The five formats, validation, purpose inference and message hashing sit in `AbstractBitcoinBlockchain` in `src/utils/bitcoin.ts`, shared with Litecoin. The hashing and encoding helpers below that are `src/utils/address.ts` and `src/utils/encoding.ts`, shared with TRON and the custom chain example.

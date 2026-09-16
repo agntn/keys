@@ -34,7 +34,7 @@ cardanoChain.getAddress(publicKey, "enterprise");
 cardanoChain.getAddress(publicKey, "stake");
 ```
 
-One honest caveat about the base address. A real base address carries two different hashes, the payment key and the stake key, and a wallet derives them from two paths. This driver has one key, so it uses the same hash for both halves. The address is valid and spendable with that key, but its stake half points at the payment key, which is not how a full wallet lays things out. Use `enterprise` when you want an address with no staking story at all.
+One honest caveat about the base address. A real base address carries two different hashes, the payment key and the stake key, and a wallet derives them from two paths. This driver has one key, so it uses the same hash for both halves. The address is valid and spendable with that key, but its stake half points at the payment key, which isn't how a full wallet lays things out. Use `enterprise` when you want an address with no staking story at all.
 
 Testnet is a constructor option, not an address type. Preprod and preview both use network id 0, so one driver covers them.
 
@@ -50,7 +50,7 @@ bech32 decode, then the header byte has to match the driver's network, and the l
 
 ## Mnemonics
 
-`deriveHDWallet` throws. Cardano wallets follow CIP-1852, which starts from the BIP39 entropy and runs it through a different key derivation than BIP32 or SLIP-10. Faking it from the BIP39 seed would produce addresses that Daedalus, Lace, and Eternl have never heard of, and a library that quietly does that is worse than one that refuses. So it refuses.
+`deriveHDWallet` throws. Cardano wallets follow CIP-1852, which starts from the BIP39 entropy and runs it through a different key derivation than BIP32 or SLIP-10. Faking it from the BIP39 seed would produce addresses that Daedalus, Lace, and Eternl have never heard of, and a library that quietly does that is worse than one that refuses. So it refuses. `deriveWallet` with a private key works, and that's the way in.
 
 ## Signing
 

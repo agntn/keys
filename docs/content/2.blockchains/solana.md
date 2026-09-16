@@ -22,7 +22,7 @@ const publicKey = solanaChain.getKeyPublic(privateKey); // 32 bytes, 64 hex char
 solanaChain.getAddress(publicKey); // base58 of the same 32 bytes
 ```
 
-No hash, no version byte, no checksum. The address is the public key with a friendlier encoding. It makes Solana the easiest chain in the package and the one where `validateAddress` can say the least: any 32 bytes that decode from base58 pass, including a program address that no private key controls.
+No hash, no version byte, no checksum. The address is the public key with a friendlier encoding, that's it. It makes Solana the easiest chain in the package and the one where `validateAddress` can say the least: any 32 bytes that decode from base58 pass, including a program address that no private key controls.
 
 ## Validation
 
@@ -40,7 +40,7 @@ Solana derives with SLIP-10, which only has hardened children. Every segment of 
 solanaChain.deriveHDWallet(mnemonic, "m/44'/501'/0'/0'").address;
 ```
 
-A path with an unhardened segment throws before derivation. Phantom and Solflare use exactly this shape, so the first account matches what those wallets show.
+A path with an unhardened segment throws before derivation, there isn't a soft child to give you. Phantom and Solflare use exactly this shape, so the first account matches what those wallets show.
 
 ## Signing
 

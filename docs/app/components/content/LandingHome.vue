@@ -2,14 +2,16 @@
 const { hex, decimal, rows, pipeline, hd, paused, tick, changedBytes, step, randomKey } = useLandingKey();
 
 const stats = [
-  { value: "8", label: "chains" },
+  { value: "10", label: "chains" },
   { value: "2", label: "curves" },
   { value: "0", label: "network calls" },
-  { value: "13", label: "MCP tools" },
+  { value: "18", label: "MCP tools" },
 ] as const;
 
 const chains = [
   { label: "Bitcoin", curve: "secp256k1", icon: "i-simple-icons-bitcoin", to: "/blockchains/bitcoin" },
+  { label: "Litecoin", curve: "secp256k1", icon: "i-simple-icons-litecoin", to: "/blockchains/litecoin" },
+  { label: "Decred", curve: "secp256k1", icon: "i-lucide-ticket", to: "/blockchains/decred" },
   { label: "Ethereum", curve: "secp256k1", icon: "i-simple-icons-ethereum", to: "/blockchains/ethereum" },
   { label: "Base", curve: "secp256k1", icon: "i-lucide-layers", to: "/blockchains/base" },
   { label: "TRON", curve: "secp256k1", icon: "i-lucide-zap", to: "/blockchains/tron" },
@@ -52,8 +54,8 @@ async function copyInstall() {
         One key. <span class="text-primary">Every chain.</span>
       </h1>
       <p class="keys-enter keys-enter-2 mx-auto mt-6 max-w-xl text-base leading-7 text-muted">
-        Typed key generation, address derivation, and message signing for eight blockchains.
-        One interface in TypeScript, the same thirteen operations over MCP, and nothing ever leaves the process.
+        Typed key generation, address derivation, and message signing for ten blockchains.
+        One interface in TypeScript, the same eighteen tools over MCP, and nothing ever leaves the process.
       </p>
       <div class="keys-enter keys-enter-3 mt-8 flex flex-wrap items-center justify-center gap-2">
         <UButton to="/guide" color="primary" trailing-icon="i-lucide-arrow-right">
@@ -101,9 +103,9 @@ async function copyInstall() {
       to="/keyspace"
       link="Open the explorer"
       :checks="[
-        'secp256k1 through @noble, ed25519 through SLIP-10',
+        'Both curves from @noble, nothing else underneath',
         'Legacy, SegWit, Taproot, EIP-55, base58check, bech32',
-        'Same 32 bytes, eight chains, derived in this tab',
+        'Same 32 bytes, ten chains, derived in this tab',
       ]"
     >
       A private key is an integer. Multiply it by the generator, hash the result, encode the
@@ -135,7 +137,8 @@ async function copyInstall() {
       reverse
     >
       Every blockchain is a class with the same shape. Swap the import and the rest of the code
-      stays. Options that a chain does not support are rejected, not ignored.
+      stays. A chain that can't do what you asked throws, Decred on a segwit address, Cardano on
+      an HD walk, instead of handing you something that only looks right.
       <template #visual>
         <LandingRotatingCode :rows="rows" :tick="tick" :decimal="decimal" />
       </template>
@@ -147,13 +150,14 @@ async function copyInstall() {
       to="/guide/wallets"
       link="Generating wallets"
       :checks="[
-        'BIP39 mnemonics in ten languages, checksum enforced',
         'BIP32 for secp256k1, SLIP-10 for ed25519',
-        'Bitcoin infers the address type from the purpose',
+        'Bitcoin and Litecoin infer the address type from the purpose',
+        'Broken checksum? Derive anyway and get a warning with the wallet',
       ]"
     >
       Walk a BIP39 mnemonic down a BIP44 path and get the wallet at the end of it. Paths are
       parsed and validated, so a hardened segment in the wrong place fails before derivation.
+      Puzzle phrases with a bad checksum go through on request, words untouched.
       <template #visual>
         <div class="keys-frame overflow-hidden rounded-xl">
           <div class="flex items-center justify-between border-b border-muted px-4 py-3">
@@ -180,7 +184,7 @@ async function copyInstall() {
 
     <LandingFeature
       eyebrow="Blockchains"
-      title="Eight drivers, one shape"
+      title="Ten drivers, one shape"
       to="/blockchains"
       link="All blockchains"
       :checks="[
@@ -193,17 +197,18 @@ async function copyInstall() {
       Each chain is an adapter over the shared primitives. Adding one means implementing the
       hashing and encoding rules, not the cryptography.
       <template #visual>
-        <div class="keys-frame grid grid-cols-2 overflow-hidden rounded-xl sm:grid-cols-4">
+        <div class="keys-frame grid grid-cols-2 overflow-hidden rounded-xl sm:grid-cols-5">
           <NuxtLink
             v-for="(chain, index) in chains"
             :key="chain.to"
             :to="chain.to"
-            class="group flex flex-col gap-3 border-muted px-5 py-5 transition-colors duration-500 hover:bg-muted"
+            class="group flex flex-col gap-3 border-muted px-4 py-5 transition-colors duration-500 hover:bg-muted"
             :class="{
               'border-t': index >= 2,
-              'sm:border-t-0': index < 4,
+              'sm:border-t-0': index < 5,
               'border-l': index % 2 === 1,
-              'sm:border-l': index % 4 !== 0,
+              'sm:border-l': index % 5 !== 0,
+              'sm:border-l-0': index % 5 === 0,
               'keys-cell-active': index === activeChain,
             }"
           >
@@ -223,17 +228,18 @@ async function copyInstall() {
 
     <LandingFeature
       eyebrow="Agents"
-      title="Thirteen tools over MCP"
-      to="/guide"
+      title="Eighteen tools over MCP"
+      to="/guide#agents"
       link="MCP server setup"
       :checks="[
-        'Keys, mnemonics, BIP44 paths, addresses, signing',
+        'Keys, WIF, mnemonics, BIP44 paths, addresses, signing',
         'stdio server started with one command',
-        'Ambiguous or unsupported inputs are rejected with a reason',
+        'A generated mnemonic comes back marked as already in the transcript',
       ]"
     >
       Everything the library does is exposed as an MCP tool with the same parameters. Point an
-      agent at it and it derives, validates, and signs without touching the network.
+      agent at it and it derives, validates, and signs without touching the network. The Pi
+      extension runs the same executors from a checkout.
       <template #visual>
         <LandingToolCall :rows="rows" :public-key="pipeline.publicKey" :tick="tick" />
       </template>

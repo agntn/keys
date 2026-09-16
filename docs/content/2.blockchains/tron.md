@@ -32,7 +32,7 @@ Strip the base58check and swap `0x41` for `0x`, and you have the Ethereum addres
 const shasta = useBlockchain(await blockchains.tron({ network: "testnet" })());
 ```
 
-TRON testnets use the same `0x41` prefix as mainnet, so testnet addresses also start with `T`. The driver accepts the option for symmetry with the other chains, but there is no way to tell a Shasta address from a mainnet one by looking at it. Do not rely on the string.
+TRON testnets use the same `0x41` prefix as mainnet, so testnet addresses also start with `T`. The driver accepts the option for symmetry with the other chains, but there's no way to tell a Shasta address from a mainnet one by looking at it. Don't rely on the string.
 
 ## Validation
 
@@ -45,4 +45,4 @@ Base58check decode, version byte `0x41`, 21 bytes total. The checksum catches ty
 
 ## Signing
 
-`signMessage` reuses the EVM signing code, so the message gets the `"\x19Ethereum Signed Message:\n"` preamble before Keccak-256 and secp256k1. That is not the `"\x19TRON Signed Message:\n"` preamble TronLink uses for its own signing, so a signature from here will not verify in a TRON wallet and the other way round. `verifyMessage` in this package checks what `signMessage` here produces.
+`signMessage` reuses the EVM signing code, so the message gets the `"\x19Ethereum Signed Message:\n"` preamble before Keccak-256 and secp256k1. That isn't the `"\x19TRON Signed Message:\n"` preamble TronLink uses for its own signing, so a signature from here won't verify in a TRON wallet and the other way round. `verifyMessage` in this package checks what `signMessage` here produces, 64 bytes of `r||s` in hex.

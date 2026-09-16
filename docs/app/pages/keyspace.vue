@@ -3,7 +3,7 @@ definePageMeta({ layout: "default" });
 
 useSeoMeta({
   title: "Keyspace · @agntn/keys",
-  description: "Walk secp256k1 private keys in the browser and derive addresses for eight chains.",
+  description: "Walk secp256k1 private keys in the browser and derive addresses for ten chains.",
 });
 </script>
 

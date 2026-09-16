@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { deriveAddresses, toSnippet, type Derivation, type ExplorerChains } from "../../utils/derive";
+import {
+  deriveAddresses,
+  loadExplorerChains,
+  toSnippet,
+  type Derivation,
+  type ExplorerChains,
+} from "../../utils/derive";
 import {
   isParsedKey,
   parseDecimalKey,
@@ -7,7 +13,7 @@ import {
   stepKey,
   type ParsedKey,
 } from "../../utils/parse-key";
-import { diffBytes } from "../../composables/useLandingKey";
+import { diffBytes } from "../../utils/landing";
 import { shortDecimal } from "../../utils/format";
 
 const hexInput = ref("1");
@@ -133,36 +139,7 @@ function keyFromHash(): ParsedKey | undefined {
 
 onMounted(async () => {
   try {
-    const { useBlockchain, blockchains } = await import("@agntn/keys");
-    const [
-      bitcoin,
-      ethereum,
-      base,
-      tron,
-      solana,
-      aptos,
-      sui,
-      cardano,
-    ] = await Promise.all([
-      blockchains.bitcoin()(),
-      blockchains.ethereum()(),
-      blockchains.base()(),
-      blockchains.tron()(),
-      blockchains.solana()(),
-      blockchains.aptos()(),
-      blockchains.sui()(),
-      blockchains.cardano()(),
-    ]);
-    chains = {
-      bitcoin: useBlockchain(bitcoin),
-      ethereum: useBlockchain(ethereum),
-      base: useBlockchain(base),
-      tron: useBlockchain(tron),
-      solana: useBlockchain(solana),
-      aptos: useBlockchain(aptos),
-      sui: useBlockchain(sui),
-      cardano: useBlockchain(cardano),
-    };
+    chains = await loadExplorerChains(await import("@agntn/keys"));
     applyKey(keyFromHash() ?? current, false);
   } catch (cause) {
     loadError.value = cause instanceof Error ? cause.message : "Failed to load blockchains.";

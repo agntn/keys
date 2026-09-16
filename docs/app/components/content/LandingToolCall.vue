@@ -5,6 +5,8 @@ const props = defineProps<{ rows: readonly AddressRow[]; publicKey: string; tick
 
 const SECP = [
   { chain: "Bitcoin", slug: "bitcoin", addressType: "segwit" },
+  { chain: "Litecoin", slug: "litecoin", addressType: "segwit" },
+  { chain: "Decred", slug: "decred" },
   { chain: "Ethereum", slug: "ethereum" },
   { chain: "Base", slug: "base" },
   { chain: "TRON", slug: "tron" },

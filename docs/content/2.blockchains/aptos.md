@@ -34,7 +34,7 @@ aptosChain.validateAddress("0x1"); // true, special address
 aptosChain.validateAddress("7e08ac7940568c91564ddc6f5f3bf91b15a9334194ab7855daeac51c5cc74936"); // false, no 0x
 ```
 
-`0x` plus 64 hex characters, case does not matter. The single digit forms like `0x1` are the framework addresses and validate as well. There is no checksum, so a wrong character produces a different valid address instead of an error. Copy carefully.
+`0x` plus 64 hex characters, case doesn't matter. The single digit forms like `0x1` are the framework addresses and validate as well. There's no checksum, so a wrong character produces a different valid address instead of an error. Copy carefully.
 
 ## Mnemonics
 

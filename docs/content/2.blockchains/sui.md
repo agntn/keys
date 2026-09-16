@@ -25,7 +25,7 @@ Sui accepts several signature schemes and tags each key with a flag byte. The dr
 | `ed25519` (default) | `0x00` | 32 bytes |
 | `secp256k1` | `0x01` | 33 bytes, compressed |
 
-secp256r1 (`0x02`) and multisig (`0x03`) are not implemented.
+secp256r1 (`0x02`) and multisig (`0x03`) aren't implemented.
 
 The address is `Blake2b-256(flag + publicKey)` with `0x` in front. Because the flag is part of the hash, the same private key gives two unrelated addresses depending on the scheme.
 
@@ -66,4 +66,4 @@ suiChain.deriveHDWallet(mnemonic, "m/54'/784'/0'/0/0", {}, "secp256k1").address;
 
 ## Signing
 
-ed25519 or secp256k1 depending on the scheme in the options, hex out. The signature does not carry the flag byte, so keep track of which scheme signed if you hand it to Sui tooling.
+ed25519 or secp256k1 depending on the scheme in the options, hex out. The signature doesn't carry the flag byte, so keep track of which scheme signed if you hand it to Sui tooling. On secp256k1 it's the usual 64 bytes of `r||s`, no recovery byte.

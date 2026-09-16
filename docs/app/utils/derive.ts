@@ -1,4 +1,15 @@
-import type { AbstractBlockchain, KeyOptions } from "@agntn/keys";
+import type {
+  AbstractBlockchain,
+  KeyOptions,
+  blockchains,
+  useBlockchain,
+} from "../../../src/index.ts";
+
+/** What the explorer needs from the library. Components pass the bundle, tests pass src/. */
+export type KeysModule = {
+  readonly blockchains: typeof blockchains;
+  readonly useBlockchain: typeof useBlockchain;
+};
 
 export type AddressRow = {
   readonly id: string;
@@ -17,6 +28,8 @@ export type Derivation = {
 
 export type ExplorerChains = {
   readonly bitcoin: AbstractBlockchain;
+  readonly litecoin: AbstractBlockchain;
+  readonly decred: AbstractBlockchain;
   readonly ethereum: AbstractBlockchain;
   readonly base: AbstractBlockchain;
   readonly tron: AbstractBlockchain;
@@ -26,12 +39,32 @@ export type ExplorerChains = {
   readonly cardano: AbstractBlockchain;
 };
 
+/** Constructs every explorer chain. Client only in the app, nothing here runs on the server. */
+export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChains> {
+  const load = async (name: keyof ExplorerChains) =>
+    keys.useBlockchain(await keys.blockchains[name]()());
+  const [bitcoin, litecoin, decred, ethereum, base, tron, solana, aptos, sui, cardano] =
+    await Promise.all([
+      load("bitcoin"),
+      load("litecoin"),
+      load("decred"),
+      load("ethereum"),
+      load("base"),
+      load("tron"),
+      load("solana"),
+      load("aptos"),
+      load("sui"),
+      load("cardano"),
+    ]);
+  return { bitcoin, litecoin, decred, ethereum, base, tron, solana, aptos, sui, cardano };
+}
+
 /**
  * Derives public keys and addresses for one 32-byte secret.
  * secp256k1 rows use the scalar. ed25519 rows use the same bytes as a secret.
  */
 export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation {
-  const { bitcoin, ethereum, base, tron, solana, aptos, sui, cardano } = chains;
+  const { bitcoin, litecoin, decred, ethereum, base, tron, solana, aptos, sui, cardano } = chains;
 
   return {
     secp256k1PublicCompressed: bitcoin.getKeyPublic(hex),
@@ -52,6 +85,21 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
         undefined,
         "taproot",
       ),
+      addressRow(litecoin, hex, "ltc-legacy", "Litecoin", "secp256k1", "legacy", undefined, "legacy"),
+      addressRow(litecoin, hex, "ltc-p2sh", "Litecoin", "secp256k1", "p2sh", undefined, "p2sh"),
+      addressRow(litecoin, hex, "ltc-segwit", "Litecoin", "secp256k1", "segwit", undefined, "segwit"),
+      addressRow(litecoin, hex, "ltc-p2wsh", "Litecoin", "secp256k1", "p2wsh", undefined, "p2wsh"),
+      addressRow(
+        litecoin,
+        hex,
+        "ltc-taproot",
+        "Litecoin",
+        "secp256k1",
+        "taproot",
+        undefined,
+        "taproot",
+      ),
+      addressRow(decred, hex, "dcr", "Decred", "secp256k1", "legacy"),
       addressRow(ethereum, hex, "eth", "Ethereum", "secp256k1", "EIP-55"),
       addressRow(base, hex, "base", "Base", "secp256k1", "EIP-55"),
       addressRow(tron, hex, "tron", "TRON", "secp256k1", "base58check"),

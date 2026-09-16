@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Pipeline } from "../../composables/useLandingKey";
+import type { Pipeline } from "../../utils/landing";
 import { shortDecimal } from "../../utils/format";
 
 const props = defineProps<{
