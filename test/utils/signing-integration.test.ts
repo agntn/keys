@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Keypair } from "@solana/web3.js";
-import { SigningKey, Wallet } from "ethers";
+import { Signature, SigningKey, Wallet, verifyMessage as recoverSigner } from "ethers";
 import { hexToBytes, bytesToHex } from "@noble/hashes/utils.js";
 import { useBlockchain } from "../../src/blockchain";
 import Ethereum from "../../src/blockchains/ethereum";
@@ -103,7 +103,7 @@ describe("Signing Integration Tests", () => {
       console.log(`@agntn/keys Public Key: ${keysPublicKey}`);
     });
 
-    it("should verify messages between libraries", () => {
+    it("should verify messages between libraries", async () => {
       // Use same private key for both libraries
       const privateKeyHex = secp256k1TestVectors.privateKeyWith0x;
       const privateKeyNoPrefix = privateKeyHex.slice(2);
@@ -136,6 +136,21 @@ describe("Signing Integration Tests", () => {
 
       // Check if verification succeeded
       expect(keysVerified).toBe(true);
+
+      /* The compact signature carries no recovery id, so recovery tries both v values. */
+      const ethersSignature = Signature.from(await ethersWallet.signMessage(message));
+      expect(keysSignature).toBe(ethersSignature.r.slice(2) + ethersSignature.s.slice(2));
+      const recovered = [27, 28].map((v) =>
+        recoverSigner(
+          message,
+          Signature.from({
+            r: "0x" + keysSignature.slice(0, 64),
+            s: "0x" + keysSignature.slice(64),
+            v,
+          }).serialized,
+        ),
+      );
+      expect(recovered).toContain(ethersAddress);
     });
   });
 });

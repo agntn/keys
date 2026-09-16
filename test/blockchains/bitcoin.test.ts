@@ -1,8 +1,8 @@
 import { webcrypto } from "node:crypto";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { bytesToHex } from "@noble/hashes/utils.js";
+import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 import { describe, expect, it, vi } from "vitest";
-import { bip39TestVectors } from "../fixtures";
+import { bip39TestVectors, bitcoinMessageVectors as messageVectors } from "../fixtures";
 import { useBlockchain } from "../../src";
 import Bitcoin from "../../src/blockchains/bitcoin";
 import type { Options } from "../../src/types";
@@ -303,6 +303,32 @@ describe("Bitcoin blockchain", () => {
 
       expect(btcSig).not.toBe(ethSig);
     });
+
+    it("matches Bitcoin Core signmessagewithprivkey", () => {
+      const testnet = useBlockchain(new Bitcoin({ network: "testnet" }));
+      const publicKey = testnet.getKeyPublic(messageVectors.privateKey);
+      expect(testnet.getAddress(publicKey)).toBe(messageVectors.address);
+      expect(testnet.signMessage(messageVectors.message, messageVectors.privateKey)).toBe(
+        messageVectors.signature,
+      );
+      expect(
+        testnet.verifyMessage(messageVectors.message, messageVectors.signature, publicKey),
+      ).toBe(true);
+    });
+
+    it.each(messageVectors.messageHashes)(
+      "signs the Core digest %# without another hash",
+      (message, digest) => {
+        const publicKey = blockchain.getKeyPublic(messageVectors.privateKey);
+        const signature = blockchain.signMessage(message, messageVectors.privateKey);
+        expect(
+          secp256k1.verify(hexToBytes(signature), hexToBytes(digest), hexToBytes(publicKey), {
+            prehash: false,
+          }),
+        ).toBe(true);
+        expect(blockchain.verifyMessage(message, signature, publicKey)).toBe(true);
+      },
+    );
   });
 
   describe("Testnet addresses", () => {
