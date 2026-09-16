@@ -14,7 +14,7 @@
 
 Every chain has its own wallet library and its own idea of what a key is. One wants a Buffer, one wants a Uint8Array, one has a KeyPair class and a second one for testnet. Then a mnemonic shows up from a puzzle instead of a wallet app and all of them answer "invalid checksum" and stop talking to you. So this is one `Blockchain` interface over noble curves, the same `generateWallet()` on every chain, and the puzzle cases live in the API instead of in a fork.
 
-The docs live at [keys.agntn.dev](https://keys.agntn.dev), with a keyspace explorer that runs this very library in your browser.
+The docs live at [keys.agntn.dev](https://keys.agntn.dev), keyspace explorer included.
 
 ## ✨ Features
 
@@ -24,7 +24,7 @@ The docs live at [keys.agntn.dev](https://keys.agntn.dev), with a keyspace explo
 - 🌱 **Mnemonic in, wallet out.** BIP39 into BIP32 on secp256k1 and SLIP-10 on ed25519, passphrase optional.
 - 🧩 **Puzzle mnemonics are welcome.** Wrong checksum? Derive anyway and get a warning with the wallet, or ask which words would make it valid.
 - 🌍 **All ten BIP39 word lists.** Look a word up in Italian, generate in Japanese with the ideographic spaces, map indices from base 0 or base 1.
-- ✍️ **Signatures other wallets accept.** Bitcoin, Litecoin and Decred sign like Core, EVM chains sign like ethers, ed25519 chains sign the raw bytes, and there are tests against both to keep it that way.
+- ✍️ **Signing on both curves.** Bitcoin, Litecoin and Decred hash the message the way Core does, EVM chains the way ethers does, ed25519 chains sign the raw bytes. What comes back is always 64 bytes of compact `r||s` hex, no recovery byte, so it's not Core's base64 and ethers needs a `v` from you before it will recover the signer.
 - 🔌 **Loads one chain at a time.** `blockchains.solana()()` imports Solana and nothing else, so a Bitcoin tool never pays for Cardano.
 - 🤖 **18 agent tools.** MCP over stdio and a Pi extension run the same code, and a generated mnemonic comes back with a note that it's in the transcript now.
 
@@ -55,7 +55,7 @@ console.log(eth.generateWallet());
 }
 ```
 
-That private key now lives in a README on GitHub, which makes it the most burned key you'll see today. Good, that is the only kind this package is for, see the caution at the bottom. The double call is the lazy loader: `blockchains.ethereum(options)` takes the config, the second `()` imports the chain and builds it. No network anywhere, it's all math, so it runs the same offline and in the browser.
+That private key now lives in a README on GitHub, which makes it the most burned key you'll see today. Good, that is the only kind this package is for, see the caution at the bottom. The double call is the lazy loader: `blockchains.ethereum(options)` takes the config, the second `()` imports the chain and builds it. No network anywhere, it's all math, so it runs the same offline. Browsers are another story, see Security.
 
 The most public mnemonic on earth, one path per address type:
 
@@ -186,7 +186,7 @@ Balances, transactions, broadcasting, anything that needs a node. [@agntn/explor
 
 ## 🔐 Security
 
-Everything cryptographic comes from [@paulmillr](https://github.com/paulmillr): [@noble/curves](https://github.com/paulmillr/noble-curves) and [@noble/hashes](https://github.com/paulmillr/noble-hashes), [@scure/base](https://github.com/paulmillr/scure-base), [@scure/bip32](https://github.com/paulmillr/scure-bip32) and [@scure/bip39](https://github.com/paulmillr/scure-bip39), [micro-key-producer](https://github.com/paulmillr/micro-key-producer) for SLIP-10. Web Crypto supplies the random bytes and nothing else.
+Everything cryptographic comes from [@paulmillr](https://github.com/paulmillr): [@noble/curves](https://github.com/paulmillr/noble-curves) and [@noble/hashes](https://github.com/paulmillr/noble-hashes), [@scure/base](https://github.com/paulmillr/scure-base), [@scure/bip32](https://github.com/paulmillr/scure-bip32) and [@scure/bip39](https://github.com/paulmillr/scure-bip39), [micro-key-producer](https://github.com/paulmillr/micro-key-producer) for SLIP-10. Random bytes come from `webcrypto` imported statically from `node:crypto`, and that one import is why a browser bundle needs a shim for it.
 
 > [!CAUTION]
 > **Never use this with real funds or with any wallet that has ever been used.** Generated and signed material is handled as plaintext. Treat every key it touches as burned the moment it is produced. Generate fresh throwaway keys for testing only and assume anything passing through `@agntn/keys` is compromised. Keys that control real funds belong on a hardware wallet, never in a process, log, or agent transcript.
