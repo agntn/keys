@@ -13,6 +13,33 @@ const libraryDependencies = [
   "micro-key-producer",
 ];
 
+/** Every subpath src/ imports, dynamic ones too, so dev bundles them up front, not on demand. */
+const libraryEntries = [
+  "@noble/curves/ed25519.js",
+  "@noble/curves/secp256k1.js",
+  "@noble/curves/utils.js",
+  "@noble/hashes/blake1.js",
+  "@noble/hashes/blake2.js",
+  "@noble/hashes/legacy.js",
+  "@noble/hashes/sha2.js",
+  "@noble/hashes/sha3.js",
+  "@noble/hashes/utils.js",
+  "@scure/base",
+  "@scure/bip32",
+  "@scure/bip39",
+  "@scure/bip39/wordlists/czech.js",
+  "@scure/bip39/wordlists/english.js",
+  "@scure/bip39/wordlists/french.js",
+  "@scure/bip39/wordlists/italian.js",
+  "@scure/bip39/wordlists/japanese.js",
+  "@scure/bip39/wordlists/korean.js",
+  "@scure/bip39/wordlists/portuguese.js",
+  "@scure/bip39/wordlists/simplified-chinese.js",
+  "@scure/bip39/wordlists/spanish.js",
+  "@scure/bip39/wordlists/traditional-chinese.js",
+  "micro-key-producer/slip10.js",
+];
+
 export default defineNuxtConfig({
   extends: ["docus"],
   /** The repo root is its own pnpm workspace; Nuxt must not treat it as this site's. */
@@ -24,6 +51,9 @@ export default defineNuxtConfig({
     resolve: {
       /** Bare imports in ../src resolve upwards from the importer and skip docs/node_modules. */
       dedupe: libraryDependencies,
+    },
+    optimizeDeps: {
+      include: libraryEntries,
     },
     server: {
       /** Dev serves the library from outside the workspace, which Vite refuses without this. */
