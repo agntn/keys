@@ -24,8 +24,8 @@ keys/
 │   ├── blockchains/         # One test file per chain
 │   └── utils/               # One test file per utility
 ├── test-integration/        # Separate package - compatibility with ethers and @solana/web3.js
-├── playground/              # Runnable demo scripts (bip32, bip39, bip44, slip10, signing)
-└── docs/                    # Docus-based documentation site
+├── playground/              # Node demo scripts (bip32, bip39, bip44, slip10, signing)
+└── docs/                    # Docus site: markdown guide plus browser keyspace explorer
 ```
 
 ## WHERE TO LOOK
@@ -44,6 +44,7 @@ keys/
 | Write tests        | `test/` mirroring `src/` path                                                     | Use fixtures from `test/fixtures.ts`                                                 |
 | Integration test   | `test-integration/`                                                               | Separate pnpm package, manual execution                                              |
 | Run demos          | `playground/*.ts`                                                                 | Execute via `pnpm playground <file>`                                                 |
+| Docs / keyspace UI | `docs/`                                                                           | Docus: `content/` markdown, explorer in `app/components/`                            |
 
 ## CONVENTIONS
 
@@ -76,6 +77,7 @@ pnpm build            # obuild via build.config.ts
 pnpm lint             # oxlint + oxfmt check
 pnpm lint:fix         # oxlint + oxfmt fixes
 pnpm playground <f>   # run any TS file via tsx
+pnpm docs             # Docus + keyspace explorer on :3000
 pnpm test:mcp         # build and exercise all 18 MCP tools over stdio
 ```
 

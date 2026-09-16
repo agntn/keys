@@ -31,5 +31,5 @@ export default defineConfig({
     ],
   },
   /** test-integration is a separate package whose deps root CI never installs. */
-  ignorePatterns: ["dist", "coverage", "docs/.docs", "test-integration"],
+  ignorePatterns: ["dist", "coverage", "docs", "test-integration"],
 });

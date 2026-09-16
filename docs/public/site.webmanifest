@@ -1,0 +1,13 @@
+{
+  "name": "@agntn/keys",
+  "short_name": "keys",
+  "description": "Keys to addresses to signatures on ten chains from a mnemonic or from nothing at all",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#0b0d10",
+  "theme_color": "#0b0d10",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
