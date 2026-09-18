@@ -12,6 +12,7 @@ Lazy-loaded class modules. Each file exports a named concrete class and the same
 | **Bitcoin family**   | bitcoin, litecoin      | chain-specific message preamble                   | secp256k1 via `utils/secp256k1`     |
 | **secp256k1 custom** | tron                   | `hashWithPreamble` (TIP-191 preamble + keccak256) | secp256k1 via `utils/secp256k1`     |
 | **ed25519**          | solana, aptos, cardano | `ed25519SignMessage` (raw, no prehash)            | ed25519 via `utils/ed25519`         |
+| **ed25519 custom**   | stellar                | SEP-53 digest (prefix + SHA-256), signed raw      | ed25519 via `utils/ed25519`         |
 | **dual-curve**       | sui                    | `PersonalMessage` digest on either curve (scheme) | ed25519 default, secp256k1 optional |
 
 Decred uses `AbstractBlockchain` directly: ECDSA P2PKH with BLAKE-256, not Bitcoin address hashing or EVM signing. Its HD method throws because standard BIP32 does not preserve Decred's legacy derivation.
@@ -41,4 +42,5 @@ Decred uses `AbstractBlockchain` directly: ECDSA P2PKH with BLAKE-256, not Bitco
 - **SUI** - dual-curve support with scheme-based dispatch
 - **TRON** - custom Keccak and Base58Check encoding
 - **Solana and Aptos** - straightforward single-curve subclasses
+- **Stellar** - StrKey base32 with a CRC16-XModem checksum; `M` and `C` StrKeys validate, only `G` is produced
 - **Ethereum and Base** - minimal `AbstractEVMBlockchain` subclasses

@@ -12,6 +12,7 @@ const SLUGS: Record<string, string> = {
   Base: "base",
   TRON: "tron",
   Solana: "solana",
+  Stellar: "stellar",
   Aptos: "aptos",
   Sui: "sui",
   Cardano: "cardano",

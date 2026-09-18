@@ -54,6 +54,13 @@ export const landingStaticRows: readonly AddressRow[] = [
     address: "6ASf5EcmmEHTgDJ4X4ZT5vT6iHVJBXPg5AN5YoTCpGWt",
   },
   {
+    id: "xlm",
+    chain: "Stellar",
+    curve: "ed25519",
+    format: "StrKey",
+    address: "GBGLLK7WVV47X5NLXTFPZQTJ3BONEZI62S4ILNMGT4SBV3PQUW5CTECA",
+  },
+  {
     id: "aptos",
     chain: "Aptos",
     curve: "ed25519",

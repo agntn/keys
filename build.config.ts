@@ -20,6 +20,7 @@ export default defineBuildConfig({
         "./src/blockchains/cardano.ts",
         "./src/blockchains/ethereum.ts",
         "./src/blockchains/solana.ts",
+        "./src/blockchains/stellar.ts",
         "./src/blockchains/sui.ts",
         "./src/blockchains/tron.ts",
       ],

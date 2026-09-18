@@ -119,7 +119,7 @@ export default function keysExtension(pi: ExtensionAPI) {
     promptSnippet:
       "Use to create a new wallet with keys and address for Bitcoin, Ethereum, Solana, etc.",
     promptGuidelines: [
-      "Provide a chain name (bitcoin, litecoin, decred, ethereum, base, solana, aptos, tron, sui, cardano)",
+      "Provide a chain name (bitcoin, litecoin, decred, ethereum, base, solana, stellar, aptos, tron, sui, cardano)",
       "Optionally specify network (mainnet/testnet) and address type",
       "Bitcoin and Litecoin address types: legacy, p2sh, segwit, p2wsh, taproot",
       "Decred supports legacy ECDSA P2PKH addresses only",
@@ -184,7 +184,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       "Use to see which address a public puzzle mnemonic reaches on a given derivation path.",
     promptGuidelines: [
       "Provide a chain, an English BIP39 mnemonic, and a full derivation path",
-      "Common paths: Bitcoin m/44'/0'/0'/0/0 (legacy), m/49'/0'/0'/0/0 (p2sh), m/84'/0'/0'/0/0 (segwit), m/86'/0'/0'/0/0 (taproot); Ethereum m/44'/60'/0'/0/0; Solana m/44'/501'/0'/0'; Aptos m/44'/637'/0'/0'/0'; Sui m/44'/784'/0'/0'/0'",
+      "Common paths: Bitcoin m/44'/0'/0'/0/0 (legacy), m/49'/0'/0'/0/0 (p2sh), m/84'/0'/0'/0/0 (segwit), m/86'/0'/0'/0/0 (taproot); Ethereum m/44'/60'/0'/0/0; Solana m/44'/501'/0'/0'; Stellar m/44'/148'/0'; Aptos m/44'/637'/0'/0'/0'; Sui m/44'/784'/0'/0'/0'",
       "Bitcoin and Litecoin pick the address type from the path purpose unless addressType is set",
       "Optionally pass a BIP39 passphrase, a network, or an address type",
       "For public puzzles, allowInvalidChecksum=true accepts a checksum failure with a warning, but still requires English BIP39 words and word counts",

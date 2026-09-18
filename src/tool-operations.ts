@@ -291,6 +291,10 @@ const BLOCKCHAIN_LOADERS: ReadonlyArray<{
     name: "solana",
     load: async (network) => useBlockchain(await blockchains.solana({ network })()),
   },
+  {
+    name: "stellar",
+    load: async (network) => useBlockchain(await blockchains.stellar({ network })()),
+  },
   { name: "aptos", load: async (network) => useBlockchain(await blockchains.aptos({ network })()) },
   { name: "tron", load: async (network) => useBlockchain(await blockchains.tron({ network })()) },
   { name: "sui", load: async (network) => useBlockchain(await blockchains.sui({ network })()) },

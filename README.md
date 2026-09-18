@@ -18,13 +18,13 @@ The docs live at [keys.agntn.dev](https://keys.agntn.dev), keyspace explorer inc
 
 ## ✨ Features
 
-- ⛓️ **Ten chains, one interface.** Bitcoin, Litecoin, Decred, Ethereum, Base, Solana, Aptos, Cardano, Sui and TRON, each a class with the same methods on it.
+- ⛓️ **Eleven chains, one interface.** Bitcoin, Litecoin, Decred, Ethereum, Base, Solana, Stellar, Aptos, Cardano, Sui and TRON, each a class with the same methods on it.
 - 🧬 **Two curves.** secp256k1 and ed25519, and Sui will take either.
 - 🏠 **Bitcoin the way Bitcoin wants it.** Legacy, P2SH, segwit, P2WSH and taproot, testnet included, and the purpose level of your path picks the type for you.
 - 🌱 **Mnemonic in, wallet out.** BIP39 into BIP32 on secp256k1 and SLIP-10 on ed25519, passphrase optional.
 - 🧩 **Puzzle mnemonics are welcome.** Wrong checksum? Derive anyway and get a warning with the wallet, or ask which words would make it valid.
 - 🌍 **All ten BIP39 word lists.** Look a word up in Italian, generate in Japanese with the ideographic spaces, map indices from base 0 or base 1.
-- ✍️ **Signing on both curves.** Bitcoin, Litecoin and Decred hash the message the way Core does, EVM chains the way ethers does, TRON the way TronWeb's `signMessageV2` does, Sui the way the Sui SDK's `signPersonalMessage` does on either curve, and Solana, Aptos and Cardano sign the raw bytes. What comes back is always 64 bytes of compact `r||s` hex, no recovery byte, so it's not Core's base64 and ethers needs a `v` from you before it will recover the signer.
+- ✍️ **Signing on both curves.** Bitcoin, Litecoin and Decred hash the message the way Core does, EVM chains the way ethers does, TRON the way TronWeb's `signMessageV2` does, Sui the way the Sui SDK's `signPersonalMessage` does on either curve, Stellar the way the Stellar SDK's `signMessage` does under SEP-53, and Solana, Aptos and Cardano sign the raw bytes. What comes back is always 64 bytes of compact `r||s` hex, no recovery byte, so it's not Core's base64 and ethers needs a `v` from you before it will recover the signer.
 - 🔌 **Loads one chain at a time.** `blockchains.solana()()` imports Solana and nothing else, so a Bitcoin tool never pays for Cardano.
 - 🤖 **18 agent tools.** MCP over stdio and a Pi extension run the same code, and a generated mnemonic comes back with a note that it's in the transcript now.
 
@@ -148,6 +148,7 @@ Without the flag `deriveHDWallet` throws. With it you get the wallet and a warni
 | **Ethereum** | secp256k1          | EIP-55 checksum                      | -       |
 | **Base**     | secp256k1          | EVM-compatible                       | -       |
 | **Solana**   | ed25519            | base58                               | -       |
+| **Stellar**  | ed25519            | StrKey                               | -       |
 | **Aptos**    | ed25519            | 0x-prefixed hex                      | -       |
 | **Cardano**  | ed25519            | payment, stake, enterprise           | ✅      |
 | **SUI**      | ed25519, secp256k1 | 0x-prefixed hex (blake2b)            | -       |

@@ -6,6 +6,7 @@ import {
   publicKeyEncodingVector,
   litecoinTestVectors,
   decredTestVectors,
+  stellarTestVectors,
   wifTestVectors,
   localizedMnemonicVectors,
   invalidChecksumPuzzle,
@@ -317,6 +318,25 @@ describe("keys MCP server", () => {
     expect(response.isError).not.toBe(true);
     expect(text(response.content)).toContain(decredTestVectors.addresses.mainnet);
     expect(text(response.content)).not.toContain(decredTestVectors.privateKey);
+  });
+
+  it("derives and signs Stellar through the MCP schema and executor", async () => {
+    const client = await connectTestClient();
+    const [message, , signature] = stellarTestVectors.messages[1];
+    const wallet = await client.callTool({
+      name: "keys_derive_wallet",
+      arguments: { chain: "stellar", privateKey: stellarTestVectors.privateKey },
+    });
+    expect(wallet.isError).not.toBe(true);
+    expect(text(wallet.content)).toContain(stellarTestVectors.address);
+    expect(text(wallet.content)).not.toContain(stellarTestVectors.privateKey);
+
+    const signed = await client.callTool({
+      name: "keys_sign_message",
+      arguments: { chain: "stellar", message, privateKey: stellarTestVectors.privateKey },
+    });
+    expect(signed.isError).not.toBe(true);
+    expect(text(signed.content)).toContain(signature);
   });
 
   it("validates a known Bitcoin address", async () => {
