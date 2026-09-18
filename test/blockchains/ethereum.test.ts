@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { bip39TestVectors } from "../fixtures";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
+import { bip39TestVectors, ethereumTestVectors } from "../fixtures";
 import { useBlockchain } from "../../src";
 import Ethereum from "../../src/blockchains/ethereum";
 import type { Options } from "../../src/types";
@@ -202,5 +204,44 @@ describe("Ethereum blockchain", () => {
         "0x9c32F71D4DB8Fb9e1A58B0a80dF79935e7256FA6",
       );
     });
+  });
+
+  describe("Message signing", () => {
+    const blockchain = useBlockchain(new Ethereum());
+    const vector = ethereumTestVectors;
+
+    it("derives the ethers public keys and address", () => {
+      expect(blockchain.getKeyPublic(vector.privateKey)).toBe(vector.publicKey);
+      expect(blockchain.getKeyPublic(vector.privateKey, { compressed: false })).toBe(
+        vector.publicKeyUncompressed,
+      );
+      expect(blockchain.getAddress(vector.publicKey)).toBe(vector.address);
+      expect(blockchain.getAddress(vector.publicKeyUncompressed)).toBe(vector.address);
+    });
+
+    it.each(vector.messages)(
+      "signs ethers signMessage vector %# over the EIP-191 digest",
+      (message, digest, signatureWithV) => {
+        const signature = signatureWithV.slice(0, 128);
+        const recovery = Number.parseInt(signatureWithV.slice(128), 16) - 27;
+        const publicKey = hexToBytes(vector.publicKey);
+        expect(blockchain.signMessage(message, vector.privateKey)).toBe(signature);
+        expect(blockchain.signMessage(new TextEncoder().encode(message), vector.privateKey)).toBe(
+          signature,
+        );
+        expect(
+          secp256k1.verify(hexToBytes(signature), hexToBytes(digest), publicKey, {
+            prehash: false,
+          }),
+        ).toBe(true);
+        const recovered = secp256k1.Signature.fromBytes(hexToBytes(signature), "compact")
+          .addRecoveryBit(recovery)
+          .recoverPublicKey(hexToBytes(digest));
+        expect(bytesToHex(recovered.toBytes(true))).toBe(vector.publicKey);
+        expect(blockchain.verifyMessage(message, signature, vector.publicKey)).toBe(true);
+        expect(blockchain.verifyMessage(message + "!", signature, vector.publicKey)).toBe(false);
+        expect(blockchain.verifyMessage(message, "invalid", vector.publicKey)).toBe(false);
+      },
+    );
   });
 });

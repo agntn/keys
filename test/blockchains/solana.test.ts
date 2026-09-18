@@ -1,5 +1,5 @@
 import { expect, describe, it } from "vitest";
-import { bip39TestVectors, slip10WalletVectors } from "../fixtures";
+import { bip39TestVectors, slip10WalletVectors, solanaTestVectors } from "../fixtures";
 import Solana from "../../src/blockchains/solana";
 import { useBlockchain } from "../../src/blockchain";
 import type { Options } from "../../src/types";
@@ -125,6 +125,26 @@ describe("Solana Blockchain", () => {
       expect(() => blockchain.deriveHDWallet(bip39TestVectors.mnemonic, "m/44'/501'/0'/0")).toThrow(
         "Non-hardened",
       );
+    });
+  });
+
+  describe("Message signing", () => {
+    const blockchain = useBlockchain(new Solana());
+    const vector = solanaTestVectors;
+
+    it("derives the @solana/web3.js public key and address", () => {
+      expect(blockchain.getKeyPublic(vector.privateKey)).toBe(vector.publicKey);
+      expect(blockchain.getAddress(vector.publicKey)).toBe(vector.address);
+    });
+
+    it.each(vector.messages)("signs tweetnacl detached vector %# as is", (message, signature) => {
+      expect(blockchain.signMessage(message, vector.privateKey)).toBe(signature);
+      expect(blockchain.signMessage(new TextEncoder().encode(message), vector.privateKey)).toBe(
+        signature,
+      );
+      expect(blockchain.verifyMessage(message, signature, vector.publicKey)).toBe(true);
+      expect(blockchain.verifyMessage(message + "!", signature, vector.publicKey)).toBe(false);
+      expect(blockchain.verifyMessage(message, "invalid", vector.publicKey)).toBe(false);
     });
   });
 });

@@ -2,7 +2,6 @@ import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 import { base58check, bech32, bech32m } from "@scure/base";
-import { HDNodeWallet } from "ethers";
 import { describe, expect, it } from "vitest";
 import { blockchains, getBlockchainPath } from "../../src/index.ts";
 import Bitcoin from "../../src/blockchains/bitcoin.ts";
@@ -89,26 +88,20 @@ describe("Litecoin", () => {
     expect(() => chain.deriveWallet("00".repeat(32))).toThrow();
   });
 
-  it.each([
-    [44, "legacy"],
-    [49, "p2sh"],
-    [84, "segwit"],
-    [86, "taproot"],
-  ] as const)(
+  it.each(vector.hd)(
     "derives purpose %s through BIP32 and preserves an explicit address type",
-    (purpose, format) => {
+    (purpose, format, privateKey, publicKey) => {
       const chain = new Litecoin();
       const path = `m/${purpose}'/2'/0'/1/2`;
       const wallet = chain.deriveHDWallet(bip39TestVectors.mnemonic, path, {
         passphrase: "TREZOR",
       });
-      const independent = HDNodeWallet.fromPhrase(bip39TestVectors.mnemonic, "TREZOR", path);
-      expect(wallet.keys.private).toBe(independent.privateKey.slice(2));
-      expect(wallet.address).toBe(chain.getAddress(independent.publicKey.slice(2), format));
+      expect(wallet.keys.private).toBe(privateKey);
+      expect(wallet.address).toBe(chain.getAddress(publicKey, format));
       expect(
         chain.deriveHDWallet(bip39TestVectors.mnemonic, path, { passphrase: "TREZOR" }, "legacy")
           .address,
-      ).toBe(chain.getAddress(independent.publicKey.slice(2), "legacy"));
+      ).toBe(chain.getAddress(publicKey, "legacy"));
     },
   );
 
