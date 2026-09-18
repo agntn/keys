@@ -7,6 +7,7 @@ This directory is a standalone pnpm workspace for manual compatibility checks ag
 ## Conventions
 
 - Keep checks focused on interoperability with the public `@agntn/keys` API; blockchain implementation belongs in `../src/`.
-- Type-check with `pnpm exec tsc --noEmit` and execute TypeScript with `pnpm exec tsx solana-test.ts`.
+- Type-check with `pnpm exec tsc --noEmit` and execute TypeScript with `pnpm exec tsx solana-test.ts` or `pnpm exec tsx ethers-test.ts`.
 - Use generated test keys only. Output includes plaintext private keys and must remain local.
 - A passing Solana check requires matching public keys, addresses, signatures, and successful verification in both directions.
+- `ethers-test.ts` rechecks the ethers rows frozen in `../test/fixtures.ts` against the installed ethers and exits non-zero on any mismatch; rerun it after bumping ethers or touching those rows.
