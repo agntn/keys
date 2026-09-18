@@ -1,5 +1,33 @@
 # Changelog
 
+## v0.3.1
+
+[compare changes](https://github.com/agntn/keys/compare/v0.3.0...v0.3.1)
+
+### 🚀 Enhancements
+
+- **stellar:** StrKey addresses, SEP-53 signing ([#68](https://github.com/agntn/keys/pull/68))
+
+### 🩹 Fixes
+
+- **tron:** Sign messages with the TRON preamble ([#66](https://github.com/agntn/keys/pull/66))
+- **sui:** Sign what signPersonalMessage signs ([#67](https://github.com/agntn/keys/pull/67))
+- **bip44:** Paths ed25519 chains can derive ([#69](https://github.com/agntn/keys/pull/69))
+
+### 🏡 Chore
+
+- Apply automated updates ([e47c015](https://github.com/agntn/keys/commit/e47c015))
+- Add `renovate.json` ([5b55d5f](https://github.com/agntn/keys/commit/5b55d5f))
+
+### ✅ Tests
+
+- Ethers and web3.js vectors move to fixtures ([#75](https://github.com/agntn/keys/pull/75))
+
+### ❤️ Contributors
+
+- Ori ([@oritwoen](https://github.com/oritwoen))
+- Aeitwoen ([@aeitwoen](https://github.com/aeitwoen))
+
 ## v0.3.0
 
 [compare changes](https://github.com/agntn/keys/compare/v0.2.0...v0.3.0)
