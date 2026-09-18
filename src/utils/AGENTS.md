@@ -14,7 +14,7 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP39, and SLIP-1
 | `bitcoin.ts`        |       | bitcoin, litecoin                | Shared transparent address generation, HD purpose inference, and message serialization |
 | `evm.ts`            | ~220  | EVM classes and secp256k1 chains | EVM address generation, EIP-55 checksum, preamble signing, `AbstractEVMBlockchain`     |
 | `signing.ts`        | ~100  | evm.ts, ed25519-chains.ts        | Generic sign/verify dispatching by curve type                                          |
-| `ed25519-chains.ts` | ~50   | solana, aptos, cardano, sui      | Shared raw Ed25519 signing and verification                                            |
+| `ed25519-chains.ts` | ~50   | solana, aptos, cardano           | Shared raw Ed25519 signing and verification                                            |
 | `secp256k1.ts`      | ~100  | bitcoin, tron, sui, evm.ts       | Public key generation (compressed/uncompressed)                                        |
 | `ed25519.ts`        | ~50   | solana, aptos, cardano, sui      | Ed25519 public key generation                                                          |
 | `encoding.ts`       | ~60   | address.ts, tron                 | Base58Check encode/decode/validate                                                     |

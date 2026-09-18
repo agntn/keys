@@ -1,11 +1,10 @@
 import { blake2b } from "@noble/hashes/blake2.js";
-import { hexToBytes } from "@noble/hashes/utils.js";
+import { concatBytes, hexToBytes } from "@noble/hashes/utils.js";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { addSchemeByte, createPrefixedAddress, validateAddressHex } from "../utils/address.ts";
 import { generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
-import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
-import { evmSignMessage, evmVerifyMessage } from "../utils/evm.ts";
 import { generateKeyPublic as getSecp256k1KeyPublic } from "../utils/secp256k1.ts";
+import { signMessage, verifyMessage } from "../utils/signing.ts";
 import type { AddressType, HDWalletOptions, KeyOptions, Wallet } from "../types.ts";
 
 const CURVES = ["ed25519", "secp256k1"] as const;
@@ -15,6 +14,38 @@ const SIGNATURE_SCHEME_FLAGS = {
   SECP256R1: 0x02,
   MULTISIG: 0x03,
 } as const;
+
+/** BCS intent of a personal message: scope `PersonalMessage`, version `V0`, app id `Sui`. */
+const PERSONAL_MESSAGE_INTENT = new Uint8Array([0x03, 0x00, 0x00]);
+
+/**
+ * Encodes a length as unsigned LEB128, the prefix BCS puts in front of a vector.
+ * @param value - The length to encode
+ * @returns {Uint8Array} The ULEB128 bytes
+ */
+function encodeUleb128(value: number): Uint8Array {
+  const bytes: number[] = [];
+  let remaining = value;
+  while (remaining >= 0x80) {
+    bytes.push((remaining & 0x7f) | 0x80);
+    remaining >>>= 7;
+  }
+  bytes.push(remaining);
+  return Uint8Array.from(bytes);
+}
+
+/**
+ * Digests a message the way `signPersonalMessage` does in the Sui SDK: the intent, the message as a
+ * BCS byte vector, blake2b-256 over both. Every Sui signer signs this digest, not the message.
+ * @param message - The message to digest
+ * @returns {Uint8Array} The 32-byte personal message digest
+ */
+function hashPersonalMessage(message: string | Uint8Array): Uint8Array {
+  const bytes = typeof message === "string" ? new TextEncoder().encode(message) : message;
+  return blake2b(concatBytes(PERSONAL_MESSAGE_INTENT, encodeUleb128(bytes.length), bytes), {
+    dkLen: 32,
+  });
+}
 
 /**
  * Lets the address type name the signature scheme, so one argument drives key, address, and curve.
@@ -88,15 +119,23 @@ export class Sui extends AbstractBlockchain {
     });
   }
 
+  /**
+   * Signs the personal message digest: ed25519 takes it raw, secp256k1 signs its sha256 like the SDK.
+   * @param message - The message to sign
+   * @param keyPrivate - The private key as hex
+   * @param options - Key options; `scheme` picks the curve, ed25519 by default
+   * @returns {string} The 64-byte signature as hex, without the scheme flag
+   */
   override signMessage(
     message: string | Uint8Array,
     keyPrivate: string,
     options?: KeyOptions,
   ): string {
-    const scheme = options?.scheme ?? "ed25519";
-    return scheme.toLowerCase() === "secp256k1"
-      ? evmSignMessage(message, keyPrivate, options)
-      : ed25519SignMessage(message, keyPrivate, options);
+    return signMessage(hashPersonalMessage(message), keyPrivate, {
+      ...options,
+      curve: this.resolveCurve(options),
+      hash: true,
+    });
   }
 
   override verifyMessage(
@@ -105,10 +144,11 @@ export class Sui extends AbstractBlockchain {
     keyPublic: string,
     options?: KeyOptions,
   ): boolean {
-    const scheme = options?.scheme ?? "ed25519";
-    return scheme.toLowerCase() === "secp256k1"
-      ? evmVerifyMessage(message, signature, keyPublic, options)
-      : ed25519VerifyMessage(message, signature, keyPublic, options);
+    return verifyMessage(hashPersonalMessage(message), signature, keyPublic, {
+      ...options,
+      curve: this.resolveCurve(options),
+      hash: true,
+    });
   }
 }
 

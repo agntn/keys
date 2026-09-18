@@ -131,6 +131,46 @@ export const tronTestVectors = {
   ],
 } as const;
 
+/** Disposable key 1 through @mysten/sui 2.31.2: `signPersonalMessage` digests and signatures. */
+export const suiTestVectors = {
+  privateKey: "0000000000000000000000000000000000000000000000000000000000000001",
+  ed25519: {
+    publicKey: "4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29",
+    address: "0xd0c2c91eda34bbfbaec6cfb9c7bb913e57dab3cbec4018a4b3f5e55531cd63af",
+  },
+  secp256k1: {
+    publicKey: "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+    address: "0xd4c3524e6642b2e54945c02378024f822ac3f80b0870a5f95f06e68a61890a6c",
+  },
+  /** Message, its personal message digest, the ed25519 signature, the secp256k1 signature. */
+  messages: [
+    [
+      "",
+      "8c039ff7caa17ccebfcadc44bd9fce6a4b6699c4d03de2e3349aa1dc11193cd7",
+      "6bc078f207deeabc4af04577c90a5421d75a690103e2d05f570935ff5d6e20154a70ffc0e1509e41579ab21a181005263b5262cea4ab1eb0545dd313ee38200e",
+      "808c7c786b87342dd8b2d6897707acb5e6730893a1f7b099310010a28cfc529d2c7c4f38f8bb93f0527052e37d88da1b3ec26d456ebf8b596e4254715a55b7e8",
+    ],
+    [
+      "Test message",
+      "110d270cf8e11730b64fd208fe074dee4406e8c7b5d38ff37c6a4bf895b3c2f8",
+      "d9c974f42754fb75c996712d474b3e80ab10e232593aa4402e5a725c2fa7d9f37258d062563cf45ef73ffe24949e11a2eacc94fa25e81d40c7b9da394ccb5f01",
+      "47120cf0e39145bc9db74eca6bba8fc3afb3727df94b22618951d7f6cc1b4d1b575b2282271477e152bb3333eeab5c44f7a9be78622d7d75fd33772c3cbce328",
+    ],
+    [
+      "żółw 🐢",
+      "276ae078c862bd0ba7a528c36f37297335bfbb4c1c5d27c95fd0f9711aefc012",
+      "f1fe5a849bca9a67133397cff17d4079e155005ce38b53c17285d67bcda0e81b84b418c195d419495d7832a0fa590293dfa9ccd1f1915850f73669d14898da06",
+      "7e2379b525bbc563b3cc1580fe6588fc789cf3777c2360ceffd2b144156e034e7516850d3f5839fb1437b66fef7a20b236cc22898e7e1ca8239245333c1b4907",
+    ],
+    [
+      "a".repeat(256),
+      "5488dc294edbb02a0a9105597a4ebf0c14f12aaf7fb67897103a835993055577",
+      "8b7ac04d371ce61185c3cdccab95bbc86409c07ccb3ac687879d3dbef63bb3aaf844458467e451517246c74f8ce5f623f2599c7fa662494172d072d09e77f20d",
+      "63b2c7172fc7148d670e12b950d09398b01bf067486527170d09d051027db14b3679dc4ebc4cdde544d75b8d90722639049785f29b361c8d381ae141269e5f20",
+    ],
+  ],
+} as const;
+
 /** Disposable key 1, dcrd stdaddr v4.1.2 and chainhash v1.0.5 with wire v1.7.5. */
 export const decredTestVectors = {
   privateKey: "00".repeat(31) + "01",
