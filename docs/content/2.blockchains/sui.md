@@ -66,4 +66,26 @@ suiChain.deriveHDWallet(mnemonic, "m/54'/784'/0'/0/0", {}, "secp256k1").address;
 
 ## Signing
 
-ed25519 or secp256k1 depending on the scheme in the options, hex out. The signature doesn't carry the flag byte, so keep track of which scheme signed if you hand it to Sui tooling. On secp256k1 it's the usual 64 bytes of `r||s`, no recovery byte.
+`signMessage` signs what the Sui SDK's `signPersonalMessage` signs: the message as a BCS byte vector behind the `PersonalMessage` intent (`0x03 0x00 0x00`), hashed with Blake2b-256. ed25519 signs that digest as is, secp256k1 signs its SHA-256 the way `Secp256k1Keypair` does, so the same key gives the same bytes here and there. The scheme comes from the options, ed25519 by default.
+
+```js
+const signature = suiChain.signMessage("hello", privateKey);
+suiChain.verifyMessage("hello", signature, publicKey); // true
+
+const secpSignature = suiChain.signMessage("hello", privateKey, { scheme: "secp256k1" });
+suiChain.verifyMessage("hello", secpSignature, secpKey, { scheme: "secp256k1" }); // true
+```
+
+What comes back is the 64 signature bytes in hex, `r||s` without a recovery byte on secp256k1, no flag and no public key. Sui tooling wants the serialized form, `flag || signature || publicKey` in base64, so build that before you hand it to `verifyPersonalMessageSignature`:
+
+```js
+import { toBase64 } from "@mysten/sui/utils";
+import { verifyPersonalMessageSignature } from "@mysten/sui/verify";
+import { hexToBytes } from "@noble/hashes/utils.js";
+
+const flag = 0x00; // 0x01 for secp256k1
+const serialized = toBase64(
+  Uint8Array.from([flag, ...hexToBytes(signature), ...hexToBytes(publicKey)]),
+);
+await verifyPersonalMessageSignature(new TextEncoder().encode("hello"), serialized, { address });
+```

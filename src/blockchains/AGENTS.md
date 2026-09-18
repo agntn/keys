@@ -12,7 +12,7 @@ Lazy-loaded class modules. Each file exports a named concrete class and the same
 | **Bitcoin family**   | bitcoin, litecoin      | chain-specific message preamble                   | secp256k1 via `utils/secp256k1`     |
 | **secp256k1 custom** | tron                   | `hashWithPreamble` (TIP-191 preamble + keccak256) | secp256k1 via `utils/secp256k1`     |
 | **ed25519**          | solana, aptos, cardano | `ed25519SignMessage` (raw, no prehash)            | ed25519 via `utils/ed25519`         |
-| **dual-curve**       | sui                    | both (selected via `options.scheme`)              | ed25519 default, secp256k1 optional |
+| **dual-curve**       | sui                    | `PersonalMessage` digest on either curve (scheme) | ed25519 default, secp256k1 optional |
 
 Decred uses `AbstractBlockchain` directly: ECDSA P2PKH with BLAKE-256, not Bitcoin address hashing or EVM signing. Its HD method throws because standard BIP32 does not preserve Decred's legacy derivation.
 
@@ -31,7 +31,7 @@ Decred uses `AbstractBlockchain` directly: ECDSA P2PKH with BLAKE-256, not Bitco
 - **EVM base class** - `Ethereum` and `Base` extend `AbstractEVMBlockchain`, which owns their shared key, address, validation, and signing behavior
 - **Network params** - Bitcoin, Litecoin, and Cardano keep separate address parameters for each network in `NETWORK_PARAMS`; TRON uses `0x41` and `T` on mainnet, Shasta, and Nile
 - **BIP44 coin type** - every chain sets `bip44` from `BIP44` enum or SLIP-0044 number
-- **SUI dual-curve** - `getKeyPublic` and `signMessage` check `options.scheme` to pick ed25519 or secp256k1
+- **SUI dual-curve** - `getKeyPublic` and `signMessage` check `options.scheme` to pick ed25519 or secp256k1; both sign the `signPersonalMessage` digest, secp256k1 over its sha256 like the SDK
 - **HD wallets** - `deriveHDWallet` on the base class walks BIP32 or SLIP-10 by curve; Bitcoin and Litecoin infer the address type from the path purpose, Sui takes the curve from the scheme, Cardano throws because CIP-1852 derives differently
 
 ## COMPLEXITY

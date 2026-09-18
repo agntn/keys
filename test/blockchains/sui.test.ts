@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { bip39TestVectors } from "../fixtures";
+import { ed25519 } from "@noble/curves/ed25519.js";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
+import { bip39TestVectors, suiTestVectors } from "../fixtures";
 import Sui from "../../src/blockchains/sui";
+import Ethereum from "../../src/blockchains/ethereum";
 import { useBlockchain } from "../../src/blockchain";
 import type { Options } from "../../src/types";
 
@@ -167,6 +171,85 @@ describe("Sui", () => {
         blockchain.deriveWallet(fromAddressType.keys.private, {}, "secp256k1"),
       );
       expect(fromAddressType.address).not.toBe(blockchain.deriveHDWallet(mnemonic, path).address);
+    });
+  });
+
+  describe("Message signing", () => {
+    const blockchain = useBlockchain(new Sui());
+    const vector = suiTestVectors;
+
+    it.each(vector.messages)(
+      "signs @mysten/sui signPersonalMessage vector %# on both schemes",
+      (message, digest, ed25519Signature, secp256k1Signature) => {
+        const digestBytes = hexToBytes(digest);
+        expect(
+          ed25519.verify(
+            hexToBytes(ed25519Signature),
+            digestBytes,
+            hexToBytes(vector.ed25519.publicKey),
+          ),
+        ).toBe(true);
+        expect(
+          secp256k1.verify(
+            hexToBytes(secp256k1Signature),
+            digestBytes,
+            hexToBytes(vector.secp256k1.publicKey),
+            { prehash: true },
+          ),
+        ).toBe(true);
+
+        const schemes = [
+          ["ed25519", vector.ed25519.publicKey, ed25519Signature],
+          ["secp256k1", vector.secp256k1.publicKey, secp256k1Signature],
+        ] as const;
+        for (const [scheme, publicKey, signature] of schemes) {
+          const options = { scheme };
+          expect(blockchain.signMessage(message, vector.privateKey, options)).toBe(signature);
+          expect(
+            blockchain.signMessage(new TextEncoder().encode(message), vector.privateKey, options),
+          ).toBe(signature);
+          expect(blockchain.verifyMessage(message, signature, publicKey, options)).toBe(true);
+          expect(blockchain.verifyMessage(message + "!", signature, publicKey, options)).toBe(
+            false,
+          );
+          expect(blockchain.verifyMessage(message, "invalid", publicKey, options)).toBe(false);
+        }
+      },
+    );
+
+    it("signs ed25519 without a scheme", () => {
+      const [message, , signature] = vector.messages[1];
+      expect(blockchain.signMessage(message, vector.privateKey)).toBe(signature);
+      expect(blockchain.verifyMessage(message, signature, vector.ed25519.publicKey)).toBe(true);
+    });
+
+    it("rejects a signature from the other scheme", () => {
+      const [message, , ed25519Signature, secp256k1Signature] = vector.messages[1];
+      expect(blockchain.verifyMessage(message, secp256k1Signature, vector.ed25519.publicKey)).toBe(
+        false,
+      );
+      expect(
+        blockchain.verifyMessage(message, ed25519Signature, vector.secp256k1.publicKey, {
+          scheme: "secp256k1",
+        }),
+      ).toBe(false);
+    });
+
+    it("rejects a raw ed25519 signature and an Ethereum preamble one", () => {
+      const [message, , ed25519Signature, secp256k1Signature] = vector.messages[1];
+      const raw = bytesToHex(
+        ed25519.sign(new TextEncoder().encode(message), hexToBytes(vector.privateKey)),
+      );
+      const ethereum = new Ethereum().signMessage(message, vector.privateKey);
+
+      expect(raw).not.toBe(ed25519Signature);
+      expect(blockchain.verifyMessage(message, raw, vector.ed25519.publicKey)).toBe(false);
+      expect(ethereum).not.toBe(secp256k1Signature);
+      expect(
+        blockchain.verifyMessage(message, ethereum, vector.secp256k1.publicKey, {
+          scheme: "secp256k1",
+        }),
+      ).toBe(false);
     });
   });
 });
