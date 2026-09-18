@@ -22,7 +22,7 @@
   },
   "devDependencies": {
     "@iconify-json/lucide": "1.2.132",
-    "@iconify-json/simple-icons": "1.2.94",
+    "@iconify-json/simple-icons": "1.2.96",
     "@iconify-json/token": "1.2.40",
     "@iconify-json/vscode-icons": "1.2.76",
     "wrangler": "4.128.0"
