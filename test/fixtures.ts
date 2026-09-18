@@ -7,7 +7,6 @@
 export const secp256k1TestVectors = {
   // These are constant test vectors, not meant for production use
   privateKey: "c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4",
-  privateKeyWith0x: "0xc85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4",
   /** Not paired with `privateKey`; used only by the self-consistent address tests. */
   publicKeyCompressed: "0329fa449dde1228c0bacb3283310bca03022458709ad6f3fbb869a2a59c30b7d7",
 };
@@ -56,6 +55,12 @@ export const invalidChecksumPuzzle = {
   path: "m/84'/0'/0'/0/0",
   address: "bc1q94ecsn0qk8lap2gefrycnms3ruepy889z969a6",
   publicKey: "022c17f7486b4107b42a243a62e4d0919af3e8ee858a272319bffb0536486b9405",
+  /** ethers 6.17.0 `HDNodeWallet.fromSeed` over the BIP39 PBKDF2 seed of the same words. */
+  withPassphrase: {
+    passphrase: " e\u0301 ",
+    path: "m/84'/0'/0'/1/2",
+    publicKey: "0248b84ccd2a9aefdd556e3550eb4dff2de903b2eef7718be305ddc9394f43a5ab",
+  },
 };
 
 // Bitcoin test vectors
@@ -95,13 +100,78 @@ export const bitcoinMessageVectors = {
   ],
 } as const;
 
-// Ethereum test vectors
+/**
+ * `secp256k1TestVectors.privateKey` through ethers 6.17.0: `SigningKey` public keys, the
+ * `Wallet` address, `hashMessage` digests and `signMessage` signatures.
+ */
 export const ethereumTestVectors = {
-  // Valid addresses for testing
-  addresses: {
-    mainnet: "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826",
-  },
-};
+  privateKey: secp256k1TestVectors.privateKey,
+  publicKey: "030947751e3022ecf3016be03ec77ab0ce3c2662b4843898cb068d74f698ccc8ad",
+  publicKeyUncompressed:
+    "040947751e3022ecf3016be03ec77ab0ce3c2662b4843898cb068d74f698ccc8ad75aa17564ae80a20bb044ee7a6d903e8e8df624b089c95d66a0570f051e5a05b",
+  address: "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826",
+  /** Message, its EIP-191 digest, the signature with the recovery byte. */
+  messages: [
+    [
+      "",
+      "5f35dce98ba4fba25530a026ed80b2cecdaa31091ba4958b99b52ea1d068adad",
+      "68c36703cfae77b264e66cf9587aa39dd76b66ff1317e563b4566d9ea5d8d60e5b9be8c58a324e1dbb424365aa778a2faec2d3f922bf0339cda43d76c492a5ab1c",
+    ],
+    [
+      "Test message",
+      "d81bbffb92157b72ceae3da72eb8224976ba42a49621822789edb0735a0e0395",
+      "be6796821c2054a4e5dc8beef695d7cd8df747bbf04750e95067052f50ba17b05f764771f7cf0d646b0df0164ca09b6fdf78940115ecb3bbdda3a494693dc2991c",
+    ],
+    [
+      "This is a longer test message for cryptographic signing operations",
+      "e30363a6bebbdf88c11906195f420253bdae8d6cfe1ec1c5fa3bef235bc5718b",
+      "099d52a5cd3ab8f9a43bb29e1e323fa846898bf85043fe45a345d9a7948813dd71ac7e96df41ccd3d66ff7e23c961f05a82721782aa6b8f5b3c0a8baf55dc1001b",
+    ],
+    [
+      "żółw 🐢",
+      "8d43eecb992097c0aebe89bbee97a384f1565c97fac4661ab7ce2b8c4a53fa42",
+      "c9d2e75a94c028974713fbb611ffc40443b3876cf977fec48cde46d28c291ee52a32ffc4cc81fdfc8ddef247d66a8c1d6accd17bb54966556dfef7883e6b6d921c",
+    ],
+    [
+      "a".repeat(256),
+      "5e00ae3038bc416a1354dc7d995adb1cd435ff7dcfc7bfe50a7d3035b6576e54",
+      "751891552b4523e721b5985083780ab2de24a365618c671a6bdcdda7c3ffa0a03b748e0f1e749dda4d491db1169ecac51dd14d00b9b3a9fd3b7755be0ffffbec1c",
+    ],
+  ],
+} as const;
+
+/**
+ * Disposable key 1 through @solana/web3.js 1.98.4 and tweetnacl 1.0.3: the `Keypair.fromSeed`
+ * public key and address, `nacl.sign.detached` signatures the way wallet adapters sign messages.
+ */
+export const solanaTestVectors = {
+  privateKey: "0000000000000000000000000000000000000000000000000000000000000001",
+  publicKey: "4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29",
+  address: "6ASf5EcmmEHTgDJ4X4ZT5vT6iHVJBXPg5AN5YoTCpGWt",
+  /** Message, its signature. */
+  messages: [
+    [
+      "",
+      "7e1b9dc1e332c4238edcd07a68101474b640fdcb1b7b84fb711ac4bfbc85eb85a77480950d69398dcd19f61e1ea74d0f183cfbf34df8f6e7733ebfb9f944f106",
+    ],
+    [
+      "Test message",
+      "dbc97709329484d8d3b3ed7e9b8b0c916f4ed7a6be9c31d2f9e5801ee7e70fbe538af669d99b9a047a9d6595f409c7d6d1be7f90fb348aeb7da5d694b16f0f08",
+    ],
+    [
+      "This is a longer test message for cryptographic signing operations",
+      "742ce226b09cfd7ddf96d6ba33f852c01f7c5f490fa3426b61ced033a2e6366c4d86749c3e7578ad0755c7226d7cbcf21964909cf64c42d813c238f3e267c200",
+    ],
+    [
+      "żółw 🐢",
+      "8246ac7fd8fe6b7ee71695b9a8f4590b7d397ba2612e88503f8dcc6d357fb1609a71954ed7a33d578ff9a1d0d9d616460c248069e55d0f6fec856764ad6f880b",
+    ],
+    [
+      "a".repeat(256),
+      "fb5a01cfc088e45c904d410a0008c0f1b5e459e03e83c1b63e58389cd5b5296414656bab34241f359c1d41d571dfbfb5ccc0e18d0543d27b81179ff1a7cbaa06",
+    ],
+  ],
+} as const;
 
 // Test messages
 export const testMessages = {
@@ -119,6 +189,36 @@ export const litecoinTestVectors = {
   messageHashes: [
     ["hello", "51bd869e89676860cf1d778b8735f5e6768da32023d3dcd951711bd21c669d4c"],
     ["é".repeat(127), "08bebd99b9d1fbd73231de22e544e9b0b75c0c54ab6e3128f53665cdf944477f"],
+  ],
+  /**
+   * ethers 6.17.0 `HDNodeWallet.fromPhrase` with the TREZOR passphrase at
+   * `m/<purpose>'/2'/0'/1/2`: purpose, its address type, private key, public key.
+   */
+  hd: [
+    [
+      44,
+      "legacy",
+      "3282733e395ba097d4fd27e5200230627ab2ff5ee67e04dc04919c9d5d485600",
+      "022da301385edaa8db654667235e83ee55efe5593fe68769d60818778f4288067e",
+    ],
+    [
+      49,
+      "p2sh",
+      "76bc000dffb77db140f68da9772a375b35856b23d100f243059c037b52772232",
+      "0377151352b1cef4760dfc15802d64472280b7a2b5462a3ffc0e1547f28a11b9c0",
+    ],
+    [
+      84,
+      "segwit",
+      "44098b21e37b0032915f998ca37745222efd201f76b1b8f72004823232526c19",
+      "0306255d1a2346537e2afb8ff0546f8e135640209df38a0e8da2652d4744ecf2c3",
+    ],
+    [
+      86,
+      "taproot",
+      "9106c4220ad0ff7bcd2c01d9522c4eac4997d463bb75da3271acf7ac47ef7fef",
+      "020d12c167a74f47363ca017c419cbed0f1d0b6921b20e76f102264f28410e88c1",
+    ],
   ],
 } as const;
 

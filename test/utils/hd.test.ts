@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { bytesToHex } from "@noble/hashes/utils.js";
-import { HDNodeWallet } from "ethers";
 import { blockchains } from "../../src/index.ts";
 import { mnemonicToSeed } from "../../src/utils/bip39/index.ts";
 import { getMasterKeyFromSeed } from "../../src/utils/slip10/index.ts";
 import { bip39TestVectors, invalidChecksumPuzzle } from "../fixtures.ts";
 
 describe("HD checksum policy", () => {
-  const { mnemonic, path, address, publicKey } = invalidChecksumPuzzle;
+  const { mnemonic, path, address, publicKey, withPassphrase } = invalidChecksumPuzzle;
 
   it("requires an explicit override and reproduces the claimed puzzle address without repair", async () => {
     const chain = await blockchains.bitcoin()();
@@ -28,19 +27,15 @@ describe("HD checksum policy", () => {
 
   it("preserves passphrase, path, network and explicit address type with the override", async () => {
     const chain = await blockchains.bitcoin({ network: "testnet" })();
-    const changedPath = "m/84'/0'/0'/1/2";
-    const passphrase = " e\u0301 ";
-    const expected = HDNodeWallet.fromSeed(mnemonicToSeed(mnemonic, passphrase)).derivePath(
-      changedPath,
-    );
+    const { passphrase, path: changedPath, publicKey: expected } = withPassphrase;
     const wallet = chain.deriveHDWallet(
       mnemonic,
       changedPath,
       { passphrase, allowInvalidChecksum: true },
       "legacy",
     );
-    expect(wallet.keys.public).toBe(expected.publicKey.slice(2));
-    expect(wallet.address).toBe(chain.getAddress(expected.publicKey.slice(2), "legacy"));
+    expect(wallet.keys.public).toBe(expected);
+    expect(wallet.address).toBe(chain.getAddress(expected, "legacy"));
     expect(wallet.address).not.toBe(address);
     expect(wallet.warnings).toHaveLength(1);
   });
