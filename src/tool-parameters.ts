@@ -6,7 +6,7 @@ export const BIP44_PATH_MODE_SCHEMA = {
     {
       required: ["path"],
       not: {
-        anyOf: ["chain", "account", "change", "addressIndex"].map((field) => ({
+        anyOf: ["chain", "account", "change", "addressIndex", "addressType"].map((field) => ({
           required: [field],
         })),
       },

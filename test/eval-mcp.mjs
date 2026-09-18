@@ -173,6 +173,11 @@ try {
   );
   await call("keys_bip44_path", { chain: "bitcoin", change: 1 }, /m\/44'\/0'\/0'\/1\/0/);
   await call("keys_bip44_path", { chain: "solana" }, /Path: m\/44'\/501'\/0'\/0'$/m);
+  await call(
+    "keys_bip44_path",
+    { chain: "sui", addressType: "secp256k1" },
+    /Path: m\/54'\/784'\/0'\/0\/0$/m,
+  );
 
   const missingCalls = listed.tools.map((tool) => tool.name).filter((name) => !called.has(name));
   if (missingCalls.length > 0) throw new Error(`Tools not exercised: ${missingCalls.join(", ")}`);

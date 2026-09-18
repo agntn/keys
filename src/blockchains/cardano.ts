@@ -55,10 +55,7 @@ export class Cardano extends AbstractBlockchain {
    * @returns {string} The CIP-1852 path
    */
   override getDerivationPath(account = 0, role = 0, addressIndex = 0): string {
-    if (!Number.isInteger(role) || role < 0 || role > CIP1852_MAX_ROLE) {
-      throw new RangeError(`role must be an integer between 0 and ${CIP1852_MAX_ROLE}`);
-    }
-    return getBIP32Path(CIP1852_PURPOSE, this.bip44, account, role, addressIndex);
+    return getBIP32Path(CIP1852_PURPOSE, this.bip44, account, role, addressIndex, CIP1852_MAX_ROLE);
   }
 
   /** CIP-1852 roots come from the mnemonic entropy, not the BIP39 seed, so the shared SLIP-10 walk would give a wrong address. */

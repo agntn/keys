@@ -225,7 +225,7 @@ function assertBip44PathMode(
     return;
   }
   throw new TypeError(
-    "Provide path by itself, or chain with optional account, change, and addressIndex",
+    "Provide path by itself, or chain with optional account, change, addressIndex, and addressType",
   );
 }
 
@@ -801,12 +801,14 @@ export async function verifyMessage(
 }
 
 /**
- * Parse a BIP44 path or generate one for a supported blockchain.
+ * Parse a BIP44 path or generate the one a chain's wallets use. The chain checks the change value,
+ * Cardano up to the CIP-1852 roles, and the address type names the scheme where two curves exist.
  * @param chainValue - Blockchain name for generation mode.
  * @param pathValue - Existing BIP44 path for parse mode.
  * @param accountValue - Account index.
- * @param changeValue - External or internal branch.
+ * @param changeValue - External or internal branch, or the CIP-1852 role on Cardano.
  * @param addressIndexValue - Address index.
+ * @param addressTypeValue - Signature scheme on Sui, ed25519 by default.
  * @returns {Promise<ToolResult<BIP44PathDetails>>} Parsed or generated path.
  */
 export async function bip44Path(
@@ -815,8 +817,14 @@ export async function bip44Path(
   accountValue?: unknown,
   changeValue?: unknown,
   addressIndexValue?: unknown,
+  addressTypeValue?: unknown,
 ): Promise<ToolResult<BIP44PathDetails>> {
-  assertBip44PathMode(chainValue, pathValue, [accountValue, changeValue, addressIndexValue]);
+  assertBip44PathMode(chainValue, pathValue, [
+    accountValue,
+    changeValue,
+    addressIndexValue,
+    addressTypeValue,
+  ]);
   const path = optionalString(pathValue, "BIP44 path");
   if (path !== undefined) {
     const parsed = parseBIP44Path(path);
@@ -843,10 +851,14 @@ export async function bip44Path(
   }
 
   const account = optionalIndex(accountValue, "Account") ?? 0;
-  const change = optionalIndex(changeValue, "Change", 1) ?? 0;
+  const change = optionalIndex(changeValue, "Change") ?? 0;
   const addressIndex = optionalIndex(addressIndexValue, "Address index") ?? 0;
-  const { blockchain } = await getBlockchain(chainValue);
-  const generated = getBlockchainPath(blockchain, account, change, addressIndex);
+  const { blockchain, addressType } = await getBlockchain(chainValue, undefined, addressTypeValue);
+  if (addressType !== undefined && !Array.isArray(blockchain.curve)) {
+    throw new RangeError(`addressType names a scheme, and ${blockchain.name} has one curve`);
+  }
+  const options = addressType === undefined ? undefined : { scheme: addressType };
+  const generated = getBlockchainPath(blockchain, account, change, addressIndex, options);
   return {
     content: content(
       `Chain: ${blockchain.name} (BIP44 coin type: ${blockchain.bip44})\nPath: ${generated}`,

@@ -526,11 +526,12 @@ export default function keysExtension(pi: ExtensionAPI) {
     label: "BIP44 Path",
     description: "Get or parse a derivation path for a blockchain",
     promptSnippet:
-      "Use to parse BIP44 paths or generate the path a chain's wallets use: BIP44 on secp256k1 chains, every level hardened on ed25519 chains, CIP-1852 on Cardano.",
+      "Use to parse BIP44 paths or generate the path a chain's wallets use: BIP44 on secp256k1 chains, every level hardened on ed25519 chains, CIP-1852 with roles on Cardano, the scheme picking the shape on Sui.",
     promptGuidelines: [
       "Provide a path by itself to parse it, or a chain name to generate a path",
-      "For generation only: account, change, addressIndex (defaults to 0)",
+      "For generation only: account, change, addressIndex (defaults to 0), addressType (Sui scheme, ed25519 by default)",
       "Stellar paths end at the account and Solana paths at the change branch; a deeper index on those chains is an error",
+      "Cardano reads change as the CIP-1852 role: 0 external, 1 internal, 2 staking, up to 5",
     ],
     parameters: Type.Object(
       {
@@ -552,15 +553,20 @@ export default function keysExtension(pi: ExtensionAPI) {
         ),
         change: Type.Optional(
           Type.Integer({
-            description: "Change level for generation only (0=external, 1=internal, default 0)",
+            description:
+              "Change level for generation only (0=external, 1=internal, Cardano role up to 5, default 0)",
             minimum: 0,
-            maximum: 1,
           }),
         ),
         addressIndex: Type.Optional(
           Type.Integer({
             description: "Address index for generation only (default 0)",
             minimum: 0,
+          }),
+        ),
+        addressType: Type.Optional(
+          Type.String({
+            description: "Signature scheme for generation on Sui (ed25519 or secp256k1)",
           }),
         ),
       },
@@ -576,6 +582,7 @@ export default function keysExtension(pi: ExtensionAPI) {
         params.account,
         params.change,
         params.addressIndex,
+        params.addressType,
       );
     },
   });

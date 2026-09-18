@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
-import { bip39TestVectors, suiTestVectors } from "../fixtures";
+import { bip39TestVectors, slip10WalletVectors, suiTestVectors } from "../fixtures";
 import Sui from "../../src/blockchains/sui";
 import Ethereum from "../../src/blockchains/ethereum";
 import { useBlockchain } from "../../src/blockchain";
@@ -137,11 +137,11 @@ describe("Sui", () => {
     });
   });
 
-  /** Ed25519 vector computed independently with bip_utils 2.9.3 for the BIP39 reference mnemonic. */
   describe("HD wallets from mnemonics", () => {
     const blockchain = useBlockchain(new Sui());
     const { mnemonic } = bip39TestVectors;
-    const path = "m/44'/784'/0'/0'/0'";
+    const [, , vector] = slip10WalletVectors;
+    const { path } = vector;
 
     it("generates the SDK path for each scheme", () => {
       expect(blockchain.getDerivationPath()).toBe(path);
@@ -151,17 +151,16 @@ describe("Sui", () => {
       expect(blockchain.getDerivationPath(1, 0, 2, { scheme: "secp256k1" })).toBe(
         "m/54'/784'/1'/0/2",
       );
+      expect(() => blockchain.getDerivationPath(0, 2, 0, { scheme: "secp256k1" })).toThrow(
+        RangeError,
+      );
     });
 
     it("derives the ed25519 wallet over SLIP-10 by default", () => {
       const wallet = blockchain.deriveHDWallet(mnemonic, path);
 
-      expect(wallet.keys.public).toBe(
-        "900b4d81eecea3df2f74b14200c4f4cf3f49afaca7a634ffd2cf6ff82bdaecf2",
-      );
-      expect(wallet.address).toBe(
-        "0x5e93a736d04fbb25737aa40bee40171ef79f65fae833749e3c089fe7cc2161f1",
-      );
+      expect(wallet.keys.public).toBe(vector.publicKey);
+      expect(wallet.address).toBe(vector.address);
     });
 
     it("switches to BIP32 when the scheme is secp256k1", () => {
