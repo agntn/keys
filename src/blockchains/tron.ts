@@ -4,12 +4,15 @@ import { hexToBytes } from "@noble/hashes/utils.js";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { addSchemeByte } from "../utils/address.ts";
 import { encodeBase58Check, validateBase58Check } from "../utils/encoding.ts";
-import { evmSignMessage, evmVerifyMessage } from "../utils/evm.ts";
+import { hashWithPreamble } from "../utils/evm.ts";
 import { generateKeyPublic } from "../utils/secp256k1.ts";
+import { signMessage, verifyMessage } from "../utils/signing.ts";
 import type { Curve, KeyOptions } from "../types.ts";
 
 const ADDRESS_PREFIX_BYTE = 0x41;
 const ADDRESS_PREFIX_CHAR = "T";
+/** TIP-191 preamble, the one TronWeb's `signMessageV2` and TronLink hash under. */
+const MESSAGE_PREAMBLE = "\u0019TRON Signed Message:\n";
 
 /** TRON blockchain implementation. */
 export class Tron extends AbstractBlockchain {
@@ -38,7 +41,11 @@ export class Tron extends AbstractBlockchain {
     keyPrivate: string,
     options?: KeyOptions,
   ): string {
-    return evmSignMessage(message, keyPrivate, options);
+    return signMessage(hashWithPreamble(message, MESSAGE_PREAMBLE), keyPrivate, {
+      ...options,
+      curve: "secp256k1",
+      hash: false,
+    });
   }
 
   override verifyMessage(
@@ -47,7 +54,11 @@ export class Tron extends AbstractBlockchain {
     keyPublic: string,
     options?: KeyOptions,
   ): boolean {
-    return evmVerifyMessage(message, signature, keyPublic, options);
+    return verifyMessage(hashWithPreamble(message, MESSAGE_PREAMBLE), signature, keyPublic, {
+      ...options,
+      curve: "secp256k1",
+      hash: false,
+    });
   }
 }
 

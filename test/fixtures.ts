@@ -102,6 +102,35 @@ export const litecoinTestVectors = {
   ],
 } as const;
 
+/** Disposable key 1 through TronWeb 6.5.1: `hashMessage` digests and `signMessageV2` signatures. */
+export const tronTestVectors = {
+  privateKey: "0000000000000000000000000000000000000000000000000000000000000001",
+  publicKey: "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+  address: "TMVQGm1qAQYVdetCeGRRkTWYYrLXuHK2HC",
+  messages: [
+    [
+      "",
+      "5beedb3d65d99ecaf9857d8695e750cc56278093f4ccbd1cc4e561fc82b1d189",
+      "5fc8883facaeb9dbebe71ec179c2744f83dc0e4868c6c9a6d63d47b949f33ae4317dc553f28a9c64b06838dc1adf7f24da330394f05e4ea6318d18608293ffe91b",
+    ],
+    [
+      "Test message",
+      "2cb3644091a57a35cca1396e16625a0bff896ba9ff8c4eaa93d89e9f131c7435",
+      "b88e4ef1a8c86ee2bc9b89383a65f758b6f1bb16c0b4b24c4c6704059cec6dbe1a2a5e1d5586eae5cef80041ac200071cde08aa06736dd25c30da452f0f60df11c",
+    ],
+    [
+      "żółw 🐢",
+      "b7a27900510b74e563c19d2d27a7035ffa7824459584701c1b035101c1114e78",
+      "c767e7e02259fb22b7e54f54782e313a66343c78533385cc31b33582a0ca77130894b6bd0341a77770a25ab3af909e7c3c1e88879797e57a4bdc30c22afdf9031b",
+    ],
+    [
+      "a".repeat(256),
+      "96e2d5cbc09c351edbb3980269c1ad387c002a75cbcc0c190ab9c5c1dc469e30",
+      "7dd4e536adb0bc06cb27ee146f44e9eb7be17084ed5ff0a648dfe180edb54c0a4109b4b0a4d1642267aecfb5dfcc482b1142b743842c80b90ac1d58f18df40441c",
+    ],
+  ],
+} as const;
+
 /** Disposable key 1, dcrd stdaddr v4.1.2 and chainhash v1.0.5 with wire v1.7.5. */
 export const decredTestVectors = {
   privateKey: "00".repeat(31) + "01",

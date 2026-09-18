@@ -24,7 +24,7 @@ The docs live at [keys.agntn.dev](https://keys.agntn.dev), keyspace explorer inc
 - 🌱 **Mnemonic in, wallet out.** BIP39 into BIP32 on secp256k1 and SLIP-10 on ed25519, passphrase optional.
 - 🧩 **Puzzle mnemonics are welcome.** Wrong checksum? Derive anyway and get a warning with the wallet, or ask which words would make it valid.
 - 🌍 **All ten BIP39 word lists.** Look a word up in Italian, generate in Japanese with the ideographic spaces, map indices from base 0 or base 1.
-- ✍️ **Signing on both curves.** Bitcoin, Litecoin and Decred hash the message the way Core does, EVM chains the way ethers does, ed25519 chains sign the raw bytes. What comes back is always 64 bytes of compact `r||s` hex, no recovery byte, so it's not Core's base64 and ethers needs a `v` from you before it will recover the signer.
+- ✍️ **Signing on both curves.** Bitcoin, Litecoin and Decred hash the message the way Core does, EVM chains the way ethers does, TRON the way TronWeb's `signMessageV2` does, ed25519 chains sign the raw bytes. What comes back is always 64 bytes of compact `r||s` hex, no recovery byte, so it's not Core's base64 and ethers needs a `v` from you before it will recover the signer.
 - 🔌 **Loads one chain at a time.** `blockchains.solana()()` imports Solana and nothing else, so a Bitcoin tool never pays for Cardano.
 - 🤖 **18 agent tools.** MCP over stdio and a Pi extension run the same code, and a generated mnemonic comes back with a note that it's in the transcript now.
 

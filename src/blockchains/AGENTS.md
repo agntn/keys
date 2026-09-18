@@ -10,7 +10,7 @@ Lazy-loaded class modules. Each file exports a named concrete class and the same
 | -------------------- | ---------------------- | ------------------------------------------------- | ----------------------------------- |
 | **EVM**              | ethereum, base         | `evmSignMessage` (preamble + keccak256)           | secp256k1 via `utils/secp256k1`     |
 | **Bitcoin family**   | bitcoin, litecoin      | chain-specific message preamble                   | secp256k1 via `utils/secp256k1`     |
-| **secp256k1 custom** | tron                   | `evmSignMessage` (same signing, custom addresses) | secp256k1 via `utils/secp256k1`     |
+| **secp256k1 custom** | tron                   | `hashWithPreamble` (TIP-191 preamble + keccak256) | secp256k1 via `utils/secp256k1`     |
 | **ed25519**          | solana, aptos, cardano | `ed25519SignMessage` (raw, no prehash)            | ed25519 via `utils/ed25519`         |
 | **dual-curve**       | sui                    | both (selected via `options.scheme`)              | ed25519 default, secp256k1 optional |
 
