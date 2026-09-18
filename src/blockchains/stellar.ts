@@ -2,7 +2,7 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import { concatBytes, hexToBytes } from "@noble/hashes/utils.js";
 import { base32nopad } from "@scure/base";
 import { AbstractBlockchain } from "../blockchain.ts";
-import { BIP44 } from "../utils/bip44/index.ts";
+import { BIP44, getHardenedPath } from "../utils/bip44/index.ts";
 import { generateKeyPublic } from "../utils/ed25519.ts";
 import { signMessage, verifyMessage } from "../utils/signing.ts";
 import type { Curve, KeyOptions } from "../types.ts";
@@ -71,6 +71,23 @@ export class Stellar extends AbstractBlockchain {
 
   override getKeyPublic(keyPrivate: string, _options?: KeyOptions): string {
     return generateKeyPublic(keyPrivate);
+  }
+
+  /**
+   * SEP-0005 puts account `x` at `m/44'/148'/x'` and stops there, so neither a change branch nor
+   * an address index has a level to land on.
+   * @param account - Account index
+   * @param change - Must stay 0
+   * @param addressIndex - Must stay 0
+   * @returns {string} The SLIP-10 path
+   */
+  override getDerivationPath(account = 0, change = 0, addressIndex = 0): string {
+    if (change !== 0 || addressIndex !== 0) {
+      throw new RangeError(
+        "Stellar paths end at the account, so change and addressIndex must be 0",
+      );
+    }
+    return getHardenedPath(this.bip44, [account]);
   }
 
   /**

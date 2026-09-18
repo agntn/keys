@@ -363,6 +363,57 @@ describe("keys MCP server", () => {
     expect(text(response.content)).toContain("Invalid arguments");
   });
 
+  it("generates paths the ed25519 chains derive and refuses levels they lack", async () => {
+    const client = await connectTestClient();
+    const { mnemonic } = bip39TestVectors;
+
+    for (const [chain, expected] of [
+      ["solana", "m/44'/501'/0'/0'"],
+      ["stellar", "m/44'/148'/0'"],
+      ["aptos", "m/44'/637'/0'/0'/0'"],
+      ["sui", "m/44'/784'/0'/0'/0'"],
+    ]) {
+      const generated = await client.callTool({
+        name: "keys_bip44_path",
+        arguments: { chain },
+      });
+      expect(generated.isError).not.toBe(true);
+      expect(text(generated.content)).toContain(`Path: ${expected}`);
+
+      const derived = await client.callTool({
+        name: "keys_derive_hd_wallet",
+        arguments: { chain, mnemonic, path: expected },
+      });
+      expect(derived.isError).not.toBe(true);
+      expect(text(derived.content)).toContain("Address: ");
+    }
+
+    const cardano = await client.callTool({
+      name: "keys_bip44_path",
+      arguments: { chain: "cardano", change: 2 },
+    });
+    expect(text(cardano.content)).toContain("Path: m/1852'/1815'/0'/2/0");
+
+    const sui = await client.callTool({
+      name: "keys_bip44_path",
+      arguments: { chain: "sui", addressType: "secp256k1" },
+    });
+    expect(text(sui.content)).toContain("Path: m/54'/784'/0'/0/0");
+
+    for (const [arguments_, message] of [
+      [{ chain: "stellar", addressIndex: 1 }, "Stellar paths end at the account"],
+      [{ chain: "solana", addressIndex: 1 }, "Solana paths end at the change branch"],
+      [{ chain: "bitcoin", change: 2 }, "change must be an integer between 0 and 1"],
+      [{ chain: "cardano", change: 6 }, "change must be an integer between 0 and 5"],
+      [{ chain: "bitcoin", addressType: "secp256k1" }, "is not supported for bitcoin"],
+      [{ chain: "bitcoin", addressType: "segwit" }, "Invalid arguments"],
+    ] as const) {
+      const rejected = await client.callTool({ name: "keys_bip44_path", arguments: arguments_ });
+      expect(rejected.isError).toBe(true);
+      expect(text(rejected.content)).toContain(message);
+    }
+  });
+
   it("rejects ambiguous BIP44 path modes at the schema", async () => {
     const client = await connectTestClient();
     const path = "m/44'/0'/0'/0/0";
@@ -376,6 +427,7 @@ describe("keys MCP server", () => {
       { path, account: 1 },
       { path, change: 1 },
       { path, addressIndex: 1 },
+      { path, addressType: "secp256k1" },
     ]) {
       const response = await client.callTool({
         name: "keys_bip44_path",

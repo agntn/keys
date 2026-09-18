@@ -45,7 +45,7 @@ SEP-0005 puts accounts at `m/44'/148'/x'`, three hardened levels, SLIP-10 undern
 stellarChain.deriveHDWallet(mnemonic, "m/44'/148'/0'").address; // GDRXE2BQ... for the SEP-0005 test phrase
 ```
 
-That is the path SEP-0005 wallets, Freighter among them, walk for the first account. The SEP's own test vectors are in the test suite.
+That is the path SEP-0005 wallets, Freighter among them, walk for the first account. `stellarChain.getDerivationPath(x)` writes it for account `x`, and there's no change or index level to ask for. The SEP's own test vectors are in the test suite.
 
 ## Signing
 

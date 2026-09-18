@@ -17,6 +17,7 @@
  */
 
 import { HARDENED_OFFSET, formatIndex } from "../bip32/index.ts";
+import type { KeyOptions } from "../../types.ts";
 
 // BIP44 path levels
 export enum BIP44Levels {
@@ -61,6 +62,43 @@ export const BIP44 = {
   SUI: 784,
 } as const;
 
+/** Names of the levels below the coin type, in path order. */
+const LEVEL_NAMES = ["account", "change", "addressIndex"] as const;
+
+/**
+ * Creates the path of five levels that BIP44, BIP49, BIP84 and CIP-1852 share: purpose, coin type
+ * and account hardened, change and index plain.
+ *
+ * @param purpose - Purpose level, 44 for BIP44
+ * @param coinType - Coin type (from SLIP-0044)
+ * @param account - Account index (defaults to 0)
+ * @param change - Change branch, or the role on CIP-1852
+ * @param addressIndex - Address index (defaults to 0)
+ * @param maxChange - Highest change value the purpose allows, 1 for BIP44 and 5 for CIP-1852 roles
+ * @returns {string} Derivation path string
+ */
+export function getBIP32Path(
+  purpose: number,
+  coinType: number,
+  account = 0,
+  change = 0,
+  addressIndex = 0,
+  maxChange: number = BIP44Change.INTERNAL,
+): string {
+  assertLevelIndex("purpose", purpose);
+  assertLevelIndex("coinType", coinType);
+  assertLevelIndex("account", account);
+  assertLevelIndex("maxChange", maxChange);
+  assertLevelIndex("change", change, maxChange);
+  assertLevelIndex("addressIndex", addressIndex);
+
+  const purposeStr = formatIndex(HARDENED_OFFSET + purpose);
+  const coinTypeStr = formatIndex(HARDENED_OFFSET + coinType);
+  const accountStr = formatIndex(HARDENED_OFFSET + account);
+
+  return `m/${purposeStr}/${coinTypeStr}/${accountStr}/${change}/${addressIndex}`;
+}
+
 /**
  * Creates a BIP44 derivation path
  *
@@ -76,18 +114,32 @@ export function getBIP44Path(
   change = BIP44Change.EXTERNAL,
   addressIndex = 0,
 ): string {
-  assertLevelIndex("coinType", coinType);
-  assertLevelIndex("account", account);
-  assertLevelIndex("change", change, BIP44Change.INTERNAL);
-  assertLevelIndex("addressIndex", addressIndex);
+  return getBIP32Path(44, coinType, account, change, addressIndex);
+}
 
-  // Harden purpose, coin type, and account
+/**
+ * Creates the path SLIP-10 wallets use, `m/44'/coinType'/account'/change'/index'` with every
+ * level hardened, cut where the chain stops: Stellar after the account, Solana after the change.
+ *
+ * @param coinType - Coin type (from SLIP-0044)
+ * @param levels - Account first, then the change branch and the address index if the chain has them
+ * @returns {string} Derivation path with every level hardened
+ */
+export function getHardenedPath(coinType: number, levels: readonly number[]): string {
+  assertLevelIndex("coinType", coinType);
+  if (levels.length === 0 || levels.length > LEVEL_NAMES.length) {
+    throw new RangeError(`levels must carry 1 to ${LEVEL_NAMES.length} entries`);
+  }
+  const hardened = levels.map((level, position) => {
+    const maximum = position === 1 ? BIP44Change.INTERNAL : MAX_LEVEL_INDEX;
+    assertLevelIndex(LEVEL_NAMES[position] ?? "level", level, maximum);
+    return formatIndex(HARDENED_OFFSET + level);
+  });
+
   const purposeStr = formatIndex(BIP44_PURPOSE);
   const coinTypeStr = formatIndex(HARDENED_OFFSET + coinType);
-  const accountStr = formatIndex(HARDENED_OFFSET + account);
 
-  // Change and address index are not hardened
-  return `m/${purposeStr}/${coinTypeStr}/${accountStr}/${change}/${addressIndex}`;
+  return `m/${purposeStr}/${coinTypeStr}/${hardened.join("/")}`;
 }
 
 /**
@@ -207,20 +259,37 @@ function parseSegment(segment: string): number | undefined {
   return hardened ? value + HARDENED_OFFSET : value;
 }
 
+/** The part of a blockchain that decides its derivation paths. */
+export interface PathSource {
+  readonly bip44: number;
+  readonly getDerivationPath?: (
+    account?: number,
+    change?: number,
+    addressIndex?: number,
+    options?: KeyOptions,
+  ) => string;
+}
+
 /**
- * Get derivation path for a specific blockchain
+ * Get the derivation path a blockchain's wallets use for an account: the chain's own shape when
+ * it declares one, BIP44 from its coin type otherwise.
  *
  * @param blockchain - The blockchain implementation interface
  * @param account - Account index (defaults to 0)
  * @param change - 0 for external chain (receive addresses), 1 for internal chain (change addresses)
  * @param addressIndex - Address index (defaults to 0)
- * @returns {string} BIP44 derivation path string
+ * @param options - Key options, the scheme on chains with two curves
+ * @returns {string} Derivation path string
  */
 export function getBlockchainPath(
-  blockchain: { readonly bip44: number },
+  blockchain: PathSource,
   account = 0,
   change = BIP44Change.EXTERNAL,
   addressIndex = 0,
+  options?: KeyOptions,
 ): string {
-  return getBIP44Path(blockchain.bip44, account, change, addressIndex);
+  if (blockchain.getDerivationPath === undefined) {
+    return getBIP44Path(blockchain.bip44, account, change, addressIndex);
+  }
+  return blockchain.getDerivationPath(account, change, addressIndex, options);
 }

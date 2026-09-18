@@ -29,6 +29,26 @@ export const bip39TestVectors = {
     "c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e53495531f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04",
 };
 
+/** Wallets bip_utils 2.9.3 derives from the BIP39 reference mnemonic at each chain's own path. */
+export const slip10WalletVectors = [
+  {
+    chain: "solana",
+    path: "m/44'/501'/0'/0'",
+    address: "HAgk14JpMQLgt6rVgv7cBQFJWFto5Dqxi472uT3DKpqk",
+  },
+  {
+    chain: "aptos",
+    path: "m/44'/637'/0'/0'/0'",
+    address: "0xeb663b681209e7087d681c5d3eed12aaa8e1915e7c87794542c3f96e94b3d3bf",
+  },
+  {
+    chain: "sui",
+    path: "m/44'/784'/0'/0'/0'",
+    publicKey: "900b4d81eecea3df2f74b14200c4f4cf3f49afaca7a634ffd2cf6ff82bdaecf2",
+    address: "0x5e93a736d04fbb25737aa40bee40171ef79f65fae833749e3c089fe7cc2161f1",
+  },
+] as const;
+
 /** Public, claimed Bitcoin Movie Enigma solution: floflo777/open-crypto-puzzles#24. */
 export const invalidChecksumPuzzle = {
   mnemonic:

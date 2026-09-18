@@ -2,6 +2,7 @@ import { sha3_256 } from "@noble/hashes/sha3.js";
 import { hexToBytes } from "@noble/hashes/utils.js";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { addSchemeByte, createPrefixedAddress, validateAddressHex } from "../utils/address.ts";
+import { BIP44Change, getHardenedPath } from "../utils/bip44/index.ts";
 import { generateKeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
 import type { Curve, KeyOptions } from "../types.ts";
@@ -14,6 +15,18 @@ export class Aptos extends AbstractBlockchain {
 
   override getKeyPublic(keyPrivate: string, _options?: KeyOptions): string {
     return generateKeyPublic(keyPrivate);
+  }
+
+  /**
+   * Petra and the Aptos SDK derive at `m/44'/637'/account'/change'/addressIndex'`, all five levels
+   * hardened, which is what the SDK's `isValidHardenedPath` accepts.
+   * @param account - Account index
+   * @param change - Change branch
+   * @param addressIndex - Address index
+   * @returns {string} The SLIP-10 path
+   */
+  override getDerivationPath(account = 0, change = BIP44Change.EXTERNAL, addressIndex = 0): string {
+    return getHardenedPath(this.bip44, [account, change, addressIndex]);
   }
 
   override getAddress(keyPublic: string): string {

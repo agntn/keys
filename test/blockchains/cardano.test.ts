@@ -249,11 +249,22 @@ describe("Cardano blockchain", () => {
   });
 
   describe("HD wallets from mnemonics", () => {
-    it("refuses to fake CIP-1852 with the shared SLIP-10 walk", () => {
-      const blockchain = useBlockchain(new Cardano());
+    const blockchain = useBlockchain(new Cardano());
 
+    it("generates the CIP-1852 path with the change branch as the role", () => {
+      expect(blockchain.getDerivationPath()).toBe("m/1852'/1815'/0'/0/0");
+      expect(blockchain.getDerivationPath(1, 1, 4)).toBe("m/1852'/1815'/1'/1/4");
+    });
+
+    it("takes the staking and governance roles CIP-1852 lists and nothing past them", () => {
+      expect(blockchain.getDerivationPath(0, 2)).toBe("m/1852'/1815'/0'/2/0");
+      expect(blockchain.getDerivationPath(0, 5)).toBe("m/1852'/1815'/0'/5/0");
+      expect(() => blockchain.getDerivationPath(0, 6)).toThrow(RangeError);
+    });
+
+    it("refuses to fake CIP-1852 with the shared SLIP-10 walk", () => {
       expect(() =>
-        blockchain.deriveHDWallet(bip39TestVectors.mnemonic, "m/1852'/1815'/0'/0/0"),
+        blockchain.deriveHDWallet(bip39TestVectors.mnemonic, blockchain.getDerivationPath()),
       ).toThrow("CIP-1852");
     });
   });

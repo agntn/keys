@@ -682,10 +682,11 @@ describe("keys Pi extension", () => {
       { path, account: 1 },
       { path, change: 1 },
       { path, addressIndex: 1 },
+      { path, addressType: "secp256k1" },
     ]) {
       expect(Value.Check(tool.parameters, params)).toBe(true);
       await expect(tool.execute("ambiguous-mode", params)).rejects.toThrow(
-        "Provide path by itself, or chain with optional account, change, and addressIndex",
+        "Provide path by itself, or chain with optional account, change, addressIndex, and addressType",
       );
     }
   });

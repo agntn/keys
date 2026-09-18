@@ -5,7 +5,12 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import type * as KeysTools from "../../../dist/tool-operations.d.mts";
-import { TOOL_ADDRESS_TYPES, TOOL_CHAINS, TOOL_NETWORKS } from "../../../src/tool-parameters.ts";
+import {
+  SUI_ADDRESS_TYPES,
+  TOOL_ADDRESS_TYPES,
+  TOOL_CHAINS,
+  TOOL_NETWORKS,
+} from "../../../src/tool-parameters.ts";
 import {
   CONVERT_PUBLIC_KEY_PARAMETERS,
   WIF_ENCODE_PARAMETERS,
@@ -524,12 +529,14 @@ export default function keysExtension(pi: ExtensionAPI) {
   pi.registerTool({
     name: "keys_bip44_path",
     label: "BIP44 Path",
-    description: "Get or parse a BIP44 derivation path for a blockchain",
+    description: "Get or parse a derivation path for a blockchain",
     promptSnippet:
-      "Use to generate or parse BIP44 derivation paths (m/44'/coin'/account'/change/index).",
+      "Use to parse BIP44 paths or generate the path a chain's wallets use: BIP44 on secp256k1 chains, every level hardened on ed25519 chains, CIP-1852 with roles on Cardano, the scheme picking the shape on Sui.",
     promptGuidelines: [
       "Provide a path by itself to parse it, or a chain name to generate a path",
-      "For generation only: account, change, addressIndex (defaults to 0)",
+      "For generation only: account, change, addressIndex (defaults to 0), addressType (Sui scheme, ed25519 by default)",
+      "Stellar paths end at the account and Solana paths at the change branch; a deeper index on those chains is an error",
+      "Cardano reads change as the CIP-1852 role: 0 external, 1 internal, 2 staking, up to 5",
     ],
     parameters: Type.Object(
       {
@@ -551,15 +558,21 @@ export default function keysExtension(pi: ExtensionAPI) {
         ),
         change: Type.Optional(
           Type.Integer({
-            description: "Change level for generation only (0=external, 1=internal, default 0)",
+            description:
+              "Change level for generation only (0=external, 1=internal, Cardano role up to 5, default 0)",
             minimum: 0,
-            maximum: 1,
           }),
         ),
         addressIndex: Type.Optional(
           Type.Integer({
             description: "Address index for generation only (default 0)",
             minimum: 0,
+          }),
+        ),
+        addressType: Type.Optional(
+          Type.String({
+            enum: SUI_ADDRESS_TYPES,
+            description: "Signature scheme for generation on Sui (ed25519 or secp256k1)",
           }),
         ),
       },
@@ -575,6 +588,7 @@ export default function keysExtension(pi: ExtensionAPI) {
         params.account,
         params.change,
         params.addressIndex,
+        params.addressType,
       );
     },
   });

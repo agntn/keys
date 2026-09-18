@@ -34,6 +34,7 @@ Decred uses `AbstractBlockchain` directly: ECDSA P2PKH with BLAKE-256, not Bitco
 - **BIP44 coin type** - every chain sets `bip44` from `BIP44` enum or SLIP-0044 number
 - **SUI dual-curve** - `getKeyPublic` and `signMessage` check `options.scheme` to pick ed25519 or secp256k1; both sign the `signPersonalMessage` digest, secp256k1 over its sha256 like the SDK
 - **HD wallets** - `deriveHDWallet` on the base class walks BIP32 or SLIP-10 by curve; Bitcoin and Litecoin infer the address type from the path purpose, Sui takes the curve from the scheme, Cardano throws because CIP-1852 derives differently
+- **Derivation paths** - `getDerivationPath` is BIP44 on the base class; Solana, Stellar and Aptos override it with the hardened SLIP-10 shape their wallets use, cut at each chain's depth; Sui hardens only the ed25519 path and walks BIP32 `m/54'/784'/account'/change/index` on secp256k1; Cardano writes CIP-1852, `m/1852'/1815'/account'/role/index` with the role and index plain
 
 ## COMPLEXITY
 

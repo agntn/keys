@@ -191,6 +191,16 @@ export interface Blockchain extends BlockchainImplementation {
   deriveWallet?: (keyPrivate: string, options?: KeyOptions, addressType?: string) => Wallet;
 
   /**
+   * Builds the derivation path the chain's wallets use for an account.
+   */
+  getDerivationPath?: (
+    account?: number,
+    change?: number,
+    addressIndex?: number,
+    options?: KeyOptions,
+  ) => string;
+
+  /**
    * Derives a complete wallet from a BIP39 mnemonic and derivation path.
    */
   deriveHDWallet?: (

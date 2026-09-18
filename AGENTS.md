@@ -53,6 +53,7 @@ keys/
 - **Abstract bases** - all chains extend `AbstractBlockchain`; Ethereum and Base extend `AbstractEVMBlockchain`
 - **Lazy double-call** - `blockchains.chain(options)()` passes constructor options, then imports and constructs the class
 - **Curve-split signing** - secp256k1 chains use `evmSignMessage` (Ethereum preamble + keccak256), ed25519 chains use `ed25519SignMessage` (raw, no prehash)
+- **Paths per chain** - `getDerivationPath` on the base class is BIP44; Solana, Stellar and Aptos override it with their SLIP-10 shape, every level hardened (Stellar stops at the account, Solana at the change branch), Sui hardens the ed25519 path and walks BIP32 `m/54'/784'/account'/change/index` on secp256k1, Cardano writes CIP-1852 with a plain role and index. `keys_bip44_path` generates through it, so Cardano takes roles up to 5 where BIP44 chains stop at 1
 - **Test mirrors src** - `src/blockchains/bitcoin.ts` -> `test/blockchains/bitcoin.test.ts`
 - **Shared fixtures** - test vectors live in `test/fixtures.ts`, not duplicated per test file
 - **ESM only** - `"type": "module"` in package.json, `.mjs` output

@@ -9,6 +9,7 @@ import { Type, type TSchema } from "typebox";
 import { Value } from "typebox/value";
 import {
   BIP44_PATH_MODE_SCHEMA,
+  SUI_ADDRESS_TYPES,
   TOOL_ADDRESS_TYPES,
   TOOL_CHAINS,
   TOOL_NETWORKS,
@@ -408,7 +409,7 @@ const tools: readonly ToolDefinition[] = [
     name: "keys_bip44_path",
     title: "BIP44 Path",
     description:
-      "Parse a BIP44 derivation path, or generate one for a blockchain with explicit account, change branch, and address index values.",
+      "Parse a BIP44 derivation path, or generate the path a blockchain's wallets use for an account: BIP44 on secp256k1 chains, every level hardened on ed25519 chains (Stellar stops at the account, Solana at the change branch), CIP-1852 with roles on Cardano, and on Sui the scheme picks between the two.",
     inputSchema: Type.Object(
       {
         chain: Type.Optional(chainArgument),
@@ -427,9 +428,8 @@ const tools: readonly ToolDefinition[] = [
         change: Type.Optional(
           Type.Integer({
             description:
-              "Change branch for generation only: 0 for external, 1 for internal. Default: 0",
+              "Change branch for generation only: 0 for external, 1 for internal; on Cardano the CIP-1852 role, up to 5. Default: 0",
             minimum: 0,
-            maximum: 1,
           }),
         ),
         addressIndex: Type.Optional(
@@ -438,12 +438,26 @@ const tools: readonly ToolDefinition[] = [
             minimum: 0,
           }),
         ),
+        addressType: Type.Optional(
+          Type.String({
+            description:
+              "Signature scheme for generation on Sui, ed25519 or secp256k1. Default: ed25519",
+            enum: SUI_ADDRESS_TYPES,
+          }),
+        ),
       },
       { additionalProperties: false, ...BIP44_PATH_MODE_SCHEMA },
     ),
     annotations: LOCAL_READ,
     execute: (args) =>
-      bip44Path(args["chain"], args["path"], args["account"], args["change"], args["addressIndex"]),
+      bip44Path(
+        args["chain"],
+        args["path"],
+        args["account"],
+        args["change"],
+        args["addressIndex"],
+        args["addressType"],
+      ),
   },
 ];
 

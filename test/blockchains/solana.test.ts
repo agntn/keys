@@ -1,5 +1,5 @@
 import { expect, describe, it } from "vitest";
-import { bip39TestVectors } from "../fixtures";
+import { bip39TestVectors, slip10WalletVectors } from "../fixtures";
 import Solana from "../../src/blockchains/solana";
 import { useBlockchain } from "../../src/blockchain";
 import type { Options } from "../../src/types";
@@ -103,14 +103,22 @@ describe("Solana Blockchain", () => {
     });
   });
 
-  /** Address computed independently with bip_utils 2.9.3 for the BIP39 reference mnemonic. */
   describe("HD wallets from mnemonics", () => {
     const blockchain = useBlockchain(new Solana());
+    const [vector] = slip10WalletVectors;
 
     it("derives the Phantom style m/44'/501'/0'/0' address over SLIP-10", () => {
-      expect(blockchain.deriveHDWallet(bip39TestVectors.mnemonic, "m/44'/501'/0'/0'").address).toBe(
-        "HAgk14JpMQLgt6rVgv7cBQFJWFto5Dqxi472uT3DKpqk",
+      const path = blockchain.getDerivationPath();
+      expect(path).toBe(vector.path);
+      expect(blockchain.deriveHDWallet(bip39TestVectors.mnemonic, path).address).toBe(
+        vector.address,
       );
+    });
+
+    it("hardens the account and the change branch and has no address index", () => {
+      expect(blockchain.getDerivationPath(3, 1)).toBe("m/44'/501'/3'/1'");
+      expect(() => blockchain.getDerivationPath(0, 2)).toThrow(RangeError);
+      expect(() => blockchain.getDerivationPath(0, 0, 1)).toThrow(RangeError);
     });
 
     it("rejects non-hardened segments on ed25519", () => {

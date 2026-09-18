@@ -2,14 +2,22 @@ import { expect, test, describe } from "vitest";
 import {
   BIP44,
   BIP44Change,
+  getBIP32Path,
   getBIP44Path,
+  getHardenedPath,
   parseBIP44Path,
   getBlockchainPath,
 } from "../../src/utils/bip44";
+import { bip39TestVectors, slip10WalletVectors, stellarTestVectors } from "../fixtures";
 import { useBlockchain } from "../../src/blockchain";
+import { blockchains } from "../../src/_blockchains";
 import Bitcoin from "../../src/blockchains/bitcoin";
 import Ethereum from "../../src/blockchains/ethereum";
 import Solana from "../../src/blockchains/solana";
+import Stellar from "../../src/blockchains/stellar";
+import Aptos from "../../src/blockchains/aptos";
+import Sui from "../../src/blockchains/sui";
+import Cardano from "../../src/blockchains/cardano";
 
 describe("BIP44 Path Generation", () => {
   test("should generate correct BIP44 path for Bitcoin", () => {
@@ -50,6 +58,46 @@ describe("BIP44 Path Generation", () => {
     ["a change level other than 0 or 1", () => getBIP44Path(BIP44.BITCOIN, 0, 2)],
     ["a negative address index", () => getBIP44Path(BIP44.BITCOIN, 0, 0, -1)],
     ["a fractional address index", () => getBIP44Path(BIP44.BITCOIN, 0, 0, 1.5)],
+  ])("should reject %s", (_description, generate) => {
+    expect(generate).toThrow(RangeError);
+  });
+});
+
+describe("Purpose and hardened paths", () => {
+  test("should build the five level layout under any purpose", () => {
+    expect(getBIP32Path(84, BIP44.BITCOIN)).toBe("m/84'/0'/0'/0/0");
+    expect(getBIP32Path(1852, BIP44.CARDANO, 2, BIP44Change.INTERNAL, 7)).toBe(
+      "m/1852'/1815'/2'/1/7",
+    );
+  });
+
+  test("should pin change to 0 and 1 unless the purpose allows more", () => {
+    expect(() => getBIP32Path(1852, BIP44.CARDANO, 0, 2)).toThrow(RangeError);
+    expect(getBIP32Path(1852, BIP44.CARDANO, 0, 2, 0, 5)).toBe("m/1852'/1815'/0'/2/0");
+    expect(() => getBIP32Path(1852, BIP44.CARDANO, 0, 6, 0, 5)).toThrow(RangeError);
+  });
+
+  test.each([Number.NaN, -1, 2_147_483_648])("should reject %s as the change ceiling", (max) => {
+    expect(() => getBIP32Path(1852, BIP44.CARDANO, 0, 0, 0, max)).toThrow(RangeError);
+  });
+
+  test("should reject a purpose outside the BIP32 range", () => {
+    expect(() => getBIP32Path(-1, BIP44.BITCOIN)).toThrow(RangeError);
+    expect(() => getBIP32Path(2_147_483_648, BIP44.BITCOIN)).toThrow(RangeError);
+  });
+
+  test("should harden every level and stop at the depth given", () => {
+    expect(getHardenedPath(BIP44.STELLAR, [0])).toBe("m/44'/148'/0'");
+    expect(getHardenedPath(BIP44.SOLANA, [3, 1])).toBe("m/44'/501'/3'/1'");
+    expect(getHardenedPath(BIP44.SUI, [0, 0, 42])).toBe("m/44'/784'/0'/0'/42'");
+  });
+
+  test.each([
+    ["no levels", () => getHardenedPath(BIP44.SOLANA, [])],
+    ["a fourth level", () => getHardenedPath(BIP44.SOLANA, [0, 0, 0, 0])],
+    ["a negative account", () => getHardenedPath(BIP44.SOLANA, [-1])],
+    ["a change branch other than 0 or 1", () => getHardenedPath(BIP44.SOLANA, [0, 2])],
+    ["a coin type above the BIP32 range", () => getHardenedPath(2_147_483_648, [0])],
   ])("should reject %s", (_description, generate) => {
     expect(generate).toThrow(RangeError);
   });
@@ -137,15 +185,46 @@ describe("Blockchain Path Integration", () => {
     expect(path).toBe("m/44'/60'/0'/0/0");
   });
 
-  test("should generate correct path for solana blockchain", () => {
-    const chain = useBlockchain(new Solana());
-    const path = getBlockchainPath(chain);
-    expect(path).toBe("m/44'/501'/0'/0/0");
-  });
-
   test("should respect custom account parameters", () => {
     const chain = useBlockchain(new Bitcoin());
     const path = getBlockchainPath(chain, 2, BIP44Change.INTERNAL, 5);
     expect(path).toBe("m/44'/0'/2'/1/5");
+  });
+
+  test("should fall back to BIP44 for a chain that only carries a coin type", () => {
+    expect(getBlockchainPath({ bip44: BIP44.SOLANA })).toBe("m/44'/501'/0'/0/0");
+  });
+
+  test.each([
+    ["solana", new Solana(), "m/44'/501'/0'/0'"],
+    ["stellar", new Stellar(), "m/44'/148'/0'"],
+    ["aptos", new Aptos(), "m/44'/637'/0'/0'/0'"],
+    ["sui", new Sui(), "m/44'/784'/0'/0'/0'"],
+    ["cardano", new Cardano(), "m/1852'/1815'/0'/0/0"],
+  ])("should generate the path %s wallets use", (_name, chain, expected) => {
+    expect(getBlockchainPath(useBlockchain(chain))).toBe(expected);
+  });
+
+  test("should hand the scheme to a chain with two curves", () => {
+    const chain = useBlockchain(new Sui());
+    expect(getBlockchainPath(chain, 0, 0, 0, { scheme: "secp256k1" })).toBe("m/54'/784'/0'/0/0");
+  });
+
+  test.each(slip10WalletVectors)(
+    "should generate the path that lands on the known $chain wallet",
+    async ({ chain, address }) => {
+      const blockchain = await blockchains[chain]()();
+      const path = getBlockchainPath(blockchain);
+      expect(blockchain.deriveHDWallet(bip39TestVectors.mnemonic, path).address).toBe(address);
+    },
+  );
+
+  test("should generate the SEP-0005 path that lands on the known Stellar wallet", () => {
+    const blockchain = useBlockchain(new Stellar());
+    const { mnemonic, accounts } = stellarTestVectors.hd;
+    for (const [index, [, , address]] of accounts.entries()) {
+      const path = getBlockchainPath(blockchain, index);
+      expect(blockchain.deriveHDWallet(mnemonic, path).address).toBe(address);
+    }
   });
 });

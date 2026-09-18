@@ -1,5 +1,5 @@
 import { expect, describe, it } from "vitest";
-import { bip39TestVectors } from "../fixtures";
+import { bip39TestVectors, slip10WalletVectors } from "../fixtures";
 import Aptos from "../../src/blockchains/aptos";
 import { useBlockchain } from "../../src/blockchain";
 import type { Options } from "../../src/types";
@@ -102,14 +102,20 @@ describe("Aptos Blockchain", () => {
     });
   });
 
-  /** Address computed independently with bip_utils 2.9.3 for the BIP39 reference mnemonic. */
   describe("HD wallets from mnemonics", () => {
     const blockchain = useBlockchain(new Aptos());
+    const [, vector] = slip10WalletVectors;
 
     it("derives the first account address over SLIP-10", () => {
-      expect(
-        blockchain.deriveHDWallet(bip39TestVectors.mnemonic, "m/44'/637'/0'/0'/0'").address,
-      ).toBe("0xeb663b681209e7087d681c5d3eed12aaa8e1915e7c87794542c3f96e94b3d3bf");
+      const path = blockchain.getDerivationPath();
+      expect(path).toBe(vector.path);
+      expect(blockchain.deriveHDWallet(bip39TestVectors.mnemonic, path).address).toBe(
+        vector.address,
+      );
+    });
+
+    it("hardens all five levels like the SDK's isValidHardenedPath", () => {
+      expect(blockchain.getDerivationPath(2, 1, 5)).toBe("m/44'/637'/2'/1'/5'");
     });
   });
 });
