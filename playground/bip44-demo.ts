@@ -57,7 +57,9 @@ const internalPath = getBlockchainPath(chains[1], 0, BIP44Change.INTERNAL);
 console.log(`External (receiving): ${externalPath}`);
 console.log(`Internal (change): ${internalPath}`);
 
-console.log("\nSLIP-10 paths for Solana with multiple accounts, the path ends at the change branch:");
+console.log(
+  "\nSLIP-10 paths for Solana with multiple accounts, the path ends at the change branch:",
+);
 for (let account = 0; account < 5; account++) {
   const path = getBlockchainPath(chains[2], account);
   console.log(`Account ${account}: ${path}`);
