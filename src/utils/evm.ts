@@ -100,15 +100,20 @@ export function validateAddress(address: string): boolean {
   return toChecksumAddress(addressWithoutPrefix) === addressWithoutPrefix;
 }
 
+/** EIP-191 `personal_sign` preamble; TIP-191 frames TRON messages the same way under its own. */
+const ETHEREUM_MESSAGE_PREAMBLE = "\u0019Ethereum Signed Message:\n";
+
 /**
- * Hashes a message with EVM preamble using keccak256
- * Standard format: "\x19Ethereum Signed Message:\n" + length + message
+ * Hashes a message with keccak256 after the preamble and its decimal byte length.
  *
  * @param message - The message to hash
+ * @param preamble - The chain's signed message preamble, Ethereum's by default
  * @returns {Uint8Array} The keccak256 hash of the prefixed message
  */
-function hashWithPreamble(message: string | Uint8Array): Uint8Array {
-  const preamble = "\u0019Ethereum Signed Message:\n";
+export function hashWithPreamble(
+  message: string | Uint8Array,
+  preamble: string = ETHEREUM_MESSAGE_PREAMBLE,
+): Uint8Array {
   const messageBytes = typeof message === "string" ? new TextEncoder().encode(message) : message;
   const preambleBytes = new TextEncoder().encode(preamble + messageBytes.length.toString());
   const fullMessage = new Uint8Array(preambleBytes.length + messageBytes.length);

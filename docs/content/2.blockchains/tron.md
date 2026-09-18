@@ -45,4 +45,11 @@ Base58check decode, version byte `0x41`, 21 bytes total. The checksum catches ty
 
 ## Signing
 
-`signMessage` reuses the EVM signing code, so the message gets the `"\x19Ethereum Signed Message:\n"` preamble before Keccak-256 and secp256k1. That isn't the `"\x19TRON Signed Message:\n"` preamble TronLink uses for its own signing, so a signature from here won't verify in a TRON wallet and the other way round. `verifyMessage` in this package checks what `signMessage` here produces, 64 bytes of `r||s` in hex.
+`signMessage` frames the message the TIP-191 way, `"\x19TRON Signed Message:\n" + length + message`, hashes it with Keccak-256 and signs with secp256k1. That's the digest TronWeb's `signMessageV2` and TronLink sign, so the same key gives the same `r` and `s` here and there. What comes back is those 64 bytes in hex, no recovery byte. `verifyMessage` here doesn't need one, `verifyMessageV2` does, so append a `v` before asking TronWeb to recover the address.
+
+```js
+const signature = tronChain.signMessage("hello", privateKey);
+tronChain.verifyMessage("hello", signature, publicKey); // true
+```
+
+Ethereum uses the same framing under its own preamble, which is why a TRON signature and an Ethereum signature of the same message from the same key differ, and each driver rejects the other's.

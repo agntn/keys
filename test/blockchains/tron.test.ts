@@ -1,5 +1,8 @@
 import { expect, describe, it } from "vitest";
-import { bip39TestVectors } from "../fixtures";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { hexToBytes } from "@noble/hashes/utils.js";
+import { bip39TestVectors, tronTestVectors } from "../fixtures";
+import Ethereum from "../../src/blockchains/ethereum";
 import Tron from "../../src/blockchains/tron";
 import { useBlockchain } from "../../src/blockchain";
 
@@ -107,6 +110,40 @@ describe("TRON Blockchain", () => {
       expect(
         blockchain.deriveHDWallet(bip39TestVectors.mnemonic, "m/44'/195'/0'/0/0").address,
       ).toBe("TUEZSdKsoDHQMeZwihtdoBiN46zxhGWYdH");
+    });
+  });
+
+  describe("Message signing", () => {
+    const vector = tronTestVectors;
+
+    it.each(vector.messages)(
+      "signs TronWeb signMessageV2 vector %# over the same digest",
+      (message, digest, signatureWithV) => {
+        const signature = signatureWithV.slice(0, 128);
+        const publicKey = hexToBytes(vector.publicKey);
+        expect(blockchain.signMessage(message, vector.privateKey)).toBe(signature);
+        expect(blockchain.signMessage(new TextEncoder().encode(message), vector.privateKey)).toBe(
+          signature,
+        );
+        expect(
+          secp256k1.verify(hexToBytes(signature), hexToBytes(digest), publicKey, {
+            prehash: false,
+          }),
+        ).toBe(true);
+        expect(blockchain.verifyMessage(message, signature, vector.publicKey)).toBe(true);
+        expect(blockchain.verifyMessage(message + "!", signature, vector.publicKey)).toBe(false);
+        expect(blockchain.verifyMessage(message, "invalid", vector.publicKey)).toBe(false);
+      },
+    );
+
+    it("rejects a signature made under the Ethereum preamble", () => {
+      const [message] = vector.messages[1];
+      const ethereum = new Ethereum();
+      const signature = blockchain.signMessage(message, vector.privateKey);
+      const ethereumSignature = ethereum.signMessage(message, vector.privateKey);
+      expect(signature).not.toBe(ethereumSignature);
+      expect(blockchain.verifyMessage(message, ethereumSignature, vector.publicKey)).toBe(false);
+      expect(ethereum.verifyMessage(message, signature, vector.publicKey)).toBe(false);
     });
   });
 });
