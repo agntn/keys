@@ -34,6 +34,7 @@ export type ExplorerChains = {
   readonly base: AbstractBlockchain;
   readonly tron: AbstractBlockchain;
   readonly solana: AbstractBlockchain;
+  readonly stellar: AbstractBlockchain;
   readonly aptos: AbstractBlockchain;
   readonly sui: AbstractBlockchain;
   readonly cardano: AbstractBlockchain;
@@ -43,7 +44,7 @@ export type ExplorerChains = {
 export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChains> {
   const load = async (name: keyof ExplorerChains) =>
     keys.useBlockchain(await keys.blockchains[name]()());
-  const [bitcoin, litecoin, decred, ethereum, base, tron, solana, aptos, sui, cardano] =
+  const [bitcoin, litecoin, decred, ethereum, base, tron, solana, stellar, aptos, sui, cardano] =
     await Promise.all([
       load("bitcoin"),
       load("litecoin"),
@@ -52,11 +53,12 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
       load("base"),
       load("tron"),
       load("solana"),
+      load("stellar"),
       load("aptos"),
       load("sui"),
       load("cardano"),
     ]);
-  return { bitcoin, litecoin, decred, ethereum, base, tron, solana, aptos, sui, cardano };
+  return { bitcoin, litecoin, decred, ethereum, base, tron, solana, stellar, aptos, sui, cardano };
 }
 
 /**
@@ -64,7 +66,8 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
  * secp256k1 rows use the scalar. ed25519 rows use the same bytes as a secret.
  */
 export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation {
-  const { bitcoin, litecoin, decred, ethereum, base, tron, solana, aptos, sui, cardano } = chains;
+  const { bitcoin, litecoin, decred, ethereum, base, tron, solana, stellar, aptos, sui, cardano } =
+    chains;
 
   return {
     secp256k1PublicCompressed: bitcoin.getKeyPublic(hex),
@@ -104,6 +107,7 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
       addressRow(base, hex, "base", "Base", "secp256k1", "EIP-55"),
       addressRow(tron, hex, "tron", "TRON", "secp256k1", "base58check"),
       addressRow(solana, hex, "sol", "Solana", "ed25519", "base58"),
+      addressRow(stellar, hex, "xlm", "Stellar", "ed25519", "StrKey"),
       addressRow(aptos, hex, "aptos", "Aptos", "ed25519", "hex"),
       addressRow(sui, hex, "sui-ed25519", "Sui", "ed25519", "ed25519"),
       addressRow(

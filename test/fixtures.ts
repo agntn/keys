@@ -171,6 +171,65 @@ export const suiTestVectors = {
   ],
 } as const;
 
+/**
+ * Disposable key 1 through @stellar/stellar-sdk 17.1.0: SEP-53 `signMessage` digests and
+ * signatures. The HD rows are SEP-0005 test case 1, the SDK derives the same keys.
+ */
+export const stellarTestVectors = {
+  privateKey: "0000000000000000000000000000000000000000000000000000000000000001",
+  publicKey: "4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29",
+  address: "GBGLLK7WVV47X5NLXTFPZQTJ3BONEZI62S4ILNMGT4SBV3PQUW5CTECA",
+  /** The same key as a secret seed StrKey, which is not an address. */
+  secret: "SAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD24K",
+  /** Message, its SEP-53 digest, the signature. */
+  messages: [
+    [
+      "",
+      "b3948f32c6969cad88be428667e118f83f7e47f8773388c46f488eaeb505aec4",
+      "789e3e2dad8e219d8509f671936f92c439b5d69748fef515d2544487138591c57dbce49cfd372a584e8556d4b142a4c42fc3853a4055968f13451d488ae83503",
+    ],
+    [
+      "Test message",
+      "903f36e3e5caafd185881060c51985d7e2629fd32d8990833df9104c2afd0b1f",
+      "7426585b09c1d16c0928400cc0f3bdfd5eb124ef9c10cac98bd4a0c4bd1ba692f976983add636eeeff095ba3ecf11a01c72d0f9b56ac68131e2a73d8b9644507",
+    ],
+    [
+      "żółw 🐢",
+      "456be91a6a7c1e05eb0fc7fd161f8ab730a6304125ed32b5d52efa9ad43107b1",
+      "afbe82ba9f17ecf977f0affbb44262aaa14ff37588b32486418672bae53172e39fd6c2746d76694d9f87925e40b47d5379f02a6d0d8fe99b8f14b6b197a31607",
+    ],
+    [
+      "a".repeat(256),
+      "b5a9bc5872262e492b9a387886e28e57fef24389ef16d845dc17744d5f20ac3b",
+      "b0dcd3e1d5dcacc759e92f294a21b5945ef45041990b0df539e00c08a72fc93e876f86991b7a12e106f593aa140e523f9957eece77e19a17eb82404b3cf72102",
+    ],
+  ],
+  hd: {
+    mnemonic: "illness spike retreat truth genius clock brain pass fit cave bargain toe",
+    /** Path, the private key at it, the account StrKey. */
+    accounts: [
+      [
+        "m/44'/148'/0'",
+        "4d691bc19b44a1383b1a0a130aaca3e05c3c1a371dbe45930ef9b761f7a74691",
+        "GDRXE2BQUC3AZNPVFSCEZ76NJ3WWL25FYFK6RGZGIEKWE4SOOHSUJUJ6",
+      ],
+      [
+        "m/44'/148'/1'",
+        "88f296c601bafd56fd19d1856ee46670b9e2c87db0455ca792b5d8d588a353f1",
+        "GBAW5XGWORWVFE2XTJYDTLDHXTY2Q2MO73HYCGB3XMFMQ562Q2W2GJQX",
+      ],
+      [
+        "m/44'/148'/2'",
+        "c085ac991481ef8e847eef47e53f6e0df51ab1673d707d5d85ad441803a6459b",
+        "GAY5PRAHJ2HIYBYCLZXTHID6SPVELOOYH2LBPH3LD4RUMXUW3DOYTLXW",
+      ],
+    ],
+  },
+  /** A muxed account and a contract StrKey the Stellar SDK accepts, both valid addresses. */
+  muxedAddress: "MA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJVAAAAAAAAAAAAAJLK",
+  contractAddress: "CA7QYNF7SOWQ3GLR2BGMZEHXAVIRZA4KVWLTJJFC7MGXUA74P7UJUWDA",
+} as const;
+
 /** Disposable key 1, dcrd stdaddr v4.1.2 and chainhash v1.0.5 with wire v1.7.5. */
 export const decredTestVectors = {
   privateKey: "00".repeat(31) + "01",

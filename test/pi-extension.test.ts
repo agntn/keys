@@ -7,6 +7,7 @@ import {
   publicKeyEncodingVector,
   litecoinTestVectors,
   decredTestVectors,
+  stellarTestVectors,
   wifTestVectors,
   localizedMnemonicVectors,
   invalidChecksumPuzzle,
@@ -330,6 +331,20 @@ describe("keys Pi extension", () => {
       {
         type: "text",
         text: `Public key: ${decredTestVectors.publicKey}\nAddress: ${decredTestVectors.addresses.mainnet}`,
+      },
+    ]);
+  });
+
+  it("derives Stellar through the registered Pi tool", async () => {
+    const tool = registerTools().get("keys_derive_wallet");
+    if (!tool) throw new Error("keys_derive_wallet was not registered");
+    const args = { chain: "stellar", privateKey: stellarTestVectors.privateKey };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    const result = await tool.execute("stellar", args);
+    expect(result.content).toEqual([
+      {
+        type: "text",
+        text: `Public key: ${stellarTestVectors.publicKey}\nAddress: ${stellarTestVectors.address}`,
       },
     ]);
   });

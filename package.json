@@ -13,6 +13,7 @@
     "cryptography",
     "keys",
     "solana",
+    "stellar",
     "sui",
     "tron",
     "typescript",

@@ -14,6 +14,7 @@ const NAV_ICONS: Record<string, string> = {
   "/blockchains/ethereum": "i-token-eth",
   "/blockchains/base": "i-token-base",
   "/blockchains/solana": "i-token-sol",
+  "/blockchains/stellar": "i-token-xlm",
   "/blockchains/cardano": "i-token-ada",
   "/blockchains/sui": "i-token-sui",
   "/blockchains/aptos": "i-token-apt",

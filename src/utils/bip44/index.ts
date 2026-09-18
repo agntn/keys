@@ -53,6 +53,7 @@ export const BIP44 = {
   LITECOIN: 2,
   DECRED: 42,
   ETHEREUM: 60,
+  STELLAR: 148,
   SOLANA: 501,
   CARDANO: 1815,
   TRON: 195,

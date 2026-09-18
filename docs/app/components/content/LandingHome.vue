@@ -2,7 +2,7 @@
 const { hex, decimal, rows, pipeline, hd, paused, tick, changedBytes, step, randomKey } = useLandingKey();
 
 const stats = [
-  { value: "10", label: "chains" },
+  { value: "11", label: "chains" },
   { value: "2", label: "curves" },
   { value: "0", label: "network calls" },
   { value: "18", label: "MCP tools" },
@@ -16,6 +16,7 @@ const chains = [
   { label: "Base", curve: "secp256k1", icon: "i-token-base", to: "/blockchains/base" },
   { label: "TRON", curve: "secp256k1", icon: "i-token-trx", to: "/blockchains/tron" },
   { label: "Solana", curve: "ed25519", icon: "i-token-sol", to: "/blockchains/solana" },
+  { label: "Stellar", curve: "ed25519", icon: "i-token-xlm", to: "/blockchains/stellar" },
   { label: "Aptos", curve: "ed25519", icon: "i-token-apt", to: "/blockchains/aptos" },
   { label: "Sui", curve: "ed25519 · secp256k1", icon: "i-token-sui", to: "/blockchains/sui" },
   { label: "Cardano", curve: "ed25519", icon: "i-token-ada", to: "/blockchains/cardano" },
