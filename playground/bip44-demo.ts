@@ -57,10 +57,15 @@ const internalPath = getBlockchainPath(chains[1], 0, BIP44Change.INTERNAL);
 console.log(`External (receiving): ${externalPath}`);
 console.log(`Internal (change): ${internalPath}`);
 
-// Generate multiple address indexes
-console.log("\nBIP44 Paths for Solana with multiple address indexes:");
+console.log("\nSLIP-10 paths for Solana with multiple accounts, the path ends at the change branch:");
+for (let account = 0; account < 5; account++) {
+  const path = getBlockchainPath(chains[2], account);
+  console.log(`Account ${account}: ${path}`);
+}
+
+console.log("\nSLIP-10 paths for Aptos with multiple address indexes:");
 for (let index = 0; index < 5; index++) {
-  const path = getBlockchainPath(chains[2], 0, BIP44Change.EXTERNAL, index);
+  const path = getBlockchainPath(chains[5], 0, BIP44Change.EXTERNAL, index);
   console.log(`Address index ${index}: ${path}`);
 }
 
