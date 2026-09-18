@@ -143,6 +143,16 @@ describe("Sui", () => {
     const { mnemonic } = bip39TestVectors;
     const path = "m/44'/784'/0'/0'/0'";
 
+    it("generates the SDK path for each scheme", () => {
+      expect(blockchain.getDerivationPath()).toBe(path);
+      expect(blockchain.getDerivationPath(1, 0, 2, { scheme: "ed25519" })).toBe(
+        "m/44'/784'/1'/0'/2'",
+      );
+      expect(blockchain.getDerivationPath(1, 0, 2, { scheme: "secp256k1" })).toBe(
+        "m/54'/784'/1'/0/2",
+      );
+    });
+
     it("derives the ed25519 wallet over SLIP-10 by default", () => {
       const wallet = blockchain.deriveHDWallet(mnemonic, path);
 
@@ -155,15 +165,11 @@ describe("Sui", () => {
     });
 
     it("switches to BIP32 when the scheme is secp256k1", () => {
-      const fromAddressType = blockchain.deriveHDWallet(
-        mnemonic,
-        "m/54'/784'/0'/0/0",
-        {},
-        "secp256k1",
-      );
-      const fromScheme = blockchain.deriveHDWallet(mnemonic, "m/54'/784'/0'/0/0", {
-        scheme: "secp256k1",
-      });
+      const options = { scheme: "secp256k1" };
+      const secp256k1Path = blockchain.getDerivationPath(0, 0, 0, options);
+      expect(secp256k1Path).toBe("m/54'/784'/0'/0/0");
+      const fromAddressType = blockchain.deriveHDWallet(mnemonic, secp256k1Path, {}, "secp256k1");
+      const fromScheme = blockchain.deriveHDWallet(mnemonic, secp256k1Path, options);
 
       expect(fromAddressType).toEqual(fromScheme);
       expect(fromAddressType.keys.public).toMatch(/^0[23][0-9a-f]{64}$/);

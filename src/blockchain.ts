@@ -1,6 +1,7 @@
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
+import { BIP44Change, getBIP44Path } from "./utils/bip44/index.ts";
 import { deriveMnemonicKey } from "./utils/hd.ts";
 import type {
   AddressType,
@@ -98,6 +99,24 @@ export abstract class AbstractBlockchain implements Blockchain {
       throw new Error(`${this.name} declares no curve`);
     }
     return this.curve.find((curve) => curve === scheme) ?? fallback;
+  }
+
+  /**
+   * Builds the derivation path the chain's wallets use for an account. BIP44 by default,
+   * `m/44'/coin'/account'/change/index`; chains whose wallets walk another shape override it.
+   * @param account - Account index
+   * @param change - 0 for the external branch, 1 for the internal one
+   * @param addressIndex - Address index
+   * @param _options - Key options, read by chains whose path depends on the scheme
+   * @returns {string} The derivation path
+   */
+  getDerivationPath(
+    account = 0,
+    change: BIP44Change = BIP44Change.EXTERNAL,
+    addressIndex = 0,
+    _options?: KeyOptions,
+  ): string {
+    return getBIP44Path(this.bip44, account, change, addressIndex);
   }
 
   deriveHDWallet(

@@ -524,12 +524,13 @@ export default function keysExtension(pi: ExtensionAPI) {
   pi.registerTool({
     name: "keys_bip44_path",
     label: "BIP44 Path",
-    description: "Get or parse a BIP44 derivation path for a blockchain",
+    description: "Get or parse a derivation path for a blockchain",
     promptSnippet:
-      "Use to generate or parse BIP44 derivation paths (m/44'/coin'/account'/change/index).",
+      "Use to parse BIP44 paths or generate the path a chain's wallets use: BIP44 on secp256k1 chains, every level hardened on ed25519 chains, CIP-1852 on Cardano.",
     promptGuidelines: [
       "Provide a path by itself to parse it, or a chain name to generate a path",
       "For generation only: account, change, addressIndex (defaults to 0)",
+      "Stellar paths end at the account and Solana paths at the change branch; a deeper index on those chains is an error",
     ],
     parameters: Type.Object(
       {

@@ -100,5 +100,14 @@ describe("Stellar", () => {
     it("refuses an unhardened segment", () => {
       expect(() => blockchain.deriveHDWallet(vector.hd.mnemonic, "m/44'/148'/0")).toThrow();
     });
+
+    it("generates the SEP-0005 account path and nothing deeper", () => {
+      for (const [index, [path, , address]] of vector.hd.accounts.entries()) {
+        expect(blockchain.getDerivationPath(index)).toBe(path);
+        expect(blockchain.deriveHDWallet(vector.hd.mnemonic, path).address).toBe(address);
+      }
+      expect(() => blockchain.getDerivationPath(0, 1)).toThrow(RangeError);
+      expect(() => blockchain.getDerivationPath(0, 0, 1)).toThrow(RangeError);
+    });
   });
 });

@@ -408,7 +408,7 @@ const tools: readonly ToolDefinition[] = [
     name: "keys_bip44_path",
     title: "BIP44 Path",
     description:
-      "Parse a BIP44 derivation path, or generate one for a blockchain with explicit account, change branch, and address index values.",
+      "Parse a BIP44 derivation path, or generate the path a blockchain's wallets use for an account: BIP44 on secp256k1 chains, every level hardened on ed25519 chains (Stellar stops at the account, Solana at the change branch), CIP-1852 on Cardano.",
     inputSchema: Type.Object(
       {
         chain: Type.Optional(chainArgument),

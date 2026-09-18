@@ -107,9 +107,15 @@ describe("Aptos Blockchain", () => {
     const blockchain = useBlockchain(new Aptos());
 
     it("derives the first account address over SLIP-10", () => {
-      expect(
-        blockchain.deriveHDWallet(bip39TestVectors.mnemonic, "m/44'/637'/0'/0'/0'").address,
-      ).toBe("0xeb663b681209e7087d681c5d3eed12aaa8e1915e7c87794542c3f96e94b3d3bf");
+      const path = blockchain.getDerivationPath();
+      expect(path).toBe("m/44'/637'/0'/0'/0'");
+      expect(blockchain.deriveHDWallet(bip39TestVectors.mnemonic, path).address).toBe(
+        "0xeb663b681209e7087d681c5d3eed12aaa8e1915e7c87794542c3f96e94b3d3bf",
+      );
+    });
+
+    it("hardens all five levels like the SDK's isValidHardenedPath", () => {
+      expect(blockchain.getDerivationPath(2, 1, 5)).toBe("m/44'/637'/2'/1'/5'");
     });
   });
 });

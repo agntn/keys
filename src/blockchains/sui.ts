@@ -2,6 +2,7 @@ import { blake2b } from "@noble/hashes/blake2.js";
 import { concatBytes, hexToBytes } from "@noble/hashes/utils.js";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { addSchemeByte, createPrefixedAddress, validateAddressHex } from "../utils/address.ts";
+import { BIP44Change, getBIP32Path, getHardenedPath } from "../utils/bip44/index.ts";
 import { generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
 import { generateKeyPublic as getSecp256k1KeyPublic } from "../utils/secp256k1.ts";
 import { signMessage, verifyMessage } from "../utils/signing.ts";
@@ -14,6 +15,9 @@ const SIGNATURE_SCHEME_FLAGS = {
   SECP256R1: 0x02,
   MULTISIG: 0x03,
 } as const;
+
+/** Purpose level of the BIP32 path the Sui SDK walks for secp256k1 keys. */
+const SECP256K1_PURPOSE = 54;
 
 /** BCS intent of a personal message: scope `PersonalMessage`, version `V0`, app id `Sui`. */
 const PERSONAL_MESSAGE_INTENT = new Uint8Array([0x03, 0x00, 0x00]);
@@ -76,6 +80,27 @@ export class Sui extends AbstractBlockchain {
   ): Wallet {
     const { scheme, keyOptions } = withScheme(options, addressType);
     return super.deriveWallet(keyPrivate, keyOptions, scheme);
+  }
+
+  /**
+   * The Sui SDK walks `m/44'/784'/account'/change'/index'` for ed25519 and
+   * `m/54'/784'/account'/change/index` for secp256k1; the scheme in the options picks one.
+   * @param account - Account index
+   * @param change - Change branch
+   * @param addressIndex - Address index
+   * @param options - Key options that may carry the scheme
+   * @returns {string} The path for that scheme
+   */
+  override getDerivationPath(
+    account = 0,
+    change = BIP44Change.EXTERNAL,
+    addressIndex = 0,
+    options?: KeyOptions,
+  ): string {
+    if (this.resolveCurve(options) === "secp256k1") {
+      return getBIP32Path(SECP256K1_PURPOSE, this.bip44, account, change, addressIndex);
+    }
+    return getHardenedPath(this.bip44, [account, change, addressIndex]);
   }
 
   override deriveHDWallet(

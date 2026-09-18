@@ -40,7 +40,7 @@ Solana derives with SLIP-10, which only has hardened children. Every segment of 
 solanaChain.deriveHDWallet(mnemonic, "m/44'/501'/0'/0'").address;
 ```
 
-A path with an unhardened segment throws before derivation, there isn't a soft child to give you. Phantom and Solflare use exactly this shape, so the first account matches what those wallets show.
+A path with an unhardened segment throws before derivation, there isn't a soft child to give you. Phantom and Solflare use exactly this shape, so the first account matches what those wallets show. `solanaChain.getDerivationPath(1)` gives the next one, `m/44'/501'/1'/0'`.
 
 ## Signing
 

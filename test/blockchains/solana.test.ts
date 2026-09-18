@@ -108,9 +108,16 @@ describe("Solana Blockchain", () => {
     const blockchain = useBlockchain(new Solana());
 
     it("derives the Phantom style m/44'/501'/0'/0' address over SLIP-10", () => {
-      expect(blockchain.deriveHDWallet(bip39TestVectors.mnemonic, "m/44'/501'/0'/0'").address).toBe(
+      const path = blockchain.getDerivationPath();
+      expect(path).toBe("m/44'/501'/0'/0'");
+      expect(blockchain.deriveHDWallet(bip39TestVectors.mnemonic, path).address).toBe(
         "HAgk14JpMQLgt6rVgv7cBQFJWFto5Dqxi472uT3DKpqk",
       );
+    });
+
+    it("hardens the account and the change branch and has no address index", () => {
+      expect(blockchain.getDerivationPath(3, 1)).toBe("m/44'/501'/3'/1'");
+      expect(() => blockchain.getDerivationPath(0, 0, 1)).toThrow(RangeError);
     });
 
     it("rejects non-hardened segments on ed25519", () => {
