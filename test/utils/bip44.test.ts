@@ -77,6 +77,10 @@ describe("Purpose and hardened paths", () => {
     expect(() => getBIP32Path(1852, BIP44.CARDANO, 0, 6, 0, 5)).toThrow(RangeError);
   });
 
+  test.each([Number.NaN, -1, 2_147_483_648])("should reject %s as the change ceiling", (max) => {
+    expect(() => getBIP32Path(1852, BIP44.CARDANO, 0, 0, 0, max)).toThrow(RangeError);
+  });
+
   test("should reject a purpose outside the BIP32 range", () => {
     expect(() => getBIP32Path(-1, BIP44.BITCOIN)).toThrow(RangeError);
     expect(() => getBIP32Path(2_147_483_648, BIP44.BITCOIN)).toThrow(RangeError);

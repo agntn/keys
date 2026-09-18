@@ -4,6 +4,7 @@ import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 import { describe, expect, it, vi } from "vitest";
 import { bip39TestVectors, bitcoinMessageVectors as messageVectors } from "../fixtures";
 import { useBlockchain } from "../../src";
+import { bip44Path } from "../../src/tool-operations.ts";
 import Bitcoin from "../../src/blockchains/bitcoin";
 import type { Options } from "../../src/types";
 
@@ -442,6 +443,12 @@ describe("Bitcoin blockchain", () => {
 
       expect(testnet.deriveHDWallet(mnemonic, "m/44'/1'/0'/0/0").address).toBe(
         "mkpZhYtJu2r87Js3pDiWJDmPte2NRZ8bJV",
+      );
+    });
+
+    it("refuses an address type in the path tool, since it names a scheme", async () => {
+      await expect(bip44Path("bitcoin", undefined, 0, 0, 0, "segwit")).rejects.toThrow(
+        "bitcoin has one curve",
       );
     });
   });

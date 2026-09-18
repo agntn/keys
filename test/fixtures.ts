@@ -29,7 +29,6 @@ export const bip39TestVectors = {
     "c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e53495531f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04",
 };
 
-/** Public, claimed Bitcoin Movie Enigma solution: floflo777/open-crypto-puzzles#24. */
 /** Wallets bip_utils 2.9.3 derives from the BIP39 reference mnemonic at each chain's own path. */
 export const slip10WalletVectors = [
   {
@@ -50,6 +49,7 @@ export const slip10WalletVectors = [
   },
 ] as const;
 
+/** Public, claimed Bitcoin Movie Enigma solution: floflo777/open-crypto-puzzles#24. */
 export const invalidChecksumPuzzle = {
   mnemonic:
     "path mad alien apology escape spare miss goddess leopard crime visit clock start first blade guard close barrel term screen matrix toy ghost shine",

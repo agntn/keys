@@ -5,7 +5,12 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import type * as KeysTools from "../../../dist/tool-operations.d.mts";
-import { TOOL_ADDRESS_TYPES, TOOL_CHAINS, TOOL_NETWORKS } from "../../../src/tool-parameters.ts";
+import {
+  SUI_ADDRESS_TYPES,
+  TOOL_ADDRESS_TYPES,
+  TOOL_CHAINS,
+  TOOL_NETWORKS,
+} from "../../../src/tool-parameters.ts";
 import {
   CONVERT_PUBLIC_KEY_PARAMETERS,
   WIF_ENCODE_PARAMETERS,
@@ -566,6 +571,7 @@ export default function keysExtension(pi: ExtensionAPI) {
         ),
         addressType: Type.Optional(
           Type.String({
+            enum: SUI_ADDRESS_TYPES,
             description: "Signature scheme for generation on Sui (ed25519 or secp256k1)",
           }),
         ),

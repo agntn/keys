@@ -405,7 +405,8 @@ describe("keys MCP server", () => {
       [{ chain: "solana", addressIndex: 1 }, "Solana paths end at the change branch"],
       [{ chain: "bitcoin", change: 2 }, "change must be an integer between 0 and 1"],
       [{ chain: "cardano", change: 6 }, "change must be an integer between 0 and 5"],
-      [{ chain: "bitcoin", addressType: "segwit" }, "bitcoin has one curve"],
+      [{ chain: "bitcoin", addressType: "secp256k1" }, "is not supported for bitcoin"],
+      [{ chain: "bitcoin", addressType: "segwit" }, "Invalid arguments"],
     ] as const) {
       const rejected = await client.callTool({ name: "keys_bip44_path", arguments: arguments_ });
       expect(rejected.isError).toBe(true);

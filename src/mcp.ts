@@ -9,6 +9,7 @@ import { Type, type TSchema } from "typebox";
 import { Value } from "typebox/value";
 import {
   BIP44_PATH_MODE_SCHEMA,
+  SUI_ADDRESS_TYPES,
   TOOL_ADDRESS_TYPES,
   TOOL_CHAINS,
   TOOL_NETWORKS,
@@ -441,7 +442,7 @@ const tools: readonly ToolDefinition[] = [
           Type.String({
             description:
               "Signature scheme for generation on Sui, ed25519 or secp256k1. Default: ed25519",
-            enum: TOOL_ADDRESS_TYPES,
+            enum: SUI_ADDRESS_TYPES,
           }),
         ),
       },

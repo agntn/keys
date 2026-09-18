@@ -88,6 +88,7 @@ export function getBIP32Path(
   assertLevelIndex("purpose", purpose);
   assertLevelIndex("coinType", coinType);
   assertLevelIndex("account", account);
+  assertLevelIndex("maxChange", maxChange);
   assertLevelIndex("change", change, maxChange);
   assertLevelIndex("addressIndex", addressIndex);
 

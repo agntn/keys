@@ -47,7 +47,8 @@ export type ToolNetwork = (typeof TOOL_NETWORKS)[number];
 
 const BITCOIN_ADDRESS_TYPES = ["legacy", "p2sh", "segwit", "p2wsh", "taproot"] as const;
 const CARDANO_ADDRESS_TYPES = ["payment", "stake", "enterprise"] as const;
-const SUI_ADDRESS_TYPES = ["ed25519", "secp256k1"] as const;
+/** Signature schemes Sui takes as its address type. */
+export const SUI_ADDRESS_TYPES = ["ed25519", "secp256k1"] as const;
 
 /** Every address type exposed by the tool surfaces. */
 export const TOOL_ADDRESS_TYPES = [
