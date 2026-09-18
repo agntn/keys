@@ -256,6 +256,12 @@ describe("Cardano blockchain", () => {
       expect(blockchain.getDerivationPath(1, 1, 4)).toBe("m/1852'/1815'/1'/1/4");
     });
 
+    it("takes the staking and governance roles CIP-1852 lists and nothing past them", () => {
+      expect(blockchain.getDerivationPath(0, 2)).toBe("m/1852'/1815'/0'/2/0");
+      expect(blockchain.getDerivationPath(0, 5)).toBe("m/1852'/1815'/0'/5/0");
+      expect(() => blockchain.getDerivationPath(0, 6)).toThrow(RangeError);
+    });
+
     it("refuses to fake CIP-1852 with the shared SLIP-10 walk", () => {
       expect(() =>
         blockchain.deriveHDWallet(bip39TestVectors.mnemonic, blockchain.getDerivationPath()),

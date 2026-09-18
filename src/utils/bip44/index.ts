@@ -17,6 +17,7 @@
  */
 
 import { HARDENED_OFFSET, formatIndex } from "../bip32/index.ts";
+import type { KeyOptions } from "../../types.ts";
 
 // BIP44 path levels
 export enum BIP44Levels {
@@ -65,13 +66,13 @@ export const BIP44 = {
 const LEVEL_NAMES = ["account", "change", "addressIndex"] as const;
 
 /**
- * Creates the path of five levels that BIP44, BIP49, BIP84 and CIP-1852 share: purpose, coin
- * type and account hardened, change and address index plain.
+ * Creates the path of five levels that BIP44, BIP49, BIP84 and CIP-1852 share: purpose, coin type
+ * and account hardened, change and index plain; only `getBIP44Path` pins change to 0 and 1.
  *
  * @param purpose - Purpose level, 44 for BIP44
  * @param coinType - Coin type (from SLIP-0044)
  * @param account - Account index (defaults to 0)
- * @param change - 0 for external chain (receive addresses), 1 for internal chain (change addresses)
+ * @param change - Change branch, or the role on CIP-1852
  * @param addressIndex - Address index (defaults to 0)
  * @returns {string} Derivation path string
  */
@@ -79,13 +80,13 @@ export function getBIP32Path(
   purpose: number,
   coinType: number,
   account = 0,
-  change = BIP44Change.EXTERNAL,
+  change = 0,
   addressIndex = 0,
 ): string {
   assertLevelIndex("purpose", purpose);
   assertLevelIndex("coinType", coinType);
   assertLevelIndex("account", account);
-  assertLevelIndex("change", change, BIP44Change.INTERNAL);
+  assertLevelIndex("change", change);
   assertLevelIndex("addressIndex", addressIndex);
 
   const purposeStr = formatIndex(HARDENED_OFFSET + purpose);
@@ -110,6 +111,7 @@ export function getBIP44Path(
   change = BIP44Change.EXTERNAL,
   addressIndex = 0,
 ): string {
+  assertLevelIndex("change", change, BIP44Change.INTERNAL);
   return getBIP32Path(44, coinType, account, change, addressIndex);
 }
 
@@ -127,8 +129,7 @@ export function getHardenedPath(coinType: number, levels: readonly number[]): st
     throw new RangeError(`levels must carry 1 to ${LEVEL_NAMES.length} entries`);
   }
   const hardened = levels.map((level, position) => {
-    const maximum = position === 1 ? BIP44Change.INTERNAL : MAX_LEVEL_INDEX;
-    assertLevelIndex(LEVEL_NAMES[position] ?? "level", level, maximum);
+    assertLevelIndex(LEVEL_NAMES[position] ?? "level", level);
     return formatIndex(HARDENED_OFFSET + level);
   });
 
@@ -260,8 +261,9 @@ export interface PathSource {
   readonly bip44: number;
   readonly getDerivationPath?: (
     account?: number,
-    change?: BIP44Change,
+    change?: number,
     addressIndex?: number,
+    options?: KeyOptions,
   ) => string;
 }
 
@@ -273,6 +275,7 @@ export interface PathSource {
  * @param account - Account index (defaults to 0)
  * @param change - 0 for external chain (receive addresses), 1 for internal chain (change addresses)
  * @param addressIndex - Address index (defaults to 0)
+ * @param options - Key options, the scheme on chains with two curves
  * @returns {string} Derivation path string
  */
 export function getBlockchainPath(
@@ -280,9 +283,10 @@ export function getBlockchainPath(
   account = 0,
   change = BIP44Change.EXTERNAL,
   addressIndex = 0,
+  options?: KeyOptions,
 ): string {
   if (blockchain.getDerivationPath === undefined) {
     return getBIP44Path(blockchain.bip44, account, change, addressIndex);
   }
-  return blockchain.getDerivationPath(account, change, addressIndex);
+  return blockchain.getDerivationPath(account, change, addressIndex, options);
 }

@@ -70,6 +70,12 @@ describe("Purpose and hardened paths", () => {
     );
   });
 
+  test("should leave the change level to the purpose, BIP44 alone pins it to 0 and 1", () => {
+    expect(getBIP32Path(1852, BIP44.CARDANO, 0, 2)).toBe("m/1852'/1815'/0'/2/0");
+    expect(() => getBIP32Path(44, BIP44.BITCOIN, 0, -1)).toThrow(RangeError);
+    expect(() => getBIP44Path(BIP44.BITCOIN, 0, 2)).toThrow(RangeError);
+  });
+
   test("should reject a purpose outside the BIP32 range", () => {
     expect(() => getBIP32Path(-1, BIP44.BITCOIN)).toThrow(RangeError);
     expect(() => getBIP32Path(2_147_483_648, BIP44.BITCOIN)).toThrow(RangeError);
@@ -84,8 +90,11 @@ describe("Purpose and hardened paths", () => {
   test.each([
     ["no levels", () => getHardenedPath(BIP44.SOLANA, [])],
     ["a fourth level", () => getHardenedPath(BIP44.SOLANA, [0, 0, 0, 0])],
-    ["a change branch other than 0 or 1", () => getHardenedPath(BIP44.SOLANA, [0, 2])],
     ["a negative account", () => getHardenedPath(BIP44.SOLANA, [-1])],
+    [
+      "a change branch above the BIP32 range",
+      () => getHardenedPath(BIP44.SOLANA, [0, 2_147_483_648]),
+    ],
     ["a coin type above the BIP32 range", () => getHardenedPath(2_147_483_648, [0])],
   ])("should reject %s", (_description, generate) => {
     expect(generate).toThrow(RangeError);
@@ -192,6 +201,11 @@ describe("Blockchain Path Integration", () => {
     ["cardano", new Cardano(), "m/1852'/1815'/0'/0/0"],
   ])("should generate the path %s wallets use", (_name, chain, expected) => {
     expect(getBlockchainPath(useBlockchain(chain))).toBe(expected);
+  });
+
+  test("should hand the scheme to a chain with two curves", () => {
+    const chain = useBlockchain(new Sui());
+    expect(getBlockchainPath(chain, 0, 0, 0, { scheme: "secp256k1" })).toBe("m/54'/784'/0'/0/0");
   });
 
   test.each([

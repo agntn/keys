@@ -2,7 +2,7 @@ import { blake2b } from "@noble/hashes/blake2.js";
 import { hexToBytes } from "@noble/hashes/utils.js";
 import { bech32 } from "@scure/base";
 import { AbstractBlockchain } from "../blockchain.ts";
-import { BIP44Change, getBIP32Path } from "../utils/bip44/index.ts";
+import { getBIP32Path } from "../utils/bip44/index.ts";
 import { generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
 import type { Curve, KeyOptions, Wallet } from "../types.ts";
@@ -15,6 +15,9 @@ const ADDRESS_TYPE = {
 
 /** CIP-1852 purpose; `44'` on Cardano marks a Byron wallet. */
 const CIP1852_PURPOSE = 1852;
+
+/** Highest CIP-1852 role: 0 external, 1 internal, 2 staking, 3 DRep, 4 and 5 committee keys. */
+const CIP1852_MAX_ROLE = 5;
 
 const NETWORK_PARAMS = {
   mainnet: {
@@ -47,12 +50,15 @@ export class Cardano extends AbstractBlockchain {
    * Shelley wallets sit at `m/1852'/1815'/account'/role/index` per CIP-1852, the change branch
    * being the role. Right for Cardano tooling even though `deriveHDWallet` here can't walk it.
    * @param account - Account index
-   * @param change - Role, 0 external and 1 internal
+   * @param role - CIP-1852 role, 0 external, 1 internal, 2 staking, up to 5
    * @param addressIndex - Address index
    * @returns {string} The CIP-1852 path
    */
-  override getDerivationPath(account = 0, change = BIP44Change.EXTERNAL, addressIndex = 0): string {
-    return getBIP32Path(CIP1852_PURPOSE, this.bip44, account, change, addressIndex);
+  override getDerivationPath(account = 0, role = 0, addressIndex = 0): string {
+    if (!Number.isInteger(role) || role < 0 || role > CIP1852_MAX_ROLE) {
+      throw new RangeError(`role must be an integer between 0 and ${CIP1852_MAX_ROLE}`);
+    }
+    return getBIP32Path(CIP1852_PURPOSE, this.bip44, account, role, addressIndex);
   }
 
   /** CIP-1852 roots come from the mnemonic entropy, not the BIP39 seed, so the shared SLIP-10 walk would give a wrong address. */
