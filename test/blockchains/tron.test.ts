@@ -126,7 +126,9 @@ describe("TRON Blockchain", () => {
           signature,
         );
         expect(
-          secp256k1.verify(hexToBytes(signature), hexToBytes(digest), publicKey, { prehash: false }),
+          secp256k1.verify(hexToBytes(signature), hexToBytes(digest), publicKey, {
+            prehash: false,
+          }),
         ).toBe(true);
         expect(blockchain.verifyMessage(message, signature, vector.publicKey)).toBe(true);
         expect(blockchain.verifyMessage(message + "!", signature, vector.publicKey)).toBe(false);
