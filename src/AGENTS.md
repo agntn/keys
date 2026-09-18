@@ -9,7 +9,7 @@ Core package source plus the MCP and CLI entry points. Blockchain implementation
 - `tool-operations.ts`: executors independent of a particular host, with boundary validation shared with Pi.
 - `mcp.ts`: TypeBox schemas, MCP annotations, dispatch, and error conversion.
 - `cli.ts`: executable entry point with a lazy `mcp` subcommand.
-- `commands/mcp.ts`: stdio transport bootstrap. stdout is reserved for JSON-RPC.
+- `commands/mcp.ts`: stdio transport bootstrap. stdout is reserved for JSON-RPC. The server, the SDK and consola are imported inside `run()`, because citty resolves the subcommand for `--help` and for an unknown command too.
 
 ## Constraints
 
