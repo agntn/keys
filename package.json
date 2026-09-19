@@ -106,7 +106,7 @@
     "@agntn/ox": "0.1.0",
     "@earendil-works/pi-coding-agent": "0.84.4",
     "@earendil-works/pi-tui": "0.84.4",
-    "@types/node": "26.4.0",
+    "@types/node": "26.4.1",
     "@vitest/coverage-v8": "4.1.11",
     "changelogen": "0.6.2",
     "obuild": "0.4.38",
