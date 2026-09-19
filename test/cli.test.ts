@@ -1,7 +1,8 @@
 import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 const execFileAsync = promisify(execFile);
 const root = resolve(import.meta.dirname, "..");
@@ -96,6 +97,12 @@ async function runBin(args: readonly string[]): Promise<BinRun> {
 }
 
 describe("keys usage paths", () => {
+  beforeAll(() => {
+    if (!existsSync(bin)) {
+      throw new Error("dist/cli.mjs is missing, run pnpm build first");
+    }
+  });
+
   it.each([
     { args: ["--help"], code: 0 },
     { args: ["-h"], code: 0 },
@@ -104,7 +111,7 @@ describe("keys usage paths", () => {
   ])("keys $args prints the usage without the server stack", async ({ args, code }) => {
     const run = await runBin(args);
     expect(run.code).toBe(code);
-    expect(run.stdout).toMatch(/mcp/u);
+    expect(run.stdout).toMatch(/USAGE.*keys mcp/u);
     expect(run.packages).toContain("citty");
     expect(run.packages).not.toContain("@modelcontextprotocol/sdk");
     expect(run.packages).not.toContain("typebox");

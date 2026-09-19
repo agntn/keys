@@ -1,6 +1,11 @@
+import { writeSync } from "node:fs";
 import { registerHooks } from "node:module";
 
-/** Every module URL Node loaded after this file evaluated, reported as one `@loaded [...]` line on stderr at exit. */
+/**
+ * Every module URL Node loaded after this file evaluated, reported as one `@loaded [...]` line on
+ * stderr at exit. Written synchronously, because a piped stderr flushes asynchronously and the exit
+ * handler cannot wait: `process.stderr.write` cut a 300 kB report at 146 kB here.
+ */
 const loaded = [];
 
 registerHooks({
@@ -11,5 +16,5 @@ registerHooks({
 });
 
 process.on("exit", () => {
-  process.stderr.write(`\n@loaded ${JSON.stringify(loaded)}\n`);
+  writeSync(2, `\n@loaded ${JSON.stringify(loaded)}\n`);
 });
