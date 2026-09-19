@@ -124,6 +124,7 @@
   "pi": {
     "extensions": [
       "./packages/pi/extensions/*.ts"
-    ]
+    ],
+    "image": "https://keys.agntn.dev/image.png"
   }
 }
