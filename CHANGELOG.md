@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.3.2
+
+[compare changes](https://github.com/agntn/keys/compare/v0.3.1...v0.3.2)
+
+### 🩹 Fixes
+
+- **release:** Push before the GitHub release ([#78](https://github.com/agntn/keys/pull/78))
+- **cli:** --help loads the whole MCP server ([#81](https://github.com/agntn/keys/pull/81))
+- **bitcoin:** Addresses need a real public key ([#82](https://github.com/agntn/keys/pull/82))
+
+### 🏡 Chore
+
+- **release:** V0.3.1 ([4898f92](https://github.com/agntn/keys/commit/4898f92))
+- Add `pi` image ([49c6d0b](https://github.com/agntn/keys/commit/49c6d0b))
+
+### ❤️ Contributors
+
+- Ori ([@oritwoen](https://github.com/oritwoen))
+- Aeitwoen ([@aeitwoen](https://github.com/aeitwoen))
+
 ## v0.3.1
 
 [compare changes](https://github.com/agntn/keys/compare/v0.3.0...v0.3.1)
