@@ -38,11 +38,6 @@ export class Litecoin extends AbstractBitcoinBlockchain {
     return this.network === "testnet" ? NETWORK_PARAMS.testnet : NETWORK_PARAMS.mainnet;
   }
 
-  override getAddress(keyPublic: string, type = "legacy"): string {
-    secp256k1.Point.fromHex(keyPublic);
-    return super.getAddress(keyPublic, type);
-  }
-
   override signMessage(message: string | Uint8Array, keyPrivate: string): string {
     return bytesToHex(
       secp256k1.sign(this.hashWithMessagePreamble(message), hexToBytes(keyPrivate), {

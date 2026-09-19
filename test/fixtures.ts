@@ -7,8 +7,8 @@
 export const secp256k1TestVectors = {
   // These are constant test vectors, not meant for production use
   privateKey: "c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4",
-  /** Not paired with `privateKey`; used only by the self-consistent address tests. */
-  publicKeyCompressed: "0329fa449dde1228c0bacb3283310bca03022458709ad6f3fbb869a2a59c30b7d7",
+  /** The compressed key of `privateKey`, the same bytes ethers derives in `ethereumTestVectors`. */
+  publicKeyCompressed: "030947751e3022ecf3016be03ec77ab0ce3c2662b4843898cb068d74f698ccc8ad",
 };
 
 // Ed25519 keys - used for Solana, Cardano, etc.

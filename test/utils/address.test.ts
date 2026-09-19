@@ -5,6 +5,7 @@ import {
   validateAddressLegacy,
   generateAddressP2SH,
   validateAddressP2SH,
+  generateAddressSegWit,
 } from "../../src/utils/address";
 import { secp256k1TestVectors } from "../fixtures";
 
@@ -80,6 +81,40 @@ describe("Address utilities", () => {
       const isValid = validateAddressP2SH(address, { bytesVersion: 0x00 });
 
       expect(isValid).toBe(false);
+    });
+  });
+
+  describe("public key checks", () => {
+    const segwit = { hrp: "bc", witnessVersion: 0 };
+    /* G uncompressed. bitcoinjs-lib 6.1.8 hashes it for p2pkh and refuses it for p2wpkh. */
+    const uncompressedKey =
+      "0479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8";
+
+    it.each([
+      ["empty", ""],
+      ["20 bytes", "ab".repeat(20)],
+      ["33 zero bytes", "00".repeat(33)],
+      ["x outside the field", `02${"ff".repeat(32)}`],
+      ["x with no point", `02${"05".padStart(64, "0")}`],
+    ])("throws for %s instead of hashing it", (_label, keyPublic) => {
+      expect(() => generateAddressLegacy(keyPublic, { bytesVersion: 0x00 })).toThrow();
+      expect(() => generateAddressP2SH(keyPublic, { bytesVersion: 0x05 })).toThrow();
+      expect(() => generateAddressSegWit(keyPublic, segwit)).toThrow();
+      expect(() => generateAddressSegWit(keyPublic, segwit, "p2wsh")).toThrow();
+    });
+
+    it("takes an uncompressed key for legacy and taproot, not for SegWit v0", () => {
+      expect(generateAddressLegacy(uncompressedKey, { bytesVersion: 0x00 })).toBe(
+        "1EHNa6Q4Jz2uvNExL497mE43ikXhwF6kZm",
+      );
+      expect(generateAddressSegWit(uncompressedKey, { hrp: "bc", witnessVersion: 1 })).toBe(
+        "bc1pmfr3p9j00pfxjh0zmgp99y8zftmd3s5pmedqhyptwy6lm87hf5sspknck9",
+      );
+      expect(() => generateAddressP2SH(uncompressedKey, { bytesVersion: 0x05 })).toThrow(
+        "compressed",
+      );
+      expect(() => generateAddressSegWit(uncompressedKey, segwit)).toThrow("compressed");
+      expect(() => generateAddressSegWit(uncompressedKey, segwit, "p2wsh")).toThrow("compressed");
     });
   });
 });

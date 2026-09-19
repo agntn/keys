@@ -11,10 +11,7 @@ import type { Blockchain, Curve } from "../../src/types";
 describe("Signing utilities", () => {
   // Use test vectors from fixtures
   const secp256k1TestPrivateKey = secp256k1TestVectors.privateKey;
-  /** No fixture public key pairs with `privateKey`, so derive it for the round trips. */
-  const secp256k1TestPublicKey = bytesToHex(
-    secp256k1.getPublicKey(hexToBytes(secp256k1TestPrivateKey), false),
-  );
+  const secp256k1TestPublicKey = secp256k1TestVectors.publicKeyCompressed;
 
   const ed25519TestPrivateKey = ed25519TestVectors.privateKey;
   const ed25519TestPublicKey = ed25519TestVectors.publicKey;

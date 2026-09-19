@@ -85,6 +85,10 @@ describe("Litecoin", () => {
       expect(chain.validateAddress(address)).toBe(false);
     }
     expect(() => chain.getAddress("02")).toThrow();
+    expect(() => chain.getAddress(`02${"05".padStart(64, "0")}`)).toThrow();
+    expect(() =>
+      chain.getAddress(chain.getKeyPublic(vector.privateKey, { compressed: false }), "segwit"),
+    ).toThrow("compressed");
     expect(() => chain.deriveWallet("00".repeat(32))).toThrow();
   });
 
