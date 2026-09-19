@@ -50,6 +50,21 @@ function generateTaprootProgram(keyPublicBytes: Uint8Array): Uint8Array {
 }
 
 /**
+ * Decodes the SEC1 point first, so bytes that are not a public key never reach a hash.
+ * @param keyPublic - The public key as a hex string
+ * @param compressedOnly - Demand 33 bytes, the BIP143 rule for version 0 witness programs
+ * @returns {Uint8Array} The public key bytes as given
+ */
+function publicKeyBytes(keyPublic: string, compressedOnly = false): Uint8Array {
+  const bytesKeyPublic = hexToBytes(keyPublic);
+  secp256k1.Point.fromBytes(bytesKeyPublic);
+  if (compressedOnly && bytesKeyPublic.length !== 33) {
+    throw new RangeError("SegWit v0 addresses take a compressed public key");
+  }
+  return bytesKeyPublic;
+}
+
+/**
  * Base Bitcoin address options that use version bytes (legacy P2PKH and P2SH)
  */
 export type OptionsAddressVersioned = {
@@ -93,8 +108,7 @@ export function createVersionedHash(hash: Uint8Array, bytesVersion: number): Uin
  * @returns {string} Legacy address
  */
 export function generateAddressLegacy(keyPublic: string, options: OptionsAddressLegacy): string {
-  // Convert public key to bytes
-  const bytesKeyPublic = hexToBytes(keyPublic);
+  const bytesKeyPublic = publicKeyBytes(keyPublic);
 
   // Hash the public key with hash160 (RIPEMD160(SHA256(pubkey)))
   const hashPubKey = hash160(bytesKeyPublic);
@@ -127,8 +141,7 @@ export function validateAddressLegacy(address: string, options: OptionsAddressLe
  * @returns {string} P2SH address
  */
 export function generateAddressP2SH(keyPublic: string, options: OptionsAddressP2SH): string {
-  // Convert public key to bytes
-  const bytesKeyPublic = hexToBytes(keyPublic);
+  const bytesKeyPublic = publicKeyBytes(keyPublic, true);
 
   // Hash the public key with hash160 (RIPEMD160(SHA256(pubkey)))
   const hashPubKey = hash160(bytesKeyPublic);
@@ -175,8 +188,7 @@ export function generateAddressSegWit(
   options: OptionsAddressSegWit,
   type: "p2wpkh" | "p2wsh" = "p2wpkh",
 ): string {
-  // Convert public key to bytes
-  const bytesKeyPublic = hexToBytes(keyPublic);
+  const bytesKeyPublic = publicKeyBytes(keyPublic, options.witnessVersion === 0);
 
   let programBytes: Uint8Array;
 

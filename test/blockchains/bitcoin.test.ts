@@ -4,7 +4,7 @@ import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 import { describe, expect, it, vi } from "vitest";
 import { bip39TestVectors, bitcoinMessageVectors as messageVectors } from "../fixtures";
 import { useBlockchain } from "../../src";
-import { bip44Path } from "../../src/tool-operations.ts";
+import { bip44Path, getAddress } from "../../src/tool-operations.ts";
 import Bitcoin from "../../src/blockchains/bitcoin";
 import type { Options } from "../../src/types";
 
@@ -450,6 +450,38 @@ describe("Bitcoin blockchain", () => {
       await expect(bip44Path("bitcoin", undefined, 0, 0, 0, "segwit")).rejects.toThrow(
         "bitcoin has one curve",
       );
+    });
+  });
+
+  describe("public key checks", () => {
+    const keyPrivate = `${"00".repeat(31)}01`;
+    const uncompressed = blockchain.getKeyPublic(keyPrivate, { compressed: false });
+
+    it.each(["legacy", "p2sh", "segwit", "p2wsh", "taproot"])(
+      "%s throws for bytes that are not a secp256k1 point",
+      (type) => {
+        expect(() => blockchain.getAddress("00".repeat(33), type)).toThrow();
+        expect(() => blockchain.getAddress(`02${"05".padStart(64, "0")}`, type)).toThrow();
+      },
+    );
+
+    it("takes an uncompressed key for legacy and taproot, not for SegWit v0", () => {
+      expect(blockchain.getAddress(uncompressed, "legacy")).toBe(
+        "1EHNa6Q4Jz2uvNExL497mE43ikXhwF6kZm",
+      );
+      expect(blockchain.getAddress(uncompressed, "taproot")).toBe(
+        blockchain.getAddress(blockchain.getKeyPublic(keyPrivate), "taproot"),
+      );
+      for (const type of ["p2sh", "segwit", "p2wsh"]) {
+        expect(() => blockchain.getAddress(uncompressed, type)).toThrow("compressed");
+      }
+      expect(() => blockchain.deriveWallet(keyPrivate, { compressed: false }, "segwit")).toThrow(
+        "compressed",
+      );
+    });
+
+    it("keys_get_address passes the rejection on", async () => {
+      await expect(getAddress("bitcoin", "00".repeat(33), "segwit")).rejects.toThrow();
     });
   });
 });

@@ -89,5 +89,5 @@ pnpm test:mcp         # build and exercise all 18 MCP tools over stdio
 - **MCP transport** runs through `keys mcp`. stdout is reserved for JSON-RPC, and `createMcpServer()` remains importable for hosts with their own transport.
 - **utils/ has mixed structure** - plain `.ts` files (address, encoding, crypto-hash, secp256k1, ed25519, ed25519-chains, evm, signing) and subdirectories with `index.ts` (bip32/, bip39/, bip44/, slip10/).
 - **`__cardano/notes.md`** - research notes for Cardano implementation, not code. The actual implementation is `cardano.ts`.
-- **Signing verification tests** - both verification tests in `test/utils/signing.test.ts` are enabled; they derive the secp256k1 public key from the fixture private key because `secp256k1TestVectors.publicKeyCompressed` does not pair with `privateKey` (kept only for address-derivation tests, which are self-consistent).
+- **Shared secp256k1 fixture** - `secp256k1TestVectors.publicKeyCompressed` is the key of `privateKey`, shared by the signing round trips and the address tests. The Bitcoin address generators decode the SEC1 point before hashing, so an invented key fails them.
 - **`createVersionedHash` is deprecated** in `address.ts` - use `addSchemeByte` instead.
