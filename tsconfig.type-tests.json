@@ -5,6 +5,7 @@
     "moduleResolution": "bundler"
   },
   "include": [
+    "test/cli.test.ts",
     "test/public-exports.test.ts",
     "test/mcp.test.ts",
     "test/pi-extension.test.ts",
