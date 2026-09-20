@@ -257,7 +257,9 @@ describe("keys MCP server", () => {
       "utf8",
     );
     const advertisedTools = landing.match(/value: "([0-9]+)", label: "MCP tools"/u)?.[1];
-    expect(Number(advertisedTools)).toBe(response.tools.length);
+    expect(advertisedTools, "LandingHome.vue must declare the current MCP tool count").toBe(
+      String(response.tools.length),
+    );
     expect(
       response.tools.find((tool) => tool.name === "keys_generate_wallet")?.annotations,
     ).toMatchObject({
