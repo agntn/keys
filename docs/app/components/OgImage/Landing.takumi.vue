@@ -3,11 +3,11 @@
 defineProps<{ title?: string; description?: string }>();
 
 const TAGLINE =
-  "Keys to addresses to signatures on ten chains. From a mnemonic or from nothing at all. Nothing leaves the process.";
+  "Keys to addresses to signatures on eleven chains. From a mnemonic or from nothing at all. Nothing leaves the process.";
 
 const { name: siteName } = useSiteConfig();
 
-const CHAINS = ["Bitcoin", "Ethereum", "Solana", "Sui", "Cardano", "+5 more"];
+const CHAINS = ["Bitcoin", "Ethereum", "Solana", "Sui", "Cardano", "+6 more"];
 </script>
 
 <template>

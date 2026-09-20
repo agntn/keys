@@ -1,7 +1,7 @@
 {
   "name": "@agntn/keys",
   "short_name": "keys",
-  "description": "Keys to addresses to signatures on ten chains from a mnemonic or from nothing at all",
+  "description": "Keys to addresses to signatures on eleven chains from a mnemonic or from nothing at all",
   "start_url": "/",
   "display": "browser",
   "background_color": "#0b0d10",
