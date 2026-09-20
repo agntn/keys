@@ -110,3 +110,31 @@ export const DERIVE_BIP39_SEED_PARAMETERS = Type.Object(
   },
   { additionalProperties: false },
 );
+
+/** Shared MCP and Pi parameters for an explicitly selected Electrum wallet. */
+export const DERIVE_ELECTRUM_WALLET_PARAMETERS = Type.Object(
+  {
+    mnemonic: Type.String({
+      minLength: 1,
+      maxLength: 4096,
+      pattern: "\\S+",
+      description: "Complete public or disposable Electrum standard or SegWit phrase",
+    }),
+    path: Type.String({
+      minLength: 1,
+      maxLength: 256,
+      pattern: "^m(/[0-9]+'?)+$",
+      description: "Exact BIP32 path; no path search or inference",
+    }),
+    passphrase: Type.Optional(
+      Type.String({
+        maxLength: 4096,
+        description: "Electrum seed extension. Normalized like the phrase; default empty",
+      }),
+    ),
+    network: Type.Optional(
+      Type.String({ enum: TOOL_NETWORKS, description: "Bitcoin network. Default: mainnet" }),
+    ),
+  },
+  { additionalProperties: false },
+);

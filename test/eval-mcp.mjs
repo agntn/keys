@@ -3,7 +3,12 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import path from "node:path";
-import { invalidChecksumPuzzle, publicKeyEncodingVector, bip39TestVectors } from "./fixtures.ts";
+import {
+  electrumVectors,
+  invalidChecksumPuzzle,
+  publicKeyEncodingVector,
+  bip39TestVectors,
+} from "./fixtures.ts";
 
 const server = path.resolve(import.meta.dirname, "../dist/cli.mjs");
 const transport = new StdioClientTransport({ command: process.execPath, args: [server, "mcp"] });
@@ -63,12 +68,21 @@ await client.connect(transport);
 
 try {
   const listed = await client.listTools();
-  if (listed.tools.length !== 18) throw new Error(`Expected 18 tools, got ${listed.tools.length}`);
+  if (listed.tools.length !== 19) throw new Error(`Expected 19 tools, got ${listed.tools.length}`);
 
   await call(
     "keys_convert_public_key",
     { publicKey: publicKeyEncodingVector.compressed, compressed: false },
     new RegExp(publicKeyEncodingVector.uncompressed),
+  );
+
+  await call(
+    "keys_derive_electrum_wallet",
+    {
+      mnemonic: electrumVectors[0].mnemonic,
+      path: electrumVectors[0].path,
+    },
+    new RegExp(electrumVectors[0].address),
   );
 
   const privateKey = "0000000000000000000000000000000000000000000000000000000000000001";

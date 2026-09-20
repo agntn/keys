@@ -22,6 +22,8 @@ const libraryEntries = [
   "@noble/hashes/blake2.js",
   "@noble/hashes/legacy.js",
   "@noble/hashes/sha2.js",
+  "@noble/hashes/hmac.js",
+  "@noble/hashes/pbkdf2.js",
   "@noble/hashes/sha3.js",
   "@noble/hashes/utils.js",
   "@scure/base",

@@ -1,36 +1,41 @@
 # @agntn/keys: Pi extension
 
-Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as 18 agent tools for key generation, WIF conversion, BIP39 generation, entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across 11 blockchains (Bitcoin, Litecoin, Decred, Ethereum, Base, Solana, Stellar, Aptos, TRON, SUI, Cardano).
+Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as 19 agent tools for key generation, WIF conversion, BIP39 generation, entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across 11 blockchains (Bitcoin, Litecoin, Decred, Ethereum, Base, Solana, Stellar, Aptos, TRON, SUI, Cardano).
 
 > [!WARNING]
 > **This extension is experimental.** The package name, public API, provider model, CLI flags, and tool surfaces may change before the first stable release. Pin exact versions if you build on it now.
 
 ## Tools
 
-| Tool                         | Purpose                                                        |
-| ---------------------------- | -------------------------------------------------------------- |
-| `keys_derive_bip39_seed`     | Derive seed hex from a valid mnemonic and optional passphrase  |
-| `keys_convert_public_key`    | Convert secp256k1 public keys between SEC1 encodings           |
-| `keys_encode_wif`            | Export a disposable private key as native BTC, LTC or DCR WIF  |
-| `keys_decode_wif`            | Read native WIF into a hex key, network and compression flag   |
-| `keys_generate_wallet`       | Generate private key + public key + address for a chain        |
-| `keys_derive_wallet`         | Derive public key + address from an existing private key       |
-| `keys_derive_hd_wallet`      | Derive public key + address from a mnemonic and path           |
-| `keys_generate_mnemonic`     | Generate a disposable English BIP39 mnemonic                   |
-| `keys_inspect_mnemonic`      | Validate a BIP39 mnemonic and recover its entropy              |
-| `keys_encode_bip39_entropy`  | Encode hexadecimal entropy as an English BIP39 mnemonic        |
-| `keys_lookup_bip39_indices`  | Map numeric positions to words in an official BIP39 list       |
-| `keys_lookup_bip39_words`    | Search an official word list and report 0- and 1-based indices |
-| `keys_recover_mnemonic_word` | List words allowed by the checksum for one missing position    |
-| `keys_get_address`           | Derive an address from a public key                            |
-| `keys_validate_address`      | Check if an address is valid for a chain                       |
-| `keys_sign_message`          | Sign a message with a private key (secp256k1/ed25519)          |
-| `keys_verify_message`        | Verify a signature against message + public key                |
-| `keys_bip44_path`            | Generate or parse a BIP44 derivation path                      |
+| Tool                          | Purpose                                                            |
+| ----------------------------- | ------------------------------------------------------------------ |
+| `keys_derive_electrum_wallet` | Derive a Bitcoin address from an explicit Electrum phrase and path |
+| `keys_derive_bip39_seed`      | Derive seed hex from a valid mnemonic and optional passphrase      |
+| `keys_convert_public_key`     | Convert secp256k1 public keys between SEC1 encodings               |
+| `keys_encode_wif`             | Export a disposable private key as native BTC, LTC or DCR WIF      |
+| `keys_decode_wif`             | Read native WIF into a hex key, network and compression flag       |
+| `keys_generate_wallet`        | Generate private key + public key + address for a chain            |
+| `keys_derive_wallet`          | Derive public key + address from an existing private key           |
+| `keys_derive_hd_wallet`       | Derive public key + address from a mnemonic and path               |
+| `keys_generate_mnemonic`      | Generate a disposable English BIP39 mnemonic                       |
+| `keys_inspect_mnemonic`       | Validate a BIP39 mnemonic and recover its entropy                  |
+| `keys_encode_bip39_entropy`   | Encode hexadecimal entropy as an English BIP39 mnemonic            |
+| `keys_lookup_bip39_indices`   | Map numeric positions to words in an official BIP39 list           |
+| `keys_lookup_bip39_words`     | Search an official word list and report 0- and 1-based indices     |
+| `keys_recover_mnemonic_word`  | List words allowed by the checksum for one missing position        |
+| `keys_get_address`            | Derive an address from a public key                                |
+| `keys_validate_address`       | Check if an address is valid for a chain                           |
+| `keys_sign_message`           | Sign a message with a private key (secp256k1/ed25519)              |
+| `keys_verify_message`         | Verify a signature against message + public key                    |
+| `keys_bip44_path`             | Generate or parse a BIP44 derivation path                          |
 
 ## BIP39 seed
 
 `keys_derive_bip39_seed` takes `mnemonic`, optional `passphrase` and optional `language` (English by default). It returns a 64-byte seed as hex, not a master private key. All 10 official lists are supported, with checksum validation required. Mnemonic whitespace is collapsed, passphrase whitespace is preserved, and NFKD applies to both. Each text input is capped at 4096 characters. Inputs and the returned seed enter the transcript, so use only public or disposable material.
+
+## Electrum wallets
+
+`keys_derive_electrum_wallet` is separate from BIP39. Supply the complete Electrum phrase and exact BIP32 `path`, with an optional `passphrase` and Bitcoin `network`. Standard seeds produce P2PKH addresses, SegWit seeds P2WPKH. The result includes `scheme: "electrum"` and `seedType`, but no seed or private key. Legacy, 2FA and unrecognized versions are rejected. Both phrase and passphrase use Electrum normalization. Inputs are saved in the transcript, so never submit real wallet secrets.
 
 ## Puzzle checksum override
 

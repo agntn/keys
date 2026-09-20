@@ -548,3 +548,101 @@ export const publicKeyEncodingVector = {
     "0479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798" +
     "483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8",
 };
+
+/** Electrum 9da4c342 tests/test_mnemonic.py; addresses checked with Electrum 4.8.1. */
+export const electrumVectors = [
+  {
+    name: "english",
+    mnemonic: "wild father tree among universe such mobile favorite target dynamic credit identify",
+    passphrase: "",
+    seed: "aac2a6302e48577ab4b46f23dbae0774e2e62c796f797d0a1b5faeb528301e3064342dafb79069e7c4c6b8c38ae11d7a973bec0d4f70626f8cc5184a8d0b0756",
+    seedType: "segwit",
+    path: "m/0'/0/0",
+    publicKey: "022e085af92c30eabc5fdd71b29a82cb8fba988ae5cc44831d5718ee673cd30cf1",
+    address: "bc1q4794m2uuw9jmjszmplfj4wvvr5j272fpnx2cse",
+  },
+  {
+    name: "english_with_passphrase",
+    mnemonic: "wild father tree among universe such mobile favorite target dynamic credit identify",
+    passphrase: "Did you ever hear the tragedy of Darth Plagueis the Wise?",
+    seed: "4aa29f2aeb0127efb55138ab9e7be83b36750358751906f86c662b21a1ea1370f949e6d1a12fa56d3d93cadda93038c76ac8118597364e46f5156fde6183c82f",
+    seedType: "segwit",
+    path: "m/0'/0/0",
+    publicKey: "023ee11455fef61d50886604a18c0463185cdbeda57a88e4b31d11aabef4701c09",
+    address: "bc1qd95tuv3qp38wjnw0u56m6t8ku4hl66vwjr72az",
+  },
+  {
+    name: "japanese",
+    mnemonic:
+      "なのか ひろい しなん まなぶ つぶす さがす おしゃれ かわく おいかける けさき かいとう さたん",
+    passphrase: "",
+    seed: "d3eaf0e44ddae3a5769cb08a26918e8b308258bcb057bb704c6f69713245c0b35cb92c03df9c9ece5eff826091b4e74041e010b701d44d610976ce8bfb66a8ad",
+    seedType: "standard",
+    path: "m/0/0",
+    publicKey: "027e127c4a73642f907749504c6de35f6146726204efaa6dd6b7c9d72f9f3d7dba",
+    address: "1EHQKxw2CJ1Mf8ePxQx66TtwP4x3fg2hYi",
+  },
+  {
+    name: "chinese",
+    mnemonic: "眼 悲 叛 改 节 跃 衡 响 疆 股 遂 冬",
+    passphrase: "",
+    seed: "0b9077db7b5a50dbb6f61821e2d35e255068a5847e221138048a20e12d80b673ce306b6fe7ac174ebc6751e11b7037be6ee9f17db8040bb44f8466d519ce2abf",
+    seedType: "segwit",
+    path: "m/0'/0/0",
+    publicKey: "02ca595d8a4a8e117dafb627738fbc88f258f6f75303e80d6ea11c9567ca81ac26",
+    address: "bc1qe26k9rvz2frkjkepsml7jku9ses5jupls7t8e9",
+  },
+  {
+    name: "chinese_with_passphrase",
+    mnemonic: "眼 悲 叛 改 节 跃 衡 响 疆 股 遂 冬",
+    passphrase: "给我一些测试向量谷歌",
+    seed: "6c03dd0615cf59963620c0af6840b52e867468cc64f20a1f4c8155705738e87b8edb0fc8a6cee4085776cb3a629ff88bb1a38f37085efdbf11ce9ec5a7fa5f71",
+    seedType: "segwit",
+    path: "m/0'/0/0",
+    publicKey: "039a474a7aa049251c44406c1c7d9558bea69175b69986db0178f22fb2a3ea5dae",
+    address: "bc1qqxxe9jvuv4jc9c5mee5y7x7y7ttap422u68kva",
+  },
+  {
+    name: "spanish",
+    mnemonic:
+      "almíbar tibio superar vencer hacha peatón príncipe matar consejo polen vehículo odisea",
+    passphrase: "",
+    seed: "18bffd573a960cc775bbd80ed60b7dc00bc8796a186edebe7fc7cf1f316da0fe937852a969c5c79ded8255cdf54409537a16339fbe33fb9161af793ea47faa7a",
+    seedType: "standard",
+    path: "m/0/0",
+    publicKey: "0346188ff23aa9de6188cfbfb6786c0ba6b875b8b588946e10b158f92ff4b019b3",
+    address: "1FckJut2asycDsV3qADcZf3htcjqgxw3Fw",
+  },
+  {
+    name: "spanish_with_passphrase",
+    mnemonic:
+      "almíbar tibio superar vencer hacha peatón príncipe matar consejo polen vehículo odisea",
+    passphrase: "araña difícil solución término cárcel",
+    seed: "363dec0e575b887cfccebee4c84fca5a3a6bed9d0e099c061fa6b85020b031f8fe3636d9af187bf432d451273c625e20f24f651ada41aae2c4ea62d87e9fa44c",
+    seedType: "standard",
+    path: "m/0/0",
+    publicKey: "0250fcc6b6d6bef9390cb78cbb716a7c95be8787210e72231ce820d2a743376550",
+    address: "1PnidNAh53Et2pWmvpwn7eHEELUvt6mK29",
+  },
+  {
+    name: "spanish2",
+    mnemonic: "equipo fiar auge langosta hacha calor trance cubrir carro pulmón oro áspero",
+    passphrase: "",
+    seed: "001ebce6bfde5851f28a0d44aae5ae0c762b600daf3b33fc8fc630aee0d207646b6f98b18e17dfe3be0a5efe2753c7cdad95860adbbb62cecad4dedb88e02a64",
+    seedType: "segwit",
+    path: "m/0'/0/0",
+    publicKey: "0265439f9f47c031595c163acc0b3d0d561ae98af1b902b4bbb01aa43627ae5abf",
+    address: "bc1qv09z768ffaqf4hp7rx5gqlfpnxtmagz303wx97",
+  },
+  {
+    name: "spanish3",
+    mnemonic: "vidrio jabón muestra pájaro capucha eludir feliz rotar fogata pez rezar oír",
+    passphrase:
+      "¡Viva España! repiten veinte pueblos y al hablar dan fe del ánimo español... ¡Marquen arado martillo y clarín",
+    seed: "c274665e5453c72f82b8444e293e048d700c59bf000cacfba597629d202dcf3aab1cf9c00ba8d3456b7943428541fed714d01d8a0a4028fc3a9bb33d981cb49f",
+    seedType: "segwit",
+    path: "m/0'/0/0",
+    publicKey: "02b3d453ef7a9a956cffecaa22e1e4bd33dde432603e75108d659ad6319bc37192",
+    address: "bc1q0fp4hfqy8zylxrfv50mxtehdc9xe0crjet3q4y",
+  },
+] as const;

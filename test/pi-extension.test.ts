@@ -4,6 +4,7 @@ import { Value } from "typebox/value";
 import { describe, expect, it } from "vitest";
 import {
   bip39TestVectors,
+  electrumVectors,
   publicKeyEncodingVector,
   litecoinTestVectors,
   decredTestVectors,
@@ -43,6 +44,19 @@ function registerTools(): ReadonlyMap<string, RegisteredTool> {
 }
 
 describe("keys Pi extension", () => {
+  it("derives an Electrum wallet with the shared executor", async () => {
+    const tool = registerTools().get("keys_derive_electrum_wallet");
+    if (!tool) throw new Error("Missing Electrum wallet tool");
+    const vector = electrumVectors[0];
+    const args = { mnemonic: vector.mnemonic, path: vector.path };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    const result = await tool.execute("electrum", args);
+    expect(result).toMatchObject({
+      details: { scheme: "electrum", seedType: "segwit", address: vector.address },
+    });
+    expect(JSON.stringify(result)).not.toContain(vector.mnemonic);
+    await expect(tool.execute("electrum", { ...args, passphrase: false })).rejects.toThrow();
+  });
   it("derives disposable BIP39 seeds without echoing the input", async () => {
     const tool = registerTools().get("keys_derive_bip39_seed");
     if (!tool) throw new Error("Missing BIP39 seed tool");
