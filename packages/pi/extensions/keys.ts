@@ -17,6 +17,7 @@ import {
   WIF_DECODE_PARAMETERS,
   GENERATE_MNEMONIC_PARAMETERS,
   DERIVE_BIP39_SEED_PARAMETERS,
+  DERIVE_ELECTRUM_WALLET_PARAMETERS,
   BIP39_LANGUAGE_PARAMETER,
 } from "../../../src/tool-schemas.ts";
 
@@ -54,6 +55,24 @@ const ADDRESS_TYPE_PARAMETER = Type.Optional(
 );
 
 export default function keysExtension(pi: ExtensionAPI) {
+  pi.registerTool({
+    name: "keys_derive_electrum_wallet",
+    label: "Derive Electrum Wallet",
+    description:
+      "Derive a Bitcoin public key and address from a complete Electrum standard or SegWit phrase and an exact path. Rejects legacy and 2FA seeds. Inputs enter the transcript; use only public or disposable material, never real wallet secrets.",
+    parameters: DERIVE_ELECTRUM_WALLET_PARAMETERS,
+    renderCall() {
+      return new Text("Derive Electrum wallet", 0, 0);
+    },
+    async execute(_toolCallId, params) {
+      return (await loadToolOperations()).deriveElectrumWallet(
+        params.mnemonic,
+        params.path,
+        params.passphrase,
+        params.network,
+      );
+    },
+  });
   pi.registerTool({
     name: "keys_derive_bip39_seed",
     label: "Derive BIP39 Seed",

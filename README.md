@@ -5,7 +5,7 @@
 [![license](https://npmx.dev/api/registry/badge/license/@agntn/keys)](https://npmx.dev/package/@agntn/keys)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/agntn/keys)
 
-🔑 Keys, addresses and signatures for ten chains, from a mnemonic or from nothing at all. Bitcoin gets its five address types, Solana gets ed25519, your agent gets 18 tools, and none of it should ever meet real money.
+🔑 Keys, addresses and signatures for eleven chains, from a mnemonic or from nothing at all. Bitcoin gets its five address types, Solana gets ed25519, your agent gets 19 tools, and none of it should ever meet real money.
 
 > [!WARNING]
 > **@agntn/keys is experimental.** The public API and the tool surfaces can still move before the first stable release. Pin exact versions if you build on it now.
@@ -26,7 +26,7 @@ The docs live at [keys.agntn.dev](https://keys.agntn.dev), keyspace explorer inc
 - 🌍 **All ten BIP39 word lists.** Look a word up in Italian, generate in Japanese with the ideographic spaces, map indices from base 0 or base 1.
 - ✍️ **Signing on both curves.** Bitcoin, Litecoin and Decred hash the message the way Core does, EVM chains the way ethers does, TRON the way TronWeb's `signMessageV2` does, Sui the way the Sui SDK's `signPersonalMessage` does on either curve, Stellar the way the Stellar SDK's `signMessage` does under SEP-53, and Solana, Aptos and Cardano sign the raw bytes. What comes back is always 64 bytes of compact `r||s` hex, no recovery byte, so it's not Core's base64 and ethers needs a `v` from you before it will recover the signer.
 - 🔌 **Loads one chain at a time.** `blockchains.solana()()` imports Solana and nothing else, so a Bitcoin tool never pays for Cardano.
-- 🤖 **18 agent tools.** MCP over stdio and a Pi extension run the same code, and a generated mnemonic comes back with a note that it's in the transcript now.
+- 🤖 **19 agent tools.** MCP over stdio and a Pi extension run the same code, and a generated mnemonic comes back with a note that it's in the transcript now.
 
 ## 📦 Install
 
@@ -170,7 +170,7 @@ npx -y @agntn/keys mcp
 }
 ```
 
-18 tools, `keys_generate_wallet` through `keys_bip44_path`, and the Pi extension in [`packages/pi`](./packages/pi) runs the exact same executors from a checkout. Ask for a mnemonic and this is the whole answer:
+19 tools, `keys_derive_electrum_wallet` through `keys_bip44_path`, and the Pi extension in [`packages/pi`](./packages/pi) runs the exact same executors from a checkout. Ask for a mnemonic and this is the whole answer:
 
 ```
 Language: english
@@ -204,7 +204,7 @@ pnpm dev          # vitest in watch mode
 pnpm lint         # builds first, then oxlint and oxfmt --check
 pnpm test:types   # tsc over the library and the type tests
 pnpm build        # obuild
-pnpm test:mcp     # builds, then calls all 18 tools over stdio
+pnpm test:mcp     # builds, then calls all 19 tools over stdio
 pnpm playground playground/bip39-demo.ts
 ```
 

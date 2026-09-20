@@ -60,7 +60,7 @@ const shortHex = computed(() => `${props.hex.slice(0, 12)}…${props.hex.slice(-
     :viewBox="`0 0 ${W} ${H}`"
     class="keys-flow"
     role="img"
-    aria-label="Private key derives through secp256k1 and ed25519 into ten chain addresses"
+    aria-label="Private key derives through secp256k1 and ed25519 into chain addresses"
   >
     <g class="keys-flow-wires">
       <path v-for="(d, index) in trunkPaths" :key="`t${index}`" :d="d" />

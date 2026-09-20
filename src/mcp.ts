@@ -22,6 +22,7 @@ import {
   DERIVATION_PATH_SCHEMA_PATTERN,
   deriveHdWallet,
   deriveBip39Seed,
+  deriveElectrumWallet,
   deriveWallet,
   encodeBip39Entropy,
   encodeWif,
@@ -47,6 +48,7 @@ import {
   WIF_DECODE_PARAMETERS,
   GENERATE_MNEMONIC_PARAMETERS,
   DERIVE_BIP39_SEED_PARAMETERS,
+  DERIVE_ELECTRUM_WALLET_PARAMETERS,
   BIP39_LANGUAGE_PARAMETER,
 } from "./tool-schemas.ts";
 
@@ -109,6 +111,16 @@ const addressTypeArgument = Type.Optional(
 );
 
 const tools: readonly ToolDefinition[] = [
+  {
+    name: "keys_derive_electrum_wallet",
+    title: "Derive Electrum Wallet",
+    description:
+      "Derive a Bitcoin public key and address from a complete Electrum standard or SegWit phrase and an exact path. Rejects legacy and 2FA seeds. Inputs enter the transcript; use only public or disposable material, never real wallet secrets.",
+    inputSchema: DERIVE_ELECTRUM_WALLET_PARAMETERS,
+    annotations: LOCAL_READ,
+    execute: (args) =>
+      deriveElectrumWallet(args["mnemonic"], args["path"], args["passphrase"], args["network"]),
+  },
   {
     name: "keys_derive_bip39_seed",
     title: "Derive BIP39 Seed",

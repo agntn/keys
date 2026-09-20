@@ -5,6 +5,9 @@
  * Errors never echo secret inputs; conversion results contain the equivalent secret.
  */
 
+import { bytesToHex } from "@noble/hashes/utils.js";
+import { deriveElectrumSeed } from "./utils/electrum.ts";
+import { getMasterKeyFromSeed } from "./utils/bip32/index.ts";
 import { convertSecp256k1PublicKey } from "./utils/public-key.ts";
 import { encodeWIF, decodeWIF, type DecodedWIF, type WIFNetworkOptions } from "./utils/wif.ts";
 import type { AbstractBlockchain } from "./blockchain.ts";
@@ -482,6 +485,53 @@ export async function deriveHdWallet(
         `Address: ${details.address}`,
         ...(details.warnings ?? []).map((warning) => `Warning: ${warning}`),
       ].join("\n"),
+    ),
+    details,
+  };
+}
+
+/**
+ * Derives public Bitcoin wallet material from a complete Electrum phrase and exact path.
+ * @param mnemonicValue - Public or disposable Electrum phrase
+ * @param pathValue - Exact absolute BIP32 path
+ * @param passphraseValue - Electrum passphrase
+ * @param networkValue - Bitcoin network
+ * @returns {Promise<ToolResult<DerivedWalletDetails & { scheme: "electrum"; seedType: "standard" | "segwit" }>>} Public wallet and seed version
+ */
+export async function deriveElectrumWallet(
+  mnemonicValue: unknown,
+  pathValue: unknown,
+  passphraseValue?: unknown,
+  networkValue?: unknown,
+): Promise<
+  ToolResult<DerivedWalletDetails & { scheme: "electrum"; seedType: "standard" | "segwit" }>
+> {
+  const path = requiredString(pathValue, "Derivation path");
+  if (path.length > 256 || !DERIVATION_PATH_PATTERN.test(path))
+    throw new TypeError("Invalid derivation path");
+  const mnemonic = requiredString(mnemonicValue, "Electrum mnemonic");
+  const passphrase = optionalString(passphraseValue, "Electrum passphrase") ?? "";
+  const { blockchain } = await getBlockchain("bitcoin", networkValue);
+  const { seed, seedType, scheme } = deriveElectrumSeed(mnemonic, passphrase);
+  const privateKey = getMasterKeyFromSeed(seed).derive(path).privateKey;
+  if (!privateKey) throw new Error("No private key at the supplied path");
+  const wallet = blockchain.deriveWallet(
+    bytesToHex(privateKey),
+    { compressed: true },
+    seedType === "segwit" ? "segwit" : "legacy",
+  );
+  const details = {
+    chain: "bitcoin",
+    network: blockchain.network,
+    scheme,
+    seedType,
+    path,
+    publicKey: wallet.keys.public,
+    address: wallet.address,
+  };
+  return {
+    content: content(
+      `Scheme: ${scheme}\nSeed type: ${seedType}\nChain: bitcoin (${details.network})\nPath: ${path}\nPublic key: ${details.publicKey}\nAddress: ${details.address}`,
     ),
     details,
   };

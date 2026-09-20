@@ -1,8 +1,10 @@
+import { readFileSync } from "node:fs";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   bip39TestVectors,
+  electrumVectors,
   publicKeyEncodingVector,
   litecoinTestVectors,
   decredTestVectors,
@@ -14,6 +16,7 @@ import {
 import { createMcpServer } from "../src/mcp.ts";
 
 const TOOL_NAMES = [
+  "keys_derive_electrum_wallet",
   "keys_derive_bip39_seed",
   "keys_convert_public_key",
   "keys_encode_wif",
@@ -56,6 +59,29 @@ afterEach(async () => {
 });
 
 describe("keys MCP server", () => {
+  it("derives an explicitly selected Electrum wallet through MCP", async () => {
+    const client = await connectTestClient();
+    const vector = electrumVectors[0];
+    const result = await client.callTool({
+      name: "keys_derive_electrum_wallet",
+      arguments: { mnemonic: vector.mnemonic, path: vector.path },
+    });
+    expect(result.isError).not.toBe(true);
+    expect(text(result.content)).toContain(vector.address);
+    expect(text(result.content)).toContain("Scheme: electrum");
+    expect(text(result.content)).not.toContain(vector.mnemonic);
+    for (const args of [
+      { mnemonic: "secret-phrase", path: vector.path },
+      { mnemonic: vector.mnemonic, path: vector.path, passphrase: false },
+    ]) {
+      const failed = await client.callTool({
+        name: "keys_derive_electrum_wallet",
+        arguments: args,
+      });
+      expect(failed.isError).toBe(true);
+      expect(text(failed.content)).not.toContain("secret-phrase");
+    }
+  });
   it("derives a BIP39 seed through MCP", async () => {
     const client = await connectTestClient();
     const result = await client.callTool({
@@ -226,6 +252,14 @@ describe("keys MCP server", () => {
     const response = await client.listTools();
 
     expect(response.tools.map((tool) => tool.name)).toEqual(TOOL_NAMES);
+    const landing = readFileSync(
+      new URL("../docs/app/components/content/LandingHome.vue", import.meta.url),
+      "utf8",
+    );
+    const advertisedTools = landing.match(/value: "([0-9]+)", label: "MCP tools"/u)?.[1];
+    expect(advertisedTools, "LandingHome.vue must declare the current MCP tool count").toBe(
+      String(response.tools.length),
+    );
     expect(
       response.tools.find((tool) => tool.name === "keys_generate_wallet")?.annotations,
     ).toMatchObject({

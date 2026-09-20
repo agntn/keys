@@ -4,7 +4,12 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { DecodedWIF, WIFOptions, HDWalletOptions } from "@agntn/keys";
 import type { BIP39MnemonicInspection } from "@agntn/keys/bip39";
-import { wifTestVectors, localizedMnemonicVectors, invalidChecksumPuzzle } from "./fixtures.ts";
+import {
+  electrumVectors,
+  wifTestVectors,
+  localizedMnemonicVectors,
+  invalidChecksumPuzzle,
+} from "./fixtures.ts";
 
 const EXPORTS = [
   ["@agntn/keys/bip32", "/dist/utils/bip32/index.mjs"],
@@ -30,6 +35,25 @@ describe("Public WIF exports", () => {
 });
 
 describe("Public derivation exports", () => {
+  it("exports explicit Electrum derivation from the built package", async () => {
+    const { deriveElectrumSeed, inspectElectrumMnemonic, blockchains } =
+      await import("@agntn/keys");
+    const { getMasterKeyFromSeed } = await import("@agntn/keys/bip32");
+    const vector = electrumVectors[0];
+    expect(inspectElectrumMnemonic(vector.mnemonic)).toBe("segwit");
+    const { seed } = deriveElectrumSeed(vector.mnemonic);
+    expect(Buffer.from(seed).toString("hex")).toBe(vector.seed);
+    const child = getMasterKeyFromSeed(seed).derive(vector.path);
+    if (!child.privateKey) throw new Error("Missing private key");
+    const bitcoin = await blockchains.bitcoin()();
+    expect(
+      bitcoin.deriveWallet(
+        Buffer.from(child.privateKey).toString("hex"),
+        { compressed: true },
+        "segwit",
+      ).address,
+    ).toBe(vector.address);
+  });
   it("exports checksum diagnostics and the explicit HD override from the built package", async () => {
     const { blockchains } = await import("@agntn/keys");
     const { inspectBIP39Mnemonic } = await import("@agntn/keys/bip39");

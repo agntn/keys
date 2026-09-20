@@ -79,7 +79,7 @@ pnpm lint             # oxlint + oxfmt check
 pnpm lint:fix         # oxlint + oxfmt fixes
 pnpm playground <f>   # run any TS file via tsx
 pnpm docs             # Docus + keyspace explorer on :3000
-pnpm test:mcp         # build and exercise all 18 MCP tools over stdio
+pnpm test:mcp         # build and exercise all 19 MCP tools over stdio
 ```
 
 ## NOTES
