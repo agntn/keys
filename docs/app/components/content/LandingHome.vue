@@ -5,7 +5,7 @@ const stats = [
   { value: "11", label: "chains" },
   { value: "2", label: "curves" },
   { value: "0", label: "network calls" },
-  { value: "18", label: "MCP tools" },
+  { value: "19", label: "MCP tools" },
 ] as const;
 
 const chains = [
@@ -185,7 +185,7 @@ async function copyInstall() {
 
     <LandingFeature
       eyebrow="Blockchains"
-      title="Ten drivers, one shape"
+      title="Every driver, one shape"
       to="/blockchains"
       link="All blockchains"
       :checks="[

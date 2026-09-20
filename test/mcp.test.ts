@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterEach, describe, expect, it } from "vitest";
@@ -251,6 +252,12 @@ describe("keys MCP server", () => {
     const response = await client.listTools();
 
     expect(response.tools.map((tool) => tool.name)).toEqual(TOOL_NAMES);
+    const landing = readFileSync(
+      new URL("../docs/app/components/content/LandingHome.vue", import.meta.url),
+      "utf8",
+    );
+    const advertisedTools = landing.match(/value: "([0-9]+)", label: "MCP tools"/u)?.[1];
+    expect(Number(advertisedTools)).toBe(response.tools.length);
     expect(
       response.tools.find((tool) => tool.name === "keys_generate_wallet")?.annotations,
     ).toMatchObject({
