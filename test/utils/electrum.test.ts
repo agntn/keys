@@ -51,6 +51,18 @@ describe("Electrum seed derivation", () => {
     );
   });
 
+  it.each([12, 13, 19, 20, 21, 24, 25])(
+    "preserves Electrum's 2FA classification at %i words",
+    (count) => {
+      const phrase = "science dawn member doll dutch real can brick knife deny drive list";
+      const candidate = phrase + " \u0301".repeat(count - 12);
+      expect(normalizeElectrumText(candidate)).toBe(phrase);
+      expect(inspectElectrumMnemonic(candidate)).toBe(
+        count === 12 || count >= 20 ? "2fa" : "unknown",
+      );
+    },
+  );
+
   it("does not confuse BIP39 checksum bypass with Electrum derivation", async () => {
     const vector = electrumVectors[0];
     expect(() => deriveMnemonicKey(vector.mnemonic, vector.path, "secp256k1")).toThrow(

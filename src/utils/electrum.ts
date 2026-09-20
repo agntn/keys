@@ -126,6 +126,7 @@ function isLegacySeed(normalized: string): boolean {
 
 /**
  * Inspects Electrum versions without falling back to BIP39 or deriving a secret.
+ * Electrum 2.7 reused prefix 101 for different derivation rules, distinguished only by word count.
  * @param mnemonic - Complete supplied phrase
  * @returns {ElectrumSeedType} Detected version, or unknown
  */

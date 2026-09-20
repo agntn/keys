@@ -5,7 +5,7 @@
 [![license](https://npmx.dev/api/registry/badge/license/@agntn/keys)](https://npmx.dev/package/@agntn/keys)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/agntn/keys)
 
-🔑 Keys, addresses and signatures for ten chains, from a mnemonic or from nothing at all. Bitcoin gets its five address types, Solana gets ed25519, your agent gets 19 tools, and none of it should ever meet real money.
+🔑 Keys, addresses and signatures for eleven chains, from a mnemonic or from nothing at all. Bitcoin gets its five address types, Solana gets ed25519, your agent gets 19 tools, and none of it should ever meet real money.
 
 > [!WARNING]
 > **@agntn/keys is experimental.** The public API and the tool surfaces can still move before the first stable release. Pin exact versions if you build on it now.
@@ -170,7 +170,7 @@ npx -y @agntn/keys mcp
 }
 ```
 
-19 tools, `keys_generate_wallet` through `keys_bip44_path`, and the Pi extension in [`packages/pi`](./packages/pi) runs the exact same executors from a checkout. Ask for a mnemonic and this is the whole answer:
+19 tools, `keys_derive_electrum_wallet` through `keys_bip44_path`, and the Pi extension in [`packages/pi`](./packages/pi) runs the exact same executors from a checkout. Ask for a mnemonic and this is the whole answer:
 
 ```
 Language: english
