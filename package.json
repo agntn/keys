@@ -100,7 +100,7 @@
     "citty": "0.2.2",
     "consola": "3.4.2",
     "micro-key-producer": "0.10.2",
-    "typebox": "1.3.33"
+    "typebox": "1.3.34"
   },
   "devDependencies": {
     "@agntn/ox": "0.1.0",
