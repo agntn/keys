@@ -718,10 +718,11 @@ export async function lookupBip39Words(
     content: content(
       [
         `Language: ${language}`,
+        "Indices: zero-based, one-based",
         ...lookups.map((lookup) =>
           lookup.zeroBasedIndex === null
-            ? `${lookup.word}: not in BIP39 (${language})`
-            : `${lookup.word}: zero-based ${lookup.zeroBasedIndex}, one-based ${lookup.oneBasedIndex}`,
+            ? `${lookup.word}: not in BIP39`
+            : `${lookup.word}: ${lookup.zeroBasedIndex}, ${lookup.oneBasedIndex}`,
         ),
       ].join("\n"),
     ),
