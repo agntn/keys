@@ -35,9 +35,6 @@ importers:
       citty:
         specifier: 0.2.2
         version: 0.2.2
-      consola:
-        specifier: 3.4.2
-        version: 3.4.2
       micro-key-producer:
         specifier: 0.10.2
         version: 0.10.2(patch_hash=244a752b6bd62389716cc3f0593bce1b07a86db1f2db833d74433010edc5e26d)
