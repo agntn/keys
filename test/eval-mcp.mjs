@@ -165,7 +165,11 @@ try {
     );
   }
   await call("keys_lookup_bip39_indices", { indices: [0, 2047] }, /2047: zoo/);
-  await call("keys_lookup_bip39_words", { words: ["skill", "zoo"] }, /zero-based 1619/);
+  await call(
+    "keys_lookup_bip39_words",
+    { words: ["skill", "zoo"] },
+    /^Language: english\nIndices: zero-based, one-based\nskill: 1619, 1620\nzoo: 2047, 2048$/,
+  );
   await call("keys_recover_mnemonic_word", { mnemonic: missing }, /Candidates \(128\):/);
   await call("keys_get_address", { chain: "ethereum", publicKey }, /Address: 0x/);
   await call(

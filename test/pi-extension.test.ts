@@ -24,6 +24,7 @@ interface RegisteredTool {
     params: Readonly<Record<string, unknown>>,
   ) => Promise<{
     readonly content: ReadonlyArray<{ readonly type: string; readonly text?: string }>;
+    readonly details: unknown;
   }>;
 }
 
@@ -457,15 +458,23 @@ describe("keys Pi extension", () => {
     if (!tool) throw new Error("keys_lookup_bip39_words was not registered");
 
     const result = await tool.execute("call-1", {
-      words: ["abandon", "Skill", "zoo", "eleven"],
+      words: ["abandon", "Skill", "zoo", "eleven", "abandon"],
     });
     const text = result.content.map((part) => part.text ?? "").join("\n");
 
-    expect(text).toContain("abandon: zero-based 0, one-based 1");
-    expect(text).toContain("skill: zero-based 1619, one-based 1620");
-    expect(text).toContain("zoo: zero-based 2047, one-based 2048");
-    expect(text).toContain("Language: english");
-    expect(text).toContain("eleven: not in BIP39 (english)");
+    expect(text).toBe(
+      "Language: english\nIndices: zero-based, one-based\nabandon: 0, 1\nskill: 1619, 1620\nzoo: 2047, 2048\neleven: not in BIP39\nabandon: 0, 1",
+    );
+    expect(result.details).toEqual({
+      language: "english",
+      lookups: [
+        { word: "abandon", zeroBasedIndex: 0, oneBasedIndex: 1 },
+        { word: "skill", zeroBasedIndex: 1619, oneBasedIndex: 1620 },
+        { word: "zoo", zeroBasedIndex: 2047, oneBasedIndex: 2048 },
+        { word: "eleven", zeroBasedIndex: null, oneBasedIndex: null },
+        { word: "abandon", zeroBasedIndex: 0, oneBasedIndex: 1 },
+      ],
+    });
     expect(tool.parameters).toMatchObject({
       properties: { words: { items: { pattern: "^\\S+$" } } },
     });
@@ -493,8 +502,16 @@ describe("keys Pi extension", () => {
     });
     const text = result.content.map((part) => part.text ?? "").join("\n");
 
-    expect(text).toContain("orologio: zero-based 1178, one-based 1179");
-    expect(text).toContain("civetta: zero-based 361, one-based 362");
+    expect(text).toBe(
+      "Language: italian\nIndices: zero-based, one-based\norologio: 1178, 1179\ncivetta: 361, 362",
+    );
+    expect(result.details).toEqual({
+      language: "italian",
+      lookups: [
+        { word: "orologio", zeroBasedIndex: 1178, oneBasedIndex: 1179 },
+        { word: "civetta", zeroBasedIndex: 361, oneBasedIndex: 362 },
+      ],
+    });
     expect(Value.Check(tool.parameters, { words: ["orologio"], language: "italian" })).toBe(true);
     expect(Value.Check(tool.parameters, { words: ["あいこくしん"], language: "japanese" })).toBe(
       true,

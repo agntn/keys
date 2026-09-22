@@ -59,6 +59,23 @@ afterEach(async () => {
 });
 
 describe("keys MCP server", () => {
+  it.each([1, 12, 24, 100])("labels both indices once for a %i-word lookup", async (size) => {
+    const client = await connectTestClient();
+    const words = Array.from({ length: size }, (_, index) => (index % 2 === 0 ? "ZOO" : "eleven"));
+    const result = await client.callTool({
+      name: "keys_lookup_bip39_words",
+      arguments: { words },
+    });
+    expect(result.isError).not.toBe(true);
+    expect(text(result.content).split("\n")).toEqual([
+      "Language: english",
+      "Indices: zero-based, one-based",
+      ...Array.from({ length: size }, (_, index) =>
+        index % 2 === 0 ? "zoo: 2047, 2048" : "eleven: not in BIP39",
+      ),
+    ]);
+  });
+
   it("derives an explicitly selected Electrum wallet through MCP", async () => {
     const client = await connectTestClient();
     const vector = electrumVectors[0];
