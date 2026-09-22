@@ -1,5 +1,12 @@
 import { Type } from "typebox";
 import {
+  TOOL_CHAINS,
+  TOOL_ADDRESS_TYPES,
+  SUI_ADDRESS_TYPES,
+  MAX_BIP39_LOOKUP_ITEMS,
+  BIP39_ENTROPY_SCHEMA_PATTERN,
+  BIP39_WORD_SCHEMA_PATTERN,
+  DERIVATION_PATH_SCHEMA_PATTERN,
   TOOL_WIF_CHAINS,
   TOOL_NETWORKS,
   TOOL_MNEMONIC_WORD_COUNTS,
@@ -134,6 +141,216 @@ export const DERIVE_ELECTRUM_WALLET_PARAMETERS = Type.Object(
     ),
     network: Type.Optional(
       Type.String({ enum: TOOL_NETWORKS, description: "Bitcoin network. Default: mainnet" }),
+    ),
+  },
+  { additionalProperties: false },
+);
+
+const chainArgument = Type.String({
+  description: `Blockchain name (${TOOL_CHAINS.join(", ")})`,
+  minLength: 1,
+  maxLength: 32,
+});
+
+const networkArgument = Type.Optional(
+  Type.String({
+    description: "Network (mainnet or testnet). Default: mainnet",
+    enum: TOOL_NETWORKS,
+  }),
+);
+
+const addressTypeArgument = Type.Optional(
+  Type.String({
+    description: "Chain-specific address type, such as segwit, taproot, stake, or secp256k1",
+    enum: TOOL_ADDRESS_TYPES,
+  }),
+);
+
+export const GENERATE_WALLET_PARAMETERS = Type.Object(
+  { chain: chainArgument, network: networkArgument, addressType: addressTypeArgument },
+  { additionalProperties: false },
+);
+
+export const DERIVE_WALLET_PARAMETERS = Type.Object(
+  {
+    chain: chainArgument,
+    privateKey: Type.String({ description: "Private key as hexadecimal text", minLength: 1 }),
+    addressType: addressTypeArgument,
+    network: networkArgument,
+  },
+  { additionalProperties: false },
+);
+
+export const DERIVE_HD_WALLET_PARAMETERS = Type.Object(
+  {
+    chain: chainArgument,
+    mnemonic: Type.String({
+      description: "English BIP39 mnemonic",
+      minLength: 1,
+      pattern: "\\S",
+    }),
+    path: Type.String({
+      description: "Derivation path such as m/84'/0'/0'/0/0",
+      pattern: DERIVATION_PATH_SCHEMA_PATTERN,
+    }),
+    passphrase: Type.Optional(Type.String({ description: "BIP39 passphrase. Default: empty" })),
+    allowInvalidChecksum: Type.Optional(
+      Type.Boolean({
+        description:
+          "Accept an invalid checksum with a warning. English words and BIP39 word counts are still required. Default: false",
+      }),
+    ),
+    addressType: addressTypeArgument,
+    network: networkArgument,
+  },
+  { additionalProperties: false },
+);
+
+export const INSPECT_MNEMONIC_PARAMETERS = Type.Object(
+  {
+    language: BIP39_LANGUAGE_PARAMETER,
+    mnemonic: Type.String({
+      description: "BIP39 mnemonic candidate",
+      minLength: 1,
+      pattern: "\\S",
+    }),
+  },
+  { additionalProperties: false },
+);
+
+export const ENCODE_BIP39_ENTROPY_PARAMETERS = Type.Object(
+  {
+    language: BIP39_LANGUAGE_PARAMETER,
+    entropy: Type.String({
+      description: "BIP39 entropy as 32, 40, 48, 56, or 64 hexadecimal characters",
+      pattern: BIP39_ENTROPY_SCHEMA_PATTERN,
+    }),
+  },
+  { additionalProperties: false },
+);
+
+export const LOOKUP_BIP39_INDICES_PARAMETERS = Type.Object(
+  {
+    indices: Type.Array(
+      Type.Integer({
+        description: "A position from 0 to 2047 for base 0, or 1 to 2048 for base 1",
+        minimum: 0,
+        maximum: 2048,
+      }),
+      { minItems: 1, maxItems: MAX_BIP39_LOOKUP_ITEMS },
+    ),
+    language: BIP39_LANGUAGE_PARAMETER,
+    indexBase: Type.Optional(
+      Type.Union([Type.Literal(0), Type.Literal(1)], {
+        description: "Whether positions start at 0 or 1. Default: 0",
+      }),
+    ),
+  },
+  { additionalProperties: false },
+);
+
+export const LOOKUP_BIP39_WORDS_PARAMETERS = Type.Object(
+  {
+    words: Type.Array(
+      Type.String({
+        description: "A word to check against the selected BIP39 list",
+        minLength: 1,
+        maxLength: 32,
+        pattern: BIP39_WORD_SCHEMA_PATTERN,
+      }),
+      { minItems: 1, maxItems: MAX_BIP39_LOOKUP_ITEMS },
+    ),
+    language: BIP39_LANGUAGE_PARAMETER,
+  },
+  { additionalProperties: false },
+);
+
+export const RECOVER_MNEMONIC_WORD_PARAMETERS = Type.Object(
+  {
+    mnemonic: Type.String({
+      description: "English BIP39 mnemonic template containing one ? placeholder",
+      minLength: 1,
+      pattern: "\\?",
+    }),
+  },
+  { additionalProperties: false },
+);
+
+export const GET_ADDRESS_PARAMETERS = Type.Object(
+  {
+    chain: chainArgument,
+    publicKey: Type.String({ description: "Public key as hexadecimal text", minLength: 1 }),
+    addressType: addressTypeArgument,
+    network: networkArgument,
+  },
+  { additionalProperties: false },
+);
+
+export const VALIDATE_ADDRESS_PARAMETERS = Type.Object(
+  {
+    chain: chainArgument,
+    address: Type.String({ description: "Address to validate", minLength: 1, maxLength: 256 }),
+    network: networkArgument,
+  },
+  { additionalProperties: false },
+);
+
+export const SIGN_MESSAGE_PARAMETERS = Type.Object(
+  {
+    chain: chainArgument,
+    message: Type.String({ description: "Message to sign" }),
+    privateKey: Type.String({ description: "Private key as hexadecimal text", minLength: 1 }),
+    network: networkArgument,
+  },
+  { additionalProperties: false },
+);
+
+export const VERIFY_MESSAGE_PARAMETERS = Type.Object(
+  {
+    chain: chainArgument,
+    message: Type.String({ description: "Original message" }),
+    signature: Type.String({ description: "Signature as hexadecimal text", minLength: 1 }),
+    publicKey: Type.String({ description: "Public key as hexadecimal text", minLength: 1 }),
+    network: networkArgument,
+  },
+  { additionalProperties: false },
+);
+
+/** Plain root for Pi providers; MCP adds BIP44_PATH_MODE_SCHEMA at registration. */
+export const BIP44_PATH_PARAMETERS = Type.Object(
+  {
+    chain: Type.Optional(chainArgument),
+    path: Type.Optional(
+      Type.String({
+        description: "BIP44 path to parse, such as m/44'/0'/0'/0/0",
+        minLength: 1,
+      }),
+    ),
+    account: Type.Optional(
+      Type.Integer({
+        description: "Account index for generation only. Default: 0",
+        minimum: 0,
+      }),
+    ),
+    change: Type.Optional(
+      Type.Integer({
+        description:
+          "Change branch for generation only: 0 for external, 1 for internal; on Cardano the CIP-1852 role, up to 5. Default: 0",
+        minimum: 0,
+      }),
+    ),
+    addressIndex: Type.Optional(
+      Type.Integer({
+        description: "Address index for generation only. Default: 0",
+        minimum: 0,
+      }),
+    ),
+    addressType: Type.Optional(
+      Type.String({
+        description:
+          "Signature scheme for generation on Sui, ed25519 or secp256k1. Default: ed25519",
+        enum: SUI_ADDRESS_TYPES,
+      }),
     ),
   },
   { additionalProperties: false },

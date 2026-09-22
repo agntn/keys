@@ -78,3 +78,18 @@ export const TOOL_WIF_CHAINS = [
   "litecoin",
   "decred",
 ] as const satisfies readonly WIFChain[];
+
+/** Maximum number of words or indices accepted by one BIP39 lookup. */
+export const MAX_BIP39_LOOKUP_ITEMS = 100;
+
+/** BIP39 entropy byte lengths accepted by the package. */
+export const BIP39_ENTROPY_BYTE_LENGTHS: readonly number[] = [16, 20, 24, 28, 32];
+
+/** JSON Schema pattern for a complete BIP39 entropy value. */
+export const BIP39_ENTROPY_SCHEMA_PATTERN = `^(?:${BIP39_ENTROPY_BYTE_LENGTHS.map((bytes) => `[0-9A-Fa-f]{${bytes * 2}}`).join("|")})$`;
+
+/** JSON Schema pattern for one non-whitespace BIP39 lookup word. */
+export const BIP39_WORD_SCHEMA_PATTERN = "^\\S+$";
+
+/** JSON Schema pattern for an absolute derivation path. */
+export const DERIVATION_PATH_SCHEMA_PATTERN = "^m(/[0-9]+'?)+$";

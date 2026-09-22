@@ -3,14 +3,7 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
-import { Type } from "typebox";
 import type * as KeysTools from "../../../dist/tool-operations.d.mts";
-import {
-  SUI_ADDRESS_TYPES,
-  TOOL_ADDRESS_TYPES,
-  TOOL_CHAINS,
-  TOOL_NETWORKS,
-} from "../../../src/tool-parameters.ts";
 import {
   CONVERT_PUBLIC_KEY_PARAMETERS,
   WIF_ENCODE_PARAMETERS,
@@ -18,7 +11,19 @@ import {
   GENERATE_MNEMONIC_PARAMETERS,
   DERIVE_BIP39_SEED_PARAMETERS,
   DERIVE_ELECTRUM_WALLET_PARAMETERS,
-  BIP39_LANGUAGE_PARAMETER,
+  GENERATE_WALLET_PARAMETERS,
+  DERIVE_WALLET_PARAMETERS,
+  DERIVE_HD_WALLET_PARAMETERS,
+  INSPECT_MNEMONIC_PARAMETERS,
+  ENCODE_BIP39_ENTROPY_PARAMETERS,
+  LOOKUP_BIP39_INDICES_PARAMETERS,
+  LOOKUP_BIP39_WORDS_PARAMETERS,
+  RECOVER_MNEMONIC_WORD_PARAMETERS,
+  GET_ADDRESS_PARAMETERS,
+  VALIDATE_ADDRESS_PARAMETERS,
+  SIGN_MESSAGE_PARAMETERS,
+  VERIFY_MESSAGE_PARAMETERS,
+  BIP44_PATH_PARAMETERS,
 } from "../../../src/tool-schemas.ts";
 
 const sourceModuleUrl = new URL("../../../src/tool-operations.ts", import.meta.url);
@@ -35,24 +40,6 @@ function loadToolOperations(): Promise<typeof KeysTools> {
   ) as Promise<typeof KeysTools>;
   return toolOperationsPromise;
 }
-
-const MAX_BIP39_LOOKUP_ITEMS = 100;
-const BIP39_ENTROPY_BYTE_LENGTHS: readonly number[] = [16, 20, 24, 28, 32];
-const BIP39_ENTROPY_SCHEMA_PATTERN = `^(?:${BIP39_ENTROPY_BYTE_LENGTHS.map((bytes) => `[0-9A-Fa-f]{${bytes * 2}}`).join("|")})$`;
-const BIP39_WORD_SCHEMA_PATTERN = "^\\S+$";
-const DERIVATION_PATH_SCHEMA_PATTERN = "^m(/[0-9]+'?)+$";
-const NETWORK_PARAMETER = Type.Optional(
-  Type.String({
-    enum: TOOL_NETWORKS,
-    description: "Network (mainnet or testnet). Default: mainnet",
-  }),
-);
-const ADDRESS_TYPE_PARAMETER = Type.Optional(
-  Type.String({
-    enum: TOOL_ADDRESS_TYPES,
-    description: "Address type for the selected chain",
-  }),
-);
 
 export default function keysExtension(pi: ExtensionAPI) {
   pi.registerTool({
@@ -150,13 +137,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       "Cardano address types: payment, stake, enterprise",
       "Returns hex private key, hex public key, and address",
     ],
-    parameters: Type.Object({
-      chain: Type.String({
-        description: `Blockchain name (${TOOL_CHAINS.join(", ")})`,
-      }),
-      network: NETWORK_PARAMETER,
-      addressType: ADDRESS_TYPE_PARAMETER,
-    }),
+    parameters: GENERATE_WALLET_PARAMETERS,
     renderCall(args, _theme) {
       return new Text(`🔑 Generate wallet: ${args.chain}`, 0, 0);
     },
@@ -180,12 +161,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       "Bitcoin and Litecoin address types: legacy, p2sh, segwit, p2wsh, taproot",
       "For Sui, use ed25519 or secp256k1 as the address type",
     ],
-    parameters: Type.Object({
-      chain: Type.String({ description: "Blockchain name" }),
-      privateKey: Type.String({ description: "Private key as hex string" }),
-      addressType: ADDRESS_TYPE_PARAMETER,
-      network: NETWORK_PARAMETER,
-    }),
+    parameters: DERIVE_WALLET_PARAMETERS,
     renderCall(args, _theme) {
       return new Text(`🔐 Derive wallet: ${args.chain}`, 0, 0);
     },
@@ -219,29 +195,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       "Use only public or disposable mnemonics because tool arguments are saved in the transcript",
       "Returns the path, public key, and address, never the mnemonic or private key",
     ],
-    parameters: Type.Object({
-      chain: Type.String({
-        description: `Blockchain name (${TOOL_CHAINS.join(", ")})`,
-      }),
-      mnemonic: Type.String({
-        minLength: 1,
-        pattern: "\\S",
-        description: "English BIP39 mnemonic",
-      }),
-      path: Type.String({
-        pattern: DERIVATION_PATH_SCHEMA_PATTERN,
-        description: "Derivation path such as m/84'/0'/0'/0/0",
-      }),
-      passphrase: Type.Optional(Type.String({ description: "BIP39 passphrase. Default: empty" })),
-      allowInvalidChecksum: Type.Optional(
-        Type.Boolean({
-          description:
-            "Accept an invalid checksum with a warning. English words and BIP39 word counts are still required. Default: false",
-        }),
-      ),
-      addressType: ADDRESS_TYPE_PARAMETER,
-      network: NETWORK_PARAMETER,
-    }),
+    parameters: DERIVE_HD_WALLET_PARAMETERS,
     renderCall(args, _theme) {
       return new Text(`🧩 Derive HD wallet: ${args.chain} ${args.path}`, 0, 0);
     },
@@ -291,14 +245,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       "checksumValid is null when word count or dictionary membership prevents checking it",
       "A checksum failure is not proof that a puzzle candidate is wrong. keys_derive_hd_wallet accepts allowInvalidChecksum=true explicitly",
     ],
-    parameters: Type.Object({
-      language: BIP39_LANGUAGE_PARAMETER,
-      mnemonic: Type.String({
-        minLength: 1,
-        pattern: "\\S",
-        description: "BIP39 mnemonic candidate",
-      }),
-    }),
+    parameters: INSPECT_MNEMONIC_PARAMETERS,
     renderCall(_args, _theme) {
       return new Text("🧩 Inspect BIP39 mnemonic", 0, 0);
     },
@@ -318,13 +265,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       "Use only public or disposable entropy because tool arguments are saved in the transcript",
       "Returns the canonical mnemonic with its word count",
     ],
-    parameters: Type.Object({
-      language: BIP39_LANGUAGE_PARAMETER,
-      entropy: Type.String({
-        pattern: BIP39_ENTROPY_SCHEMA_PATTERN,
-        description: "BIP39 entropy as 32, 40, 48, 56, or 64 hexadecimal characters",
-      }),
-    }),
+    parameters: ENCODE_BIP39_ENTROPY_PARAMETERS,
     renderCall(_args, _theme) {
       return new Text("🧩 Encode BIP39 entropy", 0, 0);
     },
@@ -344,22 +285,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       "Choose an official BIP39 language when the puzzle is not English",
       "Returns words in the same order as the supplied positions",
     ],
-    parameters: Type.Object({
-      indices: Type.Array(
-        Type.Integer({
-          minimum: 0,
-          maximum: 2048,
-          description: "A position from 0 to 2047 for base 0, or 1 to 2048 for base 1",
-        }),
-        { minItems: 1, maxItems: MAX_BIP39_LOOKUP_ITEMS },
-      ),
-      language: BIP39_LANGUAGE_PARAMETER,
-      indexBase: Type.Optional(
-        Type.Union([Type.Literal(0), Type.Literal(1)], {
-          description: "Whether positions start at 0 or 1. Default: 0",
-        }),
-      ),
-    }),
+    parameters: LOOKUP_BIP39_INDICES_PARAMETERS,
     renderCall(args, _theme) {
       return new Text(`🧩 Lookup ${args.indices.length} BIP39 indices`, 0, 0);
     },
@@ -383,18 +309,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       "Returns both zero-based and one-based indices because puzzle conventions differ",
       "Words are matched case-insensitively with Unicode NFKD normalization",
     ],
-    parameters: Type.Object({
-      words: Type.Array(
-        Type.String({
-          minLength: 1,
-          maxLength: 32,
-          pattern: BIP39_WORD_SCHEMA_PATTERN,
-          description: "A word to check against the selected BIP39 list",
-        }),
-        { minItems: 1, maxItems: MAX_BIP39_LOOKUP_ITEMS },
-      ),
-      language: BIP39_LANGUAGE_PARAMETER,
-    }),
+    parameters: LOOKUP_BIP39_WORDS_PARAMETERS,
     renderCall(args, _theme) {
       return new Text(`🧩 Lookup ${args.words.length} BIP39 words`, 0, 0);
     },
@@ -414,13 +329,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       "Use only public or disposable candidates because tool arguments are saved in the transcript",
       "Returns candidate words, not wallets or target matches",
     ],
-    parameters: Type.Object({
-      mnemonic: Type.String({
-        minLength: 1,
-        pattern: "\\?",
-        description: "English BIP39 mnemonic template containing one ? placeholder",
-      }),
-    }),
+    parameters: RECOVER_MNEMONIC_WORD_PARAMETERS,
     renderCall(_args, _theme) {
       return new Text("🧩 Recover BIP39 word", 0, 0);
     },
@@ -439,12 +348,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       "Provide chain, public key (hex), and optionally address type",
       "Returns the derived address",
     ],
-    parameters: Type.Object({
-      chain: Type.String({ description: "Blockchain name" }),
-      publicKey: Type.String({ description: "Public key as hex string" }),
-      addressType: ADDRESS_TYPE_PARAMETER,
-      network: NETWORK_PARAMETER,
-    }),
+    parameters: GET_ADDRESS_PARAMETERS,
     renderCall(args, _theme) {
       return new Text(`📬 Get address: ${args.chain}`, 0, 0);
     },
@@ -465,11 +369,7 @@ export default function keysExtension(pi: ExtensionAPI) {
     description: "Check if a blockchain address is valid",
     promptSnippet: "Use to verify an address is valid for a given blockchain.",
     promptGuidelines: ["Provide chain and address to validate", "Returns true/false"],
-    parameters: Type.Object({
-      chain: Type.String({ description: "Blockchain name" }),
-      address: Type.String({ description: "Address to validate" }),
-      network: NETWORK_PARAMETER,
-    }),
+    parameters: VALIDATE_ADDRESS_PARAMETERS,
     renderCall(args, _theme) {
       return new Text(`✅ Validate: ${args.address}`, 0, 0);
     },
@@ -494,12 +394,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       "Bitcoin and Litecoin each use their own message preamble",
       "Ethereum/Base use EIP-191 prefix",
     ],
-    parameters: Type.Object({
-      chain: Type.String({ description: "Blockchain name" }),
-      message: Type.String({ description: "Message to sign" }),
-      privateKey: Type.String({ description: "Private key as hex string" }),
-      network: NETWORK_PARAMETER,
-    }),
+    parameters: SIGN_MESSAGE_PARAMETERS,
     renderCall(args, _theme) {
       return new Text(`✍️ Sign: "${args.message.slice(0, 30)}…"`, 0, 0);
     },
@@ -523,13 +418,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       "Provide chain, original message, signature (hex), and public key (hex)",
       "Returns true if signature is valid, false otherwise",
     ],
-    parameters: Type.Object({
-      chain: Type.String({ description: "Blockchain name" }),
-      message: Type.String({ description: "Original message" }),
-      signature: Type.String({ description: "Signature as hex string" }),
-      publicKey: Type.String({ description: "Public key as hex string" }),
-      network: NETWORK_PARAMETER,
-    }),
+    parameters: VERIFY_MESSAGE_PARAMETERS,
     renderCall(args, _theme) {
       return new Text(`🔍 Verify: "${args.message.slice(0, 30)}…"`, 0, 0);
     },
@@ -557,46 +446,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       "Stellar paths end at the account and Solana paths at the change branch; a deeper index on those chains is an error",
       "Cardano reads change as the CIP-1852 role: 0 external, 1 internal, 2 staking, up to 5",
     ],
-    parameters: Type.Object(
-      {
-        chain: Type.Optional(
-          Type.String({
-            description: "Blockchain name (to generate a path)",
-          }),
-        ),
-        path: Type.Optional(
-          Type.String({
-            description: "BIP44 path string to parse (e.g. m/44'/0'/0'/0/0)",
-          }),
-        ),
-        account: Type.Optional(
-          Type.Integer({
-            description: "Account index for generation only (default 0)",
-            minimum: 0,
-          }),
-        ),
-        change: Type.Optional(
-          Type.Integer({
-            description:
-              "Change level for generation only (0=external, 1=internal, Cardano role up to 5, default 0)",
-            minimum: 0,
-          }),
-        ),
-        addressIndex: Type.Optional(
-          Type.Integer({
-            description: "Address index for generation only (default 0)",
-            minimum: 0,
-          }),
-        ),
-        addressType: Type.Optional(
-          Type.String({
-            enum: SUI_ADDRESS_TYPES,
-            description: "Signature scheme for generation on Sui (ed25519 or secp256k1)",
-          }),
-        ),
-      },
-      { additionalProperties: false },
-    ),
+    parameters: BIP44_PATH_PARAMETERS,
     renderCall(args, _theme) {
       return new Text(args.path ? `🛤️ Parse: ${args.path}` : `🛤️ BIP44: ${args.chain}`, 0, 0);
     },

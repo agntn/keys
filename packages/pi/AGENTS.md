@@ -12,7 +12,7 @@ Pi coding agent extension only. Wraps the `@agntn/keys` library as 19 agent tool
 
 - **Executor resolution:** `loadToolOperations()` uses `src/tool-operations.ts` in a checkout and `dist/tool-operations.mjs` in the built package. Run `pnpm build` before relying on the dist path.
 - **Type checking:** `pnpm test:ext` (`tsc -p ../../tsconfig.extensions.json --noEmit`). Wired into `pnpm test` after `pnpm build` (the extensions tsconfig maps `@agntn/keys` → `dist/index.d.mts`, so dist must exist first).
-- **Tool params:** declared with `typebox` `Type.*`, not zod. Match the existing style.
+- **Tool params:** import TypeBox schemas from `../../src/tool-schemas.ts`, not local copies. Keep the BIP44 root free of `oneOf`; the shared executor checks its mutually exclusive modes.
 - **Concrete class contract:** every lazy-loaded class extends `AbstractBlockchain`, so `validateAddress`, `signMessage`, and `verifyMessage` are required and called directly.
 - **Lazy double-call:** `blockchains.chain({ network })()` — first call passes constructor options, second imports and constructs the concrete class. See `../../src/_blockchains.ts`.
 
