@@ -19,8 +19,11 @@ const COMPACT_SIGNATURE_LENGTH = 64;
  * @returns {boolean} Whether the caller asked for the recovery byte
  */
 function readRecoveredFlag(options: SigningOptions): boolean {
-  /** Read as unknown: untyped callers can pass anything, and a truthy string must not pass silently. */
-  const recovered: unknown = options.recovered ?? false;
+  /** Read as unknown: untyped callers can pass anything, and `null` must not pass as false. */
+  const recovered: unknown = options.recovered;
+  if (recovered === undefined) {
+    return false;
+  }
   if (typeof recovered !== "boolean") {
     throw new TypeError("Recovered must be a boolean");
   }
@@ -40,6 +43,19 @@ export function assertNoRecoveryByte(
 ): void {
   if (options !== undefined && readRecoveredFlag(options)) {
     throw new Error(`Recovered signatures are not supported here: ${nativeFormat}`);
+  }
+}
+
+/**
+ * Tell an `r||s||v` signature from a compact one, for chains that accept only their own format.
+ * @param signature - Signature as hex
+ * @returns {boolean} True when the signature carries a trailing recovery byte
+ */
+export function hasRecoveryByte(signature: string): boolean {
+  try {
+    return hexToBytes(signature).length === COMPACT_SIGNATURE_LENGTH + 1;
+  } catch {
+    return false;
   }
 }
 

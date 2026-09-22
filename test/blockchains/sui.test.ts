@@ -241,7 +241,15 @@ describe("Sui", () => {
     });
 
     it("refuses the recovery byte on either scheme", () => {
-      const [message] = vector.messages[1];
+      const [message, , ed25519Signature, secp256k1Signature] = vector.messages[1];
+      expect(
+        blockchain.verifyMessage(message, ed25519Signature + "1b", vector.ed25519.publicKey),
+      ).toBe(false);
+      expect(
+        blockchain.verifyMessage(message, secp256k1Signature + "1c", vector.secp256k1.publicKey, {
+          scheme: "secp256k1",
+        }),
+      ).toBe(false);
       expect(() => blockchain.signMessage(message, vector.privateKey, { recovered: true })).toThrow(
         /flag\|\|signature\|\|publicKey/,
       );

@@ -251,6 +251,10 @@ describe("Signing utilities", () => {
         // @ts-expect-error The flag is a boolean, not a truthy value.
         signMessage(testMessage, secp256k1TestPrivateKey, { recovered: "yes" }),
       ).toThrow(TypeError);
+      expect(() =>
+        // @ts-expect-error Null is not an absent flag either.
+        signMessage(testMessage, secp256k1TestPrivateKey, { recovered: null }),
+      ).toThrow(TypeError);
     });
   });
 

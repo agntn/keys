@@ -430,6 +430,23 @@ describe("keys MCP server", () => {
     expect(text(verified.content)).toContain("Signature is valid");
   });
 
+  it("reports an error for a chain without an r||s||v form", async () => {
+    const client = await connectTestClient();
+
+    const response = await client.callTool({
+      name: "keys_sign_message",
+      arguments: {
+        chain: "litecoin",
+        message: "hello",
+        privateKey: litecoinTestVectors.privateKey,
+        recovered: true,
+      },
+    });
+
+    expect(response.isError).toBe(true);
+    expect(text(response.content)).toContain("base64 of header");
+  });
+
   it("validates a known Bitcoin address", async () => {
     const client = await connectTestClient();
 
