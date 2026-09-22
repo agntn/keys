@@ -138,6 +138,8 @@ export interface SignatureDetails {
   chain: string;
   network: string;
   signature: string;
+  /** True when the signature carries `v` and is 65 bytes rather than 64. */
+  recovered: boolean;
 }
 
 /** Signature verification result. */
@@ -801,6 +803,7 @@ export async function validateAddress(
  * @param messageValue - Message to sign.
  * @param privateKeyValue - Private key as hexadecimal text.
  * @param networkValue - Optional network name.
+ * @param recoveredValue - Append the recovery byte as `v`, default false.
  * @returns {Promise<ToolResult<SignatureDetails>>} Generated signature.
  */
 export async function signMessage(
@@ -808,14 +811,22 @@ export async function signMessage(
   messageValue: unknown,
   privateKeyValue: unknown,
   networkValue?: unknown,
+  recoveredValue?: unknown,
 ): Promise<ToolResult<SignatureDetails>> {
+  if (recoveredValue !== undefined && typeof recoveredValue !== "boolean") {
+    throw new TypeError("recovered must be a boolean");
+  }
+  const recovered = recoveredValue ?? false;
   const { blockchain } = await getBlockchain(chainValue, networkValue);
   const message = requiredString(messageValue, "Message");
   const privateKey = requiredString(privateKeyValue, "Private key");
-  const signature = blockchain.signMessage(message, privateKey);
+  /** Only pass options when the flag is set, so every other chain keeps its current defaults. */
+  const signature = recovered
+    ? blockchain.signMessage(message, privateKey, { recovered })
+    : blockchain.signMessage(message, privateKey);
   return {
     content: content(`Signature: ${signature}`),
-    details: { chain: blockchain.name, network: blockchain.network, signature },
+    details: { chain: blockchain.name, network: blockchain.network, signature, recovered },
   };
 }
 

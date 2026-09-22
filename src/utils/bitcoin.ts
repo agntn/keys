@@ -10,6 +10,8 @@ import {
 } from "./address.ts";
 import { generateKeyPublic } from "./secp256k1.ts";
 import {
+  assertNoRecoveryByte,
+  hasRecoveryByte,
   signMessage as genericSignMessage,
   verifyMessage as genericVerifyMessage,
 } from "./signing.ts";
@@ -190,6 +192,10 @@ export abstract class AbstractBitcoinBlockchain extends AbstractBlockchain {
     keyPrivate: string,
     options?: KeyOptions,
   ): string {
+    assertNoRecoveryByte(
+      options,
+      "Core encodes its recoverable signature as base64 of header||r||s, not r||s||v",
+    );
     const hash = this.hashWithMessagePreamble(message);
     return genericSignMessage(hash, keyPrivate, {
       ...options,
@@ -204,6 +210,9 @@ export abstract class AbstractBitcoinBlockchain extends AbstractBlockchain {
     keyPublic: string,
     options?: KeyOptions,
   ): boolean {
+    if (hasRecoveryByte(signature)) {
+      return false;
+    }
     const hash = this.hashWithMessagePreamble(message);
     try {
       return genericVerifyMessage(hash, signature, keyPublic, {

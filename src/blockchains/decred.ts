@@ -7,7 +7,8 @@ import { AbstractBlockchain } from "../blockchain.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { encodeCompactSize } from "../utils/bitcoin.ts";
 import { generateKeyPublic } from "../utils/secp256k1.ts";
-import type { Curve, KeyOptions, Options, Wallet } from "../types.ts";
+import { assertNoRecoveryByte, hasRecoveryByte } from "../utils/signing.ts";
+import type { Curve, KeyOptions, Options, SigningOptions, Wallet } from "../types.ts";
 
 const codec = base58check(blake256);
 const messagePreamble = new TextEncoder().encode("Decred Signed Message:\n");
@@ -74,7 +75,15 @@ export class Decred extends AbstractBlockchain {
     }
   }
 
-  override signMessage(message: string | Uint8Array, keyPrivate: string): string {
+  override signMessage(
+    message: string | Uint8Array,
+    keyPrivate: string,
+    options?: SigningOptions,
+  ): string {
+    assertNoRecoveryByte(
+      options,
+      "dcrd encodes its recoverable signature as base64 of header||r||s, not r||s||v",
+    );
     return bytesToHex(
       secp256k1.sign(hashMessage(message), hexToBytes(keyPrivate), { prehash: false }),
     );
@@ -85,6 +94,9 @@ export class Decred extends AbstractBlockchain {
     signature: string,
     keyPublic: string,
   ): boolean {
+    if (hasRecoveryByte(signature)) {
+      return false;
+    }
     try {
       return secp256k1.verify(hexToBytes(signature), hashMessage(message), hexToBytes(keyPublic), {
         prehash: false,

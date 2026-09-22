@@ -6,6 +6,7 @@ import {
   hashMessage,
   pbkdf2,
   toUtf8Bytes,
+  verifyMessage,
 } from "ethers";
 import * as keys from "../src";
 /**
@@ -66,6 +67,13 @@ async function main(): Promise<void> {
       `${label} keys signature`,
       ethereum.signMessage(message, privateKey),
       ethersSignature.r.slice(2) + ethersSignature.s.slice(2),
+    );
+    const recovered = ethereum.signMessage(message, privateKey, { recovered: true });
+    check(`${label} keys signature with v`, recovered, ethersSignature.serialized.slice(2));
+    check(
+      `${label} ethers recovers the signer`,
+      verifyMessage(message, `0x${recovered}`),
+      wallet.address,
     );
   }
 

@@ -40,12 +40,22 @@ Lowercase and uppercase pass, mixed case has to match. A rejected mixed case add
 
 ## Signing
 
-`signMessage` prepends `"\x19Ethereum Signed Message:\n" + length`, hashes with Keccak-256, and signs with secp256k1. That's `personal_sign`, the same hash MetaMask, ethers and viem sign. What comes back is 64 bytes of `r||s` in hex, no recovery byte. `verifyMessage` here doesn't need one, ethers does, so append a `v` before asking it to recover the signer.
+`signMessage` prepends `"\x19Ethereum Signed Message:\n" + length`, hashes with Keccak-256, and signs with secp256k1. That's `personal_sign`, the same hash MetaMask, ethers and viem sign. Default output is 64 bytes of `r||s`, which `verifyMessage` here checks against a public key.
 
 ```js
 const signature = ethereumChain.signMessage("hello", privateKey);
 ethereumChain.verifyMessage("hello", signature, publicKey); // true
 ```
+
+Anything that recovers the signer from the signature needs `v`, so pass `recovered`:
+
+```js
+const recoverable = ethereumChain.signMessage("hello", privateKey, { recovered: true });
+// 65 bytes, r||s||v, identical to what ethers signMessage gives for the same key
+ethereumChain.verifyMessage("hello", recoverable, publicKey); // true, and the v has to match
+```
+
+`verifyMessage` takes either length. On 65 bytes it also recovers from the `v`, so a signature carrying the other one fails instead of passing on `r||s` alone. The 64-byte form is what you want inside this package, the 65-byte form is what you send out. See the [EVM guide](/guide/evm) for what ethers does with the short one, it's not an error and that's the problem.
 
 ## One driver, every EVM chain
 

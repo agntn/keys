@@ -31,6 +31,7 @@ export type {
   KeyOptions,
   HDWalletOptions,
   SigningOptions,
+  RecoverableSigningOptions,
   Options,
   AddressType,
   NetworkType,

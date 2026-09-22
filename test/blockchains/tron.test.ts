@@ -136,6 +136,16 @@ describe("TRON Blockchain", () => {
       },
     );
 
+    it.each(vector.messages)(
+      "matches the whole TronWeb signature %# when asked for the recovery byte",
+      (message, _digest, signatureWithV) => {
+        const recovered = blockchain.signMessage(message, vector.privateKey, { recovered: true });
+        expect(recovered).toBe(signatureWithV);
+        expect(hexToBytes(recovered).length).toBe(65);
+        expect(blockchain.verifyMessage(message, recovered, vector.publicKey)).toBe(true);
+      },
+    );
+
     it("rejects a signature made under the Ethereum preamble", () => {
       const [message] = vector.messages[1];
       const ethereum = new Ethereum();

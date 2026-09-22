@@ -393,6 +393,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       "Returns the signature as hex string",
       "Bitcoin and Litecoin each use their own message preamble",
       "Ethereum/Base use EIP-191 prefix",
+      "Pass recovered on Ethereum, Base or TRON for 65-byte r||s||v, what ethers and TronWeb need",
     ],
     parameters: SIGN_MESSAGE_PARAMETERS,
     renderCall(args, _theme) {
@@ -404,6 +405,7 @@ export default function keysExtension(pi: ExtensionAPI) {
         params.message,
         params.privateKey,
         params.network,
+        params.recovered,
       );
     },
   });

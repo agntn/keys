@@ -80,7 +80,7 @@ Version `0x80` on mainnet, `0xef` on testnet, a trailing `0x01` when the public 
 
 ## Signing
 
-`signMessage` hashes with the `"\x18Bitcoin Signed Message:\n"` preamble, the same one Bitcoin Core uses, and signs with secp256k1. What comes back is 64 bytes of `r||s` in hex, no recovery byte, and `verifyMessage` checks it against the public key. It isn't the base64 recoverable format `bitcoin-cli signmessage` prints, so don't paste one into the other.
+`signMessage` hashes with the `"\x18Bitcoin Signed Message:\n"` preamble, the same one Bitcoin Core uses, and signs with secp256k1. What comes back is 64 bytes of `r||s` in hex, no recovery byte, and `verifyMessage` checks it against the public key. It isn't the base64 recoverable format `bitcoin-cli signmessage` prints, so don't paste one into the other. `{ recovered: true }` throws here for the same reason: Core writes its header first and encodes the whole thing as base64, so Ethereum's `r||s||v` would be a format no Bitcoin tool reads.
 
 ## Where it lives
 

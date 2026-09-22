@@ -7,7 +7,7 @@ import { encodeBase58Check, validateBase58Check } from "../utils/encoding.ts";
 import { hashWithPreamble } from "../utils/evm.ts";
 import { generateKeyPublic } from "../utils/secp256k1.ts";
 import { signMessage, verifyMessage } from "../utils/signing.ts";
-import type { Curve, KeyOptions } from "../types.ts";
+import type { Curve, KeyOptions, RecoverableSigningOptions } from "../types.ts";
 
 const ADDRESS_PREFIX_BYTE = 0x41;
 const ADDRESS_PREFIX_CHAR = "T";
@@ -39,7 +39,7 @@ export class Tron extends AbstractBlockchain {
   override signMessage(
     message: string | Uint8Array,
     keyPrivate: string,
-    options?: KeyOptions,
+    options?: RecoverableSigningOptions,
   ): string {
     return signMessage(hashWithPreamble(message, MESSAGE_PREAMBLE), keyPrivate, {
       ...options,
@@ -52,7 +52,7 @@ export class Tron extends AbstractBlockchain {
     message: string | Uint8Array,
     signature: string,
     keyPublic: string,
-    options?: KeyOptions,
+    options?: RecoverableSigningOptions,
   ): boolean {
     return verifyMessage(hashWithPreamble(message, MESSAGE_PREAMBLE), signature, keyPublic, {
       ...options,

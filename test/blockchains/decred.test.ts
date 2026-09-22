@@ -95,6 +95,16 @@ describe("Decred", () => {
     expect(chain.verifyMessage(message, signature, "02")).toBe(false);
   });
 
+  it("refuses the recovery byte and rejects a signature carrying one", async () => {
+    const chain = await blockchains.decred()();
+
+    expect(() => chain.signMessage("hello", vector.privateKey, { recovered: true })).toThrow(
+      /base64 of header/,
+    );
+    expect(chain.verifyMessage("hello", vector.signature + "1b", vector.publicKey)).toBe(false);
+    expect(chain.verifyMessage("hello", vector.signature + "1c", vector.publicKey)).toBe(false);
+  });
+
   it("verifies the compact r/s bytes from dcrd SignCompact", async () => {
     const chain = await blockchains.decred()();
     expect(chain.verifyMessage("hello", vector.signature, vector.publicKey)).toBe(true);

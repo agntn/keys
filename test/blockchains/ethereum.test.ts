@@ -243,5 +243,23 @@ describe("Ethereum blockchain", () => {
         expect(blockchain.verifyMessage(message, "invalid", vector.publicKey)).toBe(false);
       },
     );
+
+    it.each(vector.messages)(
+      "matches the whole ethers signature %# when asked for the recovery byte",
+      (message, _digest, signatureWithV) => {
+        const recovered = blockchain.signMessage(message, vector.privateKey, { recovered: true });
+        expect(recovered).toBe(signatureWithV);
+        expect(hexToBytes(recovered).length).toBe(65);
+        expect(blockchain.verifyMessage(message, recovered, vector.publicKey)).toBe(true);
+        expect(blockchain.verifyMessage(message + "!", recovered, vector.publicKey)).toBe(false);
+      },
+    );
+
+    it("rejects a 65-byte signature carrying the other recovery byte", () => {
+      const [message, , signatureWithV] = vector.messages[1];
+      const flipped = signatureWithV.slice(0, 128) + (signatureWithV.endsWith("1c") ? "1b" : "1c");
+      expect(blockchain.verifyMessage(message, signatureWithV, vector.publicKey)).toBe(true);
+      expect(blockchain.verifyMessage(message, flipped, vector.publicKey)).toBe(false);
+    });
   });
 });

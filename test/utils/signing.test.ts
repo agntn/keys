@@ -6,7 +6,7 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import { evmSignMessage, evmVerifyMessage } from "../../src/utils/evm";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../../src/utils/ed25519-chains";
 import { secp256k1TestVectors, ed25519TestVectors, testMessages } from "../fixtures";
-import type { Blockchain, Curve } from "../../src/types";
+import type { Blockchain, Curve, KeyOptions } from "../../src/types";
 
 describe("Signing utilities", () => {
   // Use test vectors from fixtures
@@ -131,7 +131,12 @@ describe("Signing utilities", () => {
       expectTypeOf<"hash" extends keyof KeyGeneration ? true : false>().toEqualTypeOf<false>();
       expectTypeOf<"curve" extends keyof EvmAdapter ? true : false>().toEqualTypeOf<false>();
       expectTypeOf<"hash" extends keyof EvmAdapter ? true : false>().toEqualTypeOf<false>();
-      expectTypeOf<Ed25519Adapter>().toEqualTypeOf<EvmAdapter>();
+      expectTypeOf<"recovered" extends keyof EvmAdapter ? true : false>().toEqualTypeOf<true>();
+      expectTypeOf<EvmAdapter["recovered"]>().toEqualTypeOf<boolean | undefined>();
+      expectTypeOf<
+        "recovered" extends keyof Ed25519Adapter ? true : false
+      >().toEqualTypeOf<false>();
+      expectTypeOf<Ed25519Adapter>().toEqualTypeOf<KeyOptions>();
     });
   });
 
@@ -182,6 +187,74 @@ describe("Signing utilities", () => {
 
       expect(signature).toBeTypeOf("string");
       expect(hexToBytes(signature).length).toBeGreaterThanOrEqual(64);
+    });
+  });
+
+  describe("Recoverable secp256k1 signatures", () => {
+    const digest = sha256(new TextEncoder().encode(testMessage));
+
+    it("appends v as 27 or 28 and keeps r||s unchanged", () => {
+      const compact = signMessage(digest, secp256k1TestPrivateKey, { hash: false });
+      const recovered = signMessage(digest, secp256k1TestPrivateKey, {
+        hash: false,
+        recovered: true,
+      });
+
+      expect(hexToBytes(recovered).length).toBe(65);
+      expect(recovered.slice(0, 128)).toBe(compact);
+      expect([27, 28]).toContain(Number.parseInt(recovered.slice(128), 16));
+    });
+
+    it("carries the v that recovers the signer", () => {
+      const recovered = signMessage(digest, secp256k1TestPrivateKey, {
+        hash: false,
+        recovered: true,
+      });
+      const recovery = Number.parseInt(recovered.slice(128), 16) - 27;
+      const signer = secp256k1.Signature.fromBytes(hexToBytes(recovered.slice(0, 128)), "compact")
+        .addRecoveryBit(recovery)
+        .recoverPublicKey(digest);
+
+      expect(bytesToHex(signer.toBytes(true))).toBe(secp256k1TestPublicKey);
+      expect(verifyMessage(digest, recovered, secp256k1TestPublicKey, { hash: false })).toBe(true);
+    });
+
+    it("rejects a signature whose v points at the other key", () => {
+      const recovered = signMessage(digest, secp256k1TestPrivateKey, {
+        hash: false,
+        recovered: true,
+      });
+      const flipped = recovered.slice(0, 128) + (recovered.endsWith("1c") ? "1b" : "1c");
+      const outOfRange = recovered.slice(0, 128) + "20";
+
+      expect(verifyMessage(digest, flipped, secp256k1TestPublicKey, { hash: false })).toBe(false);
+      expect(verifyMessage(digest, outOfRange, secp256k1TestPublicKey, { hash: false })).toBe(
+        false,
+      );
+    });
+
+    it("accepts the bare 0 or 1 other libraries emit", () => {
+      const recovered = signMessage(digest, secp256k1TestPrivateKey, {
+        hash: false,
+        recovered: true,
+      });
+      const bare = recovered.slice(0, 128) + (recovered.endsWith("1c") ? "01" : "00");
+
+      expect(verifyMessage(digest, bare, secp256k1TestPublicKey, { hash: false })).toBe(true);
+    });
+
+    it("has no ed25519 form and takes only a boolean", () => {
+      expect(() =>
+        signMessage(testMessage, ed25519TestPrivateKey, { curve: "ed25519", recovered: true }),
+      ).toThrow(/secp256k1 only/);
+      expect(() =>
+        // @ts-expect-error The flag is a boolean, not a truthy value.
+        signMessage(testMessage, secp256k1TestPrivateKey, { recovered: "yes" }),
+      ).toThrow(TypeError);
+      expect(() =>
+        // @ts-expect-error Null is not an absent flag either.
+        signMessage(testMessage, secp256k1TestPrivateKey, { recovered: null }),
+      ).toThrow(TypeError);
     });
   });
 

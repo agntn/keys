@@ -317,6 +317,24 @@ describe("Bitcoin blockchain", () => {
       ).toBe(true);
     });
 
+    it("refuses the Ethereum recovery byte instead of returning a non-Core format", () => {
+      const signature = blockchain.signMessage(messageVectors.message, messageVectors.privateKey);
+      const publicKey = blockchain.getKeyPublic(messageVectors.privateKey);
+
+      expect(() =>
+        blockchain.signMessage(messageVectors.message, messageVectors.privateKey, {
+          recovered: true,
+        }),
+      ).toThrow(/base64 of header/);
+      expect(blockchain.verifyMessage(messageVectors.message, signature, publicKey)).toBe(true);
+      expect(blockchain.verifyMessage(messageVectors.message, signature + "1b", publicKey)).toBe(
+        false,
+      );
+      expect(blockchain.verifyMessage(messageVectors.message, signature + "1c", publicKey)).toBe(
+        false,
+      );
+    });
+
     it.each(messageVectors.messageHashes)(
       "signs the Core digest %# without another hash",
       (message, digest) => {

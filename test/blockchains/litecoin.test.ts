@@ -109,6 +109,18 @@ describe("Litecoin", () => {
     },
   );
 
+  it("refuses the recovery byte and rejects a signature carrying one", () => {
+    const chain = new Litecoin();
+    const [message] = vector.messageHashes[0];
+    const signature = chain.signMessage(message, vector.privateKey);
+
+    expect(() => chain.signMessage(message, vector.privateKey, { recovered: true })).toThrow(
+      /base64 of header/,
+    );
+    expect(chain.verifyMessage(message, signature + "1b", vector.publicKey)).toBe(false);
+    expect(chain.verifyMessage(message, signature + "1c", vector.publicKey)).toBe(false);
+  });
+
   it.each(vector.messageHashes)(
     "signs Core message vector %# without another hash",
     (message, digest) => {
