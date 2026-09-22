@@ -301,6 +301,12 @@ export const SIGN_MESSAGE_PARAMETERS = Type.Object(
     message: Type.String({ description: "Message to sign" }),
     privateKey: Type.String({ description: "Private key as hexadecimal text", minLength: 1 }),
     network: networkArgument,
+    recovered: Type.Optional(
+      Type.Boolean({
+        description:
+          "Append the recovery byte as v, giving 65-byte r||s||v. Ethereum, base and tron only; that is the form ethers, viem and TronWeb read. Default: false",
+      }),
+    ),
   },
   { additionalProperties: false },
 );

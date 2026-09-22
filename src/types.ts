@@ -77,9 +77,21 @@ export interface HDWalletOptions extends KeyOptions {
 }
 
 /**
+ * Options for a chain that fixes its own curve and digest but can still append the recovery byte.
+ */
+export interface RecoverableSigningOptions extends KeyOptions {
+  /**
+   * Append the recovery byte as Ethereum's `v`, so the signature becomes 65 bytes of `r||s||v`.
+   * secp256k1 only, and only on chains whose native signature carries `v` that way:
+   * Ethereum, Base and TRON. Default: false.
+   */
+  readonly recovered?: boolean;
+}
+
+/**
  * Options for message signing and verification.
  */
-export interface SigningOptions extends KeyOptions {
+export interface SigningOptions extends RecoverableSigningOptions {
   readonly curve?: Curve;
   readonly hash?: boolean;
 }

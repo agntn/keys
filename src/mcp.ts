@@ -252,11 +252,17 @@ const tools: readonly ToolDefinition[] = [
     name: "keys_sign_message",
     title: "Sign Message",
     description:
-      "Sign a message with a blockchain private key. The key, message, and signature enter the MCP transcript, so use only public or disposable material.",
+      "Sign a message with a blockchain private key. Ask for recovered on Ethereum, base or tron when the signature goes to ethers, viem or TronWeb, which need v to recover the signer. The key, message, and signature enter the MCP transcript, so use only public or disposable material.",
     inputSchema: SIGN_MESSAGE_PARAMETERS,
     annotations: SENSITIVE_SIGN,
     execute: (args) =>
-      signMessage(args["chain"], args["message"], args["privateKey"], args["network"]),
+      signMessage(
+        args["chain"],
+        args["message"],
+        args["privateKey"],
+        args["network"],
+        args["recovered"],
+      ),
   },
   {
     name: "keys_verify_message",

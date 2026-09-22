@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   bip39TestVectors,
   electrumVectors,
+  ethereumTestVectors,
   publicKeyEncodingVector,
   litecoinTestVectors,
   decredTestVectors,
@@ -388,6 +389,45 @@ describe("keys MCP server", () => {
     });
     expect(signed.isError).not.toBe(true);
     expect(text(signed.content)).toContain(signature);
+  });
+
+  it("signs an Ethereum message with the recovery byte on request", async () => {
+    const client = await connectTestClient();
+    const [message, , signatureWithV] = ethereumTestVectors.messages[1];
+
+    const plain = await client.callTool({
+      name: "keys_sign_message",
+      arguments: {
+        chain: "ethereum",
+        message,
+        privateKey: ethereumTestVectors.privateKey,
+      },
+    });
+    expect(text(plain.content)).toContain(signatureWithV.slice(0, 128));
+    expect(text(plain.content)).not.toContain(signatureWithV);
+
+    const recovered = await client.callTool({
+      name: "keys_sign_message",
+      arguments: {
+        chain: "ethereum",
+        message,
+        privateKey: ethereumTestVectors.privateKey,
+        recovered: true,
+      },
+    });
+    expect(recovered.isError).not.toBe(true);
+    expect(text(recovered.content)).toContain(signatureWithV);
+
+    const verified = await client.callTool({
+      name: "keys_verify_message",
+      arguments: {
+        chain: "ethereum",
+        message,
+        signature: signatureWithV,
+        publicKey: ethereumTestVectors.publicKey,
+      },
+    });
+    expect(text(verified.content)).toContain("Signature is valid");
   });
 
   it("validates a known Bitcoin address", async () => {

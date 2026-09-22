@@ -4,7 +4,7 @@ import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { generateKeyPublic as getSecp256k1KeyPublic } from "./secp256k1.ts";
 import { signMessage, verifyMessage } from "./signing.ts";
-import type { KeyOptions } from "../types.ts";
+import type { KeyOptions, RecoverableSigningOptions } from "../types.ts";
 
 /**
  * Generate an EVM compatible address from a public key
@@ -128,13 +128,13 @@ export function hashWithPreamble(
  *
  * @param message - The message to sign
  * @param keyPrivate - The private key
- * @param options - Optional parameters
- * @returns {string} The signature as a hex string
+ * @param options - Optional parameters; `recovered` appends `v`, the form ethers and viem read
+ * @returns {string} The signature as hex, 65 bytes of `r||s||v` when recovered
  */
 export function evmSignMessage(
   message: string | Uint8Array,
   keyPrivate: string,
-  options: KeyOptions = {},
+  options: RecoverableSigningOptions = {},
 ): string {
   const hash = hashWithPreamble(message);
 
@@ -152,13 +152,13 @@ export function evmSignMessage(
  * @param signature - The signature to verify
  * @param keyPublic - The public key
  * @param options - Optional parameters
- * @returns {boolean} Whether the signature is valid
+ * @returns {boolean} Whether the signature is valid; a 65-byte signature must carry the right `v`
  */
 export function evmVerifyMessage(
   message: string | Uint8Array,
   signature: string,
   keyPublic: string,
-  options: KeyOptions = {},
+  options: RecoverableSigningOptions = {},
 ): boolean {
   const hash = hashWithPreamble(message);
 
@@ -194,7 +194,7 @@ export abstract class AbstractEVMBlockchain extends AbstractBlockchain {
   override signMessage(
     message: string | Uint8Array,
     keyPrivate: string,
-    options?: KeyOptions,
+    options?: RecoverableSigningOptions,
   ): string {
     return evmSignMessage(message, keyPrivate, options);
   }
@@ -203,7 +203,7 @@ export abstract class AbstractEVMBlockchain extends AbstractBlockchain {
     message: string | Uint8Array,
     signature: string,
     keyPublic: string,
-    options?: KeyOptions,
+    options?: RecoverableSigningOptions,
   ): boolean {
     return evmVerifyMessage(message, signature, keyPublic, options);
   }

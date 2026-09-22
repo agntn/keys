@@ -5,7 +5,7 @@ import { addSchemeByte, createPrefixedAddress, validateAddressHex } from "../uti
 import { BIP44Change, getBIP32Path, getHardenedPath } from "../utils/bip44/index.ts";
 import { generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
 import { generateKeyPublic as getSecp256k1KeyPublic } from "../utils/secp256k1.ts";
-import { signMessage, verifyMessage } from "../utils/signing.ts";
+import { assertNoRecoveryByte, signMessage, verifyMessage } from "../utils/signing.ts";
 import type { AddressType, HDWalletOptions, KeyOptions, Wallet } from "../types.ts";
 
 const CURVES = ["ed25519", "secp256k1"] as const;
@@ -156,6 +156,10 @@ export class Sui extends AbstractBlockchain {
     keyPrivate: string,
     options?: KeyOptions,
   ): string {
+    assertNoRecoveryByte(
+      options,
+      "Sui serializes a signature as flag||signature||publicKey, with no recovery byte",
+    );
     return signMessage(hashPersonalMessage(message), keyPrivate, {
       ...options,
       curve: this.resolveCurve(options),

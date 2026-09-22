@@ -76,7 +76,7 @@ const secpSignature = suiChain.signMessage("hello", privateKey, { scheme: "secp2
 suiChain.verifyMessage("hello", secpSignature, secpKey, { scheme: "secp256k1" }); // true
 ```
 
-What comes back is the 64 signature bytes in hex, `r||s` without a recovery byte on secp256k1, no flag and no public key. Sui tooling wants the serialized form, `flag || signature || publicKey` in base64, so build that before you hand it to `verifyPersonalMessageSignature`:
+What comes back is the 64 signature bytes in hex, `r||s` without a recovery byte on secp256k1, no flag and no public key. `{ recovered: true }` throws on both schemes, Sui carries the public key in the serialized signature and never recovers it from a `v`. Sui tooling wants the serialized form, `flag || signature || publicKey` in base64, so build that before you hand it to `verifyPersonalMessageSignature`:
 
 ```js
 import { toBase64 } from "@mysten/sui/utils";
