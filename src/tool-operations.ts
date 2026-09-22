@@ -13,6 +13,8 @@ import { encodeWIF, decodeWIF, type DecodedWIF, type WIFNetworkOptions } from ".
 import type { AbstractBlockchain } from "./blockchain.ts";
 import { blockchains, getBlockchainPath, parseBIP44Path, useBlockchain } from "./index.ts";
 import {
+  MAX_BIP39_LOOKUP_ITEMS,
+  BIP39_ENTROPY_BYTE_LENGTHS,
   TOOL_ADDRESS_TYPES_BY_CHAIN,
   TOOL_CHAINS,
   TOOL_NETWORKS,
@@ -32,20 +34,13 @@ import {
 } from "./utils/bip39/index.ts";
 import { BIP39_LANGUAGES, isBIP39Language, type BIP39Language } from "./utils/bip39/languages.ts";
 
-/** Maximum number of words or indices accepted by one BIP39 lookup. */
-export const MAX_BIP39_LOOKUP_ITEMS = 100;
-
-/** BIP39 entropy byte lengths accepted by the package. */
-export const BIP39_ENTROPY_BYTE_LENGTHS: readonly number[] = [16, 20, 24, 28, 32];
-
-/** JSON Schema pattern for a complete BIP39 entropy value. */
-export const BIP39_ENTROPY_SCHEMA_PATTERN = `^(?:${BIP39_ENTROPY_BYTE_LENGTHS.map((bytes) => `[0-9A-Fa-f]{${bytes * 2}}`).join("|")})$`;
-
-/** JSON Schema pattern for one non-whitespace BIP39 lookup word. */
-export const BIP39_WORD_SCHEMA_PATTERN = "^\\S+$";
-
-/** JSON Schema pattern for an absolute derivation path. */
-export const DERIVATION_PATH_SCHEMA_PATTERN = "^m(/[0-9]+'?)+$";
+export {
+  MAX_BIP39_LOOKUP_ITEMS,
+  BIP39_ENTROPY_BYTE_LENGTHS,
+  BIP39_ENTROPY_SCHEMA_PATTERN,
+  BIP39_WORD_SCHEMA_PATTERN,
+  DERIVATION_PATH_SCHEMA_PATTERN,
+} from "./tool-parameters.ts";
 
 /** Text for the model plus structured details for agent harnesses. */
 export interface ToolResult<Details> {

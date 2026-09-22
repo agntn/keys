@@ -5,21 +5,12 @@ import {
   type CallToolResult,
   type Tool,
 } from "@modelcontextprotocol/sdk/types.js";
-import { Type, type TSchema } from "typebox";
+import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
+import { BIP44_PATH_MODE_SCHEMA } from "./tool-parameters.ts";
 import {
-  BIP44_PATH_MODE_SCHEMA,
-  SUI_ADDRESS_TYPES,
-  TOOL_ADDRESS_TYPES,
-  TOOL_CHAINS,
-  TOOL_NETWORKS,
-} from "./tool-parameters.ts";
-import {
-  BIP39_ENTROPY_SCHEMA_PATTERN,
-  BIP39_WORD_SCHEMA_PATTERN,
   bip44Path,
   convertPublicKey,
-  DERIVATION_PATH_SCHEMA_PATTERN,
   deriveHdWallet,
   deriveBip39Seed,
   deriveElectrumWallet,
@@ -33,7 +24,6 @@ import {
   inspectMnemonic,
   lookupBip39Indices,
   lookupBip39Words,
-  MAX_BIP39_LOOKUP_ITEMS,
   recoverMnemonicWord,
   sanitizeToolText,
   signMessage,
@@ -49,7 +39,19 @@ import {
   GENERATE_MNEMONIC_PARAMETERS,
   DERIVE_BIP39_SEED_PARAMETERS,
   DERIVE_ELECTRUM_WALLET_PARAMETERS,
-  BIP39_LANGUAGE_PARAMETER,
+  GENERATE_WALLET_PARAMETERS,
+  DERIVE_WALLET_PARAMETERS,
+  DERIVE_HD_WALLET_PARAMETERS,
+  INSPECT_MNEMONIC_PARAMETERS,
+  ENCODE_BIP39_ENTROPY_PARAMETERS,
+  LOOKUP_BIP39_INDICES_PARAMETERS,
+  LOOKUP_BIP39_WORDS_PARAMETERS,
+  RECOVER_MNEMONIC_WORD_PARAMETERS,
+  GET_ADDRESS_PARAMETERS,
+  VALIDATE_ADDRESS_PARAMETERS,
+  SIGN_MESSAGE_PARAMETERS,
+  VERIFY_MESSAGE_PARAMETERS,
+  BIP44_PATH_PARAMETERS,
 } from "./tool-schemas.ts";
 
 type ReadonlyObjectSchema = Readonly<TSchema> & {
@@ -89,26 +91,6 @@ const SENSITIVE_SIGN: Tool["annotations"] = {
   idempotentHint: true,
   openWorldHint: false,
 };
-
-const chainArgument = Type.String({
-  description: `Blockchain name (${TOOL_CHAINS.join(", ")})`,
-  minLength: 1,
-  maxLength: 32,
-});
-
-const networkArgument = Type.Optional(
-  Type.String({
-    description: "Network (mainnet or testnet). Default: mainnet",
-    enum: TOOL_NETWORKS,
-  }),
-);
-
-const addressTypeArgument = Type.Optional(
-  Type.String({
-    description: "Chain-specific address type, such as segwit, taproot, stake, or secp256k1",
-    enum: TOOL_ADDRESS_TYPES,
-  }),
-);
 
 const tools: readonly ToolDefinition[] = [
   {
@@ -163,10 +145,7 @@ const tools: readonly ToolDefinition[] = [
     title: "Generate Wallet",
     description:
       "Generate a disposable private key, public key, and address for a supported blockchain. The plaintext private key enters the MCP transcript, so never use the result for real funds.",
-    inputSchema: Type.Object(
-      { chain: chainArgument, network: networkArgument, addressType: addressTypeArgument },
-      { additionalProperties: false },
-    ),
+    inputSchema: GENERATE_WALLET_PARAMETERS,
     annotations: SENSITIVE_CREATE,
     execute: (args) => generateWallet(args["chain"], args["network"], args["addressType"]),
   },
@@ -175,15 +154,7 @@ const tools: readonly ToolDefinition[] = [
     title: "Derive Wallet",
     description:
       "Derive a public key and address from an existing private key. Use only public or disposable keys because tool arguments enter the MCP transcript.",
-    inputSchema: Type.Object(
-      {
-        chain: chainArgument,
-        privateKey: Type.String({ description: "Private key as hexadecimal text", minLength: 1 }),
-        addressType: addressTypeArgument,
-        network: networkArgument,
-      },
-      { additionalProperties: false },
-    ),
+    inputSchema: DERIVE_WALLET_PARAMETERS,
     annotations: LOCAL_READ,
     execute: (args) =>
       deriveWallet(args["chain"], args["privateKey"], args["addressType"], args["network"]),
@@ -193,30 +164,7 @@ const tools: readonly ToolDefinition[] = [
     title: "Derive HD Wallet",
     description:
       "Derive a public key and address from English BIP39 words and a path. Use allowInvalidChecksum for public puzzle candidates that fail only the checksum. Words are not repaired. Inputs enter the MCP transcript, so use only public or disposable material.",
-    inputSchema: Type.Object(
-      {
-        chain: chainArgument,
-        mnemonic: Type.String({
-          description: "English BIP39 mnemonic",
-          minLength: 1,
-          pattern: "\\S",
-        }),
-        path: Type.String({
-          description: "Derivation path such as m/84'/0'/0'/0/0",
-          pattern: DERIVATION_PATH_SCHEMA_PATTERN,
-        }),
-        passphrase: Type.Optional(Type.String({ description: "BIP39 passphrase. Default: empty" })),
-        allowInvalidChecksum: Type.Optional(
-          Type.Boolean({
-            description:
-              "Accept an invalid checksum with a warning. English words and BIP39 word counts are still required. Default: false",
-          }),
-        ),
-        addressType: addressTypeArgument,
-        network: networkArgument,
-      },
-      { additionalProperties: false },
-    ),
+    inputSchema: DERIVE_HD_WALLET_PARAMETERS,
     annotations: LOCAL_READ,
     execute: (args) =>
       deriveHdWallet(
@@ -243,17 +191,7 @@ const tools: readonly ToolDefinition[] = [
     title: "Inspect Mnemonic",
     description:
       "Inspect BIP39 word count, dictionary membership and checksum separately. Recover entropy only when valid. A bad checksum does not rule out a puzzle candidate. The phrase enters the MCP transcript, so use only public or disposable candidates.",
-    inputSchema: Type.Object(
-      {
-        language: BIP39_LANGUAGE_PARAMETER,
-        mnemonic: Type.String({
-          description: "BIP39 mnemonic candidate",
-          minLength: 1,
-          pattern: "\\S",
-        }),
-      },
-      { additionalProperties: false },
-    ),
+    inputSchema: INSPECT_MNEMONIC_PARAMETERS,
     annotations: LOCAL_READ,
     execute: (args) => inspectMnemonic(args["mnemonic"], args["language"]),
   },
@@ -262,16 +200,7 @@ const tools: readonly ToolDefinition[] = [
     title: "Encode BIP39 Entropy",
     description:
       "Encode 16, 20, 24, 28, or 32 bytes of hexadecimal entropy as a BIP39 mnemonic. Both forms enter the MCP transcript, so use only public or disposable material.",
-    inputSchema: Type.Object(
-      {
-        language: BIP39_LANGUAGE_PARAMETER,
-        entropy: Type.String({
-          description: "BIP39 entropy as 32, 40, 48, 56, or 64 hexadecimal characters",
-          pattern: BIP39_ENTROPY_SCHEMA_PATTERN,
-        }),
-      },
-      { additionalProperties: false },
-    ),
+    inputSchema: ENCODE_BIP39_ENTROPY_PARAMETERS,
     annotations: LOCAL_READ,
     execute: (args) => encodeBip39Entropy(args["entropy"], args["language"]),
   },
@@ -280,25 +209,7 @@ const tools: readonly ToolDefinition[] = [
     title: "Look Up BIP39 Indices",
     description:
       "Read words at numeric positions in an official BIP39 list, preserving the supplied order and index convention.",
-    inputSchema: Type.Object(
-      {
-        indices: Type.Array(
-          Type.Integer({
-            description: "A position from 0 to 2047 for base 0, or 1 to 2048 for base 1",
-            minimum: 0,
-            maximum: 2048,
-          }),
-          { minItems: 1, maxItems: MAX_BIP39_LOOKUP_ITEMS },
-        ),
-        language: BIP39_LANGUAGE_PARAMETER,
-        indexBase: Type.Optional(
-          Type.Union([Type.Literal(0), Type.Literal(1)], {
-            description: "Whether positions start at 0 or 1. Default: 0",
-          }),
-        ),
-      },
-      { additionalProperties: false },
-    ),
+    inputSchema: LOOKUP_BIP39_INDICES_PARAMETERS,
     annotations: LOCAL_READ,
     execute: (args) => lookupBip39Indices(args["indices"], args["language"], args["indexBase"]),
   },
@@ -307,21 +218,7 @@ const tools: readonly ToolDefinition[] = [
     title: "Look Up BIP39 Words",
     description:
       "Check word membership in an official BIP39 list and return both zero-based and one-based indices.",
-    inputSchema: Type.Object(
-      {
-        words: Type.Array(
-          Type.String({
-            description: "A word to check against the selected BIP39 list",
-            minLength: 1,
-            maxLength: 32,
-            pattern: BIP39_WORD_SCHEMA_PATTERN,
-          }),
-          { minItems: 1, maxItems: MAX_BIP39_LOOKUP_ITEMS },
-        ),
-        language: BIP39_LANGUAGE_PARAMETER,
-      },
-      { additionalProperties: false },
-    ),
+    inputSchema: LOOKUP_BIP39_WORDS_PARAMETERS,
     annotations: LOCAL_READ,
     execute: (args) => lookupBip39Words(args["words"], args["language"]),
   },
@@ -330,16 +227,7 @@ const tools: readonly ToolDefinition[] = [
     title: "Recover Mnemonic Word",
     description:
       "List English BIP39 words that make the checksum valid for one missing position. Use this filter only when canonical BIP39 generation is established, not for puzzles that may have invalid checksums. Inputs enter the MCP transcript, so use only public or disposable candidates.",
-    inputSchema: Type.Object(
-      {
-        mnemonic: Type.String({
-          description: "English BIP39 mnemonic template containing one ? placeholder",
-          minLength: 1,
-          pattern: "\\?",
-        }),
-      },
-      { additionalProperties: false },
-    ),
+    inputSchema: RECOVER_MNEMONIC_WORD_PARAMETERS,
     annotations: LOCAL_READ,
     execute: (args) => recoverMnemonicWord(args["mnemonic"]),
   },
@@ -347,15 +235,7 @@ const tools: readonly ToolDefinition[] = [
     name: "keys_get_address",
     title: "Get Address",
     description: "Derive a blockchain address from a public key.",
-    inputSchema: Type.Object(
-      {
-        chain: chainArgument,
-        publicKey: Type.String({ description: "Public key as hexadecimal text", minLength: 1 }),
-        addressType: addressTypeArgument,
-        network: networkArgument,
-      },
-      { additionalProperties: false },
-    ),
+    inputSchema: GET_ADDRESS_PARAMETERS,
     annotations: LOCAL_READ,
     execute: (args) =>
       getAddress(args["chain"], args["publicKey"], args["addressType"], args["network"]),
@@ -364,14 +244,7 @@ const tools: readonly ToolDefinition[] = [
     name: "keys_validate_address",
     title: "Validate Address",
     description: "Check whether an address matches one blockchain's format rules.",
-    inputSchema: Type.Object(
-      {
-        chain: chainArgument,
-        address: Type.String({ description: "Address to validate", minLength: 1, maxLength: 256 }),
-        network: networkArgument,
-      },
-      { additionalProperties: false },
-    ),
+    inputSchema: VALIDATE_ADDRESS_PARAMETERS,
     annotations: LOCAL_READ,
     execute: (args) => validateAddress(args["chain"], args["address"], args["network"]),
   },
@@ -380,15 +253,7 @@ const tools: readonly ToolDefinition[] = [
     title: "Sign Message",
     description:
       "Sign a message with a blockchain private key. The key, message, and signature enter the MCP transcript, so use only public or disposable material.",
-    inputSchema: Type.Object(
-      {
-        chain: chainArgument,
-        message: Type.String({ description: "Message to sign" }),
-        privateKey: Type.String({ description: "Private key as hexadecimal text", minLength: 1 }),
-        network: networkArgument,
-      },
-      { additionalProperties: false },
-    ),
+    inputSchema: SIGN_MESSAGE_PARAMETERS,
     annotations: SENSITIVE_SIGN,
     execute: (args) =>
       signMessage(args["chain"], args["message"], args["privateKey"], args["network"]),
@@ -397,16 +262,7 @@ const tools: readonly ToolDefinition[] = [
     name: "keys_verify_message",
     title: "Verify Message",
     description: "Verify a message signature against a blockchain public key.",
-    inputSchema: Type.Object(
-      {
-        chain: chainArgument,
-        message: Type.String({ description: "Original message" }),
-        signature: Type.String({ description: "Signature as hexadecimal text", minLength: 1 }),
-        publicKey: Type.String({ description: "Public key as hexadecimal text", minLength: 1 }),
-        network: networkArgument,
-      },
-      { additionalProperties: false },
-    ),
+    inputSchema: VERIFY_MESSAGE_PARAMETERS,
     annotations: LOCAL_READ,
     execute: (args) =>
       verifyMessage(
@@ -422,44 +278,7 @@ const tools: readonly ToolDefinition[] = [
     title: "BIP44 Path",
     description:
       "Parse a BIP44 derivation path, or generate the path a blockchain's wallets use for an account: BIP44 on secp256k1 chains, every level hardened on ed25519 chains (Stellar stops at the account, Solana at the change branch), CIP-1852 with roles on Cardano, and on Sui the scheme picks between the two.",
-    inputSchema: Type.Object(
-      {
-        chain: Type.Optional(chainArgument),
-        path: Type.Optional(
-          Type.String({
-            description: "BIP44 path to parse, such as m/44'/0'/0'/0/0",
-            minLength: 1,
-          }),
-        ),
-        account: Type.Optional(
-          Type.Integer({
-            description: "Account index for generation only. Default: 0",
-            minimum: 0,
-          }),
-        ),
-        change: Type.Optional(
-          Type.Integer({
-            description:
-              "Change branch for generation only: 0 for external, 1 for internal; on Cardano the CIP-1852 role, up to 5. Default: 0",
-            minimum: 0,
-          }),
-        ),
-        addressIndex: Type.Optional(
-          Type.Integer({
-            description: "Address index for generation only. Default: 0",
-            minimum: 0,
-          }),
-        ),
-        addressType: Type.Optional(
-          Type.String({
-            description:
-              "Signature scheme for generation on Sui, ed25519 or secp256k1. Default: ed25519",
-            enum: SUI_ADDRESS_TYPES,
-          }),
-        ),
-      },
-      { additionalProperties: false, ...BIP44_PATH_MODE_SCHEMA },
-    ),
+    inputSchema: { ...BIP44_PATH_PARAMETERS, ...BIP44_PATH_MODE_SCHEMA },
     annotations: LOCAL_READ,
     execute: (args) =>
       bip44Path(
