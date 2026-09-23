@@ -1,5 +1,36 @@
 # Changelog
 
+## v0.3.3
+
+[compare changes](https://github.com/agntn/keys/compare/v0.3.2...v0.3.3)
+
+### 🚀 Enhancements
+
+- Derive wallets from Electrum seeds ([#86](https://github.com/agntn/keys/pull/86))
+- **signing:** Signatures ethers can recover ([#93](https://github.com/agntn/keys/pull/93))
+
+### 🔥 Performance
+
+- **tools:** Fewer tokens per BIP39 lookup ([#91](https://github.com/agntn/keys/pull/91))
+
+### 🩹 Fixes
+
+- **pi:** Chain imports wait their turn ([#96](https://github.com/agntn/keys/pull/96))
+- **tools:** Reject 0x hex at the schema ([#100](https://github.com/agntn/keys/pull/100))
+
+### 💅 Refactors
+
+- **tools:** One schema for MCP and Pi ([#92](https://github.com/agntn/keys/pull/92))
+
+### 📦 Build
+
+- Swap obuild and vitest for Vite+ ([#98](https://github.com/agntn/keys/pull/98))
+
+### ❤️ Contributors
+
+- Ori ([@oritwoen](https://github.com/oritwoen))
+- Aeitwoen ([@aeitwoen](https://github.com/aeitwoen))
+
 ## v0.3.2
 
 [compare changes](https://github.com/agntn/keys/compare/v0.3.1...v0.3.2)
