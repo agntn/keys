@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { DecodedWIF, WIFOptions, HDWalletOptions } from "@agntn/keys";
 import type { BIP39MnemonicInspection } from "@agntn/keys/bip39";
 import {

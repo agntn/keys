@@ -5,8 +5,22 @@ minimumReleaseAgeExclude:
   - typebox
   - vite
 
+catalog:
+  vite: npm:@voidzero-dev/vite-plus-core@0.3.3
+  vitest: 4.1.11
+  vite-plus: 0.3.3
+
 overrides:
-  vite: 8.2.2
+  vite@*: "catalog:"
+  vitest@*: "catalog:"
+
+peerDependencyRules:
+  allowAny:
+    - vite
+    - vitest
+  allowedVersions:
+    vite: "*"
+    vitest: "*"
 
 allowBuilds:
   "@google/genai": false

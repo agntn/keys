@@ -4,7 +4,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import keysExtension from "../packages/pi/extensions/keys.ts";
 import { createMcpServer } from "../src/mcp.ts";
 

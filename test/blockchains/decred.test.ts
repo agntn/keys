@@ -3,7 +3,7 @@ import { blake256 } from "@noble/hashes/blake1.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { hexToBytes } from "@noble/hashes/utils.js";
 import { base58check } from "@scure/base";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import Decred, { Decred as NamedDecred } from "../../src/blockchains/decred.ts";
 import { blockchains, getBlockchainPath } from "../../src/index.ts";
 import { deriveWallet, deriveHdWallet } from "../../src/tool-operations.ts";

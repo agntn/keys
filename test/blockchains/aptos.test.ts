@@ -1,4 +1,4 @@
-import { expect, describe, it } from "vitest";
+import { expect, describe, it } from "vite-plus/test";
 import { bip39TestVectors, slip10WalletVectors } from "../fixtures";
 import Aptos from "../../src/blockchains/aptos";
 import { useBlockchain } from "../../src/blockchain";

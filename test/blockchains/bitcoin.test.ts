@@ -1,7 +1,7 @@
 import { webcrypto } from "node:crypto";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { bip39TestVectors, bitcoinMessageVectors as messageVectors } from "../fixtures";
 import { useBlockchain } from "../../src";
 import { bip44Path, getAddress } from "../../src/tool-operations.ts";

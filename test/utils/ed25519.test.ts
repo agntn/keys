@@ -1,4 +1,4 @@
-import { expect, describe, it } from "vitest";
+import { expect, describe, it } from "vite-plus/test";
 import { generateKeyPublic } from "../../src/utils/ed25519";
 
 describe("Ed25519 Utils", () => {
