@@ -21,6 +21,9 @@ import {
   TOOL_MNEMONIC_WORD_COUNTS,
   MAX_BIP39_SEED_INPUT_LENGTH,
   TOOL_WIF_CHAINS,
+  PRIVATE_KEY_SCHEMA_PATTERN,
+  PUBLIC_KEY_SCHEMA_PATTERN,
+  SIGNATURE_SCHEMA_PATTERN,
   type ToolChain,
   type ToolNetwork,
 } from "./tool-parameters.ts";
@@ -199,6 +202,30 @@ function content(text: string): Array<{ type: "text"; text: string }> {
 function requiredString(value: unknown, name: string): string {
   if (typeof value !== "string") throw new TypeError(`${name} must be a string`);
   return value;
+}
+
+const PRIVATE_KEY_HEX = new RegExp(PRIVATE_KEY_SCHEMA_PATTERN, "u");
+const PUBLIC_KEY_HEX = new RegExp(PUBLIC_KEY_SCHEMA_PATTERN, "u");
+const SIGNATURE_HEX = new RegExp(SIGNATURE_SCHEMA_PATTERN, "u");
+
+/**
+ * Applies a schema's hex pattern for hosts that skip the schema, so a `0x` prefix fails as input
+ * instead of reaching a verifier that reports it as a bad signature. The value is never echoed.
+ * @param value - Raw argument.
+ * @param name - Argument name for the error.
+ * @param pattern - Pattern the shared schema advertises.
+ * @param shape - Accepted form, as the error states it.
+ * @returns {string} The argument unchanged.
+ */
+function hexArgument(
+  value: unknown,
+  name: string,
+  pattern: Readonly<RegExp>,
+  shape: string,
+): string {
+  const text = requiredString(value, name);
+  if (!pattern.test(text)) throw new TypeError(`${name} must be ${shape} without 0x`);
+  return text;
 }
 
 function optionalString(value: unknown, name: string): string | undefined {
@@ -410,7 +437,12 @@ export async function deriveWallet(
     networkValue,
     addressTypeValue,
   );
-  const privateKey = requiredString(privateKeyValue, "Private key");
+  const privateKey = hexArgument(
+    privateKeyValue,
+    "Private key",
+    PRIVATE_KEY_HEX,
+    "64 hex characters",
+  );
   const wallet = blockchain.deriveWallet(privateKey, {}, addressType);
   const details = {
     chain: blockchain.name,
@@ -763,7 +795,12 @@ export async function getAddress(
     networkValue,
     addressTypeValue,
   );
-  const publicKey = requiredString(publicKeyValue, "Public key");
+  const publicKey = hexArgument(
+    publicKeyValue,
+    "Public key",
+    PUBLIC_KEY_HEX,
+    "a 32-byte ed25519 or SEC1 secp256k1 key in hex",
+  );
   const address = blockchain.getAddress(publicKey, addressType);
   return {
     content: content(`Address: ${address}`),
@@ -819,7 +856,12 @@ export async function signMessage(
   const recovered = recoveredValue ?? false;
   const { blockchain } = await getBlockchain(chainValue, networkValue);
   const message = requiredString(messageValue, "Message");
-  const privateKey = requiredString(privateKeyValue, "Private key");
+  const privateKey = hexArgument(
+    privateKeyValue,
+    "Private key",
+    PRIVATE_KEY_HEX,
+    "64 hex characters",
+  );
   /** Only pass options when the flag is set, so every other chain keeps its current defaults. */
   const signature = recovered
     ? blockchain.signMessage(message, privateKey, { recovered })
@@ -848,8 +890,18 @@ export async function verifyMessage(
 ): Promise<ToolResult<SignatureVerificationDetails>> {
   const { blockchain } = await getBlockchain(chainValue, networkValue);
   const message = requiredString(messageValue, "Message");
-  const signature = requiredString(signatureValue, "Signature");
-  const publicKey = requiredString(publicKeyValue, "Public key");
+  const signature = hexArgument(
+    signatureValue,
+    "Signature",
+    SIGNATURE_HEX,
+    "64 or 65 bytes of hex",
+  );
+  const publicKey = hexArgument(
+    publicKeyValue,
+    "Public key",
+    PUBLIC_KEY_HEX,
+    "a 32-byte ed25519 or SEC1 secp256k1 key in hex",
+  );
   const valid = blockchain.verifyMessage(message, signature, publicKey);
   return {
     content: content(valid ? "Signature is valid" : "Signature is invalid"),

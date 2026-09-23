@@ -15,6 +15,7 @@ import {
   localizedMnemonicVectors,
   invalidChecksumPuzzle,
   ed25519TestVectors,
+  ethereumTestVectors,
   secp256k1TestVectors,
 } from "./fixtures.ts";
 import keysExtension from "../packages/pi/extensions/keys.ts";
@@ -366,6 +367,39 @@ describe("keys Pi extension", () => {
         text: `Public key: ${stellarTestVectors.publicKey}\nAddress: ${stellarTestVectors.address}`,
       },
     ]);
+  });
+
+  it("rejects 0x hex in the executor when the host skips the schema", async () => {
+    const tools = registerTools();
+    const [message, , signature] = ethereumTestVectors.messages[1];
+    const { privateKey, publicKey } = ethereumTestVectors;
+
+    for (const [name, params, error] of [
+      [
+        "keys_verify_message",
+        { chain: "ethereum", message, signature: `0x${signature}`, publicKey },
+        "Signature must be 64 or 65 bytes of hex without 0x",
+      ],
+      [
+        "keys_verify_message",
+        { chain: "ethereum", message, signature, publicKey: `0x${publicKey}` },
+        "Public key must be",
+      ],
+      [
+        "keys_sign_message",
+        { chain: "ethereum", message, privateKey: `0x${privateKey}` },
+        "Private key must be 64 hex characters without 0x",
+      ],
+      ["keys_derive_wallet", { chain: "ethereum", privateKey: `0x${privateKey}` }, "Private key"],
+      ["keys_get_address", { chain: "ethereum", publicKey: `0x${publicKey}` }, "Public key"],
+    ] as const) {
+      const tool = tools.get(name);
+      if (!tool) throw new Error(`${name} was not registered`);
+
+      const rejection = tool.execute("prefixed-hex", params);
+      await expect(rejection).rejects.toThrow(error);
+      await expect(rejection).rejects.not.toThrow(privateKey);
+    }
   });
 
   it("rejects unsupported networks and address types on every relevant tool", async () => {
