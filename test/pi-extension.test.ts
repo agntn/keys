@@ -14,6 +14,8 @@ import {
   wifTestVectors,
   localizedMnemonicVectors,
   invalidChecksumPuzzle,
+  ed25519TestVectors,
+  secp256k1TestVectors,
 } from "./fixtures.ts";
 import keysExtension from "../packages/pi/extensions/keys.ts";
 import { mnemonicToSeed, mnemonicToEntropy, validateMnemonic } from "../src/utils/bip39/index.ts";
@@ -370,14 +372,22 @@ describe("keys Pi extension", () => {
     const tools = registerTools();
     const networkCases = [
       ["keys_generate_wallet", { chain: "bitcoin" }],
-      ["keys_derive_wallet", { chain: "ethereum", privateKey: "unused" }],
+      ["keys_derive_wallet", { chain: "ethereum", privateKey: secp256k1TestVectors.privateKey }],
       ["keys_derive_hd_wallet", { chain: "base", mnemonic: "unused", path: "m/0" }],
-      ["keys_get_address", { chain: "solana", publicKey: "unused" }],
+      ["keys_get_address", { chain: "solana", publicKey: ed25519TestVectors.publicKey }],
       ["keys_validate_address", { chain: "aptos", address: "unused" }],
-      ["keys_sign_message", { chain: "tron", message: "unused", privateKey: "unused" }],
+      [
+        "keys_sign_message",
+        { chain: "tron", message: "unused", privateKey: secp256k1TestVectors.privateKey },
+      ],
       [
         "keys_verify_message",
-        { chain: "sui", message: "unused", signature: "unused", publicKey: "unused" },
+        {
+          chain: "sui",
+          message: "unused",
+          signature: "00".repeat(64),
+          publicKey: ed25519TestVectors.publicKey,
+        },
       ],
     ] as const;
 
@@ -394,19 +404,31 @@ describe("keys Pi extension", () => {
 
     const addressTypeCases = [
       ["keys_generate_wallet", { chain: "bitcoin", addressType: "stake" }],
-      ["keys_derive_wallet", { chain: "ethereum", privateKey: "unused", addressType: "segwit" }],
+      [
+        "keys_derive_wallet",
+        { chain: "ethereum", privateKey: secp256k1TestVectors.privateKey, addressType: "segwit" },
+      ],
       [
         "keys_derive_hd_wallet",
         { chain: "base", mnemonic: "unused", path: "m/0", addressType: "segwit" },
       ],
-      ["keys_get_address", { chain: "solana", publicKey: "unused", addressType: "segwit" }],
+      [
+        "keys_get_address",
+        { chain: "solana", publicKey: ed25519TestVectors.publicKey, addressType: "segwit" },
+      ],
       ["keys_generate_wallet", { chain: "aptos", addressType: "segwit" }],
-      ["keys_derive_wallet", { chain: "tron", privateKey: "unused", addressType: "segwit" }],
+      [
+        "keys_derive_wallet",
+        { chain: "tron", privateKey: secp256k1TestVectors.privateKey, addressType: "segwit" },
+      ],
       [
         "keys_derive_hd_wallet",
         { chain: "sui", mnemonic: "unused", path: "m/0", addressType: "taproot" },
       ],
-      ["keys_get_address", { chain: "cardano", publicKey: "unused", addressType: "secp256k1" }],
+      [
+        "keys_get_address",
+        { chain: "cardano", publicKey: ed25519TestVectors.publicKey, addressType: "secp256k1" },
+      ],
     ] as const;
 
     for (const [name, params] of addressTypeCases) {
