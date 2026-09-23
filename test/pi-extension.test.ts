@@ -1,4 +1,6 @@
+import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { createJiti } from "jiti/static";
 import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
 import { describe, expect, it } from "vitest";
@@ -741,4 +743,54 @@ describe("keys Pi extension", () => {
     );
     expect(text).not.toContain("0000000000000000000000000000000000000000000000000000000000000001");
   });
+});
+
+/**
+ * Registers the tools the way the Pi host does: through jiti with the module cache off, so every
+ * module is evaluated once per importer and two overlapping imports of a shared module re-enter it.
+ * SAFETY: the extension only calls registerTool during registration.
+ * @returns {Promise<ReadonlyMap<string, RegisteredTool>>} The tools captured from the extension
+ */
+async function registerThroughHostLoader(): Promise<ReadonlyMap<string, RegisteredTool>> {
+  const jiti = createJiti(import.meta.url, { moduleCache: false });
+  const extension = await jiti.import<typeof keysExtension>(
+    fileURLToPath(new URL("../packages/pi/extensions/keys.ts", import.meta.url)),
+    { default: true },
+  );
+  const tools = new Map<string, RegisteredTool>();
+  extension({
+    registerTool(tool: RegisteredTool) {
+      tools.set(tool.name, tool);
+    },
+  } as unknown as ExtensionAPI);
+  return tools;
+}
+
+describe("Pi host loader", () => {
+  it("answers parallel calls on chains that share modules", async () => {
+    const calls = [
+      ["keys_validate_address", { chain: "bitcoin", address: invalidChecksumPuzzle.address }],
+      [
+        "keys_derive_hd_wallet",
+        { chain: "bitcoin", mnemonic: bip39TestVectors.mnemonic, path: "m/84'/0'/0'/0/0" },
+      ],
+      ["keys_get_address", { chain: "litecoin", publicKey: litecoinTestVectors.publicKey }],
+    ] as const;
+    const hosted = await registerThroughHostLoader();
+    const direct = registerTools();
+
+    const answers = await Promise.all(
+      calls.map(async ([name, params]) => {
+        const tool = hosted.get(name);
+        if (!tool) throw new Error(`Missing ${name}`);
+        return (await tool.execute("parallel", params)).content;
+      }),
+    );
+
+    for (const [index, [name, params]] of calls.entries()) {
+      const expected = await direct.get(name)?.execute("direct", params);
+      expect(answers[index], name).toEqual(expected?.content);
+    }
+    expect(answers[2]?.[0]?.text).toContain(litecoinTestVectors.address);
+  }, 30_000);
 });

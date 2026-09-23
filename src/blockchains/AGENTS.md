@@ -22,7 +22,7 @@ Decred uses `AbstractBlockchain` directly: ECDSA P2PKH with BLAKE-256, not Bitco
 1. Create `src/blockchains/<name>.ts` with `class Name extends AbstractBlockchain`
 2. Implement `name`, `curve`, `bip44`, `getKeyPublic`, `getAddress`, `validateAddress`, `signMessage`, and `verifyMessage`
 3. Export the class by name and as the default export
-4. Register it in `src/_blockchains.ts`: `<name>: lazy(() => import("./blockchains/<name>.ts"))`
+4. Register it in `src/_blockchains.ts`: `<name>: lazy("<name>", () => import("./blockchains/<name>.ts"))`
 5. Create `test/blockchains/<name>.test.ts` using fixtures from `test/fixtures.ts`
 6. For EVM chains, extend `AbstractEVMBlockchain` and provide only `name` and `bip44`
 
