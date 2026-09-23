@@ -70,14 +70,14 @@
     "access": "public"
   },
   "scripts": {
-    "build": "obuild",
-    "dev": "vitest dev",
-    "prepack": "pnpm build",
+    "build": "vp pack",
+    "dev": "vp test watch",
+    "prepack": "vp pack",
     "release": "changelogen --release --push",
-    "fmt": "pnpm build && oxlint . --fix && oxfmt --threads=8 .",
-    "lint": "pnpm build && oxlint . && oxfmt --threads=8 --check .",
-    "lint:fix": "pnpm build && oxlint . --fix && oxfmt --threads=8 .",
-    "test": "pnpm lint && pnpm test:types && pnpm build && pnpm test:ext && vitest run --coverage --maxWorkers=8 && node test/eval-mcp.mjs",
+    "fmt": "vp pack && vp lint --fix && vp fmt",
+    "lint": "vp pack && vp lint && vp fmt --check",
+    "lint:fix": "vp pack && vp lint --fix && vp fmt",
+    "test": "pnpm lint && pnpm test:types && pnpm build && pnpm test:ext && vp test run --coverage --maxWorkers=8 && node test/eval-mcp.mjs",
     "test:types": "tsc --noEmit --skipLibCheck && tsc -p tsconfig.type-tests.json --noEmit --skipLibCheck",
     "test:ext": "tsc -p tsconfig.extensions.json --noEmit",
     "test:mcp": "pnpm build && node test/eval-mcp.mjs",
@@ -109,13 +109,10 @@
     "@vitest/coverage-v8": "4.1.11",
     "changelogen": "0.6.2",
     "jiti": "2.7.0",
-    "obuild": "0.4.40",
-    "oxfmt": "0.65.0",
-    "oxlint": "1.80.0",
-    "oxlint-tsgolint": "^7.0.2001",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
-    "vitest": "4.1.11"
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   },
   "engines": {
     "node": ">=24"

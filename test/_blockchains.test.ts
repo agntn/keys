@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { blockchains, lazy } from "../src/_blockchains.ts";
 
 describe("lazy blockchain loader", () => {

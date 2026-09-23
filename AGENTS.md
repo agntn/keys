@@ -55,10 +55,11 @@ keys/
 - **Curve-split signing** - secp256k1 chains use `evmSignMessage` (Ethereum preamble + keccak256), ed25519 chains use `ed25519SignMessage` (raw, no prehash)
 - **Paths per chain** - `getDerivationPath` on the base class is BIP44; Solana, Stellar and Aptos override it with their SLIP-10 shape, every level hardened (Stellar stops at the account, Solana at the change branch), Sui hardens the ed25519 path and walks BIP32 `m/54'/784'/account'/change/index` on secp256k1, Cardano writes CIP-1852 with a plain role and index. `keys_bip44_path` generates through it, so Cardano takes roles up to 5 where BIP44 chains stop at 1
 - **Test mirrors src** - `src/blockchains/bitcoin.ts` -> `test/blockchains/bitcoin.test.ts`
+- **Test imports** - test files import from `vite-plus/test`, not `vitest`
 - **Shared fixtures** - test vectors live in `test/fixtures.ts`, not duplicated per test file
 - **ESM only** - `"type": "module"` in package.json, `.mjs` output
-- **oxlint and oxfmt** - `oxlint.config.ts` and `oxfmt.config.ts` spread the shared `@agntn/ox` policy (type-aware via `oxlint-tsgolint`); keep only repository-local additions (ignore patterns, the readonly-parameter allow-list) here
-- **obuild** - entry points are explicit in `build.config.ts`; keep package `exports` aligned with emitted `.mjs`/`.d.mts` files
+- **Vite+** - `vite.config.ts` is the one config for `vp lint`, `vp fmt`, `vp test` and `vp pack`. The `lint` and `fmt` blocks spread the shared `@agntn/ox` policy (type-aware); keep only repository-local additions (ignore patterns, the readonly-parameter allow-list) there
+- **`vp pack`** - entry points are explicit in the `pack` block; keep package `exports` aligned with emitted `.mjs`/`.d.mts` files
 
 ## ANTI-PATTERNS
 
@@ -71,12 +72,12 @@ keys/
 ## COMMANDS
 
 ```bash
-pnpm dev              # vitest watch mode
-pnpm test             # lint + type check + vitest with coverage
+pnpm dev              # vp test in watch mode
+pnpm test             # lint + type check + vp test with coverage
 pnpm test:types       # tsc --noEmit --skipLibCheck
-pnpm build            # obuild via build.config.ts
-pnpm lint             # oxlint + oxfmt check
-pnpm lint:fix         # oxlint + oxfmt fixes
+pnpm build            # vp pack via vite.config.ts
+pnpm lint             # vp lint + vp fmt --check
+pnpm lint:fix         # vp lint --fix + vp fmt
 pnpm playground <f>   # run any TS file via tsx
 pnpm docs             # Docus + keyspace explorer on :3000
 pnpm test:mcp         # build and exercise all 19 MCP tools over stdio
@@ -84,7 +85,7 @@ pnpm test:mcp         # build and exercise all 19 MCP tools over stdio
 
 ## NOTES
 
-- **CI runs**: lint -> type check -> build -> vitest with coverage (Node 22, pnpm). Autofix workflow commits lint fixes on PRs.
+- **CI runs**: lint -> type check -> build -> vp test with coverage (Node 24, pnpm through `setup-vp`). Autofix workflow commits lint fixes on PRs.
 - **Package exports** expose `"."`, `"./mcp"`, `"./blockchains/*"`, and the HD derivation subpaths `"./bip32"`, `"./bip39"`, and `"./slip10"`; other utils remain internal.
 - **MCP transport** runs through `keys mcp`. stdout is reserved for JSON-RPC, and `createMcpServer()` remains importable for hosts with their own transport.
 - **utils/ has mixed structure** - plain `.ts` files (address, encoding, crypto-hash, secp256k1, ed25519, ed25519-chains, evm, signing) and subdirectories with `index.ts` (bip32/, bip39/, bip44/, slip10/).

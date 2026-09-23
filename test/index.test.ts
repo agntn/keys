@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { bip39TestVectors } from "./fixtures";
 import { AbstractBlockchain, AbstractEVMBlockchain, blockchains, useBlockchain } from "../src";
 import Bitcoin, { Bitcoin as BitcoinClass } from "../src/blockchains/bitcoin";

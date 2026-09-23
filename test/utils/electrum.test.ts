@@ -1,5 +1,5 @@
 import { bytesToHex } from "@noble/hashes/utils.js";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { deriveElectrumSeed, inspectElectrumMnemonic } from "../../src/index.ts";
 import { normalizeElectrumText } from "../../src/utils/electrum.ts";
 import { deriveElectrumWallet } from "../../src/tool-operations.ts";

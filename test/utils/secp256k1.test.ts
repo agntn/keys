@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { generateKeyPublic } from "../../src/utils/secp256k1";
 
 describe("secp256k1 utilities", () => {

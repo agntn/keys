@@ -1,4 +1,4 @@
-import { expect, describe, it } from "vitest";
+import { expect, describe, it } from "vite-plus/test";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { hexToBytes } from "@noble/hashes/utils.js";
 import { bip39TestVectors, tronTestVectors } from "../fixtures";

@@ -3,7 +3,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { createJiti } from "jiti/static";
 import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import {
   bip39TestVectors,
   electrumVectors,

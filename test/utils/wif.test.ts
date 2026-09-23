@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { blake256 } from "@noble/hashes/blake1.js";
 import { concatBytes, hexToBytes } from "@noble/hashes/utils.js";
 import { base58 } from "@scure/base";

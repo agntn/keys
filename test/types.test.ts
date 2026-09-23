@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import type { Blockchain } from "../src/types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {

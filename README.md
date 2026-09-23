@@ -201,10 +201,10 @@ Want an eleventh? Extend `AbstractBlockchain`, or `AbstractEVMBlockchain` if it'
 
 ```bash
 pnpm install
-pnpm dev          # vitest in watch mode
-pnpm lint         # builds first, then oxlint and oxfmt --check
+pnpm dev          # vp test in watch mode
+pnpm lint         # builds first, then vp lint and vp fmt --check
 pnpm test:types   # tsc over the library and the type tests
-pnpm build        # obuild
+pnpm build        # vp pack
 pnpm test:mcp     # builds, then calls all 19 tools over stdio
 pnpm playground playground/bip39-demo.ts
 ```

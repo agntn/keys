@@ -47,7 +47,7 @@ Three resolution traps, all because the repo root is its own pnpm workspace:
 
 ## Tests
 
-`test/docs-parse-key.test.ts` and `test/docs-landing.test.ts` in the repo root cover `app/utils/` and run with the root suite, no docs install needed. The root `vitest.config.ts` transforms them with the root tsconfig, because `docs/tsconfig.json` only references files Nuxt generates. `derive.ts` takes the library module as an argument and imports its types from `../src` by path, so a root test passes `src/index.ts` and never needs the `@agntn/keys` alias; `test/public-exports.test.ts` keeps that name for the built package. Keep pure helpers in `app/utils/` so they stay testable from the root; anything that touches `ref` or `onMounted` belongs in `app/composables/`.
+`test/docs-parse-key.test.ts` and `test/docs-landing.test.ts` in the repo root cover `app/utils/` and run with the root suite, no docs install needed. The root `vite.config.ts` transforms them with the root tsconfig, because `docs/tsconfig.json` only references files Nuxt generates. `derive.ts` takes the library module as an argument and imports its types from `../src` by path, so a root test passes `src/index.ts` and never needs the `@agntn/keys` alias; `test/public-exports.test.ts` keeps that name for the built package. Keep pure helpers in `app/utils/` so they stay testable from the root; anything that touches `ref` or `onMounted` belongs in `app/composables/`.
 
 The landing renders before the library loads, so `app/utils/landing.ts` records private key 1 on every row, the Bitcoin pipeline and the first HD sample as fixtures. `test/docs-landing.test.ts` derives the same values from `src/` and fails when they drift, so a fixture edit without a library change is a lie the test catches.
 
