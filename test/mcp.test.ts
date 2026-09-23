@@ -430,6 +430,36 @@ describe("keys MCP server", () => {
     expect(text(verified.content)).toContain("Signature is valid");
   });
 
+  it("rejects 0x hex at the schema instead of calling a valid signature invalid", async () => {
+    const client = await connectTestClient();
+    const [message, , signature] = ethereumTestVectors.messages[1];
+    const { privateKey, publicKey } = ethereumTestVectors;
+
+    for (const [name, arguments_, field] of [
+      [
+        "keys_verify_message",
+        { chain: "ethereum", message, signature: `0x${signature}`, publicKey },
+        "/signature",
+      ],
+      [
+        "keys_verify_message",
+        { chain: "ethereum", message, signature, publicKey: `0x${publicKey}` },
+        "/publicKey",
+      ],
+      [
+        "keys_sign_message",
+        { chain: "ethereum", message, privateKey: `0x${privateKey}` },
+        "/privateKey",
+      ],
+      ["keys_derive_wallet", { chain: "ethereum", privateKey: `0x${privateKey}` }, "/privateKey"],
+      ["keys_get_address", { chain: "ethereum", publicKey: `0x${publicKey}` }, "/publicKey"],
+    ] as const) {
+      const response = await client.callTool({ name, arguments: arguments_ });
+      expect(response.isError).toBe(true);
+      expect(text(response.content)).toContain(`Invalid arguments at ${field}`);
+    }
+  });
+
   it("reports an error for a chain without an r||s||v form", async () => {
     const client = await connectTestClient();
 

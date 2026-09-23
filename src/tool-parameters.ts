@@ -93,3 +93,13 @@ export const BIP39_WORD_SCHEMA_PATTERN = "^\\S+$";
 
 /** JSON Schema pattern for an absolute derivation path. */
 export const DERIVATION_PATH_SCHEMA_PATTERN = "^m(/[0-9]+'?)+$";
+
+/** JSON Schema pattern for a 32-byte private key, the one size every supported chain signs with. */
+export const PRIVATE_KEY_SCHEMA_PATTERN = "^[0-9A-Fa-f]{64}$";
+
+/** JSON Schema pattern for a 32-byte ed25519 key or a compressed or uncompressed SEC1 secp256k1 key. */
+export const PUBLIC_KEY_SCHEMA_PATTERN =
+  "^(?:[0-9A-Fa-f]{64}|0[23][0-9A-Fa-f]{64}|04[0-9A-Fa-f]{128})$";
+
+/** JSON Schema pattern for a 64-byte `r||s` or ed25519 signature, or 65 bytes with the recovery byte. */
+export const SIGNATURE_SCHEMA_PATTERN = "^[0-9A-Fa-f]{128}(?:[0-9A-Fa-f]{2})?$";

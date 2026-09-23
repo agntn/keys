@@ -7,6 +7,7 @@ import { Value } from "typebox/value";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import keysExtension from "../packages/pi/extensions/keys.ts";
 import { createMcpServer } from "../src/mcp.ts";
+import { ed25519TestVectors, ethereumTestVectors, secp256k1TestVectors } from "./fixtures.ts";
 
 const piSchemas = new Map<string, TSchema>();
 keysExtension({
@@ -30,6 +31,11 @@ afterAll(async () => {
   await Promise.all([client.close(), server.close()]);
 });
 
+const { privateKey, publicKeyCompressed: publicKey } = secp256k1TestVectors;
+const ed25519Key = ed25519TestVectors.publicKey;
+const signatureWithV = ethereumTestVectors.messages[1][2];
+const signature = signatureWithV.slice(0, 128);
+
 describe("MCP and Pi tool parameters", () => {
   it("advertises the same tools on both transports", () => {
     expect([...piSchemas.keys()].sort()).toEqual([...mcpSchemas.keys()].sort());
@@ -48,15 +54,27 @@ describe("MCP and Pi tool parameters", () => {
   });
 
   it.each([
-    ["keys_derive_wallet", { chain: "bitcoin", privateKey: "01" }, "privateKey", ""],
-    ["keys_get_address", { chain: "bitcoin", publicKey: "02" }, "publicKey", ""],
+    ["keys_derive_wallet", { chain: "bitcoin", privateKey }, "privateKey", `0x${privateKey}`],
+    ["keys_get_address", { chain: "bitcoin", publicKey }, "publicKey", publicKey.slice(0, -1)],
+    [
+      "keys_get_address",
+      { chain: "solana", publicKey: ed25519Key },
+      "publicKey",
+      `0x${ed25519Key}`,
+    ],
     ["keys_validate_address", { chain: "bitcoin", address: "a" }, "address", "a".repeat(257)],
-    ["keys_sign_message", { chain: "bitcoin", message: "", privateKey: "01" }, "chain", ""],
+    ["keys_sign_message", { chain: "bitcoin", message: "", privateKey }, "chain", ""],
     [
       "keys_verify_message",
-      { chain: "bitcoin", message: "", signature: "00", publicKey: "02" },
+      { chain: "bitcoin", message: "", signature, publicKey },
       "signature",
-      "",
+      `0x${signature}`,
+    ],
+    [
+      "keys_verify_message",
+      { chain: "ethereum", message: "", signature: signatureWithV, publicKey },
+      "publicKey",
+      `0x${publicKey}`,
     ],
   ] as const)("enforces shared boundaries for %s", (name, valid, field, invalid) => {
     const schema = piSchemas.get(name)!;

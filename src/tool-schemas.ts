@@ -7,6 +7,9 @@ import {
   BIP39_ENTROPY_SCHEMA_PATTERN,
   BIP39_WORD_SCHEMA_PATTERN,
   DERIVATION_PATH_SCHEMA_PATTERN,
+  PRIVATE_KEY_SCHEMA_PATTERN,
+  PUBLIC_KEY_SCHEMA_PATTERN,
+  SIGNATURE_SCHEMA_PATTERN,
   TOOL_WIF_CHAINS,
   TOOL_NETWORKS,
   TOOL_MNEMONIC_WORD_COUNTS,
@@ -58,7 +61,7 @@ export const WIF_ENCODE_PARAMETERS = Type.Object(
     privateKey: Type.String({
       minLength: 64,
       maxLength: 64,
-      pattern: "^[0-9A-Fa-f]{64}$",
+      pattern: PRIVATE_KEY_SCHEMA_PATTERN,
       description: "Disposable private key as 64 hex characters without 0x",
     }),
     compressed: Type.Optional(
@@ -174,7 +177,10 @@ export const GENERATE_WALLET_PARAMETERS = Type.Object(
 export const DERIVE_WALLET_PARAMETERS = Type.Object(
   {
     chain: chainArgument,
-    privateKey: Type.String({ description: "Private key as hexadecimal text", minLength: 1 }),
+    privateKey: Type.String({
+      pattern: PRIVATE_KEY_SCHEMA_PATTERN,
+      description: "Private key as 64 hex characters without 0x",
+    }),
     addressType: addressTypeArgument,
     network: networkArgument,
   },
@@ -279,7 +285,11 @@ export const RECOVER_MNEMONIC_WORD_PARAMETERS = Type.Object(
 export const GET_ADDRESS_PARAMETERS = Type.Object(
   {
     chain: chainArgument,
-    publicKey: Type.String({ description: "Public key as hexadecimal text", minLength: 1 }),
+    publicKey: Type.String({
+      pattern: PUBLIC_KEY_SCHEMA_PATTERN,
+      description:
+        "Public key as hex without 0x: 32-byte ed25519, or compressed or uncompressed SEC1 secp256k1",
+    }),
     addressType: addressTypeArgument,
     network: networkArgument,
   },
@@ -299,7 +309,10 @@ export const SIGN_MESSAGE_PARAMETERS = Type.Object(
   {
     chain: chainArgument,
     message: Type.String({ description: "Message to sign" }),
-    privateKey: Type.String({ description: "Private key as hexadecimal text", minLength: 1 }),
+    privateKey: Type.String({
+      pattern: PRIVATE_KEY_SCHEMA_PATTERN,
+      description: "Private key as 64 hex characters without 0x",
+    }),
     network: networkArgument,
     recovered: Type.Optional(
       Type.Boolean({
@@ -315,8 +328,15 @@ export const VERIFY_MESSAGE_PARAMETERS = Type.Object(
   {
     chain: chainArgument,
     message: Type.String({ description: "Original message" }),
-    signature: Type.String({ description: "Signature as hexadecimal text", minLength: 1 }),
-    publicKey: Type.String({ description: "Public key as hexadecimal text", minLength: 1 }),
+    signature: Type.String({
+      pattern: SIGNATURE_SCHEMA_PATTERN,
+      description: "Signature as hex without 0x: 64 bytes, or 65 with the recovery byte",
+    }),
+    publicKey: Type.String({
+      pattern: PUBLIC_KEY_SCHEMA_PATTERN,
+      description:
+        "Public key as hex without 0x: 32-byte ed25519, or compressed or uncompressed SEC1 secp256k1",
+    }),
     network: networkArgument,
   },
   { additionalProperties: false },
