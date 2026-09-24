@@ -54,6 +54,7 @@ export const BIP44 = {
   BITCOIN: 0,
   TESTNET: 1,
   LITECOIN: 2,
+  DOGECOIN: 3,
   DECRED: 42,
   BITCOIN_CASH: 145,
   BITCOIN_GOLD: 156,

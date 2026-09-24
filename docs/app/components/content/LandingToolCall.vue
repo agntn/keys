@@ -11,6 +11,7 @@ const SECP = [
   { row: "bsv", slug: "bitcoinsv" },
   { row: "ltc-segwit", slug: "litecoin", addressType: "segwit" },
   { row: "dcr", slug: "decred" },
+  { row: "doge", slug: "dogecoin" },
   { row: "eth", slug: "ethereum" },
   { row: "base", slug: "base" },
   { row: "tron", slug: "tron" },

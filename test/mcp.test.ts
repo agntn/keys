@@ -11,6 +11,7 @@ import {
   bitcoinCashTestVectors,
   bitcoinGoldTestVectors,
   bitcoinSVTestVectors,
+  dogecoinTestVectors,
   decredTestVectors,
   stellarTestVectors,
   wifTestVectors,
@@ -442,6 +443,37 @@ describe("keys MCP server", () => {
       arguments: { chain: "bitcoinsv" },
     });
     expect(text(path.content)).toContain("m/44'/236'/0'/0/0");
+  });
+
+  it("derives and validates Dogecoin through the MCP schema and executor", async () => {
+    const client = await connectTestClient();
+    const [key] = dogecoinTestVectors.keys;
+    const response = await client.callTool({
+      name: "keys_derive_wallet",
+      arguments: { chain: "dogecoin", privateKey: key.privateKey },
+    });
+    expect(response.isError).not.toBe(true);
+    expect(text(response.content)).toContain(key.addressCompressed);
+    expect(text(response.content)).not.toContain(key.privateKey);
+
+    const rejected = await client.callTool({
+      name: "keys_derive_wallet",
+      arguments: { chain: "dogecoin", privateKey: key.privateKey, addressType: "p2sh" },
+    });
+    expect(rejected.isError).toBe(true);
+    expect(text(rejected.content)).toContain("Supported: legacy");
+
+    const script = await client.callTool({
+      name: "keys_validate_address",
+      arguments: { chain: "dogecoin", address: dogecoinTestVectors.mainnet[1] },
+    });
+    expect(text(script.content)).toContain("is a valid dogecoin address");
+
+    const path = await client.callTool({
+      name: "keys_bip44_path",
+      arguments: { chain: "dogecoin" },
+    });
+    expect(text(path.content)).toContain("m/44'/3'/0'/0/0");
   });
 
   it("derives Decred through the MCP schema and executor", async () => {

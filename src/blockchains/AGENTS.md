@@ -11,7 +11,7 @@ Lazy-loaded class modules. Each file exports a named concrete class and the same
 | **EVM**              | ethereum, base                 | `evmSignMessage` (preamble + keccak256)           | secp256k1 via `utils/secp256k1`     |
 | **Bitcoin family**   | bitcoin, litecoin, bitcoingold | chain-specific message preamble                   | secp256k1 via `utils/secp256k1`     |
 | **CashAddr**         | bitcoincash                    | Bitcoin's preamble, same digest and signature     | secp256k1 via `utils/secp256k1`     |
-| **P2PKH only**       | bitcoinsv                      | Bitcoin's preamble, same digest and signature     | secp256k1 via `utils/secp256k1`     |
+| **P2PKH only**       | bitcoinsv, dogecoin            | Bitcoin's digest; Dogecoin has its own preamble   | secp256k1 via `utils/secp256k1`     |
 | **secp256k1 custom** | tron                           | `hashWithPreamble` (TIP-191 preamble + keccak256) | secp256k1 via `utils/secp256k1`     |
 | **ed25519**          | solana, aptos, cardano         | `ed25519SignMessage` (raw, no prehash)            | ed25519 via `utils/ed25519`         |
 | **ed25519 custom**   | stellar                        | SEP-53 digest (prefix + SHA-256), signed raw      | ed25519 via `utils/ed25519`         |
@@ -34,8 +34,9 @@ Decred uses `AbstractBlockchain` directly: ECDSA P2PKH with BLAKE-256, not Bitco
 - **Bitcoin Cash** - `BitcoinCash` extends `AbstractBitcoinMessageBlockchain`, the keys and signing half of the Bitcoin base, and writes P2PKH as CashAddr through `utils/cashaddr.ts`. `legacy` is its only address type; validation follows Bitcoin Cash Node and refuses base58
 - **Bitcoin Gold** - `BitcoinGold` extends `AbstractBitcoinBlockchain` with its own preamble, `G`/`A` version bytes and `btg` bech32. Its Taproot deployment timed out before any release could signal it, so `getAddress` refuses `taproot` and validation refuses witness v1 and later, which would be spendable by anyone there
 - **Bitcoin SV** - `BitcoinSV` extends the same half and writes Bitcoin's base58 P2PKH. `legacy` is its only address type; validation refuses P2SH, which the node rejects as an output since Genesis (`bad-txns-vout-p2sh`)
+- **Dogecoin** - `Dogecoin` extends the same half with its own preamble and `D`/`9`/`A` version bytes. `legacy` is its only address type, because the chain has no SegWit and the shared `p2sh` type wraps P2WPKH, which anyone could spend there; validation still accepts P2SH, the multisig destination
 - **EVM base class** - `Ethereum` and `Base` extend `AbstractEVMBlockchain`, which owns their shared key, address, validation, and signing behavior
-- **Network params** - Bitcoin Cash keeps its CashAddr prefixes in `NETWORK_PREFIXES`, Bitcoin SV its P2PKH version bytes in `NETWORK_VERSIONS`; Bitcoin, Litecoin, Bitcoin Gold, and Cardano keep separate address parameters for each network in `NETWORK_PARAMS`; TRON uses `0x41` and `T` on mainnet, Shasta, and Nile
+- **Network params** - Bitcoin Cash keeps its CashAddr prefixes in `NETWORK_PREFIXES`, Bitcoin SV its P2PKH version bytes in `NETWORK_VERSIONS`; Bitcoin, Litecoin, Bitcoin Gold, Dogecoin, and Cardano keep separate address parameters for each network in `NETWORK_PARAMS`; TRON uses `0x41` and `T` on mainnet, Shasta, and Nile
 - **BIP44 coin type** - every chain sets `bip44` from `BIP44` enum or SLIP-0044 number
 - **SUI dual-curve** - `getKeyPublic` and `signMessage` check `options.scheme` to pick ed25519 or secp256k1; both sign the `signPersonalMessage` digest, secp256k1 over its sha256 like the SDK
 - **HD wallets** - `deriveHDWallet` on the base class walks BIP32 or SLIP-10 by curve; Bitcoin, Litecoin and Bitcoin Gold infer the address type from the path purpose, Sui takes the curve from the scheme, Cardano throws because CIP-1852 derives differently

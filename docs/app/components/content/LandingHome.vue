@@ -2,7 +2,7 @@
 const { hex, decimal, rows, pipeline, hd, paused, tick, changedBytes, step, randomKey } = useLandingKey();
 
 const stats = [
-  { value: "14", label: "chains" },
+  { value: "15", label: "chains" },
   { value: "2", label: "curves" },
   { value: "0", label: "network calls" },
   { value: "19", label: "MCP tools" },
@@ -25,6 +25,7 @@ const chains = [
   { label: "Bitcoin SV", curve: "secp256k1", icon: "i-token-bsv", to: "/blockchains/bitcoinsv" },
   { label: "Litecoin", curve: "secp256k1", icon: "i-token-ltc", to: "/blockchains/litecoin" },
   { label: "Decred", curve: "secp256k1", icon: "i-token-dcr", to: "/blockchains/decred" },
+  { label: "Dogecoin", curve: "secp256k1", icon: "i-token-doge", to: "/blockchains/dogecoin" },
   { label: "Ethereum", curve: "secp256k1", icon: "i-token-eth", to: "/blockchains/ethereum" },
   { label: "Base", curve: "secp256k1", icon: "i-token-base", to: "/blockchains/base" },
   { label: "TRON", curve: "secp256k1", icon: "i-token-trx", to: "/blockchains/tron" },
@@ -68,7 +69,7 @@ async function copyInstall() {
         One key. <span class="text-primary">Every chain.</span>
       </h1>
       <p class="keys-enter keys-enter-2 mx-auto mt-6 max-w-xl text-base leading-7 text-muted">
-        Typed key generation, address derivation, and message signing for fourteen blockchains.
+        Typed key generation, address derivation, and message signing for fifteen blockchains.
         One interface in TypeScript, the same nineteen tools over MCP, and nothing ever leaves the process.
       </p>
       <div class="keys-enter keys-enter-3 mt-8 flex flex-wrap items-center justify-center gap-2">
@@ -119,7 +120,7 @@ async function copyInstall() {
       :checks="[
         'Both curves from @noble, nothing else underneath',
         'Legacy, SegWit, Taproot, EIP-55, base58check, bech32',
-        'Same 32 bytes, fourteen chains, derived in this tab',
+        'Same 32 bytes, fifteen chains, derived in this tab',
       ]"
     >
       A private key is an integer. Multiply it by the generator, hash the result, encode the
