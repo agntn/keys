@@ -756,6 +756,59 @@ export const dashTestVectors = {
 } as const;
 
 /**
+ * Zcash vectors from zcashd v6.20.0 tests, whose WIFs are Bitcoin's, Ledger Live's first receive
+ * address for the BIP39 test mnemonic, the TEX example in ZIP-320 and a signature Zallet verifies.
+ * @see https://github.com/zcash/zcash/blob/6966f30a8541b0e5998837dce14250ca9e15b16a/src/test/key_tests.cpp
+ * @see https://github.com/zcash/zcash/blob/6966f30a8541b0e5998837dce14250ca9e15b16a/src/test/data/base58_keys_valid.json
+ * @see https://github.com/LedgerHQ/ledger-live/blob/b3ffa2f4bf735f2cfeed2a8028ea92d4bc3588e3/libs/coin-modules/coin-bitcoin/src/constants.ts
+ * @see https://github.com/zcash/zips/blob/main/zips/zip-0320.rst
+ * @see https://github.com/zcash/librustzcash/blob/cd5eae71a000d426a63906be740952b5f232a558/components/zcash_address/src/encoding.rs
+ * @see https://github.com/zcash/zallet/blob/f9dcd4d31439feb813c95ac2516814421f5b04df/zallet-core/src/components/json_rpc/methods/verify_message.rs
+ */
+export const zcashTestVectors = {
+  /** `strSecret1` and `strSecret2` with the addresses the node gives each key, both encodings. */
+  keys: [
+    {
+      wif: "5HxWvvfubhXpYYpS3tJkw6fq9jE9j18THftkZjHHfmFiWtmAbrj",
+      privateKey: "12b004fff7f4b69ef8650e767f18f11ede158148b425660723b9f9a66e61f747",
+      address: "t1h8SqgtM3QM5e2M8EzhhT1yL2PXXtA6oqe",
+      addressCompressed: "t1ffus9J1vhxvFqLoExGBRPjE7BcJxiSCTC",
+    },
+    {
+      wif: "5KC4ejrDjv152FGwP386VD1i2NYc5KkfSMyv1nGy1VGDxGHqVY3",
+      privateKey: "b524c28b61c9b2c49b2c7dd4c2d75887abb78768c054bd7c01af4029f6c0d117",
+      address: "t1Xxa5ZVPKvs9bGMn7aWTiHjyHvR31XkUst",
+      addressCompressed: "t1VJL2dPUyXK7avDRGqhqQA5bw2eEMdhyg6",
+    },
+  ],
+  /** Ledger Live's first Zcash receive address for the BIP39 `abandon ... about` mnemonic. */
+  hd: { path: "m/44'/133'/0'/0/0", address: "t1XVXWCvpMgBvUaed4XDqWtgQgJSu1Ghz7F" },
+  /** P2PKH then P2SH, one pair per network. */
+  mainnet: ["t1T8yaLVhNqxA5KJcmiqqFN88e8DNp2PBfF", "t3VDyGHn9mbyCf448m2cHTu5uXvsJpKHbiZ"],
+  testnet: ["tmHMBeeYRuc2eVicLNfP15YLxbQsooCA6jb", "t2Fbo6DBKKVYw1SfrY8bEgz56hYEhywhEN6"],
+  /** Sapling and unified addresses from librustzcash, which a transparent driver must refuse. */
+  shielded: [
+    "zs1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpq6d8g",
+    "u1qpatys4zruk99pg59gcscrt7y6akvl9vrhcfyhm9yxvxz7h87q6n8cgrzzpe9zru68uq39uhmlpp5uefxu0su5uqyqfe5zp3tycn0ecl",
+  ],
+  /** ZIP-320: the same key hash as a `t1` address and as a TEX address. */
+  tex: {
+    address: "t1VmmGiyjVNeCjxDZzg7vZmd99WyzVby9yC",
+    tex: "tex1s2rt77ggv6q989lr49rkgzmh5slsksa9khdgte",
+  },
+  /**
+   * Zallet's `verifymessage` case: a compact signature in base64 under "Zcash Signed Message:\n"
+   * for the key behind `address`. No private key comes with it, so the test recovers the key.
+   */
+  signed: {
+    address: "t1VydNnkjBzfL1iAMyUbwGKJAF7PgvuCfMY",
+    message: "20251117: 1 Yay; 2 Yay; 3 Yay; 4 Yay; 5 Nay; 6 Nay; 7 Yay; 8 Yay; 9 Nay",
+    signature:
+      "H3RY+6ZfWUbzaaXxK8I42thf+f3tOrwKP2elphxAxq8tKypwJG4+V7EGR+sTWMZ5MFyvTQW8ZIV0yGU+93JTioA=",
+  },
+} as const;
+
+/**
  * Public WIF interoperability vectors.
  * @see https://github.com/bitcoinjs/wif/blob/master/test/fixtures.json
  * @see https://github.com/litecoin-project/litecoin/blob/master/src/test/data/key_io_valid.json

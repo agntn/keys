@@ -61,6 +61,13 @@ export const landingStaticRows: readonly AddressRow[] = [
     address: "DFpN6QqFfUm3gKNaxN6tNcab1FArL9cZLE",
   },
   {
+    id: "zec",
+    chain: "Zcash",
+    curve: "secp256k1",
+    format: "legacy",
+    address: "t1UYsZVJkLPeMjxEtACvSxfWuNmddpWfxzs",
+  },
+  {
     id: "eth",
     chain: "Ethereum",
     curve: "secp256k1",

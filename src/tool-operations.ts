@@ -330,6 +330,10 @@ const BLOCKCHAIN_LOADERS: ReadonlyArray<{
     load: async (network) => useBlockchain(await blockchains.dogecoin({ network })()),
   },
   {
+    name: "zcash",
+    load: async (network) => useBlockchain(await blockchains.zcash({ network })()),
+  },
+  {
     name: "ethereum",
     load: async (network) => useBlockchain(await blockchains.ethereum({ network })()),
   },

@@ -139,7 +139,7 @@ export default function keysExtension(pi: ExtensionAPI) {
     promptSnippet:
       "Use to create a new wallet with keys and address for Bitcoin, Ethereum, Solana, etc.",
     promptGuidelines: [
-      "Provide a chain name (bitcoin, bitcoincash, bitcoingold, bitcoinsv, litecoin, dash, decred, dogecoin, ethereum, base, solana, stellar, aptos, tron, sui, cardano)",
+      "Provide a chain name (bitcoin, bitcoincash, bitcoingold, bitcoinsv, litecoin, dash, decred, dogecoin, zcash, ethereum, base, solana, stellar, aptos, tron, sui, cardano)",
       "Optionally specify network (mainnet/testnet) and address type",
       "Bitcoin and Litecoin address types: legacy, p2sh, segwit, p2wsh, taproot",
       "Bitcoin Gold address types: legacy, p2sh, segwit, p2wsh; it never activated taproot",
@@ -147,6 +147,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       "Bitcoin Cash supports legacy P2PKH only, written as CashAddr",
       "Bitcoin SV supports legacy P2PKH only, in base58 like Bitcoin",
       "Dash and Dogecoin support legacy P2PKH only; neither has SegWit",
+      "Zcash supports transparent P2PKH only (t1); it writes no shielded or unified addresses",
       "Cardano address types: payment, stake, enterprise",
       "Returns hex private key, hex public key, and address",
     ],
@@ -198,7 +199,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       "Use to see which address a public puzzle mnemonic reaches on a given derivation path.",
     promptGuidelines: [
       "Provide a chain, an English BIP39 mnemonic, and a full derivation path",
-      "Common paths: Bitcoin m/44'/0'/0'/0/0 (legacy), m/49'/0'/0'/0/0 (p2sh), m/84'/0'/0'/0/0 (segwit), m/86'/0'/0'/0/0 (taproot); Bitcoin Cash m/44'/145'/0'/0/0; Bitcoin Gold m/44'/156'/0'/0/0 or m/84'/156'/0'/0/0 (segwit); Bitcoin SV m/44'/236'/0'/0/0, or m/44'/0'/0'/0/0 for ElectrumSV; Dash m/44'/5'/0'/0/0; Dogecoin m/44'/3'/0'/0/0; Ethereum m/44'/60'/0'/0/0; Solana m/44'/501'/0'/0'; Stellar m/44'/148'/0'; Aptos m/44'/637'/0'/0'/0'; Sui m/44'/784'/0'/0'/0'",
+      "Common paths: Bitcoin m/44'/0'/0'/0/0 (legacy), m/49'/0'/0'/0/0 (p2sh), m/84'/0'/0'/0/0 (segwit), m/86'/0'/0'/0/0 (taproot); Bitcoin Cash m/44'/145'/0'/0/0; Bitcoin Gold m/44'/156'/0'/0/0 or m/84'/156'/0'/0/0 (segwit); Bitcoin SV m/44'/236'/0'/0/0, or m/44'/0'/0'/0/0 for ElectrumSV; Dash m/44'/5'/0'/0/0; Dogecoin m/44'/3'/0'/0/0; Zcash m/44'/133'/0'/0/0; Ethereum m/44'/60'/0'/0/0; Solana m/44'/501'/0'/0'; Stellar m/44'/148'/0'; Aptos m/44'/637'/0'/0'/0'; Sui m/44'/784'/0'/0'/0'",
       "Bitcoin, Bitcoin Gold and Litecoin pick the address type from the path purpose unless addressType is set",
       "Optionally pass a BIP39 passphrase, a network, or an address type",
       "For public puzzles, allowInvalidChecksum=true accepts a checksum failure with a warning, but still requires English BIP39 words and word counts",
@@ -382,7 +383,11 @@ export default function keysExtension(pi: ExtensionAPI) {
     label: "Validate Address",
     description: "Check if a blockchain address is valid",
     promptSnippet: "Use to verify an address is valid for a given blockchain.",
-    promptGuidelines: ["Provide chain and address to validate", "Returns true/false"],
+    promptGuidelines: [
+      "Provide chain and address to validate",
+      "Returns true/false",
+      "Zcash checks transparent t1, t3 and tex1 addresses; shielded and unified ones come back invalid",
+    ],
     parameters: VALIDATE_ADDRESS_PARAMETERS,
     renderCall(args, _theme) {
       return new Text(`✅ Validate: ${args.address}`, 0, 0);
@@ -405,7 +410,7 @@ export default function keysExtension(pi: ExtensionAPI) {
     promptGuidelines: [
       "Provide chain, message text, and private key (hex)",
       "Returns the signature as hex string",
-      "Bitcoin, Bitcoin Gold, Dash, Dogecoin and Litecoin each use their own message preamble; Bitcoin Cash and Bitcoin SV sign with Bitcoin's",
+      "Bitcoin, Bitcoin Gold, Dash, Dogecoin, Litecoin and Zcash each use their own message preamble; Bitcoin Cash and Bitcoin SV sign with Bitcoin's",
       "Ethereum/Base use EIP-191 prefix",
       "Pass recovered on Ethereum, Base or TRON for 65-byte r||s||v, what ethers and TronWeb need",
     ],
