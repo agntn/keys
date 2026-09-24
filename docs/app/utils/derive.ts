@@ -32,6 +32,7 @@ export type ExplorerChains = {
   readonly bitcoingold: AbstractBlockchain;
   readonly bitcoinsv: AbstractBlockchain;
   readonly litecoin: AbstractBlockchain;
+  readonly dash: AbstractBlockchain;
   readonly decred: AbstractBlockchain;
   readonly dogecoin: AbstractBlockchain;
   readonly ethereum: AbstractBlockchain;
@@ -54,6 +55,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     bitcoingold,
     bitcoinsv,
     litecoin,
+    dash,
     decred,
     dogecoin,
     ethereum,
@@ -70,6 +72,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     load("bitcoingold"),
     load("bitcoinsv"),
     load("litecoin"),
+    load("dash"),
     load("decred"),
     load("dogecoin"),
     load("ethereum"),
@@ -87,6 +90,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     bitcoingold,
     bitcoinsv,
     litecoin,
+    dash,
     decred,
     dogecoin,
     ethereum,
@@ -111,6 +115,7 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
     bitcoingold,
     bitcoinsv,
     litecoin,
+    dash,
     decred,
     dogecoin,
     ethereum,
@@ -162,6 +167,7 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
         undefined,
         "taproot",
       ),
+      addressRow(dash, hex, "dash", "Dash", "secp256k1", "legacy"),
       addressRow(decred, hex, "dcr", "Decred", "secp256k1", "legacy"),
       addressRow(dogecoin, hex, "doge", "Dogecoin", "secp256k1", "legacy"),
       addressRow(ethereum, hex, "eth", "Ethereum", "secp256k1", "EIP-55"),

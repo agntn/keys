@@ -40,6 +40,13 @@ export const landingStaticRows: readonly AddressRow[] = [
     address: "ltc1qw508d6qejxtdg4y5r3zarvary0c5xw7kgmn4n9",
   },
   {
+    id: "dash",
+    chain: "Dash",
+    curve: "secp256k1",
+    format: "legacy",
+    address: "XmN7PQYWKn5MJFna5fRYgP6mxT2F7xpekE",
+  },
+  {
     id: "dcr",
     chain: "Decred",
     curve: "secp256k1",

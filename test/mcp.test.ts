@@ -11,6 +11,7 @@ import {
   bitcoinCashTestVectors,
   bitcoinGoldTestVectors,
   bitcoinSVTestVectors,
+  dashTestVectors,
   dogecoinTestVectors,
   decredTestVectors,
   stellarTestVectors,
@@ -474,6 +475,37 @@ describe("keys MCP server", () => {
       arguments: { chain: "dogecoin" },
     });
     expect(text(path.content)).toContain("m/44'/3'/0'/0/0");
+  });
+
+  it("derives and validates Dash through the MCP schema and executor", async () => {
+    const client = await connectTestClient();
+    const [key] = dashTestVectors.keys;
+    const response = await client.callTool({
+      name: "keys_derive_wallet",
+      arguments: { chain: "dash", privateKey: key.privateKey },
+    });
+    expect(response.isError).not.toBe(true);
+    expect(text(response.content)).toContain(key.addressCompressed);
+    expect(text(response.content)).not.toContain(key.privateKey);
+
+    const rejected = await client.callTool({
+      name: "keys_derive_wallet",
+      arguments: { chain: "dash", privateKey: key.privateKey, addressType: "p2sh" },
+    });
+    expect(rejected.isError).toBe(true);
+    expect(text(rejected.content)).toContain("Supported: legacy");
+
+    const script = await client.callTool({
+      name: "keys_validate_address",
+      arguments: { chain: "dash", address: dashTestVectors.mainnet[1] },
+    });
+    expect(text(script.content)).toContain("is a valid dash address");
+
+    const path = await client.callTool({
+      name: "keys_bip44_path",
+      arguments: { chain: "dash" },
+    });
+    expect(text(path.content)).toContain("m/44'/5'/0'/0/0");
   });
 
   it("derives Decred through the MCP schema and executor", async () => {

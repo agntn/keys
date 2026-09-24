@@ -10,6 +10,7 @@ const NAV_ICONS: Record<string, string> = {
   "/blockchains": "i-lucide-boxes",
   "/blockchains/bitcoin": "i-token-btc",
   "/blockchains/litecoin": "i-token-ltc",
+  "/blockchains/dash": "i-token-dash",
   "/blockchains/decred": "i-token-dcr",
   "/blockchains/dogecoin": "i-token-doge",
   "/blockchains/bitcoincash": "i-token-bch",

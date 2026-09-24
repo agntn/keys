@@ -712,6 +712,50 @@ export const dogecoinTestVectors = {
 } as const;
 
 /**
+ * Dash vectors from the node's own tests at Dash Core v23.1.8, whose WIFs decode under version
+ * byte `0xcc`, and Ledger Live's first receive address for the BIP39 test mnemonic.
+ * @see https://github.com/dashpay/dash/blob/728f5055836c6d29806412fc7223ac8fe05af991/src/test/key_tests.cpp
+ * @see https://github.com/dashpay/dash/blob/728f5055836c6d29806412fc7223ac8fe05af991/src/test/util_tests.cpp
+ * @see https://github.com/dashpay/dash/blob/728f5055836c6d29806412fc7223ac8fe05af991/src/test/data/key_io_valid.json
+ * @see https://github.com/LedgerHQ/ledger-live/blob/b3ffa2f4bf735f2cfeed2a8028ea92d4bc3588e3/libs/coin-modules/coin-bitcoin/src/constants.ts
+ */
+export const dashTestVectors = {
+  /** `strSecret1` and `strSecret2` with the addresses the node gives each key, both encodings. */
+  keys: [
+    {
+      wif: "7qh6LYnLN2w2ntz2wwUhRUEgkQ2j8XB16FGw77ZRDZmC29bn7cD",
+      privateKey: "12b004fff7f4b69ef8650e767f18f11ede158148b425660723b9f9a66e61f747",
+      address: "Xywgfc872nn5CKtpATCoAjZCc4v96pJczy",
+      addressCompressed: "XxV9h4Xmv6Pup8tVAQmH97K6grzvDwMG9F",
+    },
+    {
+      wif: "7rve4MxeWFQHGbSYH6J2yaaZd3MBUqoDEwN6ZAZ6ZHmhTT4r3hW",
+      privateKey: "b524c28b61c9b2c49b2c7dd4c2d75887abb78768c054bd7c01af4029f6c0d117",
+      address: "XpmouUj9KKJ99ZuU331ZS1KqsboeFnLGgK",
+      addressCompressed: "Xn7ZrYdExuk79Dm7CJCw7sfUWi2qWJSbRy",
+    },
+  ],
+  /** Ledger Live's first Dash receive address for the BIP39 `abandon ... about` mnemonic. */
+  hd: { path: "m/44'/5'/0'/0/0", address: "XoJA8qE3N2Y3jMLEtZ3vcN42qseZ8LvFf5" },
+  /** `strAddressBad`: an `X` string whose checksum fails. */
+  badAddress: "Xta1praZQjyELweyMByXyiREw1ZRsjXzVP",
+  /** P2PKH then P2SH, one pair per network. */
+  mainnet: ["XqZHYpoksmbEPtWstAEki3o8pJ8ZsPfXpK", "7XShCrc5u9rZZv7j18WqbUMZMxp8k1Hq4z"],
+  testnet: ["yf7WoPrbJCGhLLtpeBe7tteKEKwpvZ1w97", "8yCvxUt2TYKEQb5Ak6n9DYiCx22xfa3Lio"],
+  /**
+   * The `message_sign` case: its key signs "Trust no one" under "DarkCoin Signed Message:\n", and
+   * `message_verify` checks the result against the compressed key's address.
+   */
+  signed: {
+    privateKey: "d97f5108f11cda6eeebaaa420fef0726b1f898060b98489fa3098463c0032866",
+    message: "Trust no one",
+    address: "XetGnWHsPXV9VSkWzB6Wn2KhZLD24gqa5j",
+    signature:
+      "IIOzMDkvw3GtLWXkeEYRRRH53MOLHM44sJ428Nu4NNacTPJTGcKesMJ+3s3OadYK34tpSQIhu922EviNNWTsiQg=",
+  },
+} as const;
+
+/**
  * Public WIF interoperability vectors.
  * @see https://github.com/bitcoinjs/wif/blob/master/test/fixtures.json
  * @see https://github.com/litecoin-project/litecoin/blob/master/src/test/data/key_io_valid.json
