@@ -15,10 +15,14 @@ let importQueue: Promise<unknown> = Promise.resolve();
  * host loader that evaluates a module once per importer, such as the jiti loader Pi runs extensions
  * under, re-enters those shared modules when two imports overlap and hands the second importer a
  * half-initialized namespace.
+ *
+ * The factory is marked free of side effects, so a bundle that imports only other exports drops
+ * the registry and never emits the chain chunks.
  * @param name - Chain name, used in the error when the module has no class to construct
  * @param loader - Dynamic import of the module whose default export is the blockchain class
  * @returns {(options?: Options) => () => Promise<T>} Factory capturing constructor options that returns an async loader constructing the blockchain
  */
+/*@__NO_SIDE_EFFECTS__*/
 export function lazy<T extends AbstractBlockchain>(
   name: string,
   loader: () => Promise<BlockchainModule<T>>,
