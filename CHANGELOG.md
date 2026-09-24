@@ -1,5 +1,33 @@
 # Changelog
 
+## v0.3.4
+
+[compare changes](https://github.com/agntn/keys/compare/v0.3.3...v0.3.4)
+
+### 🚀 Enhancements
+
+- Derive Bitcoin Cash addresses in CashAddr ([#104](https://github.com/agntn/keys/pull/104))
+- **chains:** Add `bitcoinsv` ([#105](https://github.com/agntn/keys/pull/105))
+- **chains:** Add `bitcoingold` ([#106](https://github.com/agntn/keys/pull/106))
+- **omp:** Run the keys tools natively ([#108](https://github.com/agntn/keys/pull/108))
+- **mcp:** Serve from src inside a checkout ([#109](https://github.com/agntn/keys/pull/109))
+- **chains:** Add `dogecoin` ([#110](https://github.com/agntn/keys/pull/110))
+- **chains:** Add `dash` ([#111](https://github.com/agntn/keys/pull/111))
+- **chains:** Add `zcash` ([#112](https://github.com/agntn/keys/pull/112))
+
+### 🔥 Performance
+
+- A WIF import no longer bundles every chain ([#102](https://github.com/agntn/keys/pull/102))
+
+### 💅 Refactors
+
+- **litecoin:** Sign with the Bitcoin base ([#107](https://github.com/agntn/keys/pull/107))
+
+### ❤️ Contributors
+
+- Aeitwoen ([@aeitwoen](https://github.com/aeitwoen))
+- Ori ([@oritwoen](https://github.com/oritwoen))
+
 ## v0.3.3
 
 [compare changes](https://github.com/agntn/keys/compare/v0.3.2...v0.3.3)
