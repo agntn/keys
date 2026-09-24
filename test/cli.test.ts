@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { cpSync, existsSync, mkdtempSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
@@ -149,6 +149,7 @@ describe("keys usage paths", () => {
 
   it("keys mcp keeps the bundle when the package sits under node_modules", async () => {
     const cache = resolve(root, "node_modules/.cache");
+    mkdirSync(cache, { recursive: true });
     const copy = mkdtempSync(join(cache, "keys-cli-"));
     try {
       for (const entry of ["dist", "src", "package.json"]) {
