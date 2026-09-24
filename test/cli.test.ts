@@ -1,5 +1,14 @@
 import { execFile } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
@@ -154,6 +163,32 @@ describe("keys usage paths", () => {
     try {
       for (const entry of ["dist", "src", "package.json"]) {
         cpSync(resolve(root, entry), join(copy, entry), { recursive: true });
+      }
+      const run = await runBin(["mcp"], { dist: false, path: join(copy, "dist/cli.mjs") });
+      const copiedSource = pathToFileURL(join(copy, "src")).href;
+
+      expect(run.code).toBe(0);
+      expect(run.modules.filter((url) => url.startsWith(copiedSource))).toEqual([]);
+    } finally {
+      rmSync(copy, { recursive: true, force: true });
+    }
+  });
+
+  it("keys mcp keeps the bundle in a checkout without dev dependencies", async () => {
+    const copy = mkdtempSync(join(tmpdir(), "keys-prod-"));
+    try {
+      for (const entry of ["dist", "src", "package.json"]) {
+        cpSync(resolve(root, entry), join(copy, entry), { recursive: true });
+      }
+      const manifest: unknown = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
+      const dependencies =
+        typeof manifest === "object" && manifest !== null && "dependencies" in manifest
+          ? Object.keys(manifest.dependencies ?? {})
+          : [];
+      expect(dependencies).not.toContain("typebox");
+      for (const name of dependencies) {
+        mkdirSync(join(copy, "node_modules", name, ".."), { recursive: true });
+        symlinkSync(resolve(root, "node_modules", name), join(copy, "node_modules", name));
       }
       const run = await runBin(["mcp"], { dist: false, path: join(copy, "dist/cli.mjs") });
       const copiedSource = pathToFileURL(join(copy, "src")).href;
