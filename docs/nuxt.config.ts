@@ -111,6 +111,7 @@ export default defineNuxtConfig({
         "token:ada",
         "token:apt",
         "token:base",
+        "token:bch",
         "token:btc",
         "token:dcr",
         "token:eth",

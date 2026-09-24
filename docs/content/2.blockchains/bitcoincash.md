@@ -1,7 +1,7 @@
 ---
 title: Bitcoin Cash
 icon: i-token-bch
-description: Bitcoin's key and hash written as CashAddr. One address type, Bitcoin's message preamble, and base58 stays out on purpose.
+description: Bitcoin's key and hash written as CashAddr. One address type and Bitcoin's message preamble. Base58 stays out on purpose.
 ---
 
 ::chain-facts{driver="bitcoincash" curve="secp256k1" formats="legacy P2PKH in CashAddr" coin="145"}

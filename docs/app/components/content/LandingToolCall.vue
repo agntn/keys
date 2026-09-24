@@ -6,6 +6,7 @@ const props = defineProps<{ rows: readonly AddressRow[]; publicKey: string; tick
 /** `row` is the derive.ts row that answers the request, so result and address type agree. */
 const SECP = [
   { row: "btc-segwit", slug: "bitcoin", addressType: "segwit" },
+  { row: "bch", slug: "bitcoincash" },
   { row: "ltc-segwit", slug: "litecoin", addressType: "segwit" },
   { row: "dcr", slug: "decred" },
   { row: "eth", slug: "ethereum" },
