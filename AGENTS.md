@@ -66,6 +66,7 @@ keys/
 
 - **No type assertions in src/** - zero `as any`, `@ts-ignore`, `@ts-expect-error` in source code (`@ts-expect-error` exists in tests only, for intentional invalid input testing)
 - **No non-noble crypto** - never import Node `crypto`, not even for randomness. Keys come from the curve's `utils.randomSecretKey()`
+- **No syntax Node cannot strip** - `src/` runs under plain Node type stripping, so no `enum`, `namespace` or parameter properties (`erasableSyntaxOnly` enforces it), and relative imports end in `.ts`
 - **No logic in index.ts** - only re-exports
 - **Don't bypass the lazy registry by accident** - use `blockchains.chain(options)()` for routine public loading; direct constructors are for explicit per-chain imports and subclassing
 - **Don't mix signing utils** - secp256k1 chains must use `evmSignMessage`, ed25519 chains must use `ed25519SignMessage` or chain-specific variant
@@ -89,7 +90,7 @@ pnpm test:mcp         # build and exercise all 19 MCP tools over stdio
 - **CI runs**: lint -> type check -> build -> vp test with coverage (Node 24, pnpm through `setup-vp`). Autofix workflow commits lint fixes on PRs.
 - **Package exports** expose `"."`, `"./mcp"`, `"./blockchains/*"`, and the HD derivation subpaths `"./bip32"`, `"./bip39"`, and `"./slip10"`; other utils remain internal.
 - **OMP extension** - `packages/omp/extensions/keys.ts` is a full copy of the Pi file, with both dynamic imports of the executors kept literal. OMP does not expand globs in the manifest, so `omp.extensions` names the file. `test/omp-extension.test.ts` keeps the two registrations identical.
-- **MCP transport** runs through `keys mcp`. stdout is reserved for JSON-RPC, and `createMcpServer()` remains importable for hosts with their own transport.
+- **MCP transport** runs through `keys mcp`. Inside a checkout, `dist/cli.mjs` loads the MCP command from `src/`, like the Pi and OMP extensions, so a local server only needs a restart after a change. The npm package ships only `dist` and runs the bundle. A copy under `node_modules` keeps the bundle too, because Node does not strip types there, and so does a checkout without dev dependencies, whose source cannot import `typebox`. `KEYS_DIST=1` forces the bundle in a checkout, as `test/cli.test.ts` and `test/eval-mcp.mjs` do. Changes to `src/cli.ts` itself still need `pnpm build`. stdout is reserved for JSON-RPC, and `createMcpServer()` remains importable for hosts with their own transport.
 - **utils/ has mixed structure** - plain `.ts` files (address, encoding, crypto-hash, secp256k1, ed25519, ed25519-chains, evm, signing) and subdirectories with `index.ts` (bip32/, bip39/, bip44/, slip10/).
 - **`__cardano/notes.md`** - research notes for Cardano implementation, not code. The actual implementation is `cardano.ts`.
 - **Shared secp256k1 fixture** - `secp256k1TestVectors.publicKeyCompressed` is the key of `privateKey`, shared by the signing round trips and the address tests. The Bitcoin address generators decode the SEC1 point before hashing, so an invented key fails them.

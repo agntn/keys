@@ -24,7 +24,11 @@ export class Solana extends AbstractBlockchain {
    * @param addressIndex - Must stay 0
    * @returns {string} The SLIP-10 path
    */
-  override getDerivationPath(account = 0, change = BIP44Change.EXTERNAL, addressIndex = 0): string {
+  override getDerivationPath(
+    account = 0,
+    change: number = BIP44Change.EXTERNAL,
+    addressIndex = 0,
+  ): string {
     if (addressIndex !== 0) {
       throw new RangeError("Solana paths end at the change branch, so addressIndex must be 0");
     }

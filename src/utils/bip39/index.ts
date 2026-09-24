@@ -1,9 +1,9 @@
 import * as bip39 from "@scure/bip39";
 import * as english from "@scure/bip39/wordlists/english.js";
-import { isBIP39Language, type BIP39Language } from "./languages.js";
+import { isBIP39Language, type BIP39Language } from "./languages.ts";
 
-export { BIP39_LANGUAGES, isBIP39Language } from "./languages.js";
-export type { BIP39Language } from "./languages.js";
+export { BIP39_LANGUAGES, isBIP39Language } from "./languages.ts";
+export type { BIP39Language } from "./languages.ts";
 
 // Get English wordlist
 const wordlist = english.wordlist;

@@ -112,7 +112,7 @@ export abstract class AbstractBlockchain implements Blockchain {
    */
   getDerivationPath(
     account = 0,
-    change: BIP44Change = BIP44Change.EXTERNAL,
+    change: number = BIP44Change.EXTERNAL,
     addressIndex = 0,
     _options?: KeyOptions,
   ): string {

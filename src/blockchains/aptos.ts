@@ -25,7 +25,11 @@ export class Aptos extends AbstractBlockchain {
    * @param addressIndex - Address index
    * @returns {string} The SLIP-10 path
    */
-  override getDerivationPath(account = 0, change = BIP44Change.EXTERNAL, addressIndex = 0): string {
+  override getDerivationPath(
+    account = 0,
+    change: number = BIP44Change.EXTERNAL,
+    addressIndex = 0,
+  ): string {
     return getHardenedPath(this.bip44, [account, change, addressIndex]);
   }
 
