@@ -25,6 +25,7 @@ export const TOOL_MNEMONIC_WORD_COUNTS: readonly number[] = [12, 15, 18, 21, 24]
 export const TOOL_CHAINS = [
   "bitcoin",
   "bitcoincash",
+  "bitcoingold",
   "bitcoinsv",
   "litecoin",
   "decred",
@@ -63,6 +64,7 @@ export const TOOL_ADDRESS_TYPES = [
 export const TOOL_ADDRESS_TYPES_BY_CHAIN: Readonly<Record<ToolChain, readonly string[]>> = {
   bitcoin: BITCOIN_ADDRESS_TYPES,
   bitcoincash: ["legacy"],
+  bitcoingold: ["legacy", "p2sh", "segwit", "p2wsh"],
   bitcoinsv: ["legacy"],
   litecoin: BITCOIN_ADDRESS_TYPES,
   decred: ["legacy"],

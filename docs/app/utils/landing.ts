@@ -19,6 +19,13 @@ export const landingStaticRows: readonly AddressRow[] = [
     address: "bitcoincash:qp63uahgrxged4z5jswyt5dn5v3lzsem6cy4spdc2h",
   },
   {
+    id: "btg-segwit",
+    chain: "Bitcoin Gold",
+    curve: "secp256k1",
+    format: "segwit",
+    address: "btg1qw508d6qejxtdg4y5r3zarvary0c5xw7k6w057a",
+  },
+  {
     id: "bsv",
     chain: "Bitcoin SV",
     curve: "secp256k1",

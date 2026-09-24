@@ -10,6 +10,7 @@ import {
   publicKeyEncodingVector,
   litecoinTestVectors,
   bitcoinCashTestVectors,
+  bitcoinGoldTestVectors,
   bitcoinSVTestVectors,
   decredTestVectors,
   stellarTestVectors,
@@ -355,6 +356,18 @@ describe("keys Pi extension", () => {
         type: "text",
         text: `Public key: ${bitcoinCashTestVectors.keyOne.publicKey}\nAddress: ${address}`,
       },
+    ]);
+  });
+
+  it("derives Bitcoin Gold through the registered Pi tool", async () => {
+    const tool = registerTools().get("keys_derive_wallet");
+    if (!tool) throw new Error("keys_derive_wallet was not registered");
+    const { privateKey, publicKey, legacyAddress } = bitcoinGoldTestVectors.signed;
+    const args = { chain: "bitcoingold", privateKey };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    const result = await tool.execute("bitcoingold", args);
+    expect(result.content).toEqual([
+      { type: "text", text: `Public key: ${publicKey}\nAddress: ${legacyAddress}` },
     ]);
   });
 

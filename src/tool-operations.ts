@@ -306,6 +306,10 @@ const BLOCKCHAIN_LOADERS: ReadonlyArray<{
     load: async (network) => useBlockchain(await blockchains.bitcoincash({ network })()),
   },
   {
+    name: "bitcoingold",
+    load: async (network) => useBlockchain(await blockchains.bitcoingold({ network })()),
+  },
+  {
     name: "bitcoinsv",
     load: async (network) => useBlockchain(await blockchains.bitcoinsv({ network })()),
   },
