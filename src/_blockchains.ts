@@ -43,6 +43,7 @@ export function lazy<T extends AbstractBlockchain>(
  */
 export const blockchains = {
   bitcoin: lazy("bitcoin", () => import("./blockchains/bitcoin.ts")),
+  bitcoincash: lazy("bitcoincash", () => import("./blockchains/bitcoincash.ts")),
   decred: lazy("decred", () => import("./blockchains/decred.ts")),
   litecoin: lazy("litecoin", () => import("./blockchains/litecoin.ts")),
   solana: lazy("solana", () => import("./blockchains/solana.ts")),

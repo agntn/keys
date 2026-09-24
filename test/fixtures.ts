@@ -376,6 +376,211 @@ export const decredTestVectors = {
 } as const;
 
 /**
+ * Bitcoin Cash P2PKH in CashAddr. `prize` is RetiredCoder's mini-puzzle for puzzle 130: its key
+ * hashes to the same hash160 as `1Fo65aKq8s8iquMt6weF1rku1moWVEd5Ua`. Key 1 carries the address
+ * libraries quote for `1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH`.
+ */
+export const bitcoinCashTestVectors = {
+  prize: {
+    privateKey: "33e7665705359f04f28b88cf897c603c9".padStart(64, "0"),
+    publicKeyHash: "a24922852051a9002ebf4c864a55acb75bb4cf75",
+    address: "bitcoincash:qz3yjg59ypg6jqpwhaxgvjj44jm4hdx0w5wsxw2qez",
+    bitcoinAddress: "1Fo65aKq8s8iquMt6weF1rku1moWVEd5Ua",
+  },
+  keyOne: {
+    privateKey: "00".repeat(31) + "01",
+    publicKey: "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+    address: "bitcoincash:qp63uahgrxged4z5jswyt5dn5v3lzsem6cy4spdc2h",
+  },
+  /**
+   * Trezor's device tests on its default seed, twelve times `all`.
+   * @see https://github.com/trezor/trezor-firmware/blob/main/tests/device_tests/bitcoin/test_getaddress.py
+   */
+  hd: {
+    mnemonic: Array.from({ length: 12 }, () => "all").join(" "),
+    addresses: [
+      ["m/44'/145'/0'/0/0", "bitcoincash:qr08q88p9etk89wgv05nwlrkm4l0urz4cyl36hh9sv"],
+      ["m/44'/145'/0'/0/1", "bitcoincash:qr23ajjfd9wd73l87j642puf8cad20lfmqdgwvpat4"],
+      ["m/44'/145'/0'/1/0", "bitcoincash:qzc5q87w069lzg7g3gzx0c8dz83mn7l02scej5aluw"],
+    ],
+  },
+  /**
+   * The spec's encoding table: type, address, hash, over every hash size and four prefixes.
+   * @see https://github.com/bitcoincashorg/bitcoincash.org/blob/master/spec/cashaddr.md
+   */
+  spec: [
+    [
+      0,
+      "bitcoincash:qr6m7j9njldwwzlg9v7v53unlr4jkmx6eylep8ekg2",
+      "f5bf48b397dae70be82b3cca4793f8eb2b6cdac9",
+    ],
+    [
+      1,
+      "bchtest:pr6m7j9njldwwzlg9v7v53unlr4jkmx6eyvwc0uz5t",
+      "f5bf48b397dae70be82b3cca4793f8eb2b6cdac9",
+    ],
+    [
+      1,
+      "pref:pr6m7j9njldwwzlg9v7v53unlr4jkmx6ey65nvtks5",
+      "f5bf48b397dae70be82b3cca4793f8eb2b6cdac9",
+    ],
+    [
+      15,
+      "prefix:0r6m7j9njldwwzlg9v7v53unlr4jkmx6ey3qnjwsrf",
+      "f5bf48b397dae70be82b3cca4793f8eb2b6cdac9",
+    ],
+    [
+      0,
+      "bitcoincash:q9adhakpwzztepkpwp5z0dq62m6u5v5xtyj7j3h2ws4mr9g0",
+      "7adbf6c17084bc86c1706827b41a56f5ca32865925e946ea",
+    ],
+    [
+      1,
+      "bchtest:p9adhakpwzztepkpwp5z0dq62m6u5v5xtyj7j3h2u94tsynr",
+      "7adbf6c17084bc86c1706827b41a56f5ca32865925e946ea",
+    ],
+    [
+      1,
+      "pref:p9adhakpwzztepkpwp5z0dq62m6u5v5xtyj7j3h2khlwwk5v",
+      "7adbf6c17084bc86c1706827b41a56f5ca32865925e946ea",
+    ],
+    [
+      15,
+      "prefix:09adhakpwzztepkpwp5z0dq62m6u5v5xtyj7j3h2p29kc2lp",
+      "7adbf6c17084bc86c1706827b41a56f5ca32865925e946ea",
+    ],
+    [
+      0,
+      "bitcoincash:qgagf7w02x4wnz3mkwnchut2vxphjzccwxgjvvjmlsxqwkcw59jxxuz",
+      "3a84f9cf51aae98a3bb3a78bf16a6183790b18719126325bfc0c075b",
+    ],
+    [
+      1,
+      "bchtest:pgagf7w02x4wnz3mkwnchut2vxphjzccwxgjvvjmlsxqwkcvs7md7wt",
+      "3a84f9cf51aae98a3bb3a78bf16a6183790b18719126325bfc0c075b",
+    ],
+    [
+      1,
+      "pref:pgagf7w02x4wnz3mkwnchut2vxphjzccwxgjvvjmlsxqwkcrsr6gzkn",
+      "3a84f9cf51aae98a3bb3a78bf16a6183790b18719126325bfc0c075b",
+    ],
+    [
+      15,
+      "prefix:0gagf7w02x4wnz3mkwnchut2vxphjzccwxgjvvjmlsxqwkc5djw8s9g",
+      "3a84f9cf51aae98a3bb3a78bf16a6183790b18719126325bfc0c075b",
+    ],
+    [
+      0,
+      "bitcoincash:qvch8mmxy0rtfrlarg7ucrxxfzds5pamg73h7370aa87d80gyhqxq5nlegake",
+      "3173ef6623c6b48ffd1a3dcc0cc6489b0a07bb47a37f47cfef4fe69de825c060",
+    ],
+    [
+      1,
+      "bchtest:pvch8mmxy0rtfrlarg7ucrxxfzds5pamg73h7370aa87d80gyhqxq7fqng6m6",
+      "3173ef6623c6b48ffd1a3dcc0cc6489b0a07bb47a37f47cfef4fe69de825c060",
+    ],
+    [
+      1,
+      "pref:pvch8mmxy0rtfrlarg7ucrxxfzds5pamg73h7370aa87d80gyhqxq4k9m7qf9",
+      "3173ef6623c6b48ffd1a3dcc0cc6489b0a07bb47a37f47cfef4fe69de825c060",
+    ],
+    [
+      15,
+      "prefix:0vch8mmxy0rtfrlarg7ucrxxfzds5pamg73h7370aa87d80gyhqxqsh6jgp6w",
+      "3173ef6623c6b48ffd1a3dcc0cc6489b0a07bb47a37f47cfef4fe69de825c060",
+    ],
+    [
+      0,
+      "bitcoincash:qnq8zwpj8cq05n7pytfmskuk9r4gzzel8qtsvwz79zdskftrzxtar994cgutavfklv39gr3uvz",
+      "c07138323e00fa4fc122d3b85b9628ea810b3f381706385e289b0b25631197d194b5c238beb136fb",
+    ],
+    [
+      1,
+      "bchtest:pnq8zwpj8cq05n7pytfmskuk9r4gzzel8qtsvwz79zdskftrzxtar994cgutavfklvmgm6ynej",
+      "c07138323e00fa4fc122d3b85b9628ea810b3f381706385e289b0b25631197d194b5c238beb136fb",
+    ],
+    [
+      1,
+      "pref:pnq8zwpj8cq05n7pytfmskuk9r4gzzel8qtsvwz79zdskftrzxtar994cgutavfklv0vx5z0w3",
+      "c07138323e00fa4fc122d3b85b9628ea810b3f381706385e289b0b25631197d194b5c238beb136fb",
+    ],
+    [
+      15,
+      "prefix:0nq8zwpj8cq05n7pytfmskuk9r4gzzel8qtsvwz79zdskftrzxtar994cgutavfklvwsvctzqy",
+      "c07138323e00fa4fc122d3b85b9628ea810b3f381706385e289b0b25631197d194b5c238beb136fb",
+    ],
+    [
+      0,
+      "bitcoincash:qh3krj5607v3qlqh5c3wq3lrw3wnuxw0sp8dv0zugrrt5a3kj6ucysfz8kxwv2k53krr7n933jfsunqex2w82sl",
+      "e361ca9a7f99107c17a622e047e3745d3e19cf804ed63c5c40c6ba763696b98241223d8ce62ad48d863f4cb18c930e4c",
+    ],
+    [
+      1,
+      "bchtest:ph3krj5607v3qlqh5c3wq3lrw3wnuxw0sp8dv0zugrrt5a3kj6ucysfz8kxwv2k53krr7n933jfsunqnzf7mt6x",
+      "e361ca9a7f99107c17a622e047e3745d3e19cf804ed63c5c40c6ba763696b98241223d8ce62ad48d863f4cb18c930e4c",
+    ],
+    [
+      1,
+      "pref:ph3krj5607v3qlqh5c3wq3lrw3wnuxw0sp8dv0zugrrt5a3kj6ucysfz8kxwv2k53krr7n933jfsunqjntdfcwg",
+      "e361ca9a7f99107c17a622e047e3745d3e19cf804ed63c5c40c6ba763696b98241223d8ce62ad48d863f4cb18c930e4c",
+    ],
+    [
+      15,
+      "prefix:0h3krj5607v3qlqh5c3wq3lrw3wnuxw0sp8dv0zugrrt5a3kj6ucysfz8kxwv2k53krr7n933jfsunqakcssnmn",
+      "e361ca9a7f99107c17a622e047e3745d3e19cf804ed63c5c40c6ba763696b98241223d8ce62ad48d863f4cb18c930e4c",
+    ],
+    [
+      0,
+      "bitcoincash:qmvl5lzvdm6km38lgga64ek5jhdl7e3aqd9895wu04fvhlnare5937w4ywkq57juxsrhvw8ym5d8qx7sz7zz0zvcypqscw8jd03f",
+      "d9fa7c4c6ef56dc4ff423baae6d495dbff663d034a72d1dc7d52cbfe7d1e6858f9d523ac0a7a5c34077638e4dd1a701bd017842789982041",
+    ],
+    [
+      1,
+      "bchtest:pmvl5lzvdm6km38lgga64ek5jhdl7e3aqd9895wu04fvhlnare5937w4ywkq57juxsrhvw8ym5d8qx7sz7zz0zvcypqs6kgdsg2g",
+      "d9fa7c4c6ef56dc4ff423baae6d495dbff663d034a72d1dc7d52cbfe7d1e6858f9d523ac0a7a5c34077638e4dd1a701bd017842789982041",
+    ],
+    [
+      1,
+      "pref:pmvl5lzvdm6km38lgga64ek5jhdl7e3aqd9895wu04fvhlnare5937w4ywkq57juxsrhvw8ym5d8qx7sz7zz0zvcypqsammyqffl",
+      "d9fa7c4c6ef56dc4ff423baae6d495dbff663d034a72d1dc7d52cbfe7d1e6858f9d523ac0a7a5c34077638e4dd1a701bd017842789982041",
+    ],
+    [
+      15,
+      "prefix:0mvl5lzvdm6km38lgga64ek5jhdl7e3aqd9895wu04fvhlnare5937w4ywkq57juxsrhvw8ym5d8qx7sz7zz0zvcypqsgjrqpnw8",
+      "d9fa7c4c6ef56dc4ff423baae6d495dbff663d034a72d1dc7d52cbfe7d1e6858f9d523ac0a7a5c34077638e4dd1a701bd017842789982041",
+    ],
+    [
+      0,
+      "bitcoincash:qlg0x333p4238k0qrc5ej7rzfw5g8e4a4r6vvzyrcy8j3s5k0en7calvclhw46hudk5flttj6ydvjc0pv3nchp52amk97tqa5zygg96mtky5sv5w",
+      "d0f346310d5513d9e01e299978624ba883e6bda8f4c60883c10f28c2967e67ec77ecc7eeeaeafc6da89fad72d11ac961e164678b868aeeec5f2c1da08884175b",
+    ],
+    [
+      1,
+      "bchtest:plg0x333p4238k0qrc5ej7rzfw5g8e4a4r6vvzyrcy8j3s5k0en7calvclhw46hudk5flttj6ydvjc0pv3nchp52amk97tqa5zygg96mc773cwez",
+      "d0f346310d5513d9e01e299978624ba883e6bda8f4c60883c10f28c2967e67ec77ecc7eeeaeafc6da89fad72d11ac961e164678b868aeeec5f2c1da08884175b",
+    ],
+    [
+      1,
+      "pref:plg0x333p4238k0qrc5ej7rzfw5g8e4a4r6vvzyrcy8j3s5k0en7calvclhw46hudk5flttj6ydvjc0pv3nchp52amk97tqa5zygg96mg7pj3lh8",
+      "d0f346310d5513d9e01e299978624ba883e6bda8f4c60883c10f28c2967e67ec77ecc7eeeaeafc6da89fad72d11ac961e164678b868aeeec5f2c1da08884175b",
+    ],
+    [
+      15,
+      "prefix:0lg0x333p4238k0qrc5ej7rzfw5g8e4a4r6vvzyrcy8j3s5k0en7calvclhw46hudk5flttj6ydvjc0pv3nchp52amk97tqa5zygg96ms92w6845",
+      "d0f346310d5513d9e01e299978624ba883e6bda8f4c60883c10f28c2967e67ec77ecc7eeeaeafc6da89fad72d11ac961e164678b868aeeec5f2c1da08884175b",
+    ],
+  ],
+  /** Checksums that hold under `bitcoincash` over payloads Bitcoin Cash Node pays to, from the CashTokens CHIP. */
+  mainnet: [
+    "bitcoincash:zr6m7j9njldwwzlg9v7v53unlr4jkmx6eycnjehshe",
+    "bitcoincash:ppawqn2h74a4t50phuza84kdp3794pq3ccvm92p8sh",
+    "bitcoincash:rpawqn2h74a4t50phuza84kdp3794pq3cct3k50p0y",
+    "bitcoincash:pvqqqqqqqqqqqqqqqqqqqqqqzg69v7ysqqqqqqqqqqqqqqqqqqqqqpkp7fqn0",
+    "bitcoincash:rvqqqqqqqqqqqqqqqqqqqqqqzg69v7ysqqqqqqqqqqqqqqqqqqqqqn9alsp2y",
+  ],
+} as const;
+
+/**
  * Public WIF interoperability vectors.
  * @see https://github.com/bitcoinjs/wif/blob/master/test/fixtures.json
  * @see https://github.com/litecoin-project/litecoin/blob/master/src/test/data/key_io_valid.json

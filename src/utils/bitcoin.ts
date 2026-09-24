@@ -109,15 +109,70 @@ export function encodeCompactSize(value: number): Uint8Array {
   return buffer;
 }
 
-/** Shared transparent address and HD behavior for Bitcoin and Litecoin. */
-export abstract class AbstractBitcoinBlockchain extends AbstractBlockchain {
+/** Keys and signed messages the Bitcoin way, for chains whose address formats differ from it. */
+export abstract class AbstractBitcoinMessageBlockchain extends AbstractBlockchain {
   override readonly curve: Curve = "secp256k1";
   protected abstract readonly messagePreamble: string;
-  protected abstract get params(): NetworkParams;
 
   override getKeyPublic(keyPrivate: string, options?: KeyOptions): string {
     return generateKeyPublic(keyPrivate, options);
   }
+
+  protected hashWithMessagePreamble(message: string | Uint8Array): Uint8Array {
+    const preambleBytes = new TextEncoder().encode(this.messagePreamble);
+    const messageBytes = typeof message === "string" ? new TextEncoder().encode(message) : message;
+    const messageLength = encodeCompactSize(messageBytes.length);
+    const fullMessage = new Uint8Array(
+      preambleBytes.length + messageLength.length + messageBytes.length,
+    );
+    fullMessage.set(preambleBytes);
+    fullMessage.set(messageLength, preambleBytes.length);
+    fullMessage.set(messageBytes, preambleBytes.length + messageLength.length);
+    return sha256(sha256(fullMessage));
+  }
+
+  override signMessage(
+    message: string | Uint8Array,
+    keyPrivate: string,
+    options?: KeyOptions,
+  ): string {
+    assertNoRecoveryByte(
+      options,
+      "Core encodes its recoverable signature as base64 of header||r||s, not r||s||v",
+    );
+    const hash = this.hashWithMessagePreamble(message);
+    return genericSignMessage(hash, keyPrivate, {
+      ...options,
+      curve: "secp256k1",
+      hash: false,
+    });
+  }
+
+  override verifyMessage(
+    message: string | Uint8Array,
+    signature: string,
+    keyPublic: string,
+    options?: KeyOptions,
+  ): boolean {
+    if (hasRecoveryByte(signature)) {
+      return false;
+    }
+    const hash = this.hashWithMessagePreamble(message);
+    try {
+      return genericVerifyMessage(hash, signature, keyPublic, {
+        ...options,
+        curve: "secp256k1",
+        hash: false,
+      });
+    } catch {
+      return false;
+    }
+  }
+}
+
+/** Shared transparent address and HD behavior for Bitcoin and Litecoin. */
+export abstract class AbstractBitcoinBlockchain extends AbstractBitcoinMessageBlockchain {
+  protected abstract get params(): NetworkParams;
 
   override getAddress(keyPublic: string, type = "legacy"): string {
     if (["segwit", "p2wsh", "taproot"].includes(type)) {
@@ -172,56 +227,5 @@ export abstract class AbstractBitcoinBlockchain extends AbstractBlockchain {
       return validateAddressBase58Testnet(address, this.params);
     }
     return false;
-  }
-
-  protected hashWithMessagePreamble(message: string | Uint8Array): Uint8Array {
-    const preambleBytes = new TextEncoder().encode(this.messagePreamble);
-    const messageBytes = typeof message === "string" ? new TextEncoder().encode(message) : message;
-    const messageLength = encodeCompactSize(messageBytes.length);
-    const fullMessage = new Uint8Array(
-      preambleBytes.length + messageLength.length + messageBytes.length,
-    );
-    fullMessage.set(preambleBytes);
-    fullMessage.set(messageLength, preambleBytes.length);
-    fullMessage.set(messageBytes, preambleBytes.length + messageLength.length);
-    return sha256(sha256(fullMessage));
-  }
-
-  override signMessage(
-    message: string | Uint8Array,
-    keyPrivate: string,
-    options?: KeyOptions,
-  ): string {
-    assertNoRecoveryByte(
-      options,
-      "Core encodes its recoverable signature as base64 of header||r||s, not r||s||v",
-    );
-    const hash = this.hashWithMessagePreamble(message);
-    return genericSignMessage(hash, keyPrivate, {
-      ...options,
-      curve: "secp256k1",
-      hash: false,
-    });
-  }
-
-  override verifyMessage(
-    message: string | Uint8Array,
-    signature: string,
-    keyPublic: string,
-    options?: KeyOptions,
-  ): boolean {
-    if (hasRecoveryByte(signature)) {
-      return false;
-    }
-    const hash = this.hashWithMessagePreamble(message);
-    try {
-      return genericVerifyMessage(hash, signature, keyPublic, {
-        ...options,
-        curve: "secp256k1",
-        hash: false,
-      });
-    } catch {
-      return false;
-    }
   }
 }

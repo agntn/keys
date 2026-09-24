@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-TypeScript library providing a unified interface for key generation, address derivation, wallet creation, and message signing across 11 blockchains (Bitcoin, Litecoin, Decred, Ethereum, Base, Solana, Stellar, Aptos, Cardano, SUI, TRON). Built entirely on the @noble/@scure audited crypto ecosystem.
+TypeScript library providing a unified interface for key generation, address derivation, wallet creation, and message signing across 12 blockchains (Bitcoin, Bitcoin Cash, Litecoin, Decred, Ethereum, Base, Solana, Stellar, Aptos, Cardano, SUI, TRON). Built entirely on the @noble/@scure audited crypto ecosystem.
 
 ## STRUCTURE
 
@@ -35,6 +35,7 @@ keys/
 | Add new blockchain | `src/blockchains/` + `src/_blockchains.ts`                                        | Extend the appropriate base class, register in lazy loader                           |
 | Add address format | `src/utils/address.ts`                                                            | Shared across chains (legacy, segwit, hex, base58)                                   |
 | Add Bitcoin family | `src/utils/bitcoin.ts` → `AbstractBitcoinBlockchain`                              | Reuse transparent address and HD behavior; keep chain signing rules explicit         |
+| Bitcoin keys only  | `src/utils/bitcoin.ts` → `AbstractBitcoinMessageBlockchain`                       | Keys and Core message signing without address formats, as Bitcoin Cash uses          |
 | Add EVM chain      | `src/utils/evm.ts` → `AbstractEVMBlockchain`                                      | Minimal subclass with `name` and `bip44`                                             |
 | Fix signing        | `src/utils/signing.ts` (generic) or `evm.ts`/`ed25519-chains.ts` (chain-specific) | EVM uses preamble hash, ed25519 signs raw                                            |
 | Change public API  | `src/index.ts`                                                                    | Re-exports only, never add logic here                                                |

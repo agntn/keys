@@ -24,6 +24,7 @@ export const TOOL_MNEMONIC_WORD_COUNTS: readonly number[] = [12, 15, 18, 21, 24]
 /** Every blockchain exposed by the tool surfaces. */
 export const TOOL_CHAINS = [
   "bitcoin",
+  "bitcoincash",
   "litecoin",
   "decred",
   "ethereum",
@@ -60,6 +61,7 @@ export const TOOL_ADDRESS_TYPES = [
 /** Address types accepted for each tool chain. */
 export const TOOL_ADDRESS_TYPES_BY_CHAIN: Readonly<Record<ToolChain, readonly string[]>> = {
   bitcoin: BITCOIN_ADDRESS_TYPES,
+  bitcoincash: ["legacy"],
   litecoin: BITCOIN_ADDRESS_TYPES,
   decred: ["legacy"],
   ethereum: [],

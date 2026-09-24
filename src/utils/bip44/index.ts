@@ -53,6 +53,7 @@ export const BIP44 = {
   TESTNET: 1,
   LITECOIN: 2,
   DECRED: 42,
+  BITCOIN_CASH: 145,
   ETHEREUM: 60,
   STELLAR: 148,
   SOLANA: 501,

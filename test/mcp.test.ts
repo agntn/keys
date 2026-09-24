@@ -8,6 +8,7 @@ import {
   ethereumTestVectors,
   publicKeyEncodingVector,
   litecoinTestVectors,
+  bitcoinCashTestVectors,
   decredTestVectors,
   stellarTestVectors,
   wifTestVectors,
@@ -359,6 +360,31 @@ describe("keys MCP server", () => {
     expect(response.isError).not.toBe(true);
     expect(text(response.content)).toContain(litecoinTestVectors.address);
     expect(text(response.content)).not.toContain(litecoinTestVectors.privateKey);
+  });
+
+  it("derives and validates Bitcoin Cash through the MCP schema and executor", async () => {
+    const client = await connectTestClient();
+    const { privateKey, address } = bitcoinCashTestVectors.prize;
+    const response = await client.callTool({
+      name: "keys_derive_wallet",
+      arguments: { chain: "bitcoincash", privateKey },
+    });
+    expect(response.isError).not.toBe(true);
+    expect(text(response.content)).toContain(address);
+    expect(text(response.content)).not.toContain(privateKey);
+
+    const validation = await client.callTool({
+      name: "keys_validate_address",
+      arguments: { chain: "bitcoincash", address },
+    });
+    expect(text(validation.content)).toContain("is a valid bitcoincash address");
+
+    const rejected = await client.callTool({
+      name: "keys_derive_wallet",
+      arguments: { chain: "bitcoincash", privateKey, addressType: "segwit" },
+    });
+    expect(rejected.isError).toBe(true);
+    expect(text(rejected.content)).toContain("Supported: legacy");
   });
 
   it("derives Decred through the MCP schema and executor", async () => {
