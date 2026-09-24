@@ -9,6 +9,7 @@ import {
   electrumVectors,
   publicKeyEncodingVector,
   litecoinTestVectors,
+  bitcoinCashTestVectors,
   decredTestVectors,
   stellarTestVectors,
   wifTestVectors,
@@ -337,6 +338,21 @@ describe("keys Pi extension", () => {
       {
         type: "text",
         text: `Public key: ${litecoinTestVectors.publicKey}\nAddress: ${litecoinTestVectors.address}`,
+      },
+    ]);
+  });
+
+  it("derives Bitcoin Cash through the registered Pi tool", async () => {
+    const tool = registerTools().get("keys_derive_wallet");
+    if (!tool) throw new Error("keys_derive_wallet was not registered");
+    const { privateKey, address } = bitcoinCashTestVectors.keyOne;
+    const args = { chain: "bitcoincash", privateKey };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    const result = await tool.execute("bitcoincash", args);
+    expect(result.content).toEqual([
+      {
+        type: "text",
+        text: `Public key: ${bitcoinCashTestVectors.keyOne.publicKey}\nAddress: ${address}`,
       },
     ]);
   });

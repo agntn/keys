@@ -72,7 +72,7 @@ export default defineNuxtConfig({
     domain: "https://keys.agntn.dev",
     title: "@agntn/keys",
     description:
-      "Keys to addresses to signatures on eleven chains from a mnemonic or from nothing at all",
+      "Keys to addresses to signatures on twelve chains from a mnemonic or from nothing at all",
     sections: [
       {
         title: "Explorer",
@@ -80,7 +80,7 @@ export default defineNuxtConfig({
           {
             title: "Keyspace",
             href: "https://keys.agntn.dev/keyspace",
-            description: "Walk secp256k1 private keys in the browser and derive addresses for eleven chains",
+            description: "Walk secp256k1 private keys in the browser and derive addresses for twelve chains",
           },
         ],
       },
@@ -111,6 +111,7 @@ export default defineNuxtConfig({
         "token:ada",
         "token:apt",
         "token:base",
+        "token:bch",
         "token:btc",
         "token:dcr",
         "token:eth",
@@ -146,7 +147,7 @@ export default defineNuxtConfig({
   },
   ogImage: {
     defaults: {
-      alt: "@agntn/keys. Keys to addresses to signatures on eleven chains",
+      alt: "@agntn/keys. Keys to addresses to signatures on twelve chains",
     },
   },
   /** Docus ships an MCP endpoint that wants the Cloudflare Agents SDK on Workers. Not used. */

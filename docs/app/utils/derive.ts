@@ -28,6 +28,7 @@ export type Derivation = {
 
 export type ExplorerChains = {
   readonly bitcoin: AbstractBlockchain;
+  readonly bitcoincash: AbstractBlockchain;
   readonly litecoin: AbstractBlockchain;
   readonly decred: AbstractBlockchain;
   readonly ethereum: AbstractBlockchain;
@@ -44,21 +45,47 @@ export type ExplorerChains = {
 export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChains> {
   const load = async (name: keyof ExplorerChains) =>
     keys.useBlockchain(await keys.blockchains[name]()());
-  const [bitcoin, litecoin, decred, ethereum, base, tron, solana, stellar, aptos, sui, cardano] =
-    await Promise.all([
-      load("bitcoin"),
-      load("litecoin"),
-      load("decred"),
-      load("ethereum"),
-      load("base"),
-      load("tron"),
-      load("solana"),
-      load("stellar"),
-      load("aptos"),
-      load("sui"),
-      load("cardano"),
-    ]);
-  return { bitcoin, litecoin, decred, ethereum, base, tron, solana, stellar, aptos, sui, cardano };
+  const [
+    bitcoin,
+    bitcoincash,
+    litecoin,
+    decred,
+    ethereum,
+    base,
+    tron,
+    solana,
+    stellar,
+    aptos,
+    sui,
+    cardano,
+  ] = await Promise.all([
+    load("bitcoin"),
+    load("bitcoincash"),
+    load("litecoin"),
+    load("decred"),
+    load("ethereum"),
+    load("base"),
+    load("tron"),
+    load("solana"),
+    load("stellar"),
+    load("aptos"),
+    load("sui"),
+    load("cardano"),
+  ]);
+  return {
+    bitcoin,
+    bitcoincash,
+    litecoin,
+    decred,
+    ethereum,
+    base,
+    tron,
+    solana,
+    stellar,
+    aptos,
+    sui,
+    cardano,
+  };
 }
 
 /**
@@ -66,8 +93,20 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
  * secp256k1 rows use the scalar. ed25519 rows use the same bytes as a secret.
  */
 export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation {
-  const { bitcoin, litecoin, decred, ethereum, base, tron, solana, stellar, aptos, sui, cardano } =
-    chains;
+  const {
+    bitcoin,
+    bitcoincash,
+    litecoin,
+    decred,
+    ethereum,
+    base,
+    tron,
+    solana,
+    stellar,
+    aptos,
+    sui,
+    cardano,
+  } = chains;
 
   return {
     secp256k1PublicCompressed: bitcoin.getKeyPublic(hex),
@@ -88,6 +127,7 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
         undefined,
         "taproot",
       ),
+      addressRow(bitcoincash, hex, "bch", "Bitcoin Cash", "secp256k1", "CashAddr"),
       addressRow(litecoin, hex, "ltc-legacy", "Litecoin", "secp256k1", "legacy", undefined, "legacy"),
       addressRow(litecoin, hex, "ltc-p2sh", "Litecoin", "secp256k1", "p2sh", undefined, "p2sh"),
       addressRow(litecoin, hex, "ltc-segwit", "Litecoin", "secp256k1", "segwit", undefined, "segwit"),

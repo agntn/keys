@@ -3,7 +3,7 @@ definePageMeta({ layout: "default" });
 
 const title = "Keyspace";
 const description =
-  "Walk secp256k1 private keys in the browser and derive addresses for eleven chains. Nothing is stored or sent.";
+  "Walk secp256k1 private keys in the browser and derive addresses for twelve chains. Nothing is stored or sent.";
 
 useSeo({ title, description, type: "article" });
 

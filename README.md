@@ -5,7 +5,7 @@
 [![license](https://npmx.dev/api/registry/badge/license/@agntn/keys)](https://npmx.dev/package/@agntn/keys)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/agntn/keys)
 
-🔑 Keys, addresses and signatures for eleven chains, from a mnemonic or from nothing at all. Bitcoin gets its five address types, Solana gets ed25519, your agent gets 19 tools, and none of it should ever meet real money.
+🔑 Keys, addresses and signatures for twelve chains, from a mnemonic or from nothing at all. Bitcoin gets its five address types, Solana gets ed25519, your agent gets 19 tools, and none of it should ever meet real money.
 
 > [!WARNING]
 > **@agntn/keys is experimental.** The public API and the tool surfaces can still move before the first stable release. Pin exact versions if you build on it now.
@@ -18,13 +18,13 @@ The docs live at [keys.agntn.dev](https://keys.agntn.dev), keyspace explorer inc
 
 ## ✨ Features
 
-- ⛓️ **Eleven chains, one interface.** Bitcoin, Litecoin, Decred, Ethereum, Base, Solana, Stellar, Aptos, Cardano, Sui and TRON, each a class with the same methods on it.
+- ⛓️ **Twelve chains, one interface.** Bitcoin, Bitcoin Cash, Litecoin, Decred, Ethereum, Base, Solana, Stellar, Aptos, Cardano, Sui and TRON, each a class with the same methods on it.
 - 🧬 **Two curves.** secp256k1 and ed25519, and Sui will take either.
 - 🏠 **Bitcoin the way Bitcoin wants it.** Legacy, P2SH, segwit, P2WSH and taproot, testnet included, and the purpose level of your path picks the type for you.
 - 🌱 **Mnemonic in, wallet out.** BIP39 into BIP32 on secp256k1 and SLIP-10 on ed25519, passphrase optional.
 - 🧩 **Puzzle mnemonics are welcome.** Wrong checksum? Derive anyway and get a warning with the wallet, or ask which words would make it valid.
 - 🌍 **All ten BIP39 word lists.** Look a word up in Italian, generate in Japanese with the ideographic spaces, map indices from base 0 or base 1.
-- ✍️ **Signing on both curves.** Bitcoin, Litecoin and Decred hash the message the way Core does, EVM chains the way ethers does, TRON the way TronWeb's `signMessageV2` does, Sui the way the Sui SDK's `signPersonalMessage` does on either curve, Stellar the way the Stellar SDK's `signMessage` does under SEP-53, and Solana, Aptos and Cardano sign the raw bytes. What comes back is 64 bytes of compact `r||s` hex, so it's not Core's base64.
+- ✍️ **Signing on both curves.** Bitcoin, Bitcoin Cash, Litecoin and Decred hash the message the way Core does, EVM chains the way ethers does, TRON the way TronWeb's `signMessageV2` does, Sui the way the Sui SDK's `signPersonalMessage` does on either curve, Stellar the way the Stellar SDK's `signMessage` does under SEP-53, and Solana, Aptos and Cardano sign the raw bytes. What comes back is 64 bytes of compact `r||s` hex, so it's not Core's base64.
 - 🔁 **`v` when you need it.** `{ recovered: true }` on Ethereum, Base or TRON gives 65 bytes of `r||s||v`, byte for byte what ethers and TronWeb produce. Skip it and ethers reads your 64 bytes as an EIP-2098 compact signature and answers with the wrong address instead of an error.
 - 🔌 **Loads one chain at a time.** `blockchains.solana()()` imports Solana and nothing else, so a Bitcoin tool never pays for Cardano.
 - 🤖 **19 agent tools.** MCP over stdio and a Pi extension run the same code, and a generated mnemonic comes back with a note that it's in the transcript now.
@@ -141,19 +141,20 @@ Without the flag `deriveHDWallet` throws. With it you get the wallet and a warni
 
 ## ⛓️ Chains
 
-| Chain        | Curve              | Address Formats                      | Testnet |
-| ------------ | ------------------ | ------------------------------------ | ------- |
-| **Bitcoin**  | secp256k1          | legacy, p2sh, segwit, p2wsh, taproot | ✅      |
-| **Litecoin** | secp256k1          | legacy, p2sh, segwit, p2wsh, taproot | ✅      |
-| **Decred**   | secp256k1          | legacy ECDSA P2PKH                   | ✅      |
-| **Ethereum** | secp256k1          | EIP-55 checksum                      | -       |
-| **Base**     | secp256k1          | EVM-compatible                       | -       |
-| **Solana**   | ed25519            | base58                               | -       |
-| **Stellar**  | ed25519            | StrKey                               | -       |
-| **Aptos**    | ed25519            | 0x-prefixed hex                      | -       |
-| **Cardano**  | ed25519            | payment, stake, enterprise           | ✅      |
-| **SUI**      | ed25519, secp256k1 | 0x-prefixed hex (blake2b)            | -       |
-| **TRON**     | secp256k1          | base58check                          | ✅      |
+| Chain            | Curve              | Address Formats                      | Testnet |
+| ---------------- | ------------------ | ------------------------------------ | ------- |
+| **Bitcoin**      | secp256k1          | legacy, p2sh, segwit, p2wsh, taproot | ✅      |
+| **Bitcoin Cash** | secp256k1          | legacy P2PKH in CashAddr             | ✅      |
+| **Litecoin**     | secp256k1          | legacy, p2sh, segwit, p2wsh, taproot | ✅      |
+| **Decred**       | secp256k1          | legacy ECDSA P2PKH                   | ✅      |
+| **Ethereum**     | secp256k1          | EIP-55 checksum                      | -       |
+| **Base**         | secp256k1          | EVM-compatible                       | -       |
+| **Solana**       | ed25519            | base58                               | -       |
+| **Stellar**      | ed25519            | StrKey                               | -       |
+| **Aptos**        | ed25519            | 0x-prefixed hex                      | -       |
+| **Cardano**      | ed25519            | payment, stake, enterprise           | ✅      |
+| **SUI**          | ed25519, secp256k1 | 0x-prefixed hex (blake2b)            | -       |
+| **TRON**         | secp256k1          | base58check                          | ✅      |
 
 Decred and Cardano throw on `deriveHDWallet`, on purpose, `deriveWallet` with a private key works on both. Sui is ed25519 unless you ask for secp256k1. Testnet is a constructor option, `blockchains.bitcoin({ network: "testnet" })()` and your segwit addresses start with `tb1q`. Chain pages with prefixes and testnets: [Blockchains](https://keys.agntn.dev/blockchains).
 
@@ -195,7 +196,7 @@ Everything cryptographic comes from [@paulmillr](https://github.com/paulmillr): 
 
 ## ➕ Adding a chain
 
-Want an eleventh? Extend `AbstractBlockchain`, or `AbstractEVMBlockchain` if it's EVM, where a `name` and a `bip44` coin type is the whole class. Register it in the lazy loader, mirror the test file, done. Walkthrough: [Creating custom blockchains](https://keys.agntn.dev/guide/custom).
+Want a thirteenth? Extend `AbstractBlockchain`, or `AbstractEVMBlockchain` if it's EVM, where a `name` and a `bip44` coin type is the whole class. Register it in the lazy loader, mirror the test file, done. Walkthrough: [Creating custom blockchains](https://keys.agntn.dev/guide/custom).
 
 ## 🛠️ Development
 
