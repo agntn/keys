@@ -10,6 +10,7 @@ const SLUGS: Record<string, string> = {
   "Bitcoin Gold": "bitcoingold",
   "Bitcoin SV": "bitcoinsv",
   Litecoin: "litecoin",
+  Dash: "dash",
   Decred: "decred",
   Dogecoin: "dogecoin",
   Ethereum: "ethereum",

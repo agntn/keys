@@ -12,6 +12,7 @@ import {
   bitcoinCashTestVectors,
   bitcoinGoldTestVectors,
   bitcoinSVTestVectors,
+  dashTestVectors,
   dogecoinTestVectors,
   decredTestVectors,
   stellarTestVectors,
@@ -391,6 +392,16 @@ describe("keys Pi extension", () => {
     const args = { chain: "dogecoin", privateKey: key.privateKey };
     expect(Value.Check(tool.parameters, args)).toBe(true);
     const result = await tool.execute("dogecoin", args);
+    expect(JSON.stringify(result.content)).toContain(`Address: ${key.addressCompressed}`);
+  });
+
+  it("derives Dash through the registered Pi tool", async () => {
+    const tool = registerTools().get("keys_derive_wallet");
+    if (!tool) throw new Error("keys_derive_wallet was not registered");
+    const [key] = dashTestVectors.keys;
+    const args = { chain: "dash", privateKey: key.privateKey };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    const result = await tool.execute("dash", args);
     expect(JSON.stringify(result.content)).toContain(`Address: ${key.addressCompressed}`);
   });
 

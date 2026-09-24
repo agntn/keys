@@ -46,6 +46,7 @@ export const blockchains = {
   bitcoincash: lazy("bitcoincash", () => import("./blockchains/bitcoincash.ts")),
   bitcoingold: lazy("bitcoingold", () => import("./blockchains/bitcoingold.ts")),
   bitcoinsv: lazy("bitcoinsv", () => import("./blockchains/bitcoinsv.ts")),
+  dash: lazy("dash", () => import("./blockchains/dash.ts")),
   decred: lazy("decred", () => import("./blockchains/decred.ts")),
   dogecoin: lazy("dogecoin", () => import("./blockchains/dogecoin.ts")),
   litecoin: lazy("litecoin", () => import("./blockchains/litecoin.ts")),

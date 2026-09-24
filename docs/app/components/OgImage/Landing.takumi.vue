@@ -3,7 +3,7 @@
 defineProps<{ title?: string; description?: string }>();
 
 const TAGLINE =
-  "Keys to addresses to signatures on fifteen chains. From a mnemonic or from nothing at all. Nothing leaves the process.";
+  "Keys to addresses to signatures on sixteen chains. From a mnemonic or from nothing at all. Nothing leaves the process.";
 
 const { name: siteName } = useSiteConfig();
 
