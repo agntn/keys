@@ -57,6 +57,7 @@ export const BIP44 = {
   DOGECOIN: 3,
   DASH: 5,
   DECRED: 42,
+  ZCASH: 133,
   BITCOIN_CASH: 145,
   BITCOIN_GOLD: 156,
   BITCOIN_SV: 236,
