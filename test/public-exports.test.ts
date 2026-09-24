@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { readdirSync, readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vite-plus/test";
 import type { DecodedWIF, WIFOptions, HDWalletOptions } from "@agntn/keys";
@@ -19,6 +19,9 @@ const EXPORTS = [
 
 /** Static and dynamic import specifiers in the built ESM. */
 const IMPORT_SPECIFIER = /(?:from|import)\s*\(?\s*["']([^"']+)["']/g;
+
+/** Package part of a bare specifier, `@scope/name` or `name`; relative paths do not match. */
+const PACKAGE_NAME = /^(?:@[^/.][^/]*\/)?[^/.][^/]*/u;
 
 describe("Public WIF exports", () => {
   it("imports the built API and preserves compression when deriving a wallet", async () => {
@@ -110,5 +113,29 @@ describe("Public derivation exports", () => {
     walk(fileURLToPath(import.meta.resolve("@agntn/keys")));
     expect(visited.size).toBeGreaterThan(1);
     expect([...specifiers].filter((specifier) => specifier.startsWith("node:"))).toEqual([]);
+  });
+});
+
+describe("Published dependencies", () => {
+  it("declares exactly the packages the built files import", () => {
+    const dist = fileURLToPath(new URL("../dist/", import.meta.url));
+    const imported = new Set<string>();
+    for (const file of readdirSync(dist, { recursive: true, encoding: "utf8" })) {
+      if (!/\.m[jt]s$/u.test(file)) {
+        continue;
+      }
+      for (const [, specifier = ""] of readFileSync(join(dist, file), "utf8").matchAll(
+        IMPORT_SPECIFIER,
+      )) {
+        const name = PACKAGE_NAME.exec(specifier)?.[0];
+        if (name !== undefined && !name.startsWith("node:")) {
+          imported.add(name);
+        }
+      }
+    }
+    const manifest = JSON.parse(
+      readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+    ) as { dependencies: Record<string, string> };
+    expect(imported).toEqual(new Set(Object.keys(manifest.dependencies)));
   });
 });
