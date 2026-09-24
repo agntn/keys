@@ -13,7 +13,7 @@ keys/
 │   ├── blockchain.ts        # AbstractBlockchain base + useBlockchain() identity helper
 │   ├── types.ts             # All shared types (Blockchain, Keys, Wallet, etc.)
 │   ├── _blockchains.ts      # Lazy-loading registry with double-call pattern
-│   ├── tool-operations.ts   # Shared MCP and Pi executors
+│   ├── tool-operations.ts   # Shared MCP, Pi and OMP executors
 │   ├── mcp.ts               # MCP schemas, dispatch, and server factory
 │   ├── cli.ts               # keys executable with lazy mcp subcommand
 │   ├── commands/            # CLI transport adapters
@@ -39,7 +39,7 @@ keys/
 | Add EVM chain      | `src/utils/evm.ts` → `AbstractEVMBlockchain`                                      | Minimal subclass with `name` and `bip44`                                            |
 | Fix signing        | `src/utils/signing.ts` (generic) or `evm.ts`/`ed25519-chains.ts` (chain-specific) | EVM uses preamble hash, ed25519 signs raw                                           |
 | Change public API  | `src/index.ts`                                                                    | Re-exports only, never add logic here                                               |
-| Change agent tools | `src/tool-operations.ts`, `src/mcp.ts`, `packages/pi/extensions/keys.ts`          | Executors are shared; schemas stay aligned                                          |
+| Change agent tools | `src/tool-operations.ts`, `src/mcp.ts`, `packages/{pi,omp}/extensions/keys.ts`    | Executors are shared; schemas stay aligned                                          |
 | Add BIP/derivation | `src/utils/bip32/`, `bip39/`, `bip44/`, `slip10/`                                 | Subdirs with index.ts                                                               |
 | Mnemonic to wallet | `src/blockchain.ts` → `deriveHDWallet` + `src/utils/hd.ts`                        | Bitcoin family infers the address type; Sui overrides it, Cardano throws (CIP-1852) |
 | Write tests        | `test/` mirroring `src/` path                                                     | Use fixtures from `test/fixtures.ts`                                                |
@@ -88,6 +88,7 @@ pnpm test:mcp         # build and exercise all 19 MCP tools over stdio
 
 - **CI runs**: lint -> type check -> build -> vp test with coverage (Node 24, pnpm through `setup-vp`). Autofix workflow commits lint fixes on PRs.
 - **Package exports** expose `"."`, `"./mcp"`, `"./blockchains/*"`, and the HD derivation subpaths `"./bip32"`, `"./bip39"`, and `"./slip10"`; other utils remain internal.
+- **OMP extension** - `packages/omp/extensions/keys.ts` is a full copy of the Pi file, with both dynamic imports of the executors kept literal. OMP does not expand globs in the manifest, so `omp.extensions` names the file. `test/omp-extension.test.ts` keeps the two registrations identical.
 - **MCP transport** runs through `keys mcp`. stdout is reserved for JSON-RPC, and `createMcpServer()` remains importable for hosts with their own transport.
 - **utils/ has mixed structure** - plain `.ts` files (address, encoding, crypto-hash, secp256k1, ed25519, ed25519-chains, evm, signing) and subdirectories with `index.ts` (bip32/, bip39/, bip44/, slip10/).
 - **`__cardano/notes.md`** - research notes for Cardano implementation, not code. The actual implementation is `cardano.ts`.
