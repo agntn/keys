@@ -10,16 +10,21 @@ const props = defineProps<{
 }>();
 
 const W = 1200;
-const H = 460;
-const KEY = { x: 24, y: 190, w: 250, h: 120 };
-const CURVES = [
-  { id: "secp256k1", label: "secp256k1", note: "BIP32", x: 480, y: 110, w: 190, h: 60 },
-  { id: "ed25519", label: "ed25519", note: "SLIP-10", x: 480, y: 330, w: 190, h: 60 },
-] as const;
 const CHAIN_X = 890;
 const CHAIN_W = 286;
 const CHAIN_H = 40;
 const CHAIN_GAP = 44;
+/** Height the key and curve nodes were laid out in; the chain column grows past it. */
+const BASE_H = 460;
+
+/** Tall enough for every chain row with the 16px margin kept at the bottom too. */
+const H = computed(() => Math.max(BASE_H, 32 + (props.rows.length - 1) * CHAIN_GAP + CHAIN_H));
+const offset = computed(() => (H.value - BASE_H) / 2);
+const KEY = computed(() => ({ x: 24, y: 190 + offset.value, w: 250, h: 120 }));
+const CURVES = computed(() => [
+  { id: "secp256k1", label: "secp256k1", note: "BIP32", x: 480, y: 110 + offset.value, w: 190, h: 60 },
+  { id: "ed25519", label: "ed25519", note: "SLIP-10", x: 480, y: 330 + offset.value, w: 190, h: 60 },
+]);
 
 const chains = computed(() =>
   props.rows.map((row, index) => ({
@@ -36,14 +41,19 @@ function curvePath(x1: number, y1: number, x2: number, y2: number) {
 }
 
 const trunkPaths = computed(() =>
-  CURVES.map((curve) =>
-    curvePath(KEY.x + KEY.w, KEY.y + KEY.h / 2, curve.x, curve.y + curve.h / 2),
+  CURVES.value.map((curve) =>
+    curvePath(
+      KEY.value.x + KEY.value.w,
+      KEY.value.y + KEY.value.h / 2,
+      curve.x,
+      curve.y + curve.h / 2,
+    ),
   ),
 );
 
 const branchPaths = computed(() =>
   chains.value.map((chain) => {
-    const curve = CURVES[chain.curveIndex]!;
+    const curve = CURVES.value[chain.curveIndex]!;
     return curvePath(curve.x + curve.w, curve.y + curve.h / 2, chain.x, chain.y + CHAIN_H / 2);
   }),
 );

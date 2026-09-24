@@ -19,6 +19,13 @@ export const landingStaticRows: readonly AddressRow[] = [
     address: "bitcoincash:qp63uahgrxged4z5jswyt5dn5v3lzsem6cy4spdc2h",
   },
   {
+    id: "bsv",
+    chain: "Bitcoin SV",
+    curve: "secp256k1",
+    format: "legacy",
+    address: "1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH",
+  },
+  {
     id: "ltc-segwit",
     chain: "Litecoin",
     curve: "secp256k1",
