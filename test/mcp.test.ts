@@ -9,6 +9,7 @@ import {
   publicKeyEncodingVector,
   litecoinTestVectors,
   bitcoinCashTestVectors,
+  bitcoinSVTestVectors,
   decredTestVectors,
   stellarTestVectors,
   wifTestVectors,
@@ -385,6 +386,30 @@ describe("keys MCP server", () => {
     });
     expect(rejected.isError).toBe(true);
     expect(text(rejected.content)).toContain("Supported: legacy");
+  });
+
+  it("derives and validates Bitcoin SV through the MCP schema and executor", async () => {
+    const client = await connectTestClient();
+    const { privateKey, address } = bitcoinSVTestVectors.keyOne;
+    const response = await client.callTool({
+      name: "keys_derive_wallet",
+      arguments: { chain: "bitcoinsv", privateKey },
+    });
+    expect(response.isError).not.toBe(true);
+    expect(text(response.content)).toContain(address);
+    expect(text(response.content)).not.toContain(privateKey);
+
+    const rejected = await client.callTool({
+      name: "keys_validate_address",
+      arguments: { chain: "bitcoinsv", address: bitcoinSVTestVectors.p2shAddress },
+    });
+    expect(text(rejected.content)).toContain("is not a valid bitcoinsv address");
+
+    const path = await client.callTool({
+      name: "keys_bip44_path",
+      arguments: { chain: "bitcoinsv" },
+    });
+    expect(text(path.content)).toContain("m/44'/236'/0'/0/0");
   });
 
   it("derives Decred through the MCP schema and executor", async () => {

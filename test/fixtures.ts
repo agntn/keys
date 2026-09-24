@@ -580,6 +580,47 @@ export const bitcoinCashTestVectors = {
   ],
 } as const;
 
+/** Bitcoin SV vectors from the BSV Blockchain SDKs, published there as WIF and compact base64. */
+export const bitcoinSVTestVectors = {
+  keyOne: {
+    privateKey: "00".repeat(31) + "01",
+    publicKey: "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+    address: "1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH",
+    testnetAddress: "mrCDrCybB6J1vRfbwM5hemdJz73FwDBC8r",
+  },
+  /** A script hash address; the node decodes it, but Genesis rejects every payment to it. */
+  p2shAddress: "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy",
+  /**
+   * BIP44 keys under SLIP-0044 coin type 236, from bsv-sdk 2.4.0 (py-sdk).
+   * @see https://github.com/bsv-blockchain/py-sdk/blob/c16fd32814a0a2c23588f140446069acdb7b5b5e/tests/bsv/hd/test_hd.py
+   */
+  hd: {
+    mnemonic:
+      "chief december immune nominee forest scheme slight tornado cupboard post summer program",
+    wifs: [
+      ["m/44'/236'/0'/0/0", "L4toENSefoBpDJcfGAwrSMcyqBNmfSYjgkAP2qeNujw5oPQGvNtM"],
+      ["m/44'/236'/0'/0/1", "KzwYj8kMuNqmxLModB1nyPoZjPskCqPXJHf6oUdpHkBK6ZgDUoHE"],
+    ],
+  },
+  /**
+   * Bitcoin Signed Message, as header byte then r||s in base64, from @bsv/sdk 2.0.16 (ts-sdk).
+   * @see https://github.com/bsv-blockchain/ts-sdk/blob/9e3ede6b6302480005259ca36cbc73d9b6509d53/src/compat/__tests/BSM.test.ts
+   */
+  signed: {
+    wif: "L211enC224G1kV8pyyq7bjVd9SxZebnRYEzzM3i7ZHCc1c5E7dQu",
+    message: "hello world",
+    signature:
+      "H4T8Asr0WkC6wYfBESR6pCAfECtdsPM4fwiSQ2qndFi8dVtv/mrOFaySx9xQE7j24ugoJ4iGnsRwAC8QwaoHOXk=",
+  },
+  /** The verification vector from the same ts-sdk test file. */
+  verified: {
+    publicKey: "03d4d1a6c5d8c03b0e671bc1891b69afaecb40c0686188fe9019f93581b43e8334",
+    message: "Texas",
+    signature:
+      "IAV89EkfHSzAIA8cEWbbKHUYzJqcShkpWaXGJ5+mf4+YIlf3XNlr0bj9X60sNe1A7+x9qyk+zmXropMDY4370n8=",
+  },
+} as const;
+
 /**
  * Public WIF interoperability vectors.
  * @see https://github.com/bitcoinjs/wif/blob/master/test/fixtures.json

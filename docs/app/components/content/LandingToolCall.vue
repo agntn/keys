@@ -7,6 +7,7 @@ const props = defineProps<{ rows: readonly AddressRow[]; publicKey: string; tick
 const SECP = [
   { row: "btc-segwit", slug: "bitcoin", addressType: "segwit" },
   { row: "bch", slug: "bitcoincash" },
+  { row: "bsv", slug: "bitcoinsv" },
   { row: "ltc-segwit", slug: "litecoin", addressType: "segwit" },
   { row: "dcr", slug: "decred" },
   { row: "eth", slug: "ethereum" },
