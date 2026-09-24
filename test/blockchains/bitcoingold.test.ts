@@ -54,6 +54,15 @@ describe("Bitcoin Gold", () => {
     );
   });
 
+  it("refuses an address type it does not write instead of falling back to legacy", () => {
+    const chain = new BitcoinGold();
+    for (const type of ["cashaddr", "p2tr", "payment", ""]) {
+      expect(() => chain.getAddress(secp256k1TestVectors.publicKeyCompressed, type)).toThrow(
+        "legacy, p2sh, segwit or p2wsh",
+      );
+    }
+  });
+
   it("validates the node's own address vectors on their network only", () => {
     const mainnet = new BitcoinGold();
     const testnet = new BitcoinGold({ network: "testnet" });

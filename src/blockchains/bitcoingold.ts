@@ -19,6 +19,9 @@ const NETWORK_PARAMS = {
   },
 } as const;
 
+/** Bitcoin's formats minus taproot; anything else would fall through to legacy in the base. */
+const ADDRESS_TYPES: ReadonlySet<string> = new Set(["legacy", "p2sh", "segwit", "p2wsh"]);
+
 /**
  * Bitcoin Gold transparent addresses and message signatures. The chain kept SegWit from before
  * the fork, but its Taproot deployment timed out in August 2021, before any Bitcoin Gold release
@@ -49,6 +52,9 @@ export class BitcoinGold extends AbstractBitcoinBlockchain {
   override getAddress(keyPublic: string, type = "legacy"): string {
     if (type === "taproot") {
       throw new RangeError("Bitcoin Gold never activated Taproot");
+    }
+    if (!ADDRESS_TYPES.has(type)) {
+      throw new RangeError("Bitcoin Gold writes legacy, p2sh, segwit or p2wsh only");
     }
     return super.getAddress(keyPublic, type);
   }
