@@ -1,10 +1,7 @@
-import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 import { AbstractBitcoinBlockchain } from "../utils/bitcoin.ts";
 import { validateAddressLegacy, validateAddressP2SH } from "../utils/address.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
-import { assertNoRecoveryByte, hasRecoveryByte } from "../utils/signing.ts";
-import type { Options, SigningOptions } from "../types.ts";
+import type { Options } from "../types.ts";
 
 /** Litecoin Core v0.21.4 src/chainparams.cpp, including the newer P2SH prefixes. */
 const NETWORK_PARAMS = {
@@ -37,44 +34,6 @@ export class Litecoin extends AbstractBitcoinBlockchain {
 
   protected override get params() {
     return this.network === "testnet" ? NETWORK_PARAMS.testnet : NETWORK_PARAMS.mainnet;
-  }
-
-  override signMessage(
-    message: string | Uint8Array,
-    keyPrivate: string,
-    options?: SigningOptions,
-  ): string {
-    assertNoRecoveryByte(
-      options,
-      "Core encodes its recoverable signature as base64 of header||r||s, not r||s||v",
-    );
-    return bytesToHex(
-      secp256k1.sign(this.hashWithMessagePreamble(message), hexToBytes(keyPrivate), {
-        prehash: false,
-      }),
-    );
-  }
-
-  override verifyMessage(
-    message: string | Uint8Array,
-    signature: string,
-    keyPublic: string,
-  ): boolean {
-    if (hasRecoveryByte(signature)) {
-      return false;
-    }
-    try {
-      return secp256k1.verify(
-        hexToBytes(signature),
-        this.hashWithMessagePreamble(message),
-        hexToBytes(keyPublic),
-        {
-          prehash: false,
-        },
-      );
-    } catch {
-      return false;
-    }
   }
 
   override validateAddress(address: string): boolean {

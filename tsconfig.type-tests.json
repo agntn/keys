@@ -5,6 +5,8 @@
     "moduleResolution": "bundler"
   },
   "include": [
+    "test/blockchains/bitcoin.test.ts",
+    "test/blockchains/litecoin.test.ts",
     "test/cli.test.ts",
     "test/public-exports.test.ts",
     "test/mcp.test.ts",

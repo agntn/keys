@@ -80,4 +80,4 @@ Same construction as Bitcoin with `"\x19Litecoin Signed Message:\n"` in front: d
 
 ## Where it lives
 
-`src/blockchains/litecoin.ts` is the network table, the preamble and the validation extra. Everything else comes from `AbstractBitcoinBlockchain` in `src/utils/bitcoin.ts`, shared with Bitcoin.
+`src/blockchains/litecoin.ts` is the network table, the preamble and the validation extra. Everything else, signing included, comes from `AbstractBitcoinBlockchain` in `src/utils/bitcoin.ts`, shared with Bitcoin and Bitcoin Gold.

@@ -21,6 +21,7 @@ import type {
   Curve,
   HDWalletOptions,
   KeyOptions,
+  SigningOptions,
   Wallet,
 } from "../types.ts";
 
@@ -134,7 +135,7 @@ export abstract class AbstractBitcoinMessageBlockchain extends AbstractBlockchai
   override signMessage(
     message: string | Uint8Array,
     keyPrivate: string,
-    options?: KeyOptions,
+    options?: SigningOptions,
   ): string {
     assertNoRecoveryByte(
       options,
@@ -152,7 +153,7 @@ export abstract class AbstractBitcoinMessageBlockchain extends AbstractBlockchai
     message: string | Uint8Array,
     signature: string,
     keyPublic: string,
-    options?: KeyOptions,
+    options?: SigningOptions,
   ): boolean {
     if (hasRecoveryByte(signature)) {
       return false;

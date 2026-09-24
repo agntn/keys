@@ -30,7 +30,7 @@ Decred uses `AbstractBlockchain` directly: ECDSA P2PKH with BLAKE-256, not Bitco
 
 ## PATTERNS
 
-- **Bitcoin base class** - `AbstractBitcoinBlockchain` in `utils/bitcoin.ts` shares address generation and HD purpose inference. Litecoin signs its Core digest with noble prehash disabled and accepts both P2SH prefix generations.
+- **Bitcoin base class** - `AbstractBitcoinBlockchain` in `utils/bitcoin.ts` shares address generation and HD purpose inference on top of the keys and Core message signing in `AbstractBitcoinMessageBlockchain`. Litecoin keeps only its network table, its preamble and a validation that accepts both P2SH prefix generations.
 - **Bitcoin Cash** - `BitcoinCash` extends `AbstractBitcoinMessageBlockchain`, the keys and signing half of the Bitcoin base, and writes P2PKH as CashAddr through `utils/cashaddr.ts`. `legacy` is its only address type; validation follows Bitcoin Cash Node and refuses base58
 - **Bitcoin Gold** - `BitcoinGold` extends `AbstractBitcoinBlockchain` with its own preamble, `G`/`A` version bytes and `btg` bech32. Its Taproot deployment timed out before any release could signal it, so `getAddress` refuses `taproot` and validation refuses witness v1 and later, which would be spendable by anyone there
 - **Bitcoin SV** - `BitcoinSV` extends the same half and writes Bitcoin's base58 P2PKH. `legacy` is its only address type; validation refuses P2SH, which the node rejects as an output since Genesis (`bad-txns-vout-p2sh`)
