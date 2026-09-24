@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { cpSync, existsSync, mkdtempSync, rmSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { beforeAll, describe, expect, it } from "vite-plus/test";
 
@@ -9,9 +10,10 @@ const root = resolve(import.meta.dirname, "..");
 const bin = resolve(root, "dist/cli.mjs");
 const hook = resolve(root, "test/record-loads.mjs");
 
-/** What one run of the built bin printed, how it exited, and which packages it loaded. */
+/** What one run of the built bin printed, how it exited, and which modules and packages it loaded. */
 interface BinRun {
   readonly code: number;
+  readonly modules: readonly string[];
   readonly packages: readonly string[];
   readonly stdout: string;
 }
@@ -57,12 +59,12 @@ function packageOf(url: string): string | undefined {
 }
 
 /**
- * Reads the packages a run loaded from the hook's report on stderr.
+ * Reads the module URLs a run loaded from the hook's report on stderr.
  *
  * @param {string} stderr - What the child wrote to stderr.
- * @returns {string[]} Every package the run loaded, once each.
+ * @returns {string[]} Every module URL the run loaded.
  */
-function loadedPackages(stderr: string): string[] {
+function loadedModules(stderr: string): string[] {
   const report = /@loaded (\[.*\])/u.exec(stderr)?.[1];
   if (report === undefined) {
     throw new Error(`the load hook reported nothing: ${stderr}`);
@@ -71,21 +73,27 @@ function loadedPackages(stderr: string): string[] {
   if (!Array.isArray(urls)) {
     throw new TypeError(`the load hook reported something other than a list: ${report}`);
   }
-  const packages = urls.map((url) => packageOf(String(url))).filter((name) => name !== undefined);
-  return [...new Set(packages)];
+  return urls.map(String);
 }
 
 /**
  * Runs the built bin under the load hook. stdin is closed at once, because the server reads it until
- * it ends, and an unknown command exits 1 on purpose, so that run comes back too.
+ * it ends, and an unknown command exits 1 on purpose, so that run comes back too. `KEYS_DIST=1`
+ * keeps the bundle, which a checkout would otherwise swap for the live source.
  *
  * @param {readonly string[]} args - Arguments for the bin.
- * @returns {Promise<BinRun>} The exit code, stdout and the loaded packages.
+ * @param {{ readonly dist?: boolean; readonly path?: string }} options - `dist: false` lets the checkout load the source; `path` runs another copy of the bin.
+ * @returns {Promise<BinRun>} The exit code, stdout and the loaded modules and packages.
  */
-async function runBin(args: readonly string[]): Promise<BinRun> {
-  const pending = execFileAsync(process.execPath, ["--import", hook, bin, ...args], {
+async function runBin(
+  args: readonly string[],
+  { dist = true, path = bin }: { readonly dist?: boolean; readonly path?: string } = {},
+): Promise<BinRun> {
+  const { KEYS_DIST: _inherited, ...environment } = process.env;
+  const pending = execFileAsync(process.execPath, ["--import", hook, path, ...args], {
     cwd: root,
     encoding: "utf8",
+    env: dist ? { ...environment, KEYS_DIST: "1" } : environment,
     timeout: 10_000,
   });
   pending.child.stdin?.end();
@@ -93,7 +101,9 @@ async function runBin(args: readonly string[]): Promise<BinRun> {
     (run) => ({ code: 0, ...run }),
     (error: unknown) => failedRun(error),
   );
-  return { code, packages: loadedPackages(stderr), stdout };
+  const modules = loadedModules(stderr);
+  const packages = modules.map(packageOf).filter((name) => name !== undefined);
+  return { code, modules, packages: [...new Set(packages)], stdout };
 }
 
 describe("keys usage paths", () => {
@@ -124,5 +134,33 @@ describe("keys usage paths", () => {
     expect(code).toBe(0);
     expect(packages).toContain("@modelcontextprotocol/sdk");
     expect(packages).toContain("@noble/curves");
+  });
+
+  it("keys mcp runs the live source from a checkout and the bundle under KEYS_DIST=1", async () => {
+    const sourceRoot = new URL("../src/", import.meta.url).href;
+    const live = await runBin(["mcp"], { dist: false });
+    const bundled = await runBin(["mcp"]);
+
+    expect(live.code).toBe(0);
+    expect(live.modules).toContain(`${sourceRoot}mcp.ts`);
+    expect(bundled.code).toBe(0);
+    expect(bundled.modules.filter((url) => url.startsWith(sourceRoot))).toEqual([]);
+  });
+
+  it("keys mcp keeps the bundle when the package sits under node_modules", async () => {
+    const cache = resolve(root, "node_modules/.cache");
+    const copy = mkdtempSync(join(cache, "keys-cli-"));
+    try {
+      for (const entry of ["dist", "src", "package.json"]) {
+        cpSync(resolve(root, entry), join(copy, entry), { recursive: true });
+      }
+      const run = await runBin(["mcp"], { dist: false, path: join(copy, "dist/cli.mjs") });
+      const copiedSource = pathToFileURL(join(copy, "src")).href;
+
+      expect(run.code).toBe(0);
+      expect(run.modules.filter((url) => url.startsWith(copiedSource))).toEqual([]);
+    } finally {
+      rmSync(copy, { recursive: true, force: true });
+    }
   });
 });

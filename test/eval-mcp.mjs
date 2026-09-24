@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import {
+  getDefaultEnvironment,
+  StdioClientTransport,
+} from "@modelcontextprotocol/sdk/client/stdio.js";
 import path from "node:path";
 import {
   electrumVectors,
@@ -11,7 +14,12 @@ import {
 } from "./fixtures.ts";
 
 const server = path.resolve(import.meta.dirname, "../dist/cli.mjs");
-const transport = new StdioClientTransport({ command: process.execPath, args: [server, "mcp"] });
+/** `KEYS_DIST=1` keeps the bundle; a checkout would otherwise serve the live source. */
+const transport = new StdioClientTransport({
+  command: process.execPath,
+  args: [server, "mcp"],
+  env: { ...getDefaultEnvironment(), KEYS_DIST: "1" },
+});
 const client = new Client({ name: "keys-eval", version: "1.0.0" });
 const called = new Set();
 

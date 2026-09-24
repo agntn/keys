@@ -20,13 +20,14 @@ import { HARDENED_OFFSET, formatIndex } from "../bip32/index.ts";
 import type { KeyOptions } from "../../types.ts";
 
 // BIP44 path levels
-export enum BIP44Levels {
-  PURPOSE = 1,
-  COIN_TYPE = 2,
-  ACCOUNT = 3,
-  CHANGE = 4,
-  ADDRESS_INDEX = 5,
-}
+export const BIP44Levels = {
+  PURPOSE: 1,
+  COIN_TYPE: 2,
+  ACCOUNT: 3,
+  CHANGE: 4,
+  ADDRESS_INDEX: 5,
+} as const;
+export type BIP44Levels = (typeof BIP44Levels)[keyof typeof BIP44Levels];
 
 // BIP44 purpose is always 44'
 export const BIP44_PURPOSE = HARDENED_OFFSET + 44;
@@ -41,10 +42,11 @@ function assertLevelIndex(name: string, value: number, maximum = MAX_LEVEL_INDEX
 }
 
 // BIP44 change level values
-export enum BIP44Change {
-  EXTERNAL = 0, // Receiving addresses
-  INTERNAL = 1, // Change addresses
-}
+export const BIP44Change = {
+  EXTERNAL: 0, // Receiving addresses
+  INTERNAL: 1, // Change addresses
+} as const;
+export type BIP44Change = (typeof BIP44Change)[keyof typeof BIP44Change];
 
 // SLIP-0044 registered blockchain types
 // https://github.com/satoshilabs/slips/blob/master/slip-0044.md
@@ -114,7 +116,7 @@ export function getBIP32Path(
 export function getBIP44Path(
   coinType: number,
   account = 0,
-  change = BIP44Change.EXTERNAL,
+  change: number = BIP44Change.EXTERNAL,
   addressIndex = 0,
 ): string {
   return getBIP32Path(44, coinType, account, change, addressIndex);
@@ -287,7 +289,7 @@ export interface PathSource {
 export function getBlockchainPath(
   blockchain: PathSource,
   account = 0,
-  change = BIP44Change.EXTERNAL,
+  change: number = BIP44Change.EXTERNAL,
   addressIndex = 0,
   options?: KeyOptions,
 ): string {
