@@ -170,7 +170,7 @@ export abstract class AbstractBitcoinMessageBlockchain extends AbstractBlockchai
   }
 }
 
-/** Shared transparent address and HD behavior for Bitcoin and Litecoin. */
+/** Shared transparent address and HD behavior for Bitcoin, Litecoin and Bitcoin Gold. */
 export abstract class AbstractBitcoinBlockchain extends AbstractBitcoinMessageBlockchain {
   protected abstract get params(): NetworkParams;
 

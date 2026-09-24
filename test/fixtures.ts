@@ -622,6 +622,50 @@ export const bitcoinSVTestVectors = {
 } as const;
 
 /**
+ * Bitcoin Gold vectors from the node's own tests at BTCGPU v0.21.3.
+ * @see https://github.com/BTCGPU/BTCGPU/blob/1b85f0953725812dedcfc5a7ac077c16d419e4ba/test/functional/rpc_signmessage.py
+ * @see https://github.com/BTCGPU/BTCGPU/blob/1b85f0953725812dedcfc5a7ac077c16d419e4ba/src/test/data/key_io_valid.json
+ */
+export const bitcoinGoldTestVectors = {
+  /**
+   * `signmessagewithprivkey` under "Bitcoin Gold Signed Message:\n", header byte then r||s in
+   * base64. The mainnet addresses re-encode the hash160 of `address` with the reference base58
+   * and bech32 encoders under Bitcoin Gold's version byte and `btg` prefix.
+   */
+  signed: {
+    wif: "cUeKHd5orzT3mz8P9pxyREHfsWtVfgsfDjiZZBcjUBAaGk1BTj7N",
+    privateKey: "d2b8a0116d641fe7d3036f8464628fb595b480414c13a301b3d4038c811c28b0",
+    publicKey: "03c150061989643d77162902b725409087959f15914649d4f06b6cc3f8c87bb238",
+    message: "This is just a test message",
+    signature:
+      "III9QOR7R8wULQSY7ymo6mN7b2QLXfc4dHbYAKS7YTU0SEbJToWkWKQegTvb87iZr8HOuHoi+hdNA49RUpoSaw4=",
+    address: "mpLQjfK79b7CCV4VMJWEWAj5Mpx8Up5zxB",
+    segwitTestnetAddress: "tbtg1qvza2pay5kwxw8j2qm6n87wqym3fdr7u53wjd8n",
+    legacyAddress: "GSfNrjZ5KRHEVqtAZgBy71reR19GaCw5Lc",
+    p2shAddress: "AMqi6hwDz9e94pUg8CiXrYz11kuYZTqgKB",
+    segwitAddress: "btg1qvza2pay5kwxw8j2qm6n87wqym3fdr7u5xu3y5e",
+  },
+  /** Addresses the node decodes, one per format and network. */
+  mainnet: [
+    "GUHcigT74ggLsmbxHFTLfn2ZUNJUWiXaMG",
+    "Aa6QUX6pRcncJN7vm7FG8vsy62gyKuANy6",
+    "btg1q5cuatynjmk4szh40mmunszfzh7zrc5xmn8padv",
+    "btg1qkw7lz3ahms6e0ajv27mzh7g62tchjpmve4afc29u7w49tddydy2s2vtjh5",
+  ],
+  testnet: [
+    "mhJuoGLgnJC8gdBgBzEigsoyG4omQXejPT",
+    "2N5VpzKEuYvZJbmg6eUNGnfrrD1ir92FWGu",
+    "tbtg1q74fxwnvhsue0l8wremgq66xzvn48jlc5fkf03n",
+    "tbtg1qpt7cqgq8ukv92dcraun9c3n0s3aswrt62vtv8nqmkfpa2tjfghes7zflt9",
+  ],
+  /** Witness v1 and v2 outputs the node decodes but Bitcoin Gold consensus never protected. */
+  unprotected: [
+    "btg1p5rgvqejqh9dh37t9g94dd9cm8vtqns7dndgj423egwggsggcdzms7pg7wc",
+    "btg1zr4pqk06j6k",
+  ],
+} as const;
+
+/**
  * Public WIF interoperability vectors.
  * @see https://github.com/bitcoinjs/wif/blob/master/test/fixtures.json
  * @see https://github.com/litecoin-project/litecoin/blob/master/src/test/data/key_io_valid.json

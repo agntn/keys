@@ -29,6 +29,7 @@ export type Derivation = {
 export type ExplorerChains = {
   readonly bitcoin: AbstractBlockchain;
   readonly bitcoincash: AbstractBlockchain;
+  readonly bitcoingold: AbstractBlockchain;
   readonly bitcoinsv: AbstractBlockchain;
   readonly litecoin: AbstractBlockchain;
   readonly decred: AbstractBlockchain;
@@ -49,6 +50,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
   const [
     bitcoin,
     bitcoincash,
+    bitcoingold,
     bitcoinsv,
     litecoin,
     decred,
@@ -63,6 +65,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
   ] = await Promise.all([
     load("bitcoin"),
     load("bitcoincash"),
+    load("bitcoingold"),
     load("bitcoinsv"),
     load("litecoin"),
     load("decred"),
@@ -78,6 +81,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
   return {
     bitcoin,
     bitcoincash,
+    bitcoingold,
     bitcoinsv,
     litecoin,
     decred,
@@ -100,6 +104,7 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
   const {
     bitcoin,
     bitcoincash,
+    bitcoingold,
     bitcoinsv,
     litecoin,
     decred,
@@ -133,6 +138,10 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
         "taproot",
       ),
       addressRow(bitcoincash, hex, "bch", "Bitcoin Cash", "secp256k1", "CashAddr"),
+      addressRow(bitcoingold, hex, "btg-legacy", "Bitcoin Gold", "secp256k1", "legacy", undefined, "legacy"),
+      addressRow(bitcoingold, hex, "btg-p2sh", "Bitcoin Gold", "secp256k1", "p2sh", undefined, "p2sh"),
+      addressRow(bitcoingold, hex, "btg-segwit", "Bitcoin Gold", "secp256k1", "segwit", undefined, "segwit"),
+      addressRow(bitcoingold, hex, "btg-p2wsh", "Bitcoin Gold", "secp256k1", "p2wsh", undefined, "p2wsh"),
       addressRow(bitcoinsv, hex, "bsv", "Bitcoin SV", "secp256k1", "legacy"),
       addressRow(litecoin, hex, "ltc-legacy", "Litecoin", "secp256k1", "legacy", undefined, "legacy"),
       addressRow(litecoin, hex, "ltc-p2sh", "Litecoin", "secp256k1", "p2sh", undefined, "p2sh"),

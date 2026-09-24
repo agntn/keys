@@ -9,6 +9,7 @@ import {
   publicKeyEncodingVector,
   litecoinTestVectors,
   bitcoinCashTestVectors,
+  bitcoinGoldTestVectors,
   bitcoinSVTestVectors,
   decredTestVectors,
   stellarTestVectors,
@@ -386,6 +387,37 @@ describe("keys MCP server", () => {
     });
     expect(rejected.isError).toBe(true);
     expect(text(rejected.content)).toContain("Supported: legacy");
+  });
+
+  it("derives and validates Bitcoin Gold through the MCP schema and executor", async () => {
+    const client = await connectTestClient();
+    const { privateKey, segwitAddress } = bitcoinGoldTestVectors.signed;
+    const response = await client.callTool({
+      name: "keys_derive_wallet",
+      arguments: { chain: "bitcoingold", privateKey, addressType: "segwit" },
+    });
+    expect(response.isError).not.toBe(true);
+    expect(text(response.content)).toContain(segwitAddress);
+    expect(text(response.content)).not.toContain(privateKey);
+
+    const rejected = await client.callTool({
+      name: "keys_derive_wallet",
+      arguments: { chain: "bitcoingold", privateKey, addressType: "taproot" },
+    });
+    expect(rejected.isError).toBe(true);
+    expect(text(rejected.content)).toContain("Supported: legacy, p2sh, segwit, p2wsh");
+
+    const unprotected = await client.callTool({
+      name: "keys_validate_address",
+      arguments: { chain: "bitcoingold", address: bitcoinGoldTestVectors.unprotected[0] },
+    });
+    expect(text(unprotected.content)).toContain("is not a valid bitcoingold address");
+
+    const path = await client.callTool({
+      name: "keys_bip44_path",
+      arguments: { chain: "bitcoingold" },
+    });
+    expect(text(path.content)).toContain("m/44'/156'/0'/0/0");
   });
 
   it("derives and validates Bitcoin SV through the MCP schema and executor", async () => {
