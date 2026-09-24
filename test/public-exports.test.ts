@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { build } from "vite-plus";
 import { describe, expect, it } from "vite-plus/test";
 import type { DecodedWIF, WIFOptions, HDWalletOptions } from "@agntn/keys";
 import type { BIP39MnemonicInspection } from "@agntn/keys/bip39";
@@ -10,6 +11,8 @@ import {
   localizedMnemonicVectors,
   invalidChecksumPuzzle,
 } from "./fixtures.ts";
+import { blockchains as sourceChains } from "../src/_blockchains.ts";
+import { ELECTRUM_LEGACY_WORDS } from "../src/utils/electrum-legacy.ts";
 
 const EXPORTS = [
   ["@agntn/keys/bip32", "/dist/utils/bip32/index.mjs"],
@@ -113,6 +116,51 @@ describe("Public derivation exports", () => {
     walk(fileURLToPath(import.meta.resolve("@agntn/keys")));
     expect(visited.size).toBeGreaterThan(1);
     expect([...specifiers].filter((specifier) => specifier.startsWith("node:"))).toEqual([]);
+  });
+});
+
+describe("Consumer bundles", () => {
+  /**
+   * Builds an app that imports one export from the built package.
+   * @param name - Export the app imports and logs
+   * @returns {Promise<string[]>} Code of every chunk the Vite build emits
+   */
+  const bundle = async (name: string): Promise<string[]> => {
+    const result = await build({
+      configFile: false,
+      logLevel: "silent",
+      plugins: [
+        {
+          name: "entry",
+          enforce: "pre",
+          resolveId: (id) => (id === "entry" ? "\0entry" : null),
+          load: (id) =>
+            id === "\0entry"
+              ? `import { ${name} } from "@agntn/keys"; console.log(${name});`
+              : null,
+        },
+      ],
+      build: { write: false, minify: false, rollupOptions: { input: "entry" } },
+    });
+    const outputs = Array.isArray(result) ? result : [result];
+    return outputs.flatMap((output) =>
+      "output" in output
+        ? output.output.flatMap((chunk) => (chunk.type === "chunk" ? [chunk.code] : []))
+        : [],
+    );
+  };
+
+  it.each(["encodeWIF", "decodeWIF", "convertSecp256k1PublicKey"])(
+    "leaves the chain registry and the Electrum list out of an app importing %s",
+    async (name) => {
+      const chunks = await bundle(name);
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0]).not.toContain([...ELECTRUM_LEGACY_WORDS].slice(0, 8).join(" "));
+    },
+  );
+
+  it("still splits every chain into its own chunk for an app importing blockchains", async () => {
+    expect((await bundle("blockchains")).length).toBeGreaterThan(Object.keys(sourceChains).length);
   });
 });
 
