@@ -118,6 +118,11 @@
     "node": ">=24"
   },
   "packageManager": "pnpm@11.24.0",
+  "omp": {
+    "extensions": [
+      "./packages/omp/extensions/keys.ts"
+    ]
+  },
   "pi": {
     "extensions": [
       "./packages/pi/extensions/*.ts"

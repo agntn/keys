@@ -10,6 +10,7 @@
     "test/cli.test.ts",
     "test/public-exports.test.ts",
     "test/mcp.test.ts",
+    "test/omp-extension.test.ts",
     "test/pi-extension.test.ts",
     "test/utils/bip39.test.ts",
     "test/utils/hd.test.ts",

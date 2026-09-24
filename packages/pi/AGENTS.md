@@ -7,6 +7,7 @@ Pi coding agent extension only. Wraps the `@agntn/keys` library as 19 agent tool
 ## Layout
 
 - `extensions/keys.ts`: the extension. One `export default function(pi: ExtensionAPI)` registering 19 tools via `pi.registerTool`.
+- `../omp/extensions/keys.ts`: the OMP copy. Mirror every tool change there; only the executor loader differs.
 
 ## Key facts
 
