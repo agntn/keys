@@ -11,6 +11,7 @@ const NAV_ICONS: Record<string, string> = {
   "/blockchains/bitcoin": "i-token-btc",
   "/blockchains/litecoin": "i-token-ltc",
   "/blockchains/decred": "i-token-dcr",
+  "/blockchains/dogecoin": "i-token-doge",
   "/blockchains/bitcoincash": "i-token-bch",
   "/blockchains/bitcoingold": "i-token-btg",
   "/blockchains/bitcoinsv": "i-token-bsv",

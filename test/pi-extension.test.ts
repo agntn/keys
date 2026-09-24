@@ -12,6 +12,7 @@ import {
   bitcoinCashTestVectors,
   bitcoinGoldTestVectors,
   bitcoinSVTestVectors,
+  dogecoinTestVectors,
   decredTestVectors,
   stellarTestVectors,
   wifTestVectors,
@@ -381,6 +382,16 @@ describe("keys Pi extension", () => {
     expect(result.content).toEqual([
       { type: "text", text: `Public key: ${publicKey}\nAddress: ${address}` },
     ]);
+  });
+
+  it("derives Dogecoin through the registered Pi tool", async () => {
+    const tool = registerTools().get("keys_derive_wallet");
+    if (!tool) throw new Error("keys_derive_wallet was not registered");
+    const [key] = dogecoinTestVectors.keys;
+    const args = { chain: "dogecoin", privateKey: key.privateKey };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    const result = await tool.execute("dogecoin", args);
+    expect(JSON.stringify(result.content)).toContain(`Address: ${key.addressCompressed}`);
   });
 
   it("derives Decred through the registered Pi tool", async () => {

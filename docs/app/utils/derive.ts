@@ -33,6 +33,7 @@ export type ExplorerChains = {
   readonly bitcoinsv: AbstractBlockchain;
   readonly litecoin: AbstractBlockchain;
   readonly decred: AbstractBlockchain;
+  readonly dogecoin: AbstractBlockchain;
   readonly ethereum: AbstractBlockchain;
   readonly base: AbstractBlockchain;
   readonly tron: AbstractBlockchain;
@@ -54,6 +55,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     bitcoinsv,
     litecoin,
     decred,
+    dogecoin,
     ethereum,
     base,
     tron,
@@ -69,6 +71,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     load("bitcoinsv"),
     load("litecoin"),
     load("decred"),
+    load("dogecoin"),
     load("ethereum"),
     load("base"),
     load("tron"),
@@ -85,6 +88,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     bitcoinsv,
     litecoin,
     decred,
+    dogecoin,
     ethereum,
     base,
     tron,
@@ -108,6 +112,7 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
     bitcoinsv,
     litecoin,
     decred,
+    dogecoin,
     ethereum,
     base,
     tron,
@@ -158,6 +163,7 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
         "taproot",
       ),
       addressRow(decred, hex, "dcr", "Decred", "secp256k1", "legacy"),
+      addressRow(dogecoin, hex, "doge", "Dogecoin", "secp256k1", "legacy"),
       addressRow(ethereum, hex, "eth", "Ethereum", "secp256k1", "EIP-55"),
       addressRow(base, hex, "base", "Base", "secp256k1", "EIP-55"),
       addressRow(tron, hex, "tron", "TRON", "secp256k1", "base58check"),

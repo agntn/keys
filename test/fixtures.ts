@@ -666,6 +666,52 @@ export const bitcoinGoldTestVectors = {
 } as const;
 
 /**
+ * Dogecoin vectors from the node's own tests at Dogecoin Core v1.14.9, whose WIFs decode under
+ * version byte `0x9e`, and the Dogecoin message fixtures of bitcoinjs-message.
+ * @see https://github.com/dogecoin/dogecoin/blob/e0a1c157791544e818c901bd9341896965afbf9d/src/test/key_tests.cpp
+ * @see https://github.com/dogecoin/dogecoin/blob/e0a1c157791544e818c901bd9341896965afbf9d/src/test/data/base58_keys_valid.json
+ * @see https://github.com/bitcoinjs/bitcoinjs-message/blob/281289ef04ad5573b2c5bc86cdb3188364f5876b/test/fixtures.json
+ * @see https://github.com/LedgerHQ/ledger-live/blob/b3ffa2f4bf735f2cfeed2a8028ea92d4bc3588e3/libs/coin-modules/coin-bitcoin/src/constants.ts
+ */
+export const dogecoinTestVectors = {
+  /** `strSecret1` and `strSecret2` with the addresses the node gives each key, both encodings. */
+  keys: [
+    {
+      wif: "6JFPe8b4jbpup7petSB98M8tcaqXCigji8fGrC8bEbbDQxQkQ68",
+      privateKey: "0f6055b44781882c04d6683d8e11a8282d068ef139a78f9d45e9ba290d1ce25f",
+      address: "DSpgzjPyfQB6ZzeSbMWpaZiTTxGf2oBCs4",
+      addressCompressed: "D8jZ6R8uuyQwiybupiVs3eDCedKdZ5bYV3",
+    },
+    {
+      wif: "6KLE6U3w8x3rM7nA1ZQxR4KnyEzeirPEt4YaXWdY4roF7Tt96rq",
+      privateKey: "9e0d4307370dc9ad2feaa8fbeb2b43eb472b70a928f8c927b30a510f108f3246",
+      address: "DR9VqfbWgEHZhNst34KQnABQXpPWXeLAJD",
+      addressCompressed: "DP7rGcDbpAvMb1dKup981zNt1heWUuVLP7",
+    },
+  ],
+  /** Ledger Live's first Dogecoin receive address for the BIP39 `abandon ... about` mnemonic. */
+  hd: { path: "m/44'/3'/0'/0/0", address: "DBus3bamQjgJULBJtYXpEzDWQRwF5iwxgC" },
+  /** `strAddressBad`: a `D` string whose checksum fails. */
+  badAddress: "DRjyUS2uuieEPkhZNdQz8hE5YycxVEqSXA",
+  /** P2PKH then P2SH, one pair per network. */
+  mainnet: ["DD4KSSuBJqcjuTcvUg1CgUKeurPUFeEZkE", "A7HRQk3GFCW2QasvdZxXuYj8kkQK5QrYLs"],
+  testnet: ["nhRsrUaxZou6sewjqaS37cJrMRJRgwVXdk", "2MsvyG12kxxipe276Au4zKqvd2xdrBuHWb3"],
+  /**
+   * Key 1 under "Dogecoin Signed Message:\n", header byte then r||s in base64. The `sign` fixture
+   * carries the uncompressed header, the `verify` fixture the compressed one and its address.
+   */
+  signed: {
+    privateKey: "00".repeat(31) + "01",
+    message: "vires is numeris",
+    address: "DFpN6QqFfUm3gKNaxN6tNcab1FArL9cZLE",
+    signatures: [
+      "G6k+dZwJ8oOei3PCSpdj603fDvhlhQ+sqaFNIDvo/bI+Xh6zyIKGzZpyud6YhZ1a5mcrwMVtTWL+VXq/hC5Zj7s=",
+      "H6k+dZwJ8oOei3PCSpdj603fDvhlhQ+sqaFNIDvo/bI+Xh6zyIKGzZpyud6YhZ1a5mcrwMVtTWL+VXq/hC5Zj7s=",
+    ],
+  },
+} as const;
+
+/**
  * Public WIF interoperability vectors.
  * @see https://github.com/bitcoinjs/wif/blob/master/test/fixtures.json
  * @see https://github.com/litecoin-project/litecoin/blob/master/src/test/data/key_io_valid.json

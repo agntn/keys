@@ -47,6 +47,13 @@ export const landingStaticRows: readonly AddressRow[] = [
     address: "DsmcYVbP1Nmag2H4AS17UTvmWXmGeA7nLDx",
   },
   {
+    id: "doge",
+    chain: "Dogecoin",
+    curve: "secp256k1",
+    format: "legacy",
+    address: "DFpN6QqFfUm3gKNaxN6tNcab1FArL9cZLE",
+  },
+  {
     id: "eth",
     chain: "Ethereum",
     curve: "secp256k1",
