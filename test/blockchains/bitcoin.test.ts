@@ -15,6 +15,11 @@ describe("Bitcoin blockchain", () => {
     expect(blockchain.name).toBe("bitcoin");
   });
 
+  it("rejects a network it has no prefixes for", () => {
+    expect(() => new Bitcoin({ network: "signet" })).toThrow("mainnet and testnet only");
+    expect(() => new Bitcoin({ network: "regtest" })).toThrow("mainnet and testnet only");
+  });
+
   it("should generate a private key", () => {
     const keyPrivate = blockchain.generateKeyPrivate();
 

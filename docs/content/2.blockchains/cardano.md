@@ -36,7 +36,7 @@ cardanoChain.getAddress(publicKey, "stake");
 
 One honest caveat about the base address. A real base address carries two different hashes, the payment key and the stake key, and a wallet derives them from two paths. This driver has one key, so it uses the same hash for both halves. The address is valid and spendable with that key, but its stake half points at the payment key, which isn't how a full wallet lays things out. Use `enterprise` when you want an address with no staking story at all.
 
-Testnet is a constructor option, not an address type. Preprod and preview both use network id 0, so one driver covers them.
+Testnet is a constructor option, not an address type. Preprod and preview both use network id 0, so pass `testnet` for either. Any other name, `preprod` included, throws in the constructor.
 
 ## Validation
 

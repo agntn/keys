@@ -98,8 +98,8 @@ export interface SigningOptions extends RecoverableSigningOptions {
 
 /**
  * Network type.
- * Known values are `"mainnet"` and `"testnet"`;
- * any other chain-specific network name is accepted as well.
+ * Known values are `"mainnet"` and `"testnet"`. A chain whose addresses depend on the
+ * network throws on any other name; the rest ignore it.
  */
 export type NetworkType = string;
 
