@@ -1,6 +1,6 @@
 # @agntn/keys: Pi extension
 
-Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as 19 agent tools for key generation, WIF conversion, BIP39 generation, entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across 18 blockchains (Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, TRON, SUI, Cardano).
+Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as 20 agent tools for key generation, WIF conversion, BIP39 generation, entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across 18 blockchains (Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, TRON, SUI, Cardano).
 
 > [!WARNING]
 > **This extension is experimental.** The package name, public API, provider model, CLI flags, and tool surfaces may change before the first stable release. Pin exact versions if you build on it now.
@@ -17,6 +17,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 | `keys_generate_wallet`        | Generate private key + public key + address for a chain            |
 | `keys_derive_wallet`          | Derive public key + address from an existing private key           |
 | `keys_derive_hd_wallet`       | Derive public key + address from a mnemonic and path               |
+| `keys_derive_xpub_wallet`     | Derive public key + address from an xpub, ypub or zpub and a path  |
 | `keys_generate_mnemonic`      | Generate a disposable English BIP39 mnemonic                       |
 | `keys_inspect_mnemonic`       | Validate a BIP39 mnemonic and recover its entropy                  |
 | `keys_encode_bip39_entropy`   | Encode hexadecimal entropy as an English BIP39 mnemonic            |
@@ -36,6 +37,8 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 ## Electrum wallets
 
 `keys_derive_electrum_wallet` is separate from BIP39. Supply the complete Electrum phrase and exact BIP32 `path`, with an optional `passphrase` and Bitcoin `network`. Standard seeds produce P2PKH addresses, SegWit seeds P2WPKH. The result includes `scheme: "electrum"` and `seedType`, but no seed or private key. Legacy, 2FA and unrecognized versions are rejected. Both phrase and passphrase use Electrum normalization. Inputs are saved in the transcript, so never submit real wallet secrets.
+
+`keys_derive_xpub_wallet` takes a `chain`, an `extendedKey` and normal levels below it, such as `m/0/0`. On Bitcoin, Bitcoin Gold and Litecoin the SLIP-0132 prefix picks the address type, and `addressType` overrides it for a BIP84 or BIP49 account exported as `xpub`. Hardened levels and extended private keys are rejected. The key reveals every address of its account and is saved in the transcript.
 
 ## Puzzle checksum override
 

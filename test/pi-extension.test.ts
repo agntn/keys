@@ -24,6 +24,7 @@ import {
   ed25519TestVectors,
   ethereumTestVectors,
   secp256k1TestVectors,
+  slip132Vectors,
 } from "./fixtures.ts";
 import keysExtension from "../packages/pi/extensions/keys.ts";
 import { mnemonicToSeed, mnemonicToEntropy, validateMnemonic } from "../src/utils/bip39/index.ts";
@@ -69,6 +70,20 @@ describe("keys Pi extension", () => {
     });
     expect(JSON.stringify(result)).not.toContain(vector.mnemonic);
     await expect(tool.execute("electrum", { ...args, passphrase: false })).rejects.toThrow();
+  });
+  it("derives a watch-only wallet from an xpub with the shared executor", async () => {
+    const tool = registerTools().get("keys_derive_xpub_wallet");
+    if (!tool) throw new Error("Missing xpub wallet tool");
+    const [, ypub] = slip132Vectors;
+    const args = { chain: "bitcoin", extendedKey: ypub.extendedKey, path: "m/0/0" };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    expect(Value.Check(tool.parameters, { ...args, path: "m/0'/0" })).toBe(false);
+    await expect(tool.execute("xpub", args)).resolves.toMatchObject({
+      details: { prefix: "ypub", addressType: "p2sh", address: ypub.address },
+    });
+    await expect(tool.execute("xpub", { ...args, path: "m/0'/0" })).rejects.toThrow(
+      "hardened levels need the private key",
+    );
   });
   it("derives disposable BIP39 seeds without echoing the input", async () => {
     const tool = registerTools().get("keys_derive_bip39_seed");

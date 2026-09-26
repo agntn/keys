@@ -2,6 +2,11 @@ import { ed25519 } from "@noble/curves/ed25519.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 import { BIP44Change, getBIP44Path } from "./utils/bip44/index.ts";
+import {
+  deriveExtendedPublicChild,
+  SLIP132_FORMATS,
+  type ExtendedKeyFormats,
+} from "./utils/extended-key.ts";
 import { deriveMnemonicKey } from "./utils/hd.ts";
 import type {
   AddressType,
@@ -13,6 +18,7 @@ import type {
   Options,
   SigningOptions,
   Wallet,
+  XpubWallet,
 } from "./types.ts";
 
 /**
@@ -144,6 +150,44 @@ export abstract class AbstractBlockchain implements Blockchain {
             "BIP39 checksum is invalid. Derived from the supplied words without repairing the checksum.",
           ],
         };
+  }
+
+  /**
+   * Extended public key prefixes this chain takes on its network. Wallets export BIP32 keys
+   * of every secp256k1 chain as `xpub`, and `tpub` on testnet; Bitcoin adds SLIP-0132's.
+   * @returns {ExtendedKeyFormats} Accepted prefixes and the address type each stands for
+   */
+  protected get extendedKeyFormats(): ExtendedKeyFormats {
+    return this.network === "testnet"
+      ? { tpub: { version: SLIP132_FORMATS.tpub.version } }
+      : { xpub: { version: SLIP132_FORMATS.xpub.version } };
+  }
+
+  /**
+   * Derives a watch-only wallet from an extended public key, such as an account `xpub`.
+   * Only normal levels can be walked without the private key.
+   * @param extendedKey - Base58Check extended public key
+   * @param path - Normal levels below the key, such as `m/0/5`
+   * @param addressType - Explicit address type that wins over the one the prefix stands for
+   * @returns {XpubWallet} The public key and address at the path
+   */
+  deriveXpubWallet(extendedKey: string, path: string, addressType?: AddressType): XpubWallet {
+    if (this.curve !== "secp256k1") {
+      throw new Error(`${this.name} does not derive from extended public keys`);
+    }
+    const child = deriveExtendedPublicChild(
+      extendedKey,
+      path,
+      this.extendedKeyFormats,
+      `${this.name} ${this.network}`,
+    );
+    const type = addressType ?? child.addressType;
+    return {
+      keys: { public: child.publicKey },
+      address: this.getAddress(child.publicKey, type),
+      prefix: child.prefix,
+      ...(type === undefined ? {} : { addressType: type }),
+    };
   }
 }
 

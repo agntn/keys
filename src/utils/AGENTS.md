@@ -21,6 +21,7 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP39, and SLIP-1
 | `encoding.ts`       | ~60   | address.ts, tron, zcash                                                              | Base58Check encode/decode/validate                                                                                                       |
 | `crypto-hash.ts`    | ~70   | (internal)                                                                           | Hash function wrappers                                                                                                                   |
 | `hd.ts`             | ~45   | blockchain.ts                                                                        | Mnemonic to private key at a path: BIP32 for secp256k1, SLIP-10 for ed25519                                                              |
+| `extended-key.ts`   | ~110  | blockchain.ts, bitcoin.ts, litecoin                                                  | SLIP-0132 prefixes; an xpub down normal levels to a child public key, refusing xprv and hardened levels                                  |
 
 **Subdirectories** (each has `index.ts`):
 

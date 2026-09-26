@@ -41,6 +41,21 @@ export interface Wallet extends Keys {
 }
 
 /**
+ * Watch-only wallet derived from an extended public key: an address and its key, never a secret.
+ */
+export interface XpubWallet {
+  keys: {
+    /** Compressed public key as a hex string */
+    public: string;
+  };
+  address: AddressFormat;
+  /** Prefix of the extended key, such as `xpub` or `zpub` */
+  prefix: string;
+  /** Address type written, when the chain has more than one */
+  addressType?: AddressType;
+}
+
+/**
  * Bitcoin address types
  */
 export type BitcoinAddressType = "legacy" | "p2sh" | "segwit" | "p2wsh" | "taproot";
@@ -221,6 +236,11 @@ export interface Blockchain extends BlockchainImplementation {
     options?: HDWalletOptions,
     addressType?: string,
   ) => Wallet;
+
+  /**
+   * Derives a watch-only wallet from an extended public key and normal levels below it.
+   */
+  deriveXpubWallet?: (extendedKey: string, path: string, addressType?: string) => XpubWallet;
 
   /**
    * Generates a complete wallet (private key, public key, and address)

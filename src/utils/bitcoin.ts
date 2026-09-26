@@ -12,6 +12,7 @@ import {
   hash160,
 } from "./address.ts";
 import { decodeCashAddr, encodeCashAddr } from "./cashaddr.ts";
+import { SLIP132_FORMATS, type ExtendedKeyFormats } from "./extended-key.ts";
 import { generateKeyPublic } from "./secp256k1.ts";
 import {
   assertNoRecoveryByte,
@@ -233,6 +234,15 @@ export abstract class AbstractBitcoinBlockchain extends AbstractBitcoinMessageBl
     const purpose = /^[mM]'?\/(\d+)'/u.exec(path)?.[1];
     const inferredType = purpose === undefined ? undefined : PURPOSE_ADDRESS_TYPES[Number(purpose)];
     return super.deriveHDWallet(mnemonic, path, options, addressType ?? inferredType);
+  }
+
+  /**
+   * SLIP-0132 prefixes, so a `zpub` writes SegWit and a `ypub` P2SH without being told.
+   * @returns {ExtendedKeyFormats} Bitcoin's single signature prefixes on this network
+   */
+  protected override get extendedKeyFormats(): ExtendedKeyFormats {
+    const { xpub, ypub, zpub, tpub, upub, vpub } = SLIP132_FORMATS;
+    return this.network === "testnet" ? { tpub, upub, vpub } : { xpub, ypub, zpub };
   }
 
   override validateAddress(address: string): boolean {

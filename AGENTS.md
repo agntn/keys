@@ -44,6 +44,7 @@ keys/
 | Change agent tools | `src/tool-operations.ts`, `src/mcp.ts`, `packages/{pi,omp}/extensions/keys.ts`    | Executors are shared; schemas stay aligned                                          |
 | Add BIP/derivation | `src/utils/bip32/`, `bip39/`, `bip44/`, `slip10/`                                 | Subdirs with index.ts                                                               |
 | Mnemonic to wallet | `src/blockchain.ts` → `deriveHDWallet` + `src/utils/hd.ts`                        | Bitcoin family infers the address type; Sui overrides it, Cardano throws (CIP-1852) |
+| Xpub to address    | `src/utils/extended-key.ts` → `deriveXpubWallet` on the base class                | SLIP-0132 prefixes pick the type on the Bitcoin family; normal levels only, no xprv |
 | Write tests        | `test/` mirroring `src/` path                                                     | Use fixtures from `test/fixtures.ts`                                                |
 | Integration test   | `test-integration/`                                                               | Separate pnpm package, manual execution                                             |
 | Run demos          | `playground/*.ts`                                                                 | Execute via `pnpm playground <file>`                                                |
@@ -84,7 +85,7 @@ pnpm lint             # vp lint + vp fmt --check
 pnpm lint:fix         # vp lint --fix + vp fmt
 pnpm playground <f>   # run any TS file via tsx
 pnpm docs             # Docus + keyspace explorer on :3000
-pnpm test:mcp         # build and exercise all 19 MCP tools over stdio
+pnpm test:mcp         # build and exercise all 20 MCP tools over stdio
 ```
 
 ## NOTES

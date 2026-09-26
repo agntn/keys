@@ -5,7 +5,7 @@
 [![license](https://npmx.dev/api/registry/badge/license/@agntn/keys)](https://npmx.dev/package/@agntn/keys)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/agntn/keys)
 
-🔑 Keys, addresses and signatures for eighteen chains, from a mnemonic or from nothing at all. Bitcoin gets its five address types, Solana gets ed25519, your agent gets 19 tools, and none of it should ever meet real money.
+🔑 Keys, addresses and signatures for eighteen chains, from a mnemonic or from nothing at all. Bitcoin gets its five address types, Solana gets ed25519, your agent gets 20 tools, and none of it should ever meet real money.
 
 > [!WARNING]
 > **@agntn/keys is experimental.** The public API and the tool surfaces can still move before the first stable release. Pin exact versions if you build on it now.
@@ -22,12 +22,13 @@ The docs live at [keys.agntn.dev](https://keys.agntn.dev), keyspace explorer inc
 - 🧬 **Two curves.** secp256k1 and ed25519, and Sui will take either.
 - 🏠 **Bitcoin the way Bitcoin wants it.** Legacy, P2SH, segwit, P2WSH and taproot, testnet included, and the purpose level of your path picks the type for you.
 - 🌱 **Mnemonic in, wallet out.** BIP39 into BIP32 on secp256k1 and SLIP-10 on ed25519, passphrase optional.
+- 👀 **An xpub is enough to watch.** Hand over an account's xpub, ypub or zpub and get the address at `m/0/5`, no secret anywhere in the call.
 - 🧩 **Puzzle mnemonics are welcome.** Wrong checksum? Derive anyway and get a warning with the wallet, or ask which words would make it valid.
 - 🌍 **All ten BIP39 word lists.** Look a word up in Italian, generate in Japanese with the ideographic spaces, map indices from base 0 or base 1.
 - ✍️ **Signing on both curves.** Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash and eCash hash the message the way Core does, EVM chains the way ethers does, TRON the way TronWeb's `signMessageV2` does, Sui the way the Sui SDK's `signPersonalMessage` does on either curve, Stellar the way the Stellar SDK's `signMessage` does under SEP-53, and Solana, Aptos and Cardano sign the raw bytes. What comes back is 64 bytes of compact `r||s` hex, so it's not Core's base64.
 - 🔁 **`v` when you need it.** `{ recovered: true }` on Ethereum, Base or TRON gives 65 bytes of `r||s||v`, byte for byte what ethers and TronWeb produce. Skip it and ethers reads your 64 bytes as an EIP-2098 compact signature and answers with the wrong address instead of an error.
 - 🔌 **Loads one chain at a time.** `blockchains.solana()()` imports Solana and nothing else, so a Bitcoin tool never pays for Cardano.
-- 🤖 **19 agent tools.** MCP over stdio and a Pi extension run the same code, and a generated mnemonic comes back with a note that it's in the transcript now.
+- 🤖 **20 agent tools.** MCP over stdio and a Pi extension run the same code, and a generated mnemonic comes back with a note that it's in the transcript now.
 
 ## 📦 Install
 
@@ -78,6 +79,27 @@ m/86'/0'/0'/0/0 bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr
 ```
 
 Nobody passed an address type. 44 is legacy, 49 is P2SH, 84 is segwit, 86 is taproot, the path already says which one you meant. You can still pass one as the fourth argument if you disagree with your own path.
+
+Only have the public half? The account's extended public key walks the normal levels under it:
+
+```ts
+const zpub =
+  "zpub6rFR7y4Q2AijBEqTUquhVz398htDFrtymD9xYYfG1m4wAcvPhXNfE3EfH1r1ADqtfSdVCToUG868RvUUkgDKf31mGDtKsAYz2oz2AGutZYs";
+console.log(btc.deriveXpubWallet(zpub, "m/0/0"));
+```
+
+```
+{
+  keys: {
+    public: '0330d54fd0dd420a6e5f8d3624f5f3482cae350f79d5f0753bf5beef9c2d91af3c'
+  },
+  address: 'bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu',
+  prefix: 'zpub',
+  addressType: 'segwit'
+}
+```
+
+Same address as `m/84'/0'/0'/0/0` above, and the `z` picked segwit. Don't lean on that too hard. Plenty of wallets export a BIP84 account as a plain `xpub`, and then the prefix says legacy while the coins sit on segwit. Pass `"segwit"` as the third argument. Hardened levels and `xprv` get refused, this path never sees a secret.
 
 ## 🧠 Library
 
@@ -178,7 +200,7 @@ npx -y @agntn/keys mcp
 }
 ```
 
-19 tools, `keys_derive_electrum_wallet` through `keys_bip44_path`, and the Pi extension in [`packages/pi`](./packages/pi) runs the exact same executors from a checkout. Ask for a mnemonic and this is the whole answer:
+20 tools, `keys_derive_electrum_wallet` through `keys_bip44_path`, and the Pi extension in [`packages/pi`](./packages/pi) runs the exact same executors from a checkout. Ask for a mnemonic and this is the whole answer:
 
 ```
 Language: english
@@ -212,7 +234,7 @@ pnpm dev          # vp test in watch mode
 pnpm lint         # builds first, then vp lint and vp fmt --check
 pnpm test:types   # tsc over the library and the type tests
 pnpm build        # vp pack
-pnpm test:mcp     # builds, then calls all 19 tools over stdio
+pnpm test:mcp     # builds, then calls all 20 tools over stdio
 pnpm playground playground/bip39-demo.ts
 ```
 

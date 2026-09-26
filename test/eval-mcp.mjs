@@ -11,6 +11,7 @@ import {
   invalidChecksumPuzzle,
   publicKeyEncodingVector,
   bip39TestVectors,
+  slip132Vectors,
 } from "./fixtures.ts";
 
 const server = path.resolve(import.meta.dirname, "../dist/cli.mjs");
@@ -76,12 +77,20 @@ await client.connect(transport);
 
 try {
   const listed = await client.listTools();
-  if (listed.tools.length !== 19) throw new Error(`Expected 19 tools, got ${listed.tools.length}`);
+  if (listed.tools.length !== 20) throw new Error(`Expected 20 tools, got ${listed.tools.length}`);
 
   await call(
     "keys_convert_public_key",
     { publicKey: publicKeyEncodingVector.compressed, compressed: false },
     new RegExp(publicKeyEncodingVector.uncompressed),
+  );
+
+  await call(
+    "keys_derive_xpub_wallet",
+    { chain: "bitcoin", extendedKey: slip132Vectors[2].extendedKey, path: "m/0/0" },
+    new RegExp(
+      `Address type: segwit\\nPublic key: [0-9a-f]{66}\\nAddress: ${slip132Vectors[2].address}`,
+    ),
   );
 
   await call(

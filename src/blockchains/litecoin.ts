@@ -1,6 +1,7 @@
 import { AbstractBitcoinBlockchain } from "../utils/bitcoin.ts";
 import { validateAddressLegacy, validateAddressP2SH } from "../utils/address.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
+import type { ExtendedKeyFormats } from "../utils/extended-key.ts";
 import type { Options } from "../types.ts";
 
 /** Litecoin Core v0.21.4 src/chainparams.cpp, including the newer P2SH prefixes. */
@@ -19,6 +20,15 @@ const NETWORK_PARAMS = {
   },
 } as const;
 
+/** SLIP-0132 prefixes of Litecoin itself, taken beside the Bitcoin ones its wallets also export. */
+const LITECOIN_EXTENDED_KEY_FORMATS = {
+  mainnet: {
+    Ltub: { version: 0x019da462, addressType: "legacy" },
+    Mtub: { version: 0x01b26ef6, addressType: "p2sh" },
+  },
+  testnet: { ttub: { version: 0x0436f6e1, addressType: "legacy" } },
+} as const satisfies Readonly<Record<"mainnet" | "testnet", ExtendedKeyFormats>>;
+
 /** Litecoin transparent addresses and message signatures. MWEB is not supported. */
 export class Litecoin extends AbstractBitcoinBlockchain {
   override readonly name = "litecoin";
@@ -34,6 +44,14 @@ export class Litecoin extends AbstractBitcoinBlockchain {
 
   protected override get params() {
     return this.network === "testnet" ? NETWORK_PARAMS.testnet : NETWORK_PARAMS.mainnet;
+  }
+
+  protected override get extendedKeyFormats(): ExtendedKeyFormats {
+    const own =
+      this.network === "testnet"
+        ? LITECOIN_EXTENDED_KEY_FORMATS.testnet
+        : LITECOIN_EXTENDED_KEY_FORMATS.mainnet;
+    return { ...own, ...super.extendedKeyFormats };
   }
 
   override validateAddress(address: string): boolean {

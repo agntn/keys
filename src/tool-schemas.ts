@@ -7,6 +7,7 @@ import {
   BIP39_ENTROPY_SCHEMA_PATTERN,
   BIP39_WORD_SCHEMA_PATTERN,
   DERIVATION_PATH_SCHEMA_PATTERN,
+  XPUB_PATH_SCHEMA_PATTERN,
   PRIVATE_KEY_SCHEMA_PATTERN,
   PUBLIC_KEY_SCHEMA_PATTERN,
   SIGNATURE_SCHEMA_PATTERN,
@@ -206,6 +207,27 @@ export const DERIVE_HD_WALLET_PARAMETERS = Type.Object(
           "Accept an invalid checksum with a warning. English words and BIP39 word counts are still required. Default: false",
       }),
     ),
+    addressType: addressTypeArgument,
+    network: networkArgument,
+  },
+  { additionalProperties: false },
+);
+
+export const DERIVE_XPUB_WALLET_PARAMETERS = Type.Object(
+  {
+    chain: chainArgument,
+    extendedKey: Type.String({
+      description:
+        "Extended public key: xpub, or tpub on testnet; Bitcoin, Bitcoin Gold and Litecoin also take ypub and zpub (upub and vpub), Litecoin Ltub and Mtub (ttub)",
+      minLength: 1,
+      maxLength: 128,
+      pattern: "^[1-9A-HJ-NP-Za-km-z]+$",
+    }),
+    path: Type.String({
+      description: "Normal levels below the key, such as m/0/0 for the first receiving address",
+      maxLength: 256,
+      pattern: XPUB_PATH_SCHEMA_PATTERN,
+    }),
     addressType: addressTypeArgument,
     network: networkArgument,
   },

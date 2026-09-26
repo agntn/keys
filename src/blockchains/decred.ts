@@ -8,7 +8,7 @@ import { BIP44 } from "../utils/bip44/index.ts";
 import { encodeCompactSize } from "../utils/bitcoin.ts";
 import { generateKeyPublic } from "../utils/secp256k1.ts";
 import { assertNoRecoveryByte, hasRecoveryByte } from "../utils/signing.ts";
-import type { Curve, KeyOptions, Options, SigningOptions, Wallet } from "../types.ts";
+import type { Curve, KeyOptions, Options, SigningOptions, Wallet, XpubWallet } from "../types.ts";
 
 const codec = base58check(blake256);
 const messagePreamble = new TextEncoder().encode("Decred Signed Message:\n");
@@ -54,6 +54,11 @@ export class Decred extends AbstractBlockchain {
 
   /** Decred strips leading zeros during HD derivation, unlike standard BIP32. */
   override deriveHDWallet(): Wallet {
+    throw new Error("Decred HD derivation is not supported");
+  }
+
+  /** Decred wallets export `dpub` keys, and its HD derivation is not supported here. */
+  override deriveXpubWallet(): XpubWallet {
     throw new Error("Decred HD derivation is not supported");
   }
 
