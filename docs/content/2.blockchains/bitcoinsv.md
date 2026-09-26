@@ -73,4 +73,4 @@ The node kept `"\x18Bitcoin Signed Message:\n"`, so the digest is Bitcoin's: com
 
 ## Where it lives
 
-`src/blockchains/bitcoinsv.ts` has the version bytes and the address rules. It extends `AbstractBitcoinMessageBlockchain` in `src/utils/bitcoin.ts`, the part of the Bitcoin base with keys and signed messages and none of the address formats.
+`src/blockchains/bitcoinsv.ts` has the version bytes. The table has no P2SH byte, so validation refuses P2SH. It extends `AbstractBitcoinP2PKHBlockchain` in `src/utils/bitcoin.ts`, which Bitcoin SV, Dash and Dogecoin share: base58 P2PKH under one version byte per network, on top of the keys and signed messages of the Bitcoin base.
