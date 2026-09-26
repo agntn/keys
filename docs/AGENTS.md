@@ -2,23 +2,26 @@
 
 Docus site for `@agntn/keys`. Markdown lives in `content/`. The browser explorer is a Vue component in the Nuxt app, not a `playground/` script.
 
+The site uses the agntn instrument design system, the one `agntn/puzzles/docs` introduced. For panel geometry, typography, motion and the component that owns each part, read [DESIGN.md](DESIGN.md).
+
 ## Layout
 
 ```
 docs/
 ├── nuxt.config.ts                 # extends: ['docus'], cloudflare_module preset, @agntn/keys aliased to ../src
 ├── app/app.config.ts              # title, github, theme
-├── app/app.css                    # theme tokens (light + .dark), shared `keys-*` classes
-├── app/components/                # Docus overrides: AppHeaderLogo, AppHeaderCTA (nav), AppFooterLeft, DocsAsideLeftBody
+├── app/app.css                    # tokens, the shared `console-*`, `hero-*` and `roster` grammar, `keys-*` classes, `.key-bytes`
+├── app/components/                # Docus overrides: header (logo, areas, section tabs, mobile menu), sidebar, toc, page header links, surround cards, footer; KeysCallout and RosterSort
 ├── app/components/OgImage/        # Docs and Landing Takumi templates, theme colours as literals
-├── app/assets/fonts.css           # @font-face for the TTFs in public/fonts, shared by the site and the OG images
-├── app/components/content/        # MDC components (`::landing-home`, `::keyspace-explorer`, `::chain-facts`)
-├── app/composables/               # useLandingKey (live key walk), useSubNavigation (sidebar icons)
-├── app/utils/                     # parse-key (range, stepping), derive (rows per chain), format
+├── app/assets/fonts.css           # @font-face for the Figtree and Fira Code TTFs in public/fonts, shared by the site and the OG images
+├── app/components/content/        # MDC components (`::landing-home`, `::chain-facts`, `::chain-list`), the landing instruments, KeyspaceExplorer, Console* and Prose* overrides
+├── app/composables/               # useLandingKey (live key walk), useSubNavigation (sections, tabs, icons), useCopied, useRosterFlip
+├── app/utils/                     # chains (display list), parse-key (range, stepping), derive (rows per chain), format, tokens (`tok-*`), roster (UTable classes)
 ├── content/index.md               # landing
 ├── content/1.guide/               # getting started
 ├── content/2.blockchains/         # one page per chain
 ├── public/                        # favicon.svg and the files cut from it, site.webmanifest, fonts/
+├── shiki-theme.ts                 # code block theme, every colour a `--shiki-token-*` variable from app.css
 ├── server/routes/sitemap.xml.ts   # Docus sitemap plus the Vue pages
 └── app/pages/keyspace.vue         # explorer, own route outside the docs layout
 ```
@@ -61,7 +64,7 @@ The landing renders before the library loads, so `app/utils/landing.ts` records 
 ## OG images
 
 - `app/components/OgImage/Docs.takumi.vue` and `Landing.takumi.vue` override the Docus templates of the same name and are rendered by Takumi at build time. Takumi has no CSS variables, so the theme colours from `app.css` are repeated there as literals.
-- nuxt-og-image doesn't see the faces `@nuxt/fonts` generates, but it parses `@font-face` rules from the files in `css`. That's why `app/assets/fonts.css` declares the five TTFs in `public/fonts` and `fonts.families` uses the `local` provider. Site and OG images share the files.
+- nuxt-og-image doesn't see the faces `@nuxt/fonts` generates, but it parses `@font-face` rules from the files in `css`. That's why `app/assets/fonts.css` declares the four TTFs in `public/fonts` (Figtree and Fira Code, 400 and 500) and `fonts.families` uses the `local` provider. Site and OG images share the files. Without them Takumi falls back to Inter, which is what `agntn/puzzles` ships today.
 - Docus encodes title and description in the OG file name and a comma is a separator there, so the template gets descriptions without commas. Frontmatter descriptions use periods and `and` instead, and stay under 160 characters.
 - The landing OG file is named from the SEO description and Nitro refuses a prerender path containing `..`, so a description ending in a period is silently skipped and the landing ships with a dead `og:image`. Keep the description in `content/index.md` without a trailing period and check `grep c_Landing` in the build log has no `(skipped)`.
 
@@ -72,4 +75,4 @@ The landing renders before the library loads, so `app/utils/landing.ts` records 
 - secp256k1 keyspace is `1 .. n-1`. ed25519 rows reuse the same 32 bytes as a secret; label that.
 - Keep Node demos in `playground/`.
 - Icons: `token` (Web3 Icons, monochrome) for chains by ticker (`i-token-btc`), Lucide for the interface, `simple-icons` for GitHub and npm, `vscode-icons` for file types in code block headers. A chain icon that only exists in colour is not a reason to mix sets.
-- Chains are listed by hand: rows and `loadExplorerChains` in `app/utils/derive.ts`, fixtures in `app/utils/landing.ts`, the grid in `LandingHome.vue`, `LandingToolCall.vue`, `LandingRotatingCode.vue`, sidebar icons in `useSubNavigation.ts`, the icon bundle in `nuxt.config.ts`. A new chain in `src/_blockchains.ts` needs all of them plus a page under `content/2.blockchains/`.
+- Chains are listed by hand: rows and `loadExplorerChains` in `app/utils/derive.ts`, fixtures in `app/utils/landing.ts`, the display list in `app/utils/chains.ts` (name, curve, icon, blurb and the fixture row, read by the landing instruments, `ChainList` and `ChainFacts`), the secp256k1 list in `LandingToolCall.vue`, sidebar icons in `useSubNavigation.ts`, the icon bundle in `nuxt.config.ts`. A new chain in `src/_blockchains.ts` needs all of them plus a page under `content/2.blockchains/` with its `::chain-facts`.
