@@ -61,7 +61,16 @@ dashChain.deriveHDWallet(mnemonic, "m/44'/5'/0'/0/0").address;
 
 The purpose level doesn't pick a format, there's only one. `m/84'` still gives you an `X` address, and an explicit `"p2sh"` still throws.
 
-WIF isn't here yet. Dash's prefix is `0xcc`, and `encodeWIF` and `decodeWIF` speak only Bitcoin, Litecoin and Decred, so a key from a Dash wallet export goes in as hex.
+## WIF
+
+```js
+import { decodeWIF } from "@agntn/keys";
+
+decodeWIF("XK9kG3y8JeDgSNrXdomWiCiBMs7D2eNJSrux1rx7GuGLWpMxEH3w", { chain: "dash" });
+// { privateKey: 'eaa4…a028', chain: 'dash', network: 'mainnet', compressed: true }
+```
+
+Version `0xcc` on mainnet, so compressed keys start with `X` and uncompressed ones with `7`. That's the string `dumpprivkey` gives you. Testnet is `0xef`, the Bitcoin one, so a Dash testnet key and a Bitcoin testnet key are the same string.
 
 ## Signing
 

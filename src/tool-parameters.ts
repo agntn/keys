@@ -88,7 +88,9 @@ export const TOOL_ADDRESS_TYPES_BY_CHAIN: Readonly<Record<ToolChain, readonly st
 export const TOOL_WIF_CHAINS = [
   "bitcoin",
   "litecoin",
+  "dash",
   "decred",
+  "dogecoin",
 ] as const satisfies readonly WIFChain[];
 
 /** Maximum number of words or indices accepted by one BIP39 lookup. */

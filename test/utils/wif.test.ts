@@ -28,7 +28,7 @@ describe("WIF", () => {
     });
   });
 
-  it.each(["bitcoin", "litecoin", "decred"] as const)(
+  it.each(["bitcoin", "litecoin", "dash", "decred", "dogecoin"] as const)(
     "defaults to compressed mainnet for %s and preserves leading zeros",
     (chain) => {
       expect(decodeWIF(encodeWIF(keyOne, { chain }), { chain })).toEqual({
@@ -51,19 +51,26 @@ describe("WIF", () => {
   it("enforces chain/network while acknowledging shared testnet prefixes", () => {
     const wif = encodeWIF(keyOne, { chain: "litecoin" });
     expect(() => decodeWIF(wif, bitcoin)).toThrow("expected chain/network");
-    for (const chain of ["bitcoin", "litecoin", "decred"] as const) {
+    for (const chain of ["bitcoin", "litecoin", "dash", "decred", "dogecoin"] as const) {
       const testnet = encodeWIF(keyOne, { chain, network: "testnet" });
       expect(() => decodeWIF(testnet, { chain })).toThrow("expected chain/network");
     }
     const shared = encodeWIF(keyOne, { chain: "bitcoin", network: "testnet" });
     expect(shared).toBe(encodeWIF(keyOne, { chain: "litecoin", network: "testnet" }));
     expect(decodeWIF(shared, { chain: "litecoin", network: "testnet" }).chain).toBe("litecoin");
+    expect(shared).toBe(encodeWIF(keyOne, { chain: "dash", network: "testnet" }));
+    expect(() =>
+      decodeWIF(encodeWIF(keyOne, { chain: "dogecoin", network: "testnet" }), {
+        chain: "bitcoin",
+        network: "testnet",
+      }),
+    ).toThrow("expected chain/network");
     expect(() => decodeWIF(wif, decred)).toThrow();
     expect(() => decodeWIF(encodeWIF(keyOne, decred), bitcoin)).toThrow();
   });
 
   it.each(["00".repeat(32), order, "ff".repeat(32)])("rejects invalid scalar %s", (key) => {
-    for (const chain of ["bitcoin", "litecoin", "decred"] as const) {
+    for (const chain of ["bitcoin", "litecoin", "dash", "decred", "dogecoin"] as const) {
       expect(() => encodeWIF(key, { chain })).toThrow("Invalid WIF private key scalar");
     }
     for (const suffix of ["", "01"]) {
@@ -123,15 +130,18 @@ describe("WIF", () => {
     );
   });
 
-  it.each(["bitcoin", "litecoin", "decred"] as const)("rejects corrupted %s WIF", (chain) => {
-    const wif = encodeWIF(keyOne, { chain });
-    const last = wif.endsWith("1") ? "2" : "1";
-    for (const input of [wif.slice(0, -1) + last, " " + wif, wif + "\n", "0".repeat(51)]) {
-      expect(() => decodeWIF(input, { chain })).toThrow("Invalid WIF encoding or checksum");
-    }
-    expect(() => decodeWIF("1".repeat(100_000), { chain })).toThrow("Invalid WIF length");
-    expect(() => decodeWIF("", { chain })).toThrow("Invalid WIF length");
-  });
+  it.each(["bitcoin", "litecoin", "dash", "decred", "dogecoin"] as const)(
+    "rejects corrupted %s WIF",
+    (chain) => {
+      const wif = encodeWIF(keyOne, { chain });
+      const last = wif.endsWith("1") ? "2" : "1";
+      for (const input of [wif.slice(0, -1) + last, " " + wif, wif + "\n", "0".repeat(51)]) {
+        expect(() => decodeWIF(input, { chain })).toThrow("Invalid WIF encoding or checksum");
+      }
+      expect(() => decodeWIF("1".repeat(100_000), { chain })).toThrow("Invalid WIF length");
+      expect(() => decodeWIF("", { chain })).toThrow("Invalid WIF length");
+    },
+  );
 
   it("rejects unsupported chains, networks and JavaScript inputs without coercion", () => {
     for (const chain of [

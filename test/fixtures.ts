@@ -813,6 +813,8 @@ export const zcashTestVectors = {
  * @see https://github.com/bitcoinjs/wif/blob/master/test/fixtures.json
  * @see https://github.com/litecoin-project/litecoin/blob/master/src/test/data/key_io_valid.json
  * @see https://github.com/decred/dcrd/blob/master/dcrutil/wif_test.go
+ * @see https://github.com/dashpay/dash/blob/728f5055836c6d29806412fc7223ac8fe05af991/src/test/data/key_io_valid.json
+ * @see https://github.com/dogecoin/dogecoin/blob/e0a1c157791544e818c901bd9341896965afbf9d/src/test/data/base58_keys_valid.json
  */
 export const wifTestVectors = [
   {
@@ -900,6 +902,34 @@ export const wifTestVectors = [
     compressed: true,
   },
   {
+    wif: "7sUh9RiHaovsNoNToDz3gfSzbETZBodKCY8ZkLtxbDdcEueuNdd",
+    privateKey: "fdeca3b08e38af53d7c4c60e3ad208ce5066441036e9f191e0b75036a77f65e2",
+    chain: "dash",
+    network: "mainnet",
+    compressed: false,
+  },
+  {
+    wif: "XK9kG3y8JeDgSNrXdomWiCiBMs7D2eNJSrux1rx7GuGLWpMxEH3w",
+    privateKey: "eaa4752443233fbe8f8943bf956de595665c38ffff23827e17c10cdc1c27a028",
+    chain: "dash",
+    network: "mainnet",
+    compressed: true,
+  },
+  {
+    wif: "938BPMAhPitw3MZW9V5UBFVtKwJRkzJGkQuS4EsGiczaHH7Xed6",
+    privateKey: "caae6c9810626198ff778740f88ddcf102aeb81daee289c044c4a4571c4b6f28",
+    chain: "dash",
+    network: "testnet",
+    compressed: false,
+  },
+  {
+    wif: "cRUCRTHRBX9rA9CXDvVEmuPMyRfWNvg8gpMiFiN77wNTJetkFari",
+    privateKey: "7400f4b8e0b843f880c32d81e91bdea04cd7a3819b32275fc3298af4c7ec87eb",
+    chain: "dash",
+    network: "testnet",
+    compressed: true,
+  },
+  {
     wif: "PmQdMn8xafwaQouk8ngs1CccRCB1ZmsqQxBaxNR4vhQi5a5QB5716",
     privateKey: "0c28fca386c7a227600b2fe50b7cae11ec86d3bf1fbe471be89827e19d72aa1d",
     chain: "decred",
@@ -910,6 +940,34 @@ export const wifTestVectors = [
     wif: "PtWVDUidYaiiNT5e2Sfb1Ah4evbaSopZJkkpFBuzkJYcYteugvdFg",
     privateKey: "dda35a1488fb97b6eb3fe6e9ef2a25814e396fb5dc295fe994b96789b21a0398",
     chain: "decred",
+    network: "testnet",
+    compressed: true,
+  },
+  {
+    wif: "6K7a8wZW8A1oZxNd7wZz8PhgAAaDxybkzNpD1sGVvmSaBmc3Hg2",
+    privateKey: "81517fd848ebfeda7e2c684e7a3f5ebbb28b15d52d33d8a201d8873a0cdaf761",
+    chain: "dogecoin",
+    network: "mainnet",
+    compressed: false,
+  },
+  {
+    wif: "QP5rQxpaP8HHPEdCEqxTjiHGWRvsyPvzZJeJ9BCxpfT13FN9VesQ",
+    privateKey: "0e017cc6ad98c6646a1139114e8dcd9bf2537f3e0306a2f43dea03f91fea370a",
+    chain: "dogecoin",
+    network: "mainnet",
+    compressed: true,
+  },
+  {
+    wif: "96MAePnF8ppQm8165ABvzSEShnNy3vgxjmMhcqEkQVZ9FtPV2XL",
+    privateKey: "73423bf1fa6526ee571f3b4b4ad19799c81d40ce5c18a37d87dc38b55746627d",
+    chain: "dogecoin",
+    network: "testnet",
+    compressed: false,
+  },
+  {
+    wif: "ckaDjxhDsVyZTHLUF7uoojCXVYcciUGeEk53VFzKUJsKUKhnbUnZ",
+    privateKey: "ae03398655b29f80badf1e6909e75ccf9bcdb6062e8886d0aca4b3d46a82aa83",
+    chain: "dogecoin",
     network: "testnet",
     compressed: true,
   },
