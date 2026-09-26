@@ -13,28 +13,28 @@ const CHAINS = ["Bitcoin", "Ethereum", "Solana", "Sui", "Cardano", "+6 more"];
 <template>
   <div
     class="w-full h-full flex flex-col justify-between px-[72px] py-[56px]"
-    style="background-color: #0b0d10; font-family: &quot;Space Grotesk&quot;; color: #d5e4ee"
+    style="background-color: #0b0d10; font-family: &quot;Figtree&quot;; color: #d5e4ee"
   >
     <div
       class="absolute top-0 left-[150px] w-[900px] h-[560px]"
       style="
         background-image: radial-gradient(
           ellipse at top,
-          rgba(111, 208, 247, 0.18) 0%,
-          rgba(111, 208, 247, 0.05) 45%,
+          rgba(252, 211, 77, 0.18) 0%,
+          rgba(252, 211, 77, 0.05) 45%,
           transparent 70%
         );
       "
     />
 
     <div class="flex items-center justify-between w-full">
-      <p class="m-0 text-[22px]" style="font-family: &quot;Space Mono&quot;; color: #f0f4f8">
+      <p class="m-0 text-[22px]" style="font-family: &quot;Fira Code&quot;; color: #f0f4f8">
         {{ siteName }}
       </p>
       <div
         class="flex items-center px-[16px] h-[38px] rounded-[8px] text-[18px] leading-none"
         style="
-          font-family: &quot;Space Mono&quot;;
+          font-family: &quot;Fira Code&quot;;
           color: #a5b0bc;
           background-color: #11141a;
           border: 1px solid #262c35;
@@ -56,7 +56,7 @@ const CHAINS = ["Bitcoin", "Ethereum", "Solana", "Sui", "Cardano", "+6 more"];
         </h1>
         <h1
           class="m-0 ml-[22px] text-[76px] font-medium leading-[1.05] tracking-[-0.03em]"
-          style="color: #6fd0f7"
+          style="color: #fcd34d"
         >
           Every chain.
         </h1>
@@ -76,10 +76,10 @@ const CHAINS = ["Bitcoin", "Ethereum", "Solana", "Sui", "Cardano", "+6 more"];
           :key="chain"
           class="flex items-center mr-[10px] px-[12px] h-[36px] rounded-[8px] text-[16px] leading-none"
           :style="{
-            fontFamily: 'Space Mono',
-            color: index === 0 ? '#6fd0f7' : '#a5b0bc',
+            fontFamily: 'Fira Code',
+            color: index === 0 ? '#fcd34d' : '#a5b0bc',
             backgroundColor: '#11141a',
-            border: index === 0 ? '1px solid rgba(111, 208, 247, 0.5)' : '1px solid #262c35',
+            border: index === 0 ? '1px solid rgba(252, 211, 77, 0.5)' : '1px solid #262c35',
             lineHeight: '36px',
             whiteSpace: 'nowrap',
           }"
@@ -89,7 +89,7 @@ const CHAINS = ["Bitcoin", "Ethereum", "Solana", "Sui", "Cardano", "+6 more"];
       </div>
       <p
         class="m-0 ml-[24px] text-[16px]"
-        style="font-family: &quot;Space Mono&quot;; color: #6d7884; white-space: nowrap"
+        style="font-family: &quot;Fira Code&quot;; color: #6d7884; white-space: nowrap"
       >
         keys.agntn.dev
       </p>

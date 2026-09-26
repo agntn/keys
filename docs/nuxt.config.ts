@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { keysTheme } from "./shiki-theme";
 
 /** Bundled from the checkout's sources: a deploy needs neither dist/ nor the root node_modules. */
 const librarySource = resolve(import.meta.dirname, "../src");
@@ -89,18 +90,28 @@ export default defineNuxtConfig({
   icon: {
     clientBundle: {
       icons: [
+        "lucide:arrow-down",
+        "lucide:arrow-left",
         "lucide:arrow-right",
+        "lucide:arrow-up",
         "lucide:arrow-up-right",
         "lucide:book-open",
         "lucide:boxes",
         "lucide:check",
+        "lucide:check-circle",
+        "lucide:chevron-down",
         "lucide:chevron-left",
         "lucide:chevron-right",
+        "lucide:chevrons-up-down",
+        "lucide:circle-help",
         "lucide:circle-plus",
         "lucide:copy",
         "lucide:cpu",
         "lucide:dices",
+        "lucide:expand",
         "lucide:key",
+        "lucide:key-round",
+        "lucide:link",
         "lucide:loader-circle",
         "lucide:map-pin",
         "lucide:plus",
@@ -112,9 +123,9 @@ export default defineNuxtConfig({
         "token:apt",
         "token:base",
         "token:bch",
-        "token:btg",
         "token:bsv",
         "token:btc",
+        "token:btg",
         "token:dash",
         "token:dcr",
         "token:doge",
@@ -124,11 +135,12 @@ export default defineNuxtConfig({
         "token:sui",
         "token:trx",
         "token:xec",
+        "token:xlm",
         "token:zec",
         "vscode-icons:file-type-js",
-        "vscode-icons:file-type-typescript",
         "vscode-icons:file-type-json",
         "vscode-icons:file-type-shell",
+        "vscode-icons:file-type-typescript",
       ],
     },
   },
@@ -177,8 +189,8 @@ export default defineNuxtConfig({
   css: ["~/assets/fonts.css"],
   fonts: {
     families: [
-      { name: "Space Grotesk", provider: "local", weights: [400, 500, 600] },
-      { name: "Space Mono", provider: "local", weights: [400, 700] },
+      { name: "Figtree", provider: "local", weights: [400, 500] },
+      { name: "Fira Code", provider: "local", weights: [400, 500] },
     ],
   },
   content: {
@@ -189,10 +201,11 @@ export default defineNuxtConfig({
     build: {
       markdown: {
         highlight: {
+          // One theme of CSS variables for both modes; app.css gives the variables their light and dark values.
           theme: {
-            default: "github-light",
-            light: "github-light",
-            dark: "poimandres",
+            default: keysTheme,
+            light: keysTheme,
+            dark: keysTheme,
           },
         },
       },
