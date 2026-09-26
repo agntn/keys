@@ -70,4 +70,4 @@ Bitcoin Cash Node kept Bitcoin's `"\x18Bitcoin Signed Message:\n"`, so the diges
 
 ## Where it lives
 
-`src/blockchains/bitcoincash.ts` has the prefixes and the address rules. It extends `AbstractBitcoinMessageBlockchain` in `src/utils/bitcoin.ts`, the part of the Bitcoin base with keys and signed messages and none of the address formats. The CashAddr codec is in `src/utils/cashaddr.ts`.
+`src/blockchains/bitcoincash.ts` has the prefixes and the address rules. It extends `AbstractCashAddrBlockchain` in `src/utils/bitcoin.ts`: CashAddr P2PKH under one prefix per network, on top of the keys and signed messages of the Bitcoin base. The CashAddr codec is in `src/utils/cashaddr.ts`.
