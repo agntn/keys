@@ -16,6 +16,7 @@ The instruments keys owns:
 | [ChainList.vue](app/components/content/ChainList.vue)             | landing and `/blockchains` | roster of the drivers on `UTable`, sortable                           |
 | [ChainFacts.vue](app/components/content/ChainFacts.vue)           | every chain page         | chain dossier: ID bar with position, reticle, formats, readout, access  |
 | [KeyspaceExplorer.vue](app/components/content/KeyspaceExplorer.vue) | `/keyspace`            | input, secret, public keys, every address, under a hero zone            |
+| [Landing.takumi.vue](app/components/OgImage/Landing.takumi.vue), [Docs.takumi.vue](app/components/OgImage/Docs.takumi.vue) | OG images | the hero zone in 1200 by 600; a docs page as one instrument with the section tag, ruler and tool tags |
 
 The chain names, curves, icons, blurbs and fixture rows come from [chains.ts](app/utils/chains.ts). Addresses on the landing before the library loads come from [landing.ts](app/utils/landing.ts), which the root test derives again from `src/`.
 
