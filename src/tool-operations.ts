@@ -547,6 +547,66 @@ export async function deriveHdWallet(
   };
 }
 
+/** Watch-only wallet material derived from an extended public key. */
+export interface DerivedXpubWalletDetails {
+  chain: string;
+  network: string;
+  prefix: string;
+  path: string;
+  addressType?: string;
+  publicKey: string;
+  address: string;
+}
+
+/**
+ * Derives a watch-only address from an extended public key and normal levels below it.
+ * @param chainValue - Blockchain name.
+ * @param extendedKeyValue - Extended public key such as an account `xpub`.
+ * @param pathValue - Normal levels below the key, such as `m/0/0`.
+ * @param addressTypeValue - Optional address type that wins over the one the prefix stands for.
+ * @param networkValue - Optional network name.
+ * @returns {Promise<ToolResult<DerivedXpubWalletDetails>>} Public key and address at the path.
+ */
+export async function deriveXpubWallet(
+  chainValue: unknown,
+  extendedKeyValue: unknown,
+  pathValue: unknown,
+  addressTypeValue?: unknown,
+  networkValue?: unknown,
+): Promise<ToolResult<DerivedXpubWalletDetails>> {
+  const extendedKey = requiredString(extendedKeyValue, "Extended key");
+  const path = requiredString(pathValue, "Derivation path");
+  if (path.length > 256) throw new TypeError("Invalid derivation path");
+  const { blockchain, addressType } = await getBlockchain(
+    chainValue,
+    networkValue,
+    addressTypeValue,
+  );
+  const wallet = blockchain.deriveXpubWallet(extendedKey, path, addressType);
+  const details = {
+    chain: blockchain.name,
+    network: blockchain.network,
+    prefix: wallet.prefix,
+    path,
+    ...(wallet.addressType === undefined ? {} : { addressType: wallet.addressType }),
+    publicKey: wallet.keys.public,
+    address: wallet.address,
+  };
+  return {
+    content: content(
+      [
+        `Chain: ${details.chain} (${details.network})`,
+        `Extended key: ${details.prefix}`,
+        `Path: ${path}`,
+        ...(details.addressType === undefined ? [] : [`Address type: ${details.addressType}`]),
+        `Public key: ${details.publicKey}`,
+        `Address: ${details.address}`,
+      ].join("\n"),
+    ),
+    details,
+  };
+}
+
 /**
  * Derives public Bitcoin wallet material from a complete Electrum phrase and exact path.
  * @param mnemonicValue - Public or disposable Electrum phrase

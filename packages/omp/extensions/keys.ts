@@ -14,6 +14,7 @@ import {
   GENERATE_WALLET_PARAMETERS,
   DERIVE_WALLET_PARAMETERS,
   DERIVE_HD_WALLET_PARAMETERS,
+  DERIVE_XPUB_WALLET_PARAMETERS,
   INSPECT_MNEMONIC_PARAMETERS,
   ENCODE_BIP39_ENTROPY_PARAMETERS,
   LOOKUP_BIP39_INDICES_PARAMETERS,
@@ -224,6 +225,35 @@ export default function keysExtension(pi: ExtensionAPI) {
         params.addressType,
         params.network,
         params.allowInvalidChecksum,
+      );
+    },
+  });
+
+  pi.registerTool({
+    name: "keys_derive_xpub_wallet",
+    label: "Derive Xpub Wallet",
+    description:
+      "Derive a watch-only public key and address from an extended public key and normal levels below it",
+    promptSnippet:
+      "Use to list the addresses behind a published xpub, ypub or zpub without any secret.",
+    promptGuidelines: [
+      "Provide a chain, the extended public key, and normal levels below it: m/0/i for receiving addresses, m/1/i for change",
+      "secp256k1 BIP32 chains only; hardened levels and extended private keys are refused",
+      "Bitcoin, Bitcoin Gold and Litecoin write SegWit for a zpub and P2SH for a ypub unless addressType is set",
+      "Many wallets export a BIP84 or BIP49 account as xpub; pass addressType segwit or p2sh for those",
+      "The key reveals every address of its account and is saved in the transcript",
+    ],
+    parameters: DERIVE_XPUB_WALLET_PARAMETERS,
+    renderCall(args, _theme) {
+      return new Text(`🧩 Derive xpub wallet: ${args.chain} ${args.path}`, 0, 0);
+    },
+    async execute(_toolCallId, params) {
+      return (await loadToolOperations()).deriveXpubWallet(
+        params.chain,
+        params.extendedKey,
+        params.path,
+        params.addressType,
+        params.network,
       );
     },
   });

@@ -1184,3 +1184,38 @@ export const electrumVectors = [
     address: "bc1q0fp4hfqy8zylxrfv50mxtehdc9xe0crjet3q4y",
   },
 ] as const;
+
+/**
+ * SLIP-0132 test vectors (satoshilabs/slips slip-0132.md): account keys of the BIP39
+ * `abandon … about` mnemonic and the address at `0/0` below each.
+ */
+export const slip132Vectors = [
+  {
+    prefix: "xpub",
+    addressType: "legacy",
+    path: "m/44'/0'/0'",
+    extendedKey:
+      "xpub6BosfCnifzxcFwrSzQiqu2DBVTshkCXacvNsWGYJVVhhawA7d4R5WSWGFNbi8Aw6ZRc1brxMyWMzG3DSSSSoekkudhUd9yLb6qx39T9nMdj",
+    address: "1LqBGSKuX5yYUonjxT5qGfpUsXKYYWeabA",
+  },
+  {
+    prefix: "ypub",
+    addressType: "p2sh",
+    path: "m/49'/0'/0'",
+    extendedKey:
+      "ypub6Ww3ibxVfGzLrAH1PNcjyAWenMTbbAosGNB6VvmSEgytSER9azLDWCxoJwW7Ke7icmizBMXrzBx9979FfaHxHcrArf3zbeJJJUZPf663zsP",
+    address: "37VucYSaXLCAsxYyAPfbSi9eh4iEcbShgf",
+  },
+  {
+    prefix: "zpub",
+    addressType: "segwit",
+    path: "m/84'/0'/0'",
+    extendedKey:
+      "zpub6rFR7y4Q2AijBEqTUquhVz398htDFrtymD9xYYfG1m4wAcvPhXNfE3EfH1r1ADqtfSdVCToUG868RvUUkgDKf31mGDtKsAYz2oz2AGutZYs",
+    address: "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu",
+  },
+] as const;
+
+/** SLIP-0132 private counterpart of the `xpub` vector, which the watch-only path refuses. */
+export const slip132PrivateKey =
+  "xprv9xpXFhFpqdQK3TmytPBqXtGSwS3DLjojFhTGht8gwAAii8py5X6pxeBnQ6ehJiyJ6nDjWGJfZ95WxByFXVkDxHXrqu53WCRGypk2ttuqncb";

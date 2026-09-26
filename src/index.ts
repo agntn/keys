@@ -28,6 +28,7 @@ export type {
   BlockchainImplementation,
   Keys,
   Wallet,
+  XpubWallet,
   KeyOptions,
   HDWalletOptions,
   SigningOptions,

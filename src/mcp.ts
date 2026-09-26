@@ -14,6 +14,7 @@ import {
   deriveHdWallet,
   deriveBip39Seed,
   deriveElectrumWallet,
+  deriveXpubWallet,
   deriveWallet,
   encodeBip39Entropy,
   encodeWif,
@@ -42,6 +43,7 @@ import {
   GENERATE_WALLET_PARAMETERS,
   DERIVE_WALLET_PARAMETERS,
   DERIVE_HD_WALLET_PARAMETERS,
+  DERIVE_XPUB_WALLET_PARAMETERS,
   INSPECT_MNEMONIC_PARAMETERS,
   ENCODE_BIP39_ENTROPY_PARAMETERS,
   LOOKUP_BIP39_INDICES_PARAMETERS,
@@ -175,6 +177,22 @@ const tools: readonly ToolDefinition[] = [
         args["addressType"],
         args["network"],
         args["allowInvalidChecksum"],
+      ),
+  },
+  {
+    name: "keys_derive_xpub_wallet",
+    title: "Derive Xpub Wallet",
+    description:
+      "Derive a watch-only public key and address from an extended public key and normal levels below it, such as m/0/0 for the first receiving address. secp256k1 BIP32 chains only; hardened levels and extended private keys are refused. A zpub writes SegWit and a ypub P2SH, but many wallets export a BIP84 or BIP49 account as xpub, so pass addressType segwit or p2sh for those. The key reveals every address of its account and enters the transcript.",
+    inputSchema: DERIVE_XPUB_WALLET_PARAMETERS,
+    annotations: LOCAL_READ,
+    execute: (args) =>
+      deriveXpubWallet(
+        args["chain"],
+        args["extendedKey"],
+        args["path"],
+        args["addressType"],
+        args["network"],
       ),
   },
   {

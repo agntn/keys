@@ -110,6 +110,9 @@ export const BIP39_WORD_SCHEMA_PATTERN = "^\\S+$";
 /** JSON Schema pattern for an absolute derivation path. */
 export const DERIVATION_PATH_SCHEMA_PATTERN = "^m(/[0-9]+'?)+$";
 
+/** JSON Schema pattern for normal levels below an xpub; hardened ones need the private key. */
+export const XPUB_PATH_SCHEMA_PATTERN = "^m(/[0-9]+)+$";
+
 /** JSON Schema pattern for a 32-byte private key, the one size every supported chain signs with. */
 export const PRIVATE_KEY_SCHEMA_PATTERN = "^[0-9A-Fa-f]{64}$";
 

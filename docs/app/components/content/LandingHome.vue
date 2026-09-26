@@ -5,7 +5,7 @@ const stats = [
   { value: "18", label: "chains" },
   { value: "2", label: "curves" },
   { value: "0", label: "network calls" },
-  { value: "19", label: "MCP tools" },
+  { value: "20", label: "MCP tools" },
 ] as const;
 
 const chains = [
@@ -73,7 +73,7 @@ async function copyInstall() {
       </h1>
       <p class="keys-enter keys-enter-2 mx-auto mt-6 max-w-xl text-base leading-7 text-muted">
         Typed key generation, address derivation, and message signing for eighteen blockchains.
-        One interface in TypeScript, the same nineteen tools over MCP, and nothing ever leaves the process.
+        One interface in TypeScript, the same twenty tools over MCP, and nothing ever leaves the process.
       </p>
       <div class="keys-enter keys-enter-3 mt-8 flex flex-wrap items-center justify-center gap-2">
         <UButton to="/guide" color="primary" trailing-icon="i-lucide-arrow-right">
@@ -246,7 +246,7 @@ async function copyInstall() {
 
     <LandingFeature
       eyebrow="Agents"
-      title="Nineteen tools over MCP"
+      title="Twenty tools over MCP"
       to="/guide#agents"
       link="MCP server setup"
       :checks="[

@@ -20,6 +20,8 @@ import {
   wifTestVectors,
   localizedMnemonicVectors,
   invalidChecksumPuzzle,
+  slip132PrivateKey,
+  slip132Vectors,
 } from "./fixtures.ts";
 import { createMcpServer } from "../src/mcp.ts";
 
@@ -32,6 +34,7 @@ const TOOL_NAMES = [
   "keys_generate_wallet",
   "keys_derive_wallet",
   "keys_derive_hd_wallet",
+  "keys_derive_xpub_wallet",
   "keys_generate_mnemonic",
   "keys_inspect_mnemonic",
   "keys_encode_bip39_entropy",
@@ -322,6 +325,41 @@ describe("keys MCP server", () => {
     expect(response.isError).not.toBe(true);
     expect(text(response.content)).toContain("Address: bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu");
     expect(text(response.content)).not.toContain(mnemonic);
+  });
+
+  it("derives a watch-only address from an extended public key through MCP", async () => {
+    const client = await connectTestClient();
+    const [xpub, , zpub] = slip132Vectors;
+
+    const response = await client.callTool({
+      name: "keys_derive_xpub_wallet",
+      arguments: { chain: "bitcoin", extendedKey: zpub.extendedKey, path: "m/0/0" },
+    });
+    expect(response.isError).not.toBe(true);
+    expect(text(response.content)).toBe(
+      [
+        "Chain: bitcoin (mainnet)",
+        "Extended key: zpub",
+        "Path: m/0/0",
+        "Address type: segwit",
+        "Public key: 0330d54fd0dd420a6e5f8d3624f5f3482cae350f79d5f0753bf5beef9c2d91af3c",
+        `Address: ${zpub.address}`,
+      ].join("\n"),
+    );
+
+    for (const [args, message] of [
+      [{ extendedKey: xpub.extendedKey, path: "m/0'/0" }, "Invalid arguments at /path"],
+      [{ extendedKey: slip132PrivateKey, path: "m/0/0" }, "Extended private keys are not accepted"],
+      [{ extendedKey: xpub.extendedKey, path: "m/0", chain: "solana" }, "solana does not derive"],
+    ] as const) {
+      const failed = await client.callTool({
+        name: "keys_derive_xpub_wallet",
+        arguments: { chain: "bitcoin", ...args },
+      });
+      expect(failed.isError).toBe(true);
+      expect(text(failed.content)).toContain(message);
+      expect(text(failed.content)).not.toContain(slip132PrivateKey.slice(4, 40));
+    }
   });
 
   it("requires an explicit checksum override and reports the warning through MCP", async () => {
