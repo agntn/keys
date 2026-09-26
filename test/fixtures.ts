@@ -809,6 +809,53 @@ export const zcashTestVectors = {
 } as const;
 
 /**
+ * eCash vectors from Bitcoin ABC's CashAddr tests, bip_utils 2.12.2 BIP44 tests on the seed of the BIP39
+ * `abandon ... about` mnemonic and ecash-lib's message tests.
+ * @see https://github.com/Bitcoin-ABC/bitcoin-abc/blob/b53096bc43db49bc90a4c6c39a7c0106d4be2d78/src/test/cashaddrenc_tests.cpp
+ * @see https://github.com/ebellocchia/bip_utils/blob/db8b849251e12f52ce8b77830c0d32b7e2de16b5/tests/bip/bip44/test_bip44.py
+ * @see https://github.com/Bitcoin-ABC/bitcoin-abc/blob/b53096bc43db49bc90a4c6c39a7c0106d4be2d78/modules/ecash-lib/src/messages.test.ts
+ */
+export const eCashTestVectors = {
+  /** `test_encode_address`: each hash as P2PKH and as P2SH under `ecash`. */
+  encoded: [
+    {
+      hash: "76a04053bda0a88bda5177b86a15c3b29f559873",
+      p2pkh: "ecash:qpm2qsznhks23z7629mms6s4cwef74vcwva87rkuu2",
+      p2sh: "ecash:ppm2qsznhks23z7629mms6s4cwef74vcwv2zrv3l8h",
+    },
+    {
+      hash: "cb481232299cd5743151ac4b2d63ae198e7bb0a9",
+      p2pkh: "ecash:qr95sy3j9xwd2ap32xkykttr4cvcu7as4ykdcjcn6n",
+      p2sh: "ecash:pr95sy3j9xwd2ap32xkykttr4cvcu7as4ypg9alspw",
+    },
+    {
+      hash: "011f28e473c95f4013d7d53ec5fbc3b42df8ed10",
+      p2pkh: "ecash:qqq3728yw0y47sqn6l2na30mcw6zm78dzq653y7pv5",
+      p2sh: "ecash:pqq3728yw0y47sqn6l2na30mcw6zm78dzqd3vtezhf",
+    },
+  ],
+  /**
+   * bip_utils' first eCash receive addresses. Its mainnet walks Bitcoin Cash's coin type 145, the
+   * path older eCash wallets kept, and its testnet walks coin type 1.
+   */
+  hd: {
+    mainnet: ["m/44'/145'/0'/0/0", "ecash:qqyx49mu0kkn9ftfj6hje6g2wfer34yfnqdxfumtxd"],
+    testnet: ["m/44'/1'/0'/0/0", "ectest:qqaz6s295ncfs53m86qj0uw6sl8u2kuw0yqy9a2fy0"],
+  },
+  /**
+   * ecash-lib's `signMsg` case: its test key, the double SHA-256 it signs and the base64 compact
+   * signature with a header byte. Its nonce differs from the RFC 6979 one this library takes, so only verification carries over.
+   */
+  signed: {
+    privateKey: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    message: "Hello, world!",
+    digest: "8f6b3f5a9e73fa9bcee1e28c749813665b94b4e9019d71844aee89f928af8fb3",
+    signature:
+      "IEwA92jxphriBKyCd1RI4PM0uhbVUS8qW69h/tKIMrNpGRNOqfTlBATvylddM7H5dqsjkkOc72Zc0hNdOzUiIKI=",
+  },
+} as const;
+
+/**
  * Public WIF interoperability vectors.
  * @see https://github.com/bitcoinjs/wif/blob/master/test/fixtures.json
  * @see https://github.com/litecoin-project/litecoin/blob/master/src/test/data/key_io_valid.json

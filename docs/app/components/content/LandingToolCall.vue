@@ -14,6 +14,7 @@ const SECP = [
   { row: "dcr", slug: "decred" },
   { row: "doge", slug: "dogecoin" },
   { row: "zec", slug: "zcash" },
+  { row: "xec", slug: "ecash" },
   { row: "eth", slug: "ethereum" },
   { row: "base", slug: "base" },
   { row: "tron", slug: "tron" },
