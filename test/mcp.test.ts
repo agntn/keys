@@ -281,11 +281,11 @@ describe("keys MCP server", () => {
 
     expect(response.tools.map((tool) => tool.name)).toEqual(TOOL_NAMES);
     const landing = readFileSync(
-      new URL("../docs/app/components/content/LandingHome.vue", import.meta.url),
+      new URL("../docs/app/components/content/LandingHero.vue", import.meta.url),
       "utf8",
     );
-    const advertisedTools = landing.match(/value: "([0-9]+)", label: "MCP tools"/u)?.[1];
-    expect(advertisedTools, "LandingHome.vue must declare the current MCP tool count").toBe(
+    const advertisedTools = landing.match(/const MCP_TOOLS = ([0-9]+);/u)?.[1];
+    expect(advertisedTools, "LandingHero.vue must declare the current MCP tool count").toBe(
       String(response.tools.length),
     );
     expect(
