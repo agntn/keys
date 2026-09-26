@@ -18,6 +18,8 @@ const testnetChain = useBlockchain(await blockchains.bitcoin({ network: "testnet
 
 Or import the class directly from `@agntn/keys/blockchains/bitcoin` and call `new Bitcoin()`.
 
+Mainnet and testnet only, anything else throws in the constructor. Signet uses the testnet prefixes, so a testnet driver writes its addresses. Regtest keeps the testnet base58 bytes but writes segwit under `bcrt`, and there is no table for that.
+
 ## Five formats
 
 | Type | Mainnet | Testnet | Encoding |

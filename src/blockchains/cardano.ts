@@ -5,7 +5,7 @@ import { AbstractBlockchain } from "../blockchain.ts";
 import { getBIP32Path } from "../utils/bip44/index.ts";
 import { generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
-import type { Curve, KeyOptions, Wallet } from "../types.ts";
+import type { Curve, KeyOptions, Options, Wallet } from "../types.ts";
 
 const ADDRESS_TYPE = {
   BASE_PAYMENT: 0,
@@ -37,6 +37,15 @@ export class Cardano extends AbstractBlockchain {
   override readonly name = "cardano";
   override readonly curve: Curve = "ed25519";
   override readonly bip44 = 1815;
+
+  constructor(options?: Options) {
+    super(options);
+    if (this.network !== "mainnet" && this.network !== "testnet") {
+      throw new RangeError(
+        "Cardano supports mainnet and testnet only; preprod and preview are testnet",
+      );
+    }
+  }
 
   private get params() {
     return this.network === "testnet" ? NETWORK_PARAMS.testnet : NETWORK_PARAMS.mainnet;

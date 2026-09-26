@@ -5,6 +5,11 @@ import Cardano from "../../src/blockchains/cardano";
 import type { Options } from "../../src/types";
 
 describe("Cardano blockchain", () => {
+  it("rejects a network it has no prefixes for", () => {
+    expect(() => new Cardano({ network: "preprod" })).toThrow("mainnet and testnet only");
+    expect(() => new Cardano({ network: "preview" })).toThrow("mainnet and testnet only");
+  });
+
   describe("Mainnet", () => {
     const blockchain = useBlockchain(new Cardano());
 
