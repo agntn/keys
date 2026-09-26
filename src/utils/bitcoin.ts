@@ -21,6 +21,7 @@ import type {
   Curve,
   HDWalletOptions,
   KeyOptions,
+  Options,
   SigningOptions,
   Wallet,
 } from "../types.ts";
@@ -32,6 +33,13 @@ const PURPOSE_ADDRESS_TYPES: Readonly<Record<string, BitcoinAddressType>> = {
   "84": "segwit",
   "86": "taproot",
 };
+
+/** One byte base58 versions of a chain that writes P2PKH only. */
+interface P2PKHNetworkParams {
+  readonly bytesVersionP2PKH: number;
+  /** Absent when the chain refuses payments to P2SH, as Bitcoin SV does since Genesis. */
+  readonly bytesVersionP2SH?: number;
+}
 
 interface NetworkParams {
   readonly hrpSegWit: string;
@@ -228,5 +236,59 @@ export abstract class AbstractBitcoinBlockchain extends AbstractBitcoinMessageBl
       return validateAddressBase58Testnet(address, this.params);
     }
     return false;
+  }
+}
+
+/**
+ * Base58 P2PKH wallets on mainnet and testnet, for chains without SegWit that keep Bitcoin's
+ * keys and one byte version prefixes: Bitcoin SV, Dash and Dogecoin. The shared `p2sh` type
+ * wraps P2WPKH, which anyone could spend on such a chain, so `legacy` is the only type written.
+ * Validation accepts P2SH when the network table gives its version byte, since multisig pays there.
+ */
+export abstract class AbstractBitcoinP2PKHBlockchain extends AbstractBitcoinMessageBlockchain {
+  private readonly label: string;
+  private readonly params: P2PKHNetworkParams;
+
+  /**
+   * @param options - Chain options; the network must be `mainnet` or `testnet`
+   * @param label - Chain name as error messages spell it, such as `Bitcoin SV`
+   * @param networks - Version bytes for each network
+   */
+  constructor(
+    options: Options | undefined,
+    label: string,
+    networks: Readonly<Record<"mainnet" | "testnet", P2PKHNetworkParams>>,
+  ) {
+    super(options);
+    if (this.network !== "mainnet" && this.network !== "testnet") {
+      throw new RangeError(`${label} supports mainnet and testnet only`);
+    }
+    this.label = label;
+    this.params = networks[this.network];
+  }
+
+  /**
+   * The P2PKH address in base58 under this network's version byte.
+   * @param keyPublic - Compressed or uncompressed SEC1 public key as hex
+   * @param type - `legacy`, the only type, meaning pay-to-pubkey-hash
+   * @returns {string} The address
+   */
+  override getAddress(keyPublic: string, type = "legacy"): string {
+    if (type !== "legacy") throw new RangeError(`${this.label} supports legacy P2PKH only`);
+    return generateAddressLegacy(keyPublic, { bytesVersion: this.params.bytesVersionP2PKH });
+  }
+
+  /**
+   * Base58 P2PKH, or P2SH where the chain pays to it, under this network's version bytes.
+   * @param address - Candidate address
+   * @returns {boolean} Whether the address can receive the chain's coin on this network
+   */
+  override validateAddress(address: string): boolean {
+    const { bytesVersionP2PKH, bytesVersionP2SH } = this.params;
+    return (
+      validateAddressLegacy(address, { bytesVersion: bytesVersionP2PKH }) ||
+      (bytesVersionP2SH !== undefined &&
+        validateAddressP2SH(address, { bytesVersion: bytesVersionP2SH }))
+    );
   }
 }

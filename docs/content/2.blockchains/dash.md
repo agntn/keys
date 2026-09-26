@@ -78,4 +78,4 @@ Dash was DarkCoin until 2015, and the message preamble never got the rename. Das
 
 ## Where it lives
 
-`src/blockchains/dash.ts` has the version bytes, the preamble and the address rules. It extends `AbstractBitcoinMessageBlockchain` in `src/utils/bitcoin.ts`, the part of the Bitcoin base with keys and signed messages and none of the address formats.
+`src/blockchains/dash.ts` has the version bytes and the preamble. It extends `AbstractBitcoinP2PKHBlockchain` in `src/utils/bitcoin.ts`, which Bitcoin SV, Dash and Dogecoin share: base58 P2PKH under one version byte per network, on top of the keys and signed messages of the Bitcoin base.

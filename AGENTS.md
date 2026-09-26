@@ -30,22 +30,23 @@ keys/
 
 ## WHERE TO LOOK
 
-| Task               | Location                                                                          | Notes                                                                                            |
-| ------------------ | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Add new blockchain | `src/blockchains/` + `src/_blockchains.ts`                                        | Extend the appropriate base class, register in lazy loader                                       |
-| Add address format | `src/utils/address.ts`                                                            | Shared across chains (legacy, segwit, hex, base58)                                               |
-| Add Bitcoin family | `src/utils/bitcoin.ts` → `AbstractBitcoinBlockchain`                              | Reuse transparent address and HD behavior; keep chain signing rules explicit                     |
-| Bitcoin keys only  | `src/utils/bitcoin.ts` → `AbstractBitcoinMessageBlockchain`                       | Keys and Core message signing without address formats, as BCH, BSV, Dash, Dogecoin and Zcash use |
-| Add EVM chain      | `src/utils/evm.ts` → `AbstractEVMBlockchain`                                      | Minimal subclass with `name` and `bip44`                                                         |
-| Fix signing        | `src/utils/signing.ts` (generic) or `evm.ts`/`ed25519-chains.ts` (chain-specific) | EVM uses preamble hash, ed25519 signs raw                                                        |
-| Change public API  | `src/index.ts`                                                                    | Re-exports only, never add logic here                                                            |
-| Change agent tools | `src/tool-operations.ts`, `src/mcp.ts`, `packages/{pi,omp}/extensions/keys.ts`    | Executors are shared; schemas stay aligned                                                       |
-| Add BIP/derivation | `src/utils/bip32/`, `bip39/`, `bip44/`, `slip10/`                                 | Subdirs with index.ts                                                                            |
-| Mnemonic to wallet | `src/blockchain.ts` → `deriveHDWallet` + `src/utils/hd.ts`                        | Bitcoin family infers the address type; Sui overrides it, Cardano throws (CIP-1852)              |
-| Write tests        | `test/` mirroring `src/` path                                                     | Use fixtures from `test/fixtures.ts`                                                             |
-| Integration test   | `test-integration/`                                                               | Separate pnpm package, manual execution                                                          |
-| Run demos          | `playground/*.ts`                                                                 | Execute via `pnpm playground <file>`                                                             |
-| Docs / keyspace UI | `docs/`                                                                           | Docus: `content/` markdown, explorer in `app/components/`                                        |
+| Task               | Location                                                                          | Notes                                                                               |
+| ------------------ | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Add new blockchain | `src/blockchains/` + `src/_blockchains.ts`                                        | Extend the appropriate base class, register in lazy loader                          |
+| Add address format | `src/utils/address.ts`                                                            | Shared across chains (legacy, segwit, hex, base58)                                  |
+| Add Bitcoin family | `src/utils/bitcoin.ts` → `AbstractBitcoinBlockchain`                              | Reuse transparent address and HD behavior; keep chain signing rules explicit        |
+| Bitcoin keys only  | `src/utils/bitcoin.ts` → `AbstractBitcoinMessageBlockchain`                       | Keys and Core message signing without address formats, as BCH and Zcash use         |
+| Base58 P2PKH only  | `src/utils/bitcoin.ts` → `AbstractBitcoinP2PKHBlockchain`                         | One byte versions per network, P2SH optional, as BSV, Dash and Dogecoin use         |
+| Add EVM chain      | `src/utils/evm.ts` → `AbstractEVMBlockchain`                                      | Minimal subclass with `name` and `bip44`                                            |
+| Fix signing        | `src/utils/signing.ts` (generic) or `evm.ts`/`ed25519-chains.ts` (chain-specific) | EVM uses preamble hash, ed25519 signs raw                                           |
+| Change public API  | `src/index.ts`                                                                    | Re-exports only, never add logic here                                               |
+| Change agent tools | `src/tool-operations.ts`, `src/mcp.ts`, `packages/{pi,omp}/extensions/keys.ts`    | Executors are shared; schemas stay aligned                                          |
+| Add BIP/derivation | `src/utils/bip32/`, `bip39/`, `bip44/`, `slip10/`                                 | Subdirs with index.ts                                                               |
+| Mnemonic to wallet | `src/blockchain.ts` → `deriveHDWallet` + `src/utils/hd.ts`                        | Bitcoin family infers the address type; Sui overrides it, Cardano throws (CIP-1852) |
+| Write tests        | `test/` mirroring `src/` path                                                     | Use fixtures from `test/fixtures.ts`                                                |
+| Integration test   | `test-integration/`                                                               | Separate pnpm package, manual execution                                             |
+| Run demos          | `playground/*.ts`                                                                 | Execute via `pnpm playground <file>`                                                |
+| Docs / keyspace UI | `docs/`                                                                           | Docus: `content/` markdown, explorer in `app/components/`                           |
 
 ## CONVENTIONS
 
