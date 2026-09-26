@@ -6,9 +6,9 @@ import { base58 } from "@scure/base";
 import { decodeBase58Check, encodeBase58Check } from "./encoding.ts";
 
 /** Chains in keys with native WIF support. */
-export type WIFChain = "bitcoin" | "litecoin" | "decred";
+export type WIFChain = "bitcoin" | "litecoin" | "dash" | "decred" | "dogecoin";
 
-/** Expected chain and network; Bitcoin and Litecoin testnet WIFs are indistinguishable. */
+/** Expected chain and network; Bitcoin, Litecoin and Dash testnet WIFs are indistinguishable. */
 export interface WIFNetworkOptions {
   readonly chain: WIFChain;
   readonly network?: "mainnet" | "testnet";
@@ -25,11 +25,16 @@ export interface DecodedWIF {
   readonly compressed: boolean;
 }
 
-/** Native WIF prefixes from Bitcoin Core, Litecoin Core and dcrd chaincfg. */
+/**
+ * Native WIF prefixes from Bitcoin Core, Litecoin Core, Dash Core v23.1.8, dcrd chaincfg and
+ * Dogecoin Core v1.14.9.
+ */
 const PREFIXES = {
   bitcoin: { mainnet: new Uint8Array([0x80]), testnet: new Uint8Array([0xef]) },
   litecoin: { mainnet: new Uint8Array([0xb0]), testnet: new Uint8Array([0xef]) },
+  dash: { mainnet: new Uint8Array([0xcc]), testnet: new Uint8Array([0xef]) },
   decred: { mainnet: new Uint8Array([0x22, 0xde]), testnet: new Uint8Array([0x23, 0x0e]) },
+  dogecoin: { mainnet: new Uint8Array([0x9e]), testnet: new Uint8Array([0xf1]) },
 };
 
 /**

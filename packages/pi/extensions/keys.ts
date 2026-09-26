@@ -94,7 +94,7 @@ export default function keysExtension(pi: ExtensionAPI) {
     name: "keys_encode_wif",
     label: "Encode WIF",
     description:
-      "Encode a disposable private key as Bitcoin, Litecoin or Decred ECDSA WIF. WIF is not encryption; inputs and results enter the transcript. Never use keys controlling real funds.",
+      "Encode a disposable private key as Bitcoin, Litecoin, Dash, Decred or Dogecoin ECDSA WIF. WIF is not encryption; inputs and results enter the transcript. Never use keys controlling real funds.",
     parameters: WIF_ENCODE_PARAMETERS,
     renderCall() {
       return new Text("🔐 Encode WIF", 0, 0);
@@ -112,7 +112,7 @@ export default function keysExtension(pi: ExtensionAPI) {
     name: "keys_decode_wif",
     label: "Decode WIF",
     description:
-      "Decode public or disposable Bitcoin, Litecoin or Decred ECDSA WIF into a hex private key and wallet options. Specify the expected chain and network; Bitcoin and Litecoin testnet WIFs overlap. Both forms enter the transcript.",
+      "Decode public or disposable Bitcoin, Litecoin, Dash, Decred or Dogecoin ECDSA WIF into a hex private key and wallet options. Specify the expected chain and network; Bitcoin, Litecoin and Dash testnet WIFs overlap. Both forms enter the transcript.",
     parameters: WIF_DECODE_PARAMETERS,
     renderCall() {
       return new Text("🔐 Decode WIF", 0, 0);

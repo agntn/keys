@@ -61,7 +61,16 @@ dogeChain.deriveHDWallet(mnemonic, "m/44'/3'/0'/0/0").address;
 
 The purpose level doesn't pick a format, there's only one. `m/84'` still gives you a `D` address, and an explicit `"p2sh"` still throws.
 
-WIF isn't here yet. Dogecoin's prefix is `0x9e`, and `encodeWIF` and `decodeWIF` speak only Bitcoin, Litecoin and Decred, so a key from a Dogecoin wallet export goes in as hex.
+## WIF
+
+```js
+import { decodeWIF } from "@agntn/keys";
+
+decodeWIF("QP5rQxpaP8HHPEdCEqxTjiHGWRvsyPvzZJeJ9BCxpfT13FN9VesQ", { chain: "dogecoin" });
+// { privateKey: '0e01…370a', chain: 'dogecoin', network: 'mainnet', compressed: true }
+```
+
+Version `0x9e` on mainnet, so compressed keys start with `Q` and uncompressed ones with `6`. That's the string `dumpprivkey` gives you. Testnet is `0xf1`, not Bitcoin's, so unlike Litecoin and Dash a Dogecoin testnet key doesn't pass as a Bitcoin one.
 
 ## Signing
 

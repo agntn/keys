@@ -44,7 +44,7 @@ export const GENERATE_MNEMONIC_PARAMETERS = Type.Object(
 const wifContext = {
   chain: Type.String({
     enum: TOOL_WIF_CHAINS,
-    description: "Native WIF chain: bitcoin, litecoin or decred",
+    description: `Native WIF chain: ${TOOL_WIF_CHAINS.join(", ")}`,
   }),
   network: Type.Optional(
     Type.String({

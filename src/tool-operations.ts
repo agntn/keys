@@ -1018,7 +1018,7 @@ export interface EncodedWIFDetails {
 function parseWIFContext(chainValue: unknown, networkValue: unknown): WIFNetworkOptions {
   const chain = TOOL_WIF_CHAINS.find((candidate) => candidate === chainValue);
   if (chain === undefined)
-    throw new Error("Unsupported WIF chain. Use bitcoin, litecoin or decred");
+    throw new Error(`Unsupported WIF chain. Use ${TOOL_WIF_CHAINS.join(", ")}`);
   const network = networkValue === undefined ? "mainnet" : networkValue;
   if (network !== "mainnet" && network !== "testnet")
     throw new Error("Unsupported WIF network. Use mainnet or testnet");

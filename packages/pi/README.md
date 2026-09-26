@@ -54,7 +54,7 @@ The extension loads the shared executors from `dist/tool-operations.mjs`; in a c
 - A built library (`pnpm build`) for production resolution of the `@agntn/keys` import.
 - Dev deps `@earendil-works/pi-coding-agent`, `@earendil-works/pi-tui`, `typebox`.
 
-Both WIF tools require a chain and default to mainnet. Encoding defaults to compressed keys; decoding preserves the encoded flag. Bitcoin and Litecoin testnet WIFs overlap, so decoding checks the requested context rather than identifying ownership. Decred supports compressed ECDSA keys only.
+Both WIF tools require a chain and default to mainnet. Encoding defaults to compressed keys; decoding preserves the encoded flag. Bitcoin, Litecoin and Dash testnet WIFs overlap, so decoding checks the requested context rather than identifying ownership. Decred supports compressed ECDSA keys only.
 
 `keys_generate_mnemonic` accepts `{ "words": 24 }` for 24 words, or `{}` for the default 12. The other supported lengths are 15, 18 and 21 words. It generates fresh cryptographic randomness rather than asking the model for entropy.
 
