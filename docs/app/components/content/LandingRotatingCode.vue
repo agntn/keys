@@ -14,6 +14,7 @@ const SLUGS: Record<string, string> = {
   Decred: "decred",
   Dogecoin: "dogecoin",
   Zcash: "zcash",
+  eCash: "ecash",
   Ethereum: "ethereum",
   Base: "base",
   TRON: "tron",

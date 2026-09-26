@@ -1,4 +1,6 @@
+import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { sha256 } from "@noble/hashes/sha2.js";
+import { hexToBytes } from "@noble/hashes/utils.js";
 import { AbstractBlockchain } from "../blockchain.ts";
 import {
   generateAddressLegacy,
@@ -7,7 +9,9 @@ import {
   validateAddressLegacy,
   validateAddressP2SH,
   validateAddressSegWit,
+  hash160,
 } from "./address.ts";
+import { decodeCashAddr, encodeCashAddr } from "./cashaddr.ts";
 import { generateKeyPublic } from "./secp256k1.ts";
 import {
   assertNoRecoveryByte,
@@ -39,6 +43,14 @@ interface P2PKHNetworkParams {
   readonly bytesVersionP2PKH: number;
   /** Absent when the chain refuses payments to P2SH, as Bitcoin SV does since Genesis. */
   readonly bytesVersionP2SH?: number;
+}
+
+/** How a CashAddr chain spells its prefixes and which payloads its node pays to. */
+interface CashAddrParams {
+  /** Lowercase prefix for each network. */
+  readonly prefixes: Readonly<Record<"mainnet" | "testnet", string>>;
+  /** Hash lengths the node turns into a destination, indexed by address type. */
+  readonly hashLengths: readonly (readonly number[])[];
 }
 
 interface NetworkParams {
@@ -289,6 +301,60 @@ export abstract class AbstractBitcoinP2PKHBlockchain extends AbstractBitcoinMess
       validateAddressLegacy(address, { bytesVersion: bytesVersionP2PKH }) ||
       (bytesVersionP2SH !== undefined &&
         validateAddressP2SH(address, { bytesVersion: bytesVersionP2SH }))
+    );
+  }
+}
+
+/**
+ * P2PKH wallets in CashAddr on mainnet and testnet, for chains that keep Bitcoin's keys and
+ * hash but write addresses under their own prefix: Bitcoin Cash and eCash. There is no SegWit,
+ * and the shared `p2sh` type would nest one, so `legacy` is the only type written. The base58
+ * form of the same hash is Bitcoin's legacy address, so it is neither written nor accepted.
+ */
+export abstract class AbstractCashAddrBlockchain extends AbstractBitcoinMessageBlockchain {
+  private readonly label: string;
+  private readonly prefix: string;
+  private readonly hashLengths: readonly (readonly number[])[];
+
+  /**
+   * @param options - Chain options; the network must be `mainnet` or `testnet`
+   * @param label - Chain name as error messages spell it, such as `Bitcoin Cash`
+   * @param params - Prefixes for each network and the payloads the node pays to
+   */
+  constructor(options: Options | undefined, label: string, params: CashAddrParams) {
+    super(options);
+    if (this.network !== "mainnet" && this.network !== "testnet") {
+      throw new RangeError(`${label} supports mainnet and testnet only`);
+    }
+    this.label = label;
+    this.prefix = params.prefixes[this.network];
+    this.hashLengths = params.hashLengths;
+  }
+
+  /**
+   * The P2PKH address in CashAddr, prefix written out.
+   * @param keyPublic - Compressed or uncompressed SEC1 public key as hex
+   * @param type - `legacy`, the only type, meaning pay-to-pubkey-hash
+   * @returns {string} The address, such as `bitcoincash:qz3yjg59ypg6jqpwhaxgvjj44jm4hdx0w5wsxw2qez`
+   */
+  override getAddress(keyPublic: string, type = "legacy"): string {
+    if (type !== "legacy") throw new RangeError(`${this.label} supports legacy P2PKH only`);
+    const bytesKeyPublic = hexToBytes(keyPublic);
+    secp256k1.Point.fromBytes(bytesKeyPublic);
+    return encodeCashAddr(this.prefix, 0, hash160(bytesKeyPublic));
+  }
+
+  /**
+   * CashAddr under this network's prefix, written or not, with a type and hash length the
+   * chain's node pays to.
+   * @param address - Candidate address
+   * @returns {boolean} Whether the address can receive the chain's coin on this network
+   */
+  override validateAddress(address: string): boolean {
+    const content = decodeCashAddr(address, this.prefix);
+    return (
+      content !== undefined &&
+      this.hashLengths[content.type]?.includes(content.hash.length) === true
     );
   }
 }

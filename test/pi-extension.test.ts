@@ -14,6 +14,7 @@ import {
   bitcoinSVTestVectors,
   dashTestVectors,
   zcashTestVectors,
+  eCashTestVectors,
   dogecoinTestVectors,
   decredTestVectors,
   stellarTestVectors,
@@ -414,6 +415,16 @@ describe("keys Pi extension", () => {
     expect(Value.Check(tool.parameters, args)).toBe(true);
     const result = await tool.execute("zcash", args);
     expect(JSON.stringify(result.content)).toContain(`Address: ${key.addressCompressed}`);
+  });
+
+  it("derives eCash through the registered Pi tool", async () => {
+    const tool = registerTools().get("keys_derive_hd_wallet");
+    if (!tool) throw new Error("keys_derive_hd_wallet was not registered");
+    const [path, address] = eCashTestVectors.hd.mainnet;
+    const args = { chain: "ecash", mnemonic: bip39TestVectors.mnemonic, path };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    const result = await tool.execute("ecash", args);
+    expect(JSON.stringify(result.content)).toContain(`Address: ${address}`);
   });
 
   it("derives Decred through the registered Pi tool", async () => {
