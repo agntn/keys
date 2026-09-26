@@ -10,13 +10,13 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@solana/web3.js": "1.98.4",
+    "@solana/web3.js": "1.99.0",
     "ethers": "6.17.0",
     "tweetnacl": "1.0.3",
     "typescript": "7.0.2"
   },
   "devDependencies": {
-    "@types/node": "26.4.1",
+    "@types/node": "26.6.2",
     "tsx": "4.23.15"
   },
   "packageManager": "pnpm@11.24.0"
