@@ -1,44 +1,36 @@
 /*
  * Self-hosted faces for the site and for the OG images. nuxt-og-image reads @font-face
  * declarations from the files listed in `css` in nuxt.config.ts, so the OG templates
- * render in Space Grotesk and Space Mono instead of the bundled Inter fallback.
+ * render in Figtree and Fira Code instead of the bundled Inter fallback.
  */
 @font-face {
-  font-family: "Space Grotesk";
+  font-family: "Figtree";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/space-grotesk-400.ttf") format("truetype");
+  src: url("/fonts/figtree-400.ttf") format("truetype");
 }
 
 @font-face {
-  font-family: "Space Grotesk";
+  font-family: "Figtree";
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/space-grotesk-500.ttf") format("truetype");
+  src: url("/fonts/figtree-500.ttf") format("truetype");
 }
 
 @font-face {
-  font-family: "Space Grotesk";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("/fonts/space-grotesk-600.ttf") format("truetype");
-}
-
-@font-face {
-  font-family: "Space Mono";
+  font-family: "Fira Code";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/space-mono-400.ttf") format("truetype");
+  src: url("/fonts/fira-code-400.ttf") format("truetype");
 }
 
 @font-face {
-  font-family: "Space Mono";
+  font-family: "Fira Code";
   font-style: normal;
-  font-weight: 700;
+  font-weight: 500;
   font-display: swap;
-  src: url("/fonts/space-mono-700.ttf") format("truetype");
+  src: url("/fonts/fira-code-500.ttf") format("truetype");
 }
