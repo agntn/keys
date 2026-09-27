@@ -1,6 +1,6 @@
 # Design system
 
-The shared rules (direction, color roles, type, the `console-*` grammar, hero, docs chrome, density, motion, checks) live in the one agntn design system document, kept with the agntn skills until it ships in the shared package; [agntn/puzzles/docs/DESIGN.md](https://github.com/agntn/puzzles/blob/main/docs/DESIGN.md) is the closest public copy. This file records only what keys owns and where it departs from the shared rules. It does not repeat them.
+The shared rules (direction, color roles, type, the `console-*` grammar, hero, docs chrome, density, motion, checks) live in the one agntn design system document, kept with the agntn skills until it ships in the shared package. This file records only what keys owns and where it departs from the shared rules. It does not repeat them.
 
 The instruments keys owns:
 
