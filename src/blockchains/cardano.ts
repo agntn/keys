@@ -5,13 +5,20 @@ import { AbstractBlockchain } from "../blockchain.ts";
 import { getBIP32Path } from "../utils/bip44/index.ts";
 import { generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
-import type { Curve, KeyOptions, Options, Wallet } from "../types.ts";
+import type { CardanoAddressType, Curve, KeyOptions, Options, Wallet } from "../types.ts";
 
 const ADDRESS_TYPE = {
   BASE_PAYMENT: 0,
   ENTERPRISE_KEY: 6,
   REWARD_KEY: 14,
 } as const;
+
+/** `payment` is the base address, the default. */
+const ADDRESS_TYPES: ReadonlySet<string> = new Set<CardanoAddressType>([
+  "payment",
+  "stake",
+  "enterprise",
+]);
 
 /** CIP-1852 purpose; `44'` on Cardano marks a Byron wallet. */
 const CIP1852_PURPOSE = 1852;
@@ -87,7 +94,12 @@ export class Cardano extends AbstractBlockchain {
     return (addressType << 4) | this.params.networkId;
   }
 
-  override getAddress(keyPublic: string, type?: string): string {
+  override getAddress(keyPublic: string, type = "payment"): string {
+    if (!ADDRESS_TYPES.has(type)) {
+      throw new RangeError(
+        `Address type ${JSON.stringify(type)} is not supported for cardano. Supported: ${[...ADDRESS_TYPES].join(", ")}`,
+      );
+    }
     const keyHash = this.getKeyHash(keyPublic);
 
     if (type === "stake") {
