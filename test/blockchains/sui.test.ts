@@ -43,6 +43,16 @@ describe("Sui", () => {
         expect(blockchain.getKeyPublic(keyPrivate)).toBe(keyPublicEd25519);
         expect(blockchain.getAddress(keyPublicEd25519)).toBe(addressEd25519);
       });
+
+      it("rejects a scheme it has no flag for instead of writing an ed25519 address", () => {
+        expect(blockchain.getAddress(keyPublicSecp256k1, "SECP256K1")).toBe(addressSecp256k1);
+        expect(() => blockchain.getAddress(keyPublicEd25519, "secp256r1")).toThrow(
+          'Address type "secp256r1" is not supported for sui',
+        );
+        expect(() => blockchain.deriveWallet(keyPrivate, { scheme: "secp256r1" })).toThrow(
+          "Supported: ed25519, secp256k1",
+        );
+      });
     });
 
     it("uses the key scheme when generating a wallet address", () => {

@@ -63,6 +63,15 @@ describe("Cardano blockchain", () => {
         expect(validateAddress(address)).toBe(true);
       });
 
+      it("rejects an address type it does not write instead of a base address", () => {
+        const publicKey = blockchain.getKeyPublic(blockchain.generateKeyPrivate());
+
+        expect(blockchain.getAddress(publicKey, "payment")).toBe(blockchain.getAddress(publicKey));
+        expect(() => blockchain.getAddress(publicKey, "reward")).toThrow(
+          'Address type "reward" is not supported for cardano. Supported: payment, stake, enterprise',
+        );
+      });
+
       it("generates a valid enterprise address", () => {
         const privateKey = blockchain.generateKeyPrivate();
         const publicKey = blockchain.getKeyPublic(privateKey);

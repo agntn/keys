@@ -131,12 +131,16 @@ export class Sui extends AbstractBlockchain {
     return getEd25519KeyPublic(keyPrivate);
   }
 
-  override getAddress(keyPublic: string, type?: string): string {
+  override getAddress(keyPublic: string, type = "ed25519"): string {
+    const scheme = type.toLowerCase();
+    if (scheme !== "ed25519" && scheme !== "secp256k1") {
+      throw new RangeError(
+        `Address type ${JSON.stringify(type)} is not supported for sui. Supported: ed25519, secp256k1`,
+      );
+    }
     const keyPublicBytes = hexToBytes(keyPublic);
     const flagByte =
-      type?.toLowerCase() === "secp256k1"
-        ? SIGNATURE_SCHEME_FLAGS.SECP256K1
-        : SIGNATURE_SCHEME_FLAGS.ED25519;
+      scheme === "secp256k1" ? SIGNATURE_SCHEME_FLAGS.SECP256K1 : SIGNATURE_SCHEME_FLAGS.ED25519;
     const input = addSchemeByte(keyPublicBytes, flagByte, true);
     return createPrefixedAddress(blake2b(input, { dkLen: 32 }));
   }

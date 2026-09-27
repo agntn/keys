@@ -39,6 +39,15 @@ const PURPOSE_ADDRESS_TYPES: Readonly<Record<string, BitcoinAddressType>> = {
   "86": "taproot",
 };
 
+/** Every format the Bitcoin base writes; a chain that lacks one narrows it in its own override. */
+const BITCOIN_ADDRESS_TYPES: ReadonlySet<string> = new Set<BitcoinAddressType>([
+  "legacy",
+  "p2sh",
+  "segwit",
+  "p2wsh",
+  "taproot",
+]);
+
 /** One byte base58 versions of a chain that writes P2PKH only. */
 interface P2PKHNetworkParams {
   readonly bytesVersionP2PKH: number;
@@ -197,6 +206,11 @@ export abstract class AbstractBitcoinBlockchain extends AbstractBitcoinMessageBl
   protected abstract get params(): NetworkParams;
 
   override getAddress(keyPublic: string, type = "legacy"): string {
+    if (!BITCOIN_ADDRESS_TYPES.has(type)) {
+      throw new RangeError(
+        `Address type ${JSON.stringify(type)} is not supported for ${this.name}. Supported: ${[...BITCOIN_ADDRESS_TYPES].join(", ")}`,
+      );
+    }
     if (["segwit", "p2wsh", "taproot"].includes(type)) {
       const segwitOptions = {
         hrp: this.params.hrpSegWit,

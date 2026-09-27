@@ -89,6 +89,9 @@ describe("Litecoin", () => {
     expect(() =>
       chain.getAddress(chain.getKeyPublic(vector.privateKey, { compressed: false }), "segwit"),
     ).toThrow("compressed");
+    expect(() => chain.getAddress(vector.publicKey, "mweb")).toThrow(
+      'Address type "mweb" is not supported for litecoin',
+    );
     expect(() => chain.deriveWallet("00".repeat(32))).toThrow();
   });
 

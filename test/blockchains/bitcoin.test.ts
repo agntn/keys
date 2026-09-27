@@ -288,6 +288,19 @@ describe("Bitcoin blockchain", () => {
     expect(blockchain.validateAddress!(address)).toBe(true);
   });
 
+  it("rejects an address type it does not write instead of falling back to legacy", () => {
+    const keyPublic = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+
+    for (const type of ["bech32", "p2tr", "Segwit", "stake"]) {
+      expect(() => blockchain.getAddress(keyPublic, type)).toThrow(
+        `Address type "${type}" is not supported for bitcoin`,
+      );
+    }
+    expect(() => blockchain.deriveWallet("00".repeat(31) + "01", {}, "bech32")).toThrow(
+      "Supported: legacy, p2sh, segwit, p2wsh, taproot",
+    );
+  });
+
   describe("Message signing", () => {
     it("should sign a message and return a hex string", () => {
       const wallet = blockchain.generateWallet();
