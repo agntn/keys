@@ -1,6 +1,8 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { createJiti } from "jiti/static";
 import { build } from "vite-plus";
 import { describe, expect, it } from "vite-plus/test";
 import type { DecodedWIF, WIFOptions, HDWalletOptions } from "@agntn/keys";
@@ -10,6 +12,8 @@ import {
   wifTestVectors,
   localizedMnemonicVectors,
   invalidChecksumPuzzle,
+  bip39TestVectors,
+  slip132Vectors,
 } from "./fixtures.ts";
 import { blockchains as sourceChains } from "../src/_blockchains.ts";
 import { ELECTRUM_LEGACY_WORDS } from "../src/utils/electrum-legacy.ts";
@@ -186,4 +190,56 @@ describe("Published dependencies", () => {
     ) as { dependencies: Record<string, string> };
     expect(imported).toEqual(new Set(Object.keys(manifest.dependencies)));
   });
+});
+
+interface PackedTool {
+  readonly name: string;
+  readonly execute: (
+    toolCallId: string,
+    params: Readonly<Record<string, unknown>>,
+  ) => Promise<{ readonly content: unknown }>;
+}
+
+describe("Published extensions", () => {
+  it.each(["pi", "omp"])(
+    "runs a tool from the %s extension with only the files npm ships",
+    async (host) => {
+      const manifest = JSON.parse(
+        readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+      ) as { files: readonly string[] };
+      const cache = fileURLToPath(new URL("../node_modules/.cache/", import.meta.url));
+      mkdirSync(cache, { recursive: true });
+      const copy = mkdtempSync(join(cache, "keys-files-"));
+      try {
+        for (const entry of [...manifest.files, "package.json"]) {
+          cpSync(fileURLToPath(new URL(`../${entry}`, import.meta.url)), join(copy, entry), {
+            recursive: true,
+          });
+        }
+        const jiti = createJiti(import.meta.url, { moduleCache: false, tryNative: false });
+        const extension = await jiti.import<(pi: ExtensionAPI) => void>(
+          join(copy, "packages", host, "extensions/keys.ts"),
+          { default: true },
+        );
+        const tools = new Map<string, PackedTool>();
+        // SAFETY: the extension only calls registerTool during registration.
+        extension({
+          registerTool(tool: PackedTool) {
+            tools.set(tool.name, tool);
+          },
+        } as unknown as ExtensionAPI);
+        const vector = slip132Vectors[2];
+        const result = await tools.get("keys_derive_hd_wallet")?.execute("packed", {
+          chain: "bitcoin",
+          mnemonic: bip39TestVectors.mnemonic,
+          path: `${vector.path}/0/0`,
+        });
+
+        expect(JSON.stringify(result?.content)).toContain(vector.address);
+      } finally {
+        rmSync(copy, { recursive: true, force: true });
+      }
+    },
+    30_000,
+  );
 });

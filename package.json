@@ -33,7 +33,12 @@
     "keys": "./dist/cli.mjs"
   },
   "files": [
-    "dist"
+    "dist",
+    "packages/omp/extensions",
+    "packages/pi/extensions",
+    "src/tool-parameters.ts",
+    "src/tool-schemas.ts",
+    "src/utils/bip39/languages.ts"
   ],
   "type": "module",
   "sideEffects": false,
