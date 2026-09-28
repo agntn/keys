@@ -46,13 +46,13 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 
 `keys_inspect_mnemonic` reports `wordCountValid`, `wordlistValid` and `checksumValid`. The checksum verdict is `null` when word count or dictionary membership prevents checking it. A bad checksum alone is not proof that a puzzle answer is wrong. `keys_recover_mnemonic_word` remains a checksum filter, so it is unsuitable when the target may use an invalid checksum. See the [Movie Enigma example](../../README.md#puzzle-phrases-with-an-invalid-checksum).
 
-## Repository status
+## Install
 
-The extension stays in this repository. It is not registered or included in the npm package. Its handling of plaintext private keys must be redesigned before distribution.
+`pi install npm:@agntn/keys` for Pi, `omp install @agntn/keys` for OMP. Read the security note below first, it isn't boilerplate.
 
-The extension loads the shared executors from `dist/tool-operations.mjs`; in a checkout it uses `src/tool-operations.ts`. MCP and Pi therefore run the same boundary checks and produce the same answers.
+Installed from npm, the extension loads the shared executors from `dist/tool-operations.mjs`; in a checkout it uses `src/tool-operations.ts`. MCP and Pi therefore run the same boundary checks and produce the same answers.
 
-## Requirements
+## Requirements in a checkout
 
 - A built library (`pnpm build`) for production resolution of the `@agntn/keys` import.
 - Dev deps `@earendil-works/pi-coding-agent`, `@earendil-works/pi-tui`, `typebox`.
