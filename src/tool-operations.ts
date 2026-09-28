@@ -875,14 +875,38 @@ export async function validateAddress(
   const address = requiredString(addressValue, "Address");
   const valid = blockchain.validateAddress(address);
   const renderedAddress = sanitizeToolText(address);
+  const otherNetwork = valid
+    ? undefined
+    : await otherNetworkOf(chainValue, blockchain.network, address);
   return {
     content: content(
       valid
         ? `${renderedAddress} is a valid ${blockchain.name} address`
-        : `${renderedAddress} is not a valid ${blockchain.name} address`,
+        : otherNetwork === undefined
+          ? `${renderedAddress} is not a valid ${blockchain.name} address`
+          : `${renderedAddress} is not a valid ${blockchain.name} address on ${blockchain.network}, but it is valid on ${otherNetwork}`,
     ),
     details: { chain: blockchain.name, network: blockchain.network, address, valid },
   };
+}
+
+/**
+ * Finds the other network an address is valid on, so a testnet address checked against
+ * mainnet is not reported as simply broken.
+ * @param chainValue - Blockchain name, already accepted by `getBlockchain`.
+ * @param network - Network the address failed on.
+ * @param address - Address that failed.
+ * @returns {Promise<ToolNetwork | undefined>} The other network, when the address passes there.
+ */
+async function otherNetworkOf(
+  chainValue: unknown,
+  network: string,
+  address: string,
+): Promise<ToolNetwork | undefined> {
+  const other = TOOL_NETWORKS.find((candidate) => candidate !== network);
+  if (other === undefined) return undefined;
+  const { blockchain } = await getBlockchain(chainValue, other);
+  return blockchain.validateAddress(address) ? other : undefined;
 }
 
 /**

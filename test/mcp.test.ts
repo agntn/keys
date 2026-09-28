@@ -4,6 +4,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import {
   bip39TestVectors,
+  bitcoinTestVectors,
   electrumVectors,
   ethereumTestVectors,
   publicKeyEncodingVector,
@@ -772,6 +773,27 @@ describe("keys MCP server", () => {
 
     expect(response.isError).not.toBe(true);
     expect(text(response.content)).toContain("is a valid bitcoin address");
+  });
+
+  it("names the network an address belongs to when it fails on the other", async () => {
+    const client = await connectTestClient();
+    const { mainnet, testnet } = bitcoinTestVectors.addresses.p2pkh;
+
+    const onMainnet = await client.callTool({
+      name: "keys_validate_address",
+      arguments: { chain: "bitcoin", address: testnet },
+    });
+    const onTestnet = await client.callTool({
+      name: "keys_validate_address",
+      arguments: { chain: "bitcoin", address: mainnet, network: "testnet" },
+    });
+
+    expect(text(onMainnet.content)).toBe(
+      `${testnet} is not a valid bitcoin address on mainnet, but it is valid on testnet`,
+    );
+    expect(text(onTestnet.content)).toBe(
+      `${mainnet} is not a valid bitcoin address on testnet, but it is valid on mainnet`,
+    );
   });
 
   it("rejects arguments that miss the schema", async () => {
