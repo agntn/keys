@@ -25,7 +25,7 @@ Sui accepts several signature schemes and tags each key with a flag byte. The dr
 | `ed25519` (default) | `0x00` | 32 bytes |
 | `secp256k1` | `0x01` | 33 bytes, compressed |
 
-secp256r1 (`0x02`) and multisig (`0x03`) aren't implemented.
+secp256r1 (`0x02`) and multisig (`0x03`) aren't implemented. Pass one of them, or any other unknown scheme, and you get a `RangeError`. The driver won't quietly key or sign on ed25519 instead.
 
 The address is `Blake2b-256(flag + publicKey)` with `0x` in front. Because the flag is part of the hash, the same private key gives two unrelated addresses depending on the scheme.
 

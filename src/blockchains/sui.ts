@@ -124,8 +124,7 @@ export class Sui extends AbstractBlockchain {
   }
 
   override getKeyPublic(keyPrivate: string, options?: KeyOptions): string {
-    const scheme = options?.scheme ?? "ed25519";
-    if (scheme.toLowerCase() === "secp256k1") {
+    if (this.resolveCurve(options) === "secp256k1") {
       return getSecp256k1KeyPublic(keyPrivate, { compressed: true });
     }
     return getEd25519KeyPublic(keyPrivate);

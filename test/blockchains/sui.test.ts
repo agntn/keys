@@ -53,6 +53,24 @@ describe("Sui", () => {
           "Supported: ed25519, secp256k1",
         );
       });
+
+      it("rejects an unknown scheme instead of keying, deriving and signing on ed25519", () => {
+        const options = { scheme: "secp256r1" };
+        const unsupported =
+          'Scheme "secp256r1" is not supported for sui. Supported: ed25519, secp256k1';
+        expect(blockchain.getKeyPublic(keyPrivate, { scheme: "SECP256K1" })).toBe(
+          keyPublicSecp256k1,
+        );
+        expect(() => blockchain.getKeyPublic(keyPrivate, options)).toThrow(unsupported);
+        expect(() => blockchain.getDerivationPath(0, 0, 0, options)).toThrow(unsupported);
+        expect(() => blockchain.signMessage("hi", keyPrivate, options)).toThrow(unsupported);
+        expect(() =>
+          blockchain.verifyMessage("hi", "00".repeat(64), keyPublicEd25519, options),
+        ).toThrow(unsupported);
+        expect(() =>
+          blockchain.deriveHDWallet(bip39TestVectors.mnemonic, "m/44'/784'/0'/0'/0'", options),
+        ).toThrow(unsupported);
+      });
     });
 
     it("uses the key scheme when generating a wallet address", () => {
