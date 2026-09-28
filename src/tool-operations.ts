@@ -9,6 +9,7 @@ import { bytesToHex } from "@noble/hashes/utils.js";
 import { deriveElectrumSeed } from "./utils/electrum.ts";
 import { getMasterKeyFromSeed } from "./utils/bip32/index.ts";
 import { convertSecp256k1PublicKey } from "./utils/public-key.ts";
+import { describeInvalidMnemonic } from "./utils/hd.ts";
 import { encodeWIF, decodeWIF, type DecodedWIF, type WIFNetworkOptions } from "./utils/wif.ts";
 import type { AbstractBlockchain } from "./blockchain.ts";
 import { blockchains, getBlockchainPath, parseBIP44Path, useBlockchain } from "./index.ts";
@@ -679,8 +680,9 @@ export async function deriveBip39Seed(
   const mnemonic = normalizedMnemonic(input);
   const language = parseBIP39Language(languageValue);
   const wordlist = await loadBIP39Wordlist(language);
-  if (!inspectBIP39Mnemonic(mnemonic, wordlist).valid) {
-    throw new TypeError("Invalid BIP39 mnemonic for the selected language");
+  const inspection = inspectBIP39Mnemonic(mnemonic, wordlist);
+  if (!inspection.valid) {
+    throw new TypeError(describeInvalidMnemonic(mnemonic, inspection, wordlist, language));
   }
   const seed = Buffer.from(await bip39.mnemonicToSeed(mnemonic, passphrase)).toString("hex");
   return {

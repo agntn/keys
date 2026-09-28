@@ -65,6 +65,36 @@ describe("HD checksum policy", () => {
     );
   });
 
+  it("names the failed check by word position without echoing the words", async () => {
+    const chain = await blockchains.bitcoin()();
+    const words = mnemonic.split(" ");
+    const position = words.indexOf("path") + 1;
+    const cases = [
+      [
+        words.slice(0, 11).join(" "),
+        "Invalid BIP39 mnemonic: 11 words, expected 12, 15, 18, 21 or 24",
+      ],
+      [
+        mnemonic.replace("path", "notaword"),
+        `Invalid BIP39 mnemonic: word ${position} is not in the English list`,
+      ],
+      [
+        words.map((word, index) => (index < 2 ? `${word}x` : word)).join(" "),
+        "Invalid BIP39 mnemonic: words 1, 2 are not in the English list",
+      ],
+      [mnemonic.toUpperCase(), "Invalid BIP39 mnemonic: none of the words is in the English list"],
+      [
+        mnemonic,
+        "Invalid BIP39 mnemonic: the checksum does not match. allowInvalidChecksum derives from it anyway",
+      ],
+    ] as const;
+    for (const [candidate, message] of cases) {
+      const failure = () => chain.deriveHDWallet(candidate, path);
+      expect(failure).toThrow(message);
+      expect(failure).not.toThrow(/notaword|path|goddess|leopard|shine/iu);
+    }
+  });
+
   it.each(["true", "false", 1, null])(
     "rejects a non-boolean override %j",
     async (allowInvalidChecksum) => {
