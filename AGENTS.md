@@ -14,7 +14,7 @@ keys/
 │   ├── types.ts             # All shared types (Blockchain, Keys, Wallet, etc.)
 │   ├── _blockchains.ts      # Lazy-loading registry with double-call pattern
 │   ├── tool-operations.ts   # Shared MCP, Pi and OMP executors
-│   ├── mcp.ts               # MCP schemas, dispatch, and server factory
+│   ├── mcp.ts               # MCP schemas, dispatch, server factory, toolListings and callTool for docs/server/mcp
 │   ├── cli.ts               # keys executable with lazy mcp subcommand
 │   ├── commands/            # CLI transport adapters
 │   ├── blockchains/         # One concrete class per chain (see blockchains/AGENTS.md)
@@ -41,7 +41,7 @@ keys/
 | Add EVM chain      | `src/utils/evm.ts` → `AbstractEVMBlockchain`                                      | Minimal subclass with `name` and `bip44`                                            |
 | Fix signing        | `src/utils/signing.ts` (generic) or `evm.ts`/`ed25519-chains.ts` (chain-specific) | EVM uses preamble hash, ed25519 signs raw                                           |
 | Change public API  | `src/index.ts`                                                                    | Re-exports only, never add logic here                                               |
-| Change agent tools | `src/tool-operations.ts`, `src/mcp.ts`, `packages/{pi,omp}/extensions/keys.ts`    | Executors are shared; schemas stay aligned                                          |
+| Change agent tools | `src/tool-operations.ts`, `src/mcp.ts`, `packages/{pi,omp}/extensions/keys.ts`    | Executors are shared; a new tool also gets its file in `docs/server/mcp/tools/`     |
 | Add BIP/derivation | `src/utils/bip32/`, `bip39/`, `bip44/`, `slip10/`                                 | Subdirs with index.ts                                                               |
 | Mnemonic to wallet | `src/blockchain.ts` → `deriveHDWallet` + `src/utils/hd.ts`                        | Bitcoin family infers the address type; Sui overrides it, Cardano throws (CIP-1852) |
 | Xpub to address    | `src/utils/extended-key.ts` → `deriveXpubWallet` on the base class                | SLIP-0132 prefixes pick the type on the Bitcoin family; normal levels only, no xprv |
@@ -94,7 +94,7 @@ pnpm test:mcp         # build and exercise all 20 MCP tools over stdio
 - **Package exports** expose `"."`, `"./mcp"`, `"./blockchains/*"`, and the HD derivation subpaths `"./bip32"`, `"./bip39"`, and `"./slip10"`; other utils remain internal.
 - **Shipped extensions** - `files` lists both extensions and the `src/` files their schemas import at runtime (`tool-schemas.ts`, `tool-parameters.ts`, `utils/bip39/languages.ts`); the executors come from `dist`. A new value import in that graph goes into `files` too. `test/public-exports.test.ts` runs a tool from each extension with only the shipped files.
 - **OMP extension** - `packages/omp/extensions/keys.ts` is a full copy of the Pi file, with both dynamic imports of the executors kept literal. OMP does not expand globs in the manifest, so `omp.extensions` names the file. `test/omp-extension.test.ts` keeps the two registrations identical.
-- **MCP transport** runs through `keys mcp`. Inside a checkout, `dist/cli.mjs` loads the MCP command from `src/`, like the Pi and OMP extensions, so a local server only needs a restart after a change. The npm package has no `src/commands` and runs the bundle. A copy under `node_modules` keeps the bundle too, because Node does not strip types there, and so does a checkout without dev dependencies, whose source cannot import `typebox`. `KEYS_DIST=1` forces the bundle in a checkout, as `test/cli.test.ts` and `test/eval-mcp.mjs` do. Changes to `src/cli.ts` itself still need `pnpm build`. stdout is reserved for JSON-RPC, and `createMcpServer()` remains importable for hosts with their own transport.
+- **MCP transport** runs through `keys mcp`. Inside a checkout, `dist/cli.mjs` loads the MCP command from `src/`, like the Pi and OMP extensions, so a local server only needs a restart after a change. The npm package has no `src/commands` and runs the bundle. A copy under `node_modules` keeps the bundle too, because Node does not strip types there, and so does a checkout without dev dependencies, whose source cannot import `typebox`. `KEYS_DIST=1` forces the bundle in a checkout, as `test/cli.test.ts` and `test/eval-mcp.mjs` do. Changes to `src/cli.ts` itself still need `pnpm build`. stdout is reserved for JSON-RPC, and `createMcpServer()` remains importable for hosts with their own transport. `toolListings` and `callTool()` from the same module feed the remote server at `keys.agntn.dev/mcp` (see `docs/AGENTS.md`).
 - **utils/ has mixed structure** - plain `.ts` files (address, encoding, crypto-hash, secp256k1, ed25519, ed25519-chains, evm, signing) and subdirectories with `index.ts` (bip32/, bip39/, bip44/, slip10/).
 - **`__cardano/notes.md`** - research notes for Cardano implementation, not code. The actual implementation is `cardano.ts`.
 - **Shared secp256k1 fixture** - `secp256k1TestVectors.publicKeyCompressed` is the key of `privateKey`, shared by the signing round trips and the address tests. The Bitcoin address generators decode the SEC1 point before hashing, so an invented key fails them.

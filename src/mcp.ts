@@ -344,6 +344,45 @@ function toCallToolResult(result: ToolResult<unknown>): CallToolResult {
   };
 }
 
+/** The `tools/list` entries, in order, shared by `keys mcp` and the MCP server of the docs site. */
+export const toolListings: readonly Tool[] = tools.map((tool) => ({
+  name: tool.name,
+  title: tool.title,
+  description: tool.description,
+  inputSchema: mcpInputSchema(tool.inputSchema),
+  annotations: tool.annotations,
+}));
+
+const toolsByName = new Map(tools.map((tool) => [tool.name, tool]));
+
+/**
+ * Runs one tool the way `tools/call` does. An unknown name, a schema miss and an executor failure
+ * all come back as an error result, never as a throw, so every transport answers with the same text.
+ *
+ * @param {string} name - The tool's name, such as `keys_get_address`.
+ * @param {Readonly<Record<string, unknown>>} args - The arguments the client sent.
+ * @returns {Promise<CallToolResult>} The tool's text, or the sanitized error.
+ */
+export async function callTool(
+  name: string,
+  args: Readonly<Record<string, unknown>>,
+): Promise<CallToolResult> {
+  const tool = toolsByName.get(name);
+  if (!tool) return errorResult(`Unknown keys tool: ${JSON.stringify(name)}`);
+
+  if (!Value.Check(tool.inputSchema, args)) {
+    return errorResult(validationError(tool.inputSchema, args));
+  }
+
+  try {
+    return toCallToolResult(await tool.execute(args));
+  } catch (error) {
+    return errorResult(
+      `${tool.name} failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
 /**
  * Creates an unconnected MCP server exposing the key and mnemonic tools.
  *
@@ -353,36 +392,13 @@ function toCallToolResult(result: ToolResult<unknown>): CallToolResult {
  * @returns {Server} Unconnected MCP server.
  */
 export function createMcpServer(): Server {
-  const toolsByName = new Map(tools.map((tool) => [tool.name, tool]));
   const server = new Server({ name: "keys", version }, { capabilities: { tools: {} } });
 
-  server.setRequestHandler(ListToolsRequestSchema, () => ({
-    tools: tools.map((tool): Tool => ({
-      name: tool.name,
-      title: tool.title,
-      description: tool.description,
-      inputSchema: mcpInputSchema(tool.inputSchema),
-      annotations: tool.annotations,
-    })),
-  }));
+  server.setRequestHandler(ListToolsRequestSchema, () => ({ tools: [...toolListings] }));
 
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    const tool = toolsByName.get(request.params.name);
-    if (!tool) return errorResult(`Unknown keys tool: ${JSON.stringify(request.params.name)}`);
-
-    const args = request.params.arguments ?? {};
-    if (!Value.Check(tool.inputSchema, args)) {
-      return errorResult(validationError(tool.inputSchema, args));
-    }
-
-    try {
-      return toCallToolResult(await tool.execute(args));
-    } catch (error) {
-      return errorResult(
-        `${tool.name} failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-  });
+  server.setRequestHandler(CallToolRequestSchema, (request) =>
+    callTool(request.params.name, request.params.arguments ?? {}),
+  );
 
   return server;
 }

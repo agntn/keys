@@ -22,9 +22,10 @@ import {
   localizedMnemonicVectors,
   invalidChecksumPuzzle,
   slip132PrivateKey,
+  secp256k1TestVectors,
   slip132Vectors,
 } from "./fixtures.ts";
-import { createMcpServer } from "../src/mcp.ts";
+import { callTool, createMcpServer, toolListings } from "../src/mcp.ts";
 
 const TOOL_NAMES = [
   "keys_derive_electrum_wallet",
@@ -991,5 +992,21 @@ describe("keys MCP server", () => {
 
     expect(response.isError).toBe(true);
     expect(text(response.content)).not.toContain(privateKey);
+  });
+
+  it("exports the listings and calls the server answers with", async () => {
+    const client = await connectTestClient();
+    const { privateKey, publicKeyCompressed } = secp256k1TestVectors;
+
+    expect((await client.listTools()).tools).toEqual(toolListings);
+    for (const [name, arguments_] of [
+      ["keys_get_address", { chain: "bitcoin", publicKey: publicKeyCompressed }],
+      ["keys_get_address", { chain: "bitcoin", publicKey: publicKeyCompressed, extra: 1 }],
+      ["keys_derive_wallet", { chain: "nochain", privateKey }],
+      ["keys_missing", {}],
+    ] as const) {
+      const direct = await callTool(name, arguments_);
+      expect(direct).toEqual(await client.callTool({ name, arguments: arguments_ }));
+    }
   });
 });
