@@ -1,6 +1,11 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { describe, expect, it } from "vite-plus/test";
-import { bip39TestVectors, bitcoinSVTestVectors, ethereumTestVectors } from "./fixtures.ts";
+import {
+  bip39TestVectors,
+  bitcoinSVTestVectors,
+  ethereumTestVectors,
+  wifTestVectors,
+} from "./fixtures.ts";
 import ompExtension from "../packages/omp/extensions/keys.ts";
 import piExtension from "../packages/pi/extensions/keys.ts";
 
@@ -69,6 +74,16 @@ describe("keys OMP extension", () => {
 
     const path = await call("keys_bip44_path", { chain: "bitcoin", path: "", addressType: "" });
     expect(path).toContain("m/44'/0'/0'/0/0");
+
+    const [wif] = wifTestVectors;
+    const encoded = await call("keys_encode_wif", {
+      chain: wif.chain,
+      privateKey: wif.privateKey,
+      network: "",
+    });
+    expect(encoded).toContain(wif.wif);
+    const decoded = await call("keys_decode_wif", { chain: wif.chain, wif: wif.wif, network: "" });
+    expect(decoded).toContain(wif.privateKey);
 
     const { mnemonic } = bip39TestVectors;
     const seed = (passphrase: string) => call("keys_derive_bip39_seed", { mnemonic, passphrase });

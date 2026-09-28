@@ -237,16 +237,18 @@ function optionalString(value: unknown, name: string): string | undefined {
 }
 
 /**
- * Reads an optional name such as a network or an address type, taking a blank one as omitted.
+ * Tells whether an optional name such as a network or an address type was left out.
  * OMP sends every property of the schema, so an option the model leaves alone arrives as `""`.
- * Passphrases keep `optionalString`, because spaces are a passphrase of their own.
+ * Passphrases skip this check, because spaces are a passphrase of their own.
  * @param value - Argument as the host passed it.
- * @param name - Argument name, as the error states it.
- * @returns {string | undefined} The value, or undefined when it is missing or blank.
+ * @returns {boolean} True when the argument is missing or a blank string.
  */
+function isUnset(value: unknown): boolean {
+  return value === undefined || (typeof value === "string" && value.trim() === "");
+}
+
 function optionalName(value: unknown, name: string): string | undefined {
-  const text = optionalString(value, name);
-  return text?.trim() === "" ? undefined : text;
+  return isUnset(value) ? undefined : requiredString(value, name);
 }
 
 function optionalIndex(value: unknown, name: string, maximum = 0x7fffffff): number | undefined {
@@ -262,11 +264,9 @@ function assertBip44PathMode(
   pathValue: unknown,
   generationOptions: readonly unknown[],
 ): void {
-  const unset = (value: unknown): boolean =>
-    value === undefined || (typeof value === "string" && value.trim() === "");
-  if (unset(pathValue)) {
-    if (!unset(chainValue)) return;
-  } else if (unset(chainValue) && generationOptions.every(unset)) {
+  if (isUnset(pathValue)) {
+    if (!isUnset(chainValue)) return;
+  } else if (isUnset(chainValue) && generationOptions.every(isUnset)) {
     return;
   }
   throw new TypeError(
@@ -1087,7 +1087,7 @@ function parseWIFContext(chainValue: unknown, networkValue: unknown): WIFNetwork
   const chain = TOOL_WIF_CHAINS.find((candidate) => candidate === chainValue);
   if (chain === undefined)
     throw new Error(`Unsupported WIF chain. Use ${TOOL_WIF_CHAINS.join(", ")}`);
-  const network = networkValue === undefined ? "mainnet" : networkValue;
+  const network = isUnset(networkValue) ? "mainnet" : networkValue;
   if (network !== "mainnet" && network !== "testnet")
     throw new Error("Unsupported WIF network. Use mainnet or testnet");
   return { chain, network };
