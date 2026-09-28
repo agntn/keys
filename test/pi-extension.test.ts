@@ -871,10 +871,6 @@ describe("keys Pi extension", () => {
       { account: 1 },
       { change: 1 },
       { addressIndex: 1 },
-      { chain: "bitcoin", path },
-      { path, account: 1 },
-      { path, change: 1 },
-      { path, addressIndex: 1 },
       { path, addressType: "secp256k1" },
     ]) {
       expect(Value.Check(tool.parameters, params)).toBe(true);
@@ -882,6 +878,33 @@ describe("keys Pi extension", () => {
         "Provide path by itself, or chain with optional account, change, addressIndex, and addressType",
       );
     }
+
+    for (const [params, message] of [
+      [{ chain: "ethereum", path }, "ethereum uses coin type 60, and the path has 0"],
+      [{ path, account: 1 }, "account 1 contradicts the path, which has 0"],
+      [{ path, change: 1 }, "change 1 contradicts the path, which has 0"],
+      [{ path, addressIndex: 1 }, "addressIndex 1 contradicts the path, which has 0"],
+      [{ chain: "bogus", path: "m/44'/1'/0'/0/0" }, 'Unknown chain "bogus"'],
+    ] as const) {
+      await expect(tool.execute("contradicting-path", params)).rejects.toThrow(message);
+    }
+
+    const agreeing = await tool.execute("agreeing-path", {
+      chain: "bitcoin",
+      path: "m/44'/0'/2'/1/7",
+      account: 2,
+      change: 1,
+      addressIndex: 7,
+    });
+    expect(agreeing.content.map((part) => part.text ?? "").join("\n")).toContain(
+      "Address index: 7",
+    );
+
+    const testnet = await tool.execute("testnet-path", {
+      chain: "bitcoin",
+      path: "m/44'/1'/0'/0/0",
+    });
+    expect(testnet.content.map((part) => part.text ?? "").join("\n")).toContain("Coin type: 1");
   });
 
   it("derives a Sui wallet from an existing private key", async () => {

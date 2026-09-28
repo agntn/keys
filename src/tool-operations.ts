@@ -12,7 +12,7 @@ import { convertSecp256k1PublicKey } from "./utils/public-key.ts";
 import { describeInvalidMnemonic } from "./utils/hd.ts";
 import { encodeWIF, decodeWIF, type DecodedWIF, type WIFNetworkOptions } from "./utils/wif.ts";
 import type { AbstractBlockchain } from "./blockchain.ts";
-import { blockchains, getBlockchainPath, parseBIP44Path, useBlockchain } from "./index.ts";
+import { BIP44, blockchains, getBlockchainPath, parseBIP44Path, useBlockchain } from "./index.ts";
 import {
   MAX_BIP39_LOOKUP_ITEMS,
   BIP39_ENTROPY_BYTE_LENGTHS,
@@ -262,16 +262,43 @@ function optionalIndex(value: unknown, name: string, maximum = 0x7fffffff): numb
 function assertBip44PathMode(
   chainValue: unknown,
   pathValue: unknown,
-  generationOptions: readonly unknown[],
+  addressTypeValue: unknown,
 ): void {
-  if (isUnset(pathValue)) {
-    if (!isUnset(chainValue)) return;
-  } else if (isUnset(chainValue) && generationOptions.every(isUnset)) {
-    return;
-  }
+  if (isUnset(pathValue) ? !isUnset(chainValue) : isUnset(addressTypeValue)) return;
   throw new TypeError(
     "Provide path by itself, or chain with optional account, change, addressIndex, and addressType",
   );
+}
+
+/**
+ * Lets a generation index ride along with a parsed path while it says the same thing.
+ * OMP sends every property of the schema and fills an index the model leaves alone with 0,
+ * so 0 counts as omitted; any other value has to match the level in the path.
+ * @param value - Index as the host passed it.
+ * @param name - Argument name for the error.
+ * @param level - The same level read from the path.
+ */
+function assertIndexMatchesPath(value: unknown, name: string, level: number): void {
+  if (value === undefined || value === 0 || value === level) return;
+  throw new RangeError(`${name} ${JSON.stringify(value)} contradicts the path, which has ${level}`);
+}
+
+async function assertPathAgrees(
+  parsed: Readonly<NonNullable<ReturnType<typeof parseBIP44Path>>>,
+  chainValue: unknown,
+  [accountValue, changeValue, addressIndexValue]: readonly unknown[],
+): Promise<void> {
+  assertIndexMatchesPath(accountValue, "account", parsed.account);
+  assertIndexMatchesPath(changeValue, "change", parsed.change);
+  assertIndexMatchesPath(addressIndexValue, "addressIndex", parsed.addressIndex);
+  if (isUnset(chainValue)) return;
+  const { blockchain } = await getBlockchain(chainValue);
+  // SLIP-44 gives coin type 1 to the testnet of every coin, so it fits any chain.
+  if (parsed.coinType !== BIP44.TESTNET && blockchain.bip44 !== parsed.coinType) {
+    throw new RangeError(
+      `${blockchain.name} uses coin type ${blockchain.bip44}, and the path has ${parsed.coinType}`,
+    );
+  }
 }
 
 function stringArray(value: unknown, name: string): readonly string[] {
@@ -1004,6 +1031,7 @@ export async function verifyMessage(
 /**
  * Parse a BIP44 path or generate the one a chain's wallets use. The chain checks the change value,
  * Cardano up to the CIP-1852 roles, and the address type names the scheme where two curves exist.
+ * A path wins over the generation fields a host sends beside it, as long as they agree with it.
  * @param chainValue - Blockchain name for generation mode.
  * @param pathValue - Existing BIP44 path for parse mode.
  * @param accountValue - Account index.
@@ -1020,12 +1048,7 @@ export async function bip44Path(
   addressIndexValue?: unknown,
   addressTypeValue?: unknown,
 ): Promise<ToolResult<BIP44PathDetails>> {
-  assertBip44PathMode(chainValue, pathValue, [
-    accountValue,
-    changeValue,
-    addressIndexValue,
-    addressTypeValue,
-  ]);
+  assertBip44PathMode(chainValue, pathValue, addressTypeValue);
   const path = optionalName(pathValue, "BIP44 path");
   if (path !== undefined) {
     const parsed = parseBIP44Path(path);
@@ -1036,6 +1059,7 @@ export async function bip44Path(
         isError: true,
       };
     }
+    await assertPathAgrees(parsed, chainValue, [accountValue, changeValue, addressIndexValue]);
     return {
       content: content(
         [
