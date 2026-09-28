@@ -864,6 +864,16 @@ describe("keys MCP server", () => {
     }
   });
 
+  it("fails an unparsable BIP44 path with sanitized text", async () => {
+    const client = await connectTestClient();
+    const result = await client.callTool({
+      name: "keys_bip44_path",
+      arguments: { path: "m/\u009B31m" },
+    });
+    expect(result.isError).toBe(true);
+    expect(text(result.content)).toBe('keys_bip44_path failed: Invalid BIP44 path: "m/ 31m"');
+  });
+
   it("rejects ambiguous BIP44 path modes at the schema", async () => {
     const client = await connectTestClient();
     const path = "m/44'/0'/0'/0/0";

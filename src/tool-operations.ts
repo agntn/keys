@@ -46,12 +46,13 @@ export {
   DERIVATION_PATH_SCHEMA_PATTERN,
 } from "./tool-parameters.ts";
 
-/** Text for the model plus structured details for agent harnesses. */
+/**
+ * Text for the model plus structured details for agent harnesses. A failure throws instead:
+ * Pi records every returned value as a successful call.
+ */
 export interface ToolResult<Details> {
   content: Array<{ type: "text"; text: string }>;
   details: Details;
-  /** Set when the tool could not perform the requested operation. */
-  isError?: boolean;
 }
 
 /** Generated wallet material. */
@@ -1052,13 +1053,7 @@ export async function bip44Path(
   const path = optionalName(pathValue, "BIP44 path");
   if (path !== undefined) {
     const parsed = parseBIP44Path(path);
-    if (!parsed) {
-      return {
-        content: content(`Invalid BIP44 path: ${JSON.stringify(path)}`),
-        details: { path, coinType: -1, account: -1, change: -1, addressIndex: -1 },
-        isError: true,
-      };
-    }
+    if (!parsed) throw new Error(`Invalid BIP44 path: ${JSON.stringify(path)}`);
     await assertPathAgrees(parsed, chainValue, [accountValue, changeValue, addressIndexValue]);
     return {
       content: content(
