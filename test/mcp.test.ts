@@ -867,6 +867,38 @@ describe("keys MCP server", () => {
     }
   });
 
+  it("names the allowed values when an option is not one of them", async () => {
+    const client = await connectTestClient();
+
+    for (const [name, arguments_, message] of [
+      [
+        "keys_generate_wallet",
+        { chain: "bitcoin", network: "testnett" },
+        "Invalid arguments at /network: must be one of mainnet, testnet",
+      ],
+      [
+        "keys_decode_wif",
+        { chain: "ethereum", wif: wifTestVectors[0].wif },
+        "Invalid arguments at /chain: must be one of bitcoin, litecoin, dash, decred, dogecoin",
+      ],
+      [
+        "keys_generate_mnemonic",
+        { words: 13 },
+        "Invalid arguments at /words: must be one of 12, 15, 18, 21, 24",
+      ],
+      [
+        "keys_lookup_bip39_indices",
+        { indices: [1], indexBase: 2 },
+        "Invalid arguments at /indexBase: must be one of 0, 1",
+      ],
+    ] as const) {
+      const response = await client.callTool({ name, arguments: arguments_ });
+
+      expect(response.isError).toBe(true);
+      expect(text(response.content)).toBe(message);
+    }
+  });
+
   it("rejects prototype property names as unknown tools", async () => {
     const client = await connectTestClient();
 

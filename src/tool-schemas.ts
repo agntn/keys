@@ -269,7 +269,8 @@ export const LOOKUP_BIP39_INDICES_PARAMETERS = Type.Object(
     ),
     language: BIP39_LANGUAGE_PARAMETER,
     indexBase: Type.Optional(
-      Type.Union([Type.Literal(0), Type.Literal(1)], {
+      Type.Integer({
+        enum: [0, 1],
         description: "Whether positions start at 0 or 1. Default: 0",
       }),
     ),
