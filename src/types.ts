@@ -36,6 +36,8 @@ export interface Wallet extends Keys {
    * Blockchain address derived from the public key
    */
   address: AddressFormat;
+  /** Address type written, when the chain has more than one */
+  addressType?: AddressType;
   /** Present when HD derivation explicitly accepts an invalid mnemonic checksum. */
   warnings?: readonly string[];
 }

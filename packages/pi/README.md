@@ -40,6 +40,8 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 
 `keys_derive_xpub_wallet` takes a `chain`, an `extendedKey` and normal levels below it, such as `m/0/0`. On Bitcoin, Bitcoin Gold and Litecoin the SLIP-0132 prefix picks the address type, and `addressType` overrides it for a BIP84 or BIP49 account exported as `xpub`. Hardened levels and extended private keys are rejected. The key reveals every address of its account and is saved in the transcript.
 
+`keys_generate_wallet`, `keys_derive_wallet`, `keys_derive_hd_wallet`, `keys_derive_xpub_wallet` and `keys_get_address` print an `Address type:` line on chains with more than one format: Bitcoin, Bitcoin Gold, Litecoin, Sui and Cardano. It's the type you passed, the one the path purpose or key prefix picked, or the chain's default, so nobody has to guess it from the first characters of the address.
+
 ## Puzzle checksum override
 
 `keys_derive_hd_wallet` rejects invalid checksums by default. For public puzzle candidates, set `allowInvalidChecksum: true` explicitly. The tool derives from the supplied words without repairing them and includes a warning in both text and details when the checksum is invalid. English dictionary membership and BIP39 word counts are still required. Whitespace collapsing, NFKD normalization and chain/path restrictions are unchanged.

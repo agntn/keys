@@ -94,7 +94,15 @@ export class Cardano extends AbstractBlockchain {
     return (addressType << 4) | this.params.networkId;
   }
 
-  override getAddress(keyPublic: string, type = "payment"): string {
+  /**
+   * Base address, with the key hash as both its payment and its stake part.
+   * @returns {CardanoAddressType} `payment`
+   */
+  override get defaultAddressType(): CardanoAddressType {
+    return "payment";
+  }
+
+  override getAddress(keyPublic: string, type: string = this.defaultAddressType): string {
     if (!ADDRESS_TYPES.has(type)) {
       throw new RangeError(
         `Address type ${JSON.stringify(type)} is not supported for cardano. Supported: ${[...ADDRESS_TYPES].join(", ")}`,

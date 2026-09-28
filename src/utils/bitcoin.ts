@@ -205,7 +205,15 @@ export abstract class AbstractBitcoinMessageBlockchain extends AbstractBlockchai
 export abstract class AbstractBitcoinBlockchain extends AbstractBitcoinMessageBlockchain {
   protected abstract get params(): NetworkParams;
 
-  override getAddress(keyPublic: string, type = "legacy"): string {
+  /**
+   * Legacy P2PKH unless a type, a path purpose or an extended key prefix says otherwise.
+   * @returns {AddressType} `legacy`
+   */
+  override get defaultAddressType(): AddressType {
+    return "legacy";
+  }
+
+  override getAddress(keyPublic: string, type: string = this.defaultAddressType): string {
     if (!BITCOIN_ADDRESS_TYPES.has(type)) {
       throw new RangeError(
         `Address type ${JSON.stringify(type)} is not supported for ${this.name}. Supported: ${[...BITCOIN_ADDRESS_TYPES].join(", ")}`,

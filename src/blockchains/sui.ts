@@ -130,7 +130,15 @@ export class Sui extends AbstractBlockchain {
     return getEd25519KeyPublic(keyPrivate);
   }
 
-  override getAddress(keyPublic: string, type = "ed25519"): string {
+  /**
+   * Ed25519, the scheme Sui wallets use unless told otherwise.
+   * @returns {AddressType} `ed25519`
+   */
+  override get defaultAddressType(): AddressType {
+    return "ed25519";
+  }
+
+  override getAddress(keyPublic: string, type: string = this.defaultAddressType): string {
     const scheme = type.toLowerCase();
     if (scheme !== "ed25519" && scheme !== "secp256k1") {
       throw new RangeError(

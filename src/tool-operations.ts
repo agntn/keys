@@ -70,6 +70,7 @@ export interface DerivedWalletDetails {
   chain: string;
   network: string;
   publicKey: string;
+  addressType?: string;
   address: string;
   path?: string;
   warnings?: readonly string[];
@@ -129,6 +130,7 @@ export interface MnemonicRecoveryDetails {
 export interface AddressDetails {
   chain: string;
   network: string;
+  addressType?: string;
   address: string;
 }
 
@@ -322,6 +324,15 @@ function parseAddressType(chain: ToolChain, value: unknown): string | undefined 
   return matched;
 }
 
+/**
+ * Names the address type in a result, on chains that write more than one.
+ * @param addressType - Type the wallet or address was written as
+ * @returns {string[]} One `Address type:` line, or none
+ */
+function addressTypeLines(addressType: string | undefined): string[] {
+  return addressType === undefined ? [] : [`Address type: ${addressType}`];
+}
+
 async function getBlockchain(
   chainValue: unknown,
   networkValue?: unknown,
@@ -372,6 +383,7 @@ export async function generateWallet(
         `Chain: ${details.chain} (${details.network})`,
         `Curve: ${details.curve}`,
         `BIP44: ${details.bip44}`,
+        ...addressTypeLines(wallet.addressType),
         `Private key: ${details.privateKey}`,
         `Public key: ${details.publicKey}`,
         `Address: ${details.address}`,
@@ -410,11 +422,18 @@ export async function deriveWallet(
   const details = {
     chain: blockchain.name,
     network: blockchain.network,
+    ...(wallet.addressType === undefined ? {} : { addressType: wallet.addressType }),
     publicKey: wallet.keys.public,
     address: wallet.address,
   };
   return {
-    content: content(`Public key: ${details.publicKey}\nAddress: ${details.address}`),
+    content: content(
+      [
+        ...addressTypeLines(details.addressType),
+        `Public key: ${details.publicKey}`,
+        `Address: ${details.address}`,
+      ].join("\n"),
+    ),
     details,
   };
 }
@@ -464,6 +483,7 @@ export async function deriveHdWallet(
     chain: blockchain.name,
     network: blockchain.network,
     path,
+    ...(wallet.addressType === undefined ? {} : { addressType: wallet.addressType }),
     publicKey: wallet.keys.public,
     address: wallet.address,
     ...(wallet.warnings === undefined ? {} : { warnings: wallet.warnings }),
@@ -473,6 +493,7 @@ export async function deriveHdWallet(
       [
         `Chain: ${details.chain} (${details.network})`,
         `Path: ${path}`,
+        ...addressTypeLines(details.addressType),
         `Public key: ${details.publicKey}`,
         `Address: ${details.address}`,
         ...(details.warnings ?? []).map((warning) => `Warning: ${warning}`),
@@ -533,7 +554,7 @@ export async function deriveXpubWallet(
         `Chain: ${details.chain} (${details.network})`,
         `Extended key: ${details.prefix}`,
         `Path: ${path}`,
-        ...(details.addressType === undefined ? [] : [`Address type: ${details.addressType}`]),
+        ...addressTypeLines(details.addressType),
         `Public key: ${details.publicKey}`,
         `Address: ${details.address}`,
       ].join("\n"),
@@ -825,10 +846,16 @@ export async function getAddress(
     PUBLIC_KEY_HEX,
     "a 32-byte ed25519 or SEC1 secp256k1 key in hex",
   );
-  const address = blockchain.getAddress(publicKey, addressType);
+  const type = addressType ?? blockchain.defaultAddressType;
+  const address = blockchain.getAddress(publicKey, type);
   return {
-    content: content(`Address: ${address}`),
-    details: { chain: blockchain.name, network: blockchain.network, address },
+    content: content([...addressTypeLines(type), `Address: ${address}`].join("\n")),
+    details: {
+      chain: blockchain.name,
+      network: blockchain.network,
+      ...(type === undefined ? {} : { addressType: type }),
+      address,
+    },
   };
 }
 

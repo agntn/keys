@@ -358,7 +358,7 @@ describe("keys Pi extension", () => {
     expect(result.content).toEqual([
       {
         type: "text",
-        text: `Public key: ${litecoinTestVectors.publicKey}\nAddress: ${litecoinTestVectors.address}`,
+        text: `Address type: legacy\nPublic key: ${litecoinTestVectors.publicKey}\nAddress: ${litecoinTestVectors.address}`,
       },
     ]);
   });
@@ -386,7 +386,10 @@ describe("keys Pi extension", () => {
     expect(Value.Check(tool.parameters, args)).toBe(true);
     const result = await tool.execute("bitcoingold", args);
     expect(result.content).toEqual([
-      { type: "text", text: `Public key: ${publicKey}\nAddress: ${legacyAddress}` },
+      {
+        type: "text",
+        text: `Address type: legacy\nPublic key: ${publicKey}\nAddress: ${legacyAddress}`,
+      },
     ]);
   });
 

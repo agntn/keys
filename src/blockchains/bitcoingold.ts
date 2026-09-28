@@ -49,7 +49,7 @@ export class BitcoinGold extends AbstractBitcoinBlockchain {
    * @param type - `legacy`, `p2sh`, `segwit` or `p2wsh`
    * @returns {string} The address, such as `GUHcigT74ggLsmbxHFTLfn2ZUNJUWiXaMG`
    */
-  override getAddress(keyPublic: string, type = "legacy"): string {
+  override getAddress(keyPublic: string, type: string = this.defaultAddressType): string {
     if (type === "taproot") {
       throw new RangeError("Bitcoin Gold never activated Taproot");
     }

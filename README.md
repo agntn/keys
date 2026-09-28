@@ -78,7 +78,7 @@ m/84'/0'/0'/0/0 bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu
 m/86'/0'/0'/0/0 bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr
 ```
 
-Nobody passed an address type. 44 is legacy, 49 is P2SH, 84 is segwit, 86 is taproot, the path already says which one you meant. You can still pass one as the fourth argument if you disagree with your own path.
+Nobody passed an address type. 44 is legacy, 49 is P2SH, 84 is segwit, 86 is taproot, the path already says which one you meant, and the wallet hands it back as `addressType`. You can still pass one as the fourth argument if you disagree with your own path.
 
 Only have the public half? The account's extended public key walks the normal levels under it:
 
