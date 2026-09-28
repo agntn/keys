@@ -294,72 +294,6 @@ function formatCurve(curve: string | readonly string[]): string {
   return typeof curve === "string" ? curve : curve.join(", ");
 }
 
-const BLOCKCHAIN_LOADERS: ReadonlyArray<{
-  name: ToolChain;
-  load(network: ToolNetwork): Promise<AbstractBlockchain>;
-}> = [
-  {
-    name: "bitcoin",
-    load: async (network) => useBlockchain(await blockchains.bitcoin({ network })()),
-  },
-  {
-    name: "bitcoincash",
-    load: async (network) => useBlockchain(await blockchains.bitcoincash({ network })()),
-  },
-  {
-    name: "bitcoingold",
-    load: async (network) => useBlockchain(await blockchains.bitcoingold({ network })()),
-  },
-  {
-    name: "bitcoinsv",
-    load: async (network) => useBlockchain(await blockchains.bitcoinsv({ network })()),
-  },
-  {
-    name: "litecoin",
-    load: async (network) => useBlockchain(await blockchains.litecoin({ network })()),
-  },
-  {
-    name: "dash",
-    load: async (network) => useBlockchain(await blockchains.dash({ network })()),
-  },
-  {
-    name: "decred",
-    load: async (network) => useBlockchain(await blockchains.decred({ network })()),
-  },
-  {
-    name: "dogecoin",
-    load: async (network) => useBlockchain(await blockchains.dogecoin({ network })()),
-  },
-  {
-    name: "zcash",
-    load: async (network) => useBlockchain(await blockchains.zcash({ network })()),
-  },
-  {
-    name: "ecash",
-    load: async (network) => useBlockchain(await blockchains.ecash({ network })()),
-  },
-  {
-    name: "ethereum",
-    load: async (network) => useBlockchain(await blockchains.ethereum({ network })()),
-  },
-  { name: "base", load: async (network) => useBlockchain(await blockchains.base({ network })()) },
-  {
-    name: "solana",
-    load: async (network) => useBlockchain(await blockchains.solana({ network })()),
-  },
-  {
-    name: "stellar",
-    load: async (network) => useBlockchain(await blockchains.stellar({ network })()),
-  },
-  { name: "aptos", load: async (network) => useBlockchain(await blockchains.aptos({ network })()) },
-  { name: "tron", load: async (network) => useBlockchain(await blockchains.tron({ network })()) },
-  { name: "sui", load: async (network) => useBlockchain(await blockchains.sui({ network })()) },
-  {
-    name: "cardano",
-    load: async (network) => useBlockchain(await blockchains.cardano({ network })()),
-  },
-];
-
 function parseNetwork(value: unknown): ToolNetwork {
   const network = optionalString(value, "Network") ?? "mainnet";
   const matched = TOOL_NETWORKS.find((candidate) => candidate === network);
@@ -393,16 +327,16 @@ async function getBlockchain(
   networkValue?: unknown,
   addressTypeValue?: unknown,
 ): Promise<{ readonly blockchain: AbstractBlockchain; readonly addressType: string | undefined }> {
-  const chain = requiredString(chainValue, "Chain").toLowerCase();
-  const loader = BLOCKCHAIN_LOADERS.find((candidate) => candidate.name === chain);
-  if (!loader) {
+  const name = requiredString(chainValue, "Chain").toLowerCase();
+  const chain = TOOL_CHAINS.find((candidate) => candidate === name);
+  if (chain === undefined) {
     throw new RangeError(
-      `Unknown chain ${JSON.stringify(chain)}. Supported: ${TOOL_CHAINS.join(", ")}`,
+      `Unknown chain ${JSON.stringify(name)}. Supported: ${TOOL_CHAINS.join(", ")}`,
     );
   }
   const network = parseNetwork(networkValue);
-  const addressType = parseAddressType(loader.name, addressTypeValue);
-  return { blockchain: await loader.load(network), addressType };
+  const addressType = parseAddressType(chain, addressTypeValue);
+  return { blockchain: useBlockchain(await blockchains[chain]({ network })()), addressType };
 }
 
 /**
