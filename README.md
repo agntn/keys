@@ -28,7 +28,7 @@ The docs live at [keys.agntn.dev](https://keys.agntn.dev), keyspace explorer inc
 - ✍️ **Signing on both curves.** Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash and eCash hash the message the way Core does, EVM chains the way ethers does, TRON the way TronWeb's `signMessageV2` does, Sui the way the Sui SDK's `signPersonalMessage` does on either curve, Stellar the way the Stellar SDK's `signMessage` does under SEP-53, and Solana, Aptos and Cardano sign the raw bytes. What comes back is 64 bytes of compact `r||s` hex, so it's not Core's base64.
 - 🔁 **`v` when you need it.** `{ recovered: true }` on Ethereum, Base or TRON gives 65 bytes of `r||s||v`, byte for byte what ethers and TronWeb produce. Skip it and ethers reads your 64 bytes as an EIP-2098 compact signature and answers with the wrong address instead of an error.
 - 🔌 **Loads one chain at a time.** `blockchains.solana()()` imports Solana and nothing else, so a Bitcoin tool never pays for Cardano.
-- 🤖 **20 agent tools.** MCP over stdio and a Pi extension run the same code, and a generated mnemonic comes back with a note that it's in the transcript now.
+- 🤖 **20 agent tools.** MCP over stdio, MCP over HTTP from [keys.agntn.dev/mcp](https://keys.agntn.dev/guide#remote-mcp) and a Pi extension run the same code, and a generated mnemonic comes back with a note that it's in the transcript now.
 
 ## 📦 Install
 
@@ -190,6 +190,7 @@ Decred and Cardano throw on `deriveHDWallet`, on purpose, `deriveWallet` with a 
 
 ```bash
 npx -y @agntn/keys mcp
+claude mcp add --transport http keys https://keys.agntn.dev/mcp # nothing to install
 pi install npm:@agntn/keys
 omp install @agntn/keys
 ```
@@ -211,7 +212,7 @@ Words: 12
 This mnemonic is saved in the transcript. Never use it for real funds.
 ```
 
-That last line is not decoration. Keys, seeds, signatures, all of it crosses the model's context as plain text and stays in the transcript. Public puzzle material and throwaway keys only, the same rule as everywhere else in this package.
+That last line is not decoration. Keys, seeds, signatures, all of it crosses the model's context as plain text and stays in the transcript. Public puzzle material and throwaway keys only, the same rule as everywhere else in this package. The HTTP server adds one more hop, since every argument goes through a Cloudflare worker on its way to the tool.
 
 ## 🚫 What this does not do
 

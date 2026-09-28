@@ -1,6 +1,6 @@
 # docs/
 
-Docus site for `@agntn/keys`. Markdown lives in `content/`. The browser explorer is a Vue component in the Nuxt app, not a `playground/` script.
+Docus site for `@agntn/keys`. Markdown lives in `content/`. The browser explorer is a Vue component in the Nuxt app, not a `playground/` script. The one route of its own that answers at request time is `/mcp`, the Docus MCP server with every tool of `keys mcp` beside its own `list-pages` and `get-page`.
 
 The site uses the agntn instrument design system, the one `agntn/puzzles/docs` introduced. For panel geometry, typography, motion and the component that owns each part, read [DESIGN.md](DESIGN.md).
 
@@ -23,6 +23,9 @@ docs/
 ├── public/                        # favicon.svg and the files cut from it, site.webmanifest, fonts/
 ├── shiki-theme.ts                 # code block theme, every colour a `--shiki-token-*` variable from app.css
 ├── server/routes/sitemap.xml.ts   # Docus sitemap plus the Vue pages
+├── server/mcp/index.ts            # the Docus MCP handler at /mcp, named and versioned like `keys mcp`
+├── server/mcp/tools/              # one file per key tool, each `keysMcpTool("<name>")`
+├── server/utils/keys-mcp.ts       # a tool from `@agntn/keys/mcp`: its entry in `toolListings` and `callTool`, the TypeBox schema read into Zod
 └── app/pages/keyspace.vue         # explorer, own route outside the docs layout
 ```
 
@@ -40,7 +43,7 @@ pnpm generate         # static output only, no worker
 
 Deployment: Workers Builds with root directory `docs`. It installs `docs/` and nothing else, which is enough because the library is bundled from `../src` (next paragraph). Nitro preset `cloudflare_module`. Nuxt Content needs a D1 binding named `DB`; `wrangler.jsonc` carries the binding and the `NUXT_SITE_URL` var, Nitro merges it into the generated `.output/server/wrangler.json`. The database is `agntn-keys`, created once with `wrangler d1 create agntn-keys`; its id sits in `wrangler.jsonc`.
 
-`@agntn/keys` is an alias in `nuxt.config.ts` for `../src/index.ts`. Vite bundles the checkout's sources for the browser and Nitro gets the same alias for the prerender, so `dist/` and the root `node_modules` are never touched. The subgraph under `src/index.ts` imports from npm: `@noble/curves`, `@noble/hashes`, `@scure/base`, `@scure/bip32`, `@scure/bip39` and `micro-key-producer`. Each one is a dependency of `docs/package.json`, pinned to the root's version, and listed in `vite.resolve.dedupe` in `nuxt.config.ts`, because Vite resolves a bare import from the importer's directory upwards and `../src` never reaches `docs/node_modules`. The exact subpaths `src/` imports, dynamic imports included, sit in `vite.optimizeDeps.include`; without that list dev discovers them when a lazy chain module loads, optimizes again and reloads the page under the explorer. A new npm import under `src/` that `index.ts` can reach needs all three entries or the deploy or the dev server breaks. The CLI, MCP and tool entries stay out of the alias.
+`@agntn/keys` is an alias in `nuxt.config.ts` for `../src/index.ts`. Vite bundles the checkout's sources for the browser and Nitro gets the same alias for the prerender, so `dist/` and the root `node_modules` are never touched. The subgraph under `src/index.ts` imports from npm: `@noble/curves`, `@noble/hashes`, `@scure/base`, `@scure/bip32`, `@scure/bip39` and `micro-key-producer`. Each one is a dependency of `docs/package.json`, pinned to the root's version, and listed in `vite.resolve.dedupe` in `nuxt.config.ts`, because Vite resolves a bare import from the importer's directory upwards and `../src` never reaches `docs/node_modules`. The exact subpaths `src/` imports, dynamic imports included, sit in `vite.optimizeDeps.include`; without that list dev discovers them when a lazy chain module loads, optimizes again and reloads the page under the explorer. A new npm import under `src/` that `index.ts` can reach needs all three entries or the deploy or the dev server breaks. The CLI entry stays out of the alias. `@agntn/keys/mcp` has its own, see [MCP](#mcp).
 
 Three resolution traps, all because the repo root is its own pnpm workspace:
 
@@ -48,9 +51,17 @@ Three resolution traps, all because the repo root is its own pnpm workspace:
 - `nuxt.config.ts` pins `workspaceDir` to `docs/` and disables devtools and telemetry, which would otherwise resolve from the root.
 - `vite.server.fs.allow` in `nuxt.config.ts` adds `../src`. Vite serves only directories on that list, and with `workspaceDir` pinned to `docs/` the library sits outside it, so `pnpm dev` couldn't load it otherwise.
 
+## MCP
+
+`@agntn/keys/mcp` is a second alias, for `../src/mcp.ts`. A file in `server/mcp/tools/` names one tool and nothing else: `keysMcpTool()` takes the name, prose and annotations from `toolListings` and runs `callTool()` from there, so a tool changed in `src/` changes here without an edit. A new tool in `src/mcp.ts` needs one more file here, and `test/docs-mcp.test.ts` fails until it has one. `@nuxtjs/mcp-toolkit` wants Zod, so its schema is `z.fromJSONSchema()` over the TypeBox one, passed as the whole object so an unknown key is refused instead of stripped. Zod has no `not`, so a top-level `oneOf` (the two modes of `keys_bip44_path`) stays out of the listing, and `callTool()` still checks it against the TypeBox schema. A schema error reads in Zod's words. Every other answer is the text `keys mcp` gives.
+
+On the `cloudflare_module` preset the toolkit hands its server to `createMcpHandler` from `agents`, which tells an SDK v1 server apart with `instanceof`. pnpm installs one copy of `@modelcontextprotocol/sdk` per `zod` peer it resolves, so the toolkit and `agents` can each get their own and every request fails with "createMcpHandler received an unsupported server". `nitro.alias` points every import of the SDK at the copy in `docs/node_modules`. Keep it until both resolve the same one. `@modelcontextprotocol/sdk` and `typebox` are dependencies here for `src/mcp.ts`, pinned to the root's versions and deduped like the others. They run on the worker only, so they stay out of `optimizeDeps`. The library writes bigint literals, so `nitro.esbuild` targets es2022.
+
+`/mcp` is the one place where key material reaches the server, because an agent sends it there on purpose. The worker must not log or keep it: no `evlog` module, no `observability` block in `wrangler.jsonc`, no `console` call with tool arguments. The page at `content/1.guide/1.index.md#remote-mcp` says so to users.
+
 ## Tests
 
-`test/docs-parse-key.test.ts` and `test/docs-landing.test.ts` in the repo root cover `app/utils/` and run with the root suite, no docs install needed. The root `vite.config.ts` transforms them with the root tsconfig, because `docs/tsconfig.json` only references files Nuxt generates. `derive.ts` takes the library module as an argument and imports its types from `../src` by path, so a root test passes `src/index.ts` and never needs the `@agntn/keys` alias; `test/public-exports.test.ts` keeps that name for the built package. Keep pure helpers in `app/utils/` so they stay testable from the root; anything that touches `ref` or `onMounted` belongs in `app/composables/`.
+`test/docs-parse-key.test.ts` and `test/docs-landing.test.ts` in the repo root cover `app/utils/`, and `test/docs-mcp.test.ts` checks that `server/mcp/tools/` holds one file per tool `keys mcp` lists. All three run with the root suite, no docs install needed. The root `vite.config.ts` transforms them with the root tsconfig, because `docs/tsconfig.json` only references files Nuxt generates. `derive.ts` takes the library module as an argument and imports its types from `../src` by path, so a root test passes `src/index.ts` and never needs the `@agntn/keys` alias; `test/public-exports.test.ts` keeps that name for the built package. Keep pure helpers in `app/utils/` so they stay testable from the root; anything that touches `ref` or `onMounted` belongs in `app/composables/`.
 
 The landing renders before the library loads, so `app/utils/landing.ts` records private key 1 on every row, the Bitcoin pipeline and the first HD sample as fixtures. `test/docs-landing.test.ts` derives the same values from `src/` and fails when they drift, so a fixture edit without a library change is a lie the test catches.
 
@@ -70,7 +81,7 @@ The landing renders before the library loads, so `app/utils/landing.ts` records 
 
 ## Constraints
 
-- Derivation runs in the browser only. Do not add a server route that accepts private keys or mnemonics.
+- The explorer derives in the browser only. `/mcp` is the one server route that accepts private keys or mnemonics; do not add another.
 - Do not log, persist, or send key material.
 - secp256k1 keyspace is `1 .. n-1`. ed25519 rows reuse the same 32 bytes as a secret; label that.
 - Keep Node demos in `playground/`.

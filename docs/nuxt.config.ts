@@ -4,14 +4,16 @@ import { keysTheme } from "./shiki-theme";
 /** Bundled from the checkout's sources: a deploy needs neither dist/ nor the root node_modules. */
 const librarySource = resolve(import.meta.dirname, "../src");
 
-/** Runtime deps under src/index.ts, installed here so they resolve from docs/node_modules. */
+/** Runtime deps under src/index.ts and src/mcp.ts, installed here so they resolve from docs/node_modules. */
 const libraryDependencies = [
+  "@modelcontextprotocol/sdk",
   "@noble/curves",
   "@noble/hashes",
   "@scure/base",
   "@scure/bip32",
   "@scure/bip39",
   "micro-key-producer",
+  "typebox",
 ];
 
 /** Every subpath src/ imports, dynamic ones too, so dev bundles them up front, not on demand. */
@@ -48,6 +50,7 @@ export default defineNuxtConfig({
   /** The repo root is its own pnpm workspace; Nuxt must not treat it as this site's. */
   workspaceDir: import.meta.dirname,
   alias: {
+    "@agntn/keys/mcp": resolve(librarySource, "mcp.ts"),
     "@agntn/keys": resolve(librarySource, "index.ts"),
   },
   vite: {
@@ -75,6 +78,18 @@ export default defineNuxtConfig({
     description:
       "Keys to addresses to signatures on eighteen chains from a mnemonic or from nothing at all",
     sections: [
+      {
+        title: "MCP Server",
+        description: "The tools of `keys mcp` and the page tools of this site over Streamable HTTP.",
+        links: [
+          {
+            title: "MCP endpoint",
+            href: "https://keys.agntn.dev/mcp",
+            description:
+              "Add it to any MCP client as an HTTP server, for example `claude mcp add --transport http keys https://keys.agntn.dev/mcp`.",
+          },
+        ],
+      },
       {
         title: "Explorer",
         links: [
@@ -168,13 +183,21 @@ export default defineNuxtConfig({
       alt: "@agntn/keys. Keys to addresses to signatures on eighteen chains",
     },
   },
-  /** Docus ships an MCP endpoint that wants the Cloudflare Agents SDK on Workers. Not used. */
-  mcp: {
-    enabled: false,
-  },
   nitro: {
     preset: "cloudflare_module",
+    /**
+     * One MCP SDK in the worker. The toolkit builds its server from one copy and `agents` checks it
+     * with `instanceof` against another. pnpm splits them by the `zod` peer each one resolves.
+     */
+    alias: {
+      "@modelcontextprotocol/sdk": resolve(
+        import.meta.dirname,
+        "node_modules/@modelcontextprotocol/sdk/dist/esm",
+      ),
+    },
     compatibilityDate: "2026-09-03",
+    /** The library writes bigint literals, which have no es2019 form. The worker runs them as they are. */
+    esbuild: { options: { target: "es2022" } },
     prerender: {
       crawlLinks: true,
       routes: ["/", "/keyspace", "/sitemap.xml", "/robots.txt", "/llms.txt", "/llms-full.txt"],
