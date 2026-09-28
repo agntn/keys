@@ -3,6 +3,8 @@ import { bip39TestVectors } from "./fixtures";
 import { AbstractBlockchain, AbstractEVMBlockchain, blockchains, useBlockchain } from "../src";
 import Bitcoin, { Bitcoin as BitcoinClass } from "../src/blockchains/bitcoin";
 import Ethereum from "../src/blockchains/ethereum";
+import Litecoin from "../src/blockchains/litecoin";
+import Sui from "../src/blockchains/sui";
 
 describe("Blockchain class API", () => {
   it("exports the concrete class as both the named and default export", () => {
@@ -145,6 +147,7 @@ describe("Common blockchain functionality", () => {
           public: "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
         },
         address: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4",
+        addressType: "segwit",
       });
     });
   });
@@ -170,5 +173,43 @@ describe("deriveHDWallet", () => {
 
   it("rejects a path that does not start at the master key", () => {
     expect(() => blockchain.deriveHDWallet(mnemonic, "84'/0'/0'/0/0")).toThrow("Path must start");
+  });
+});
+
+describe("address type of a wallet", () => {
+  const { mnemonic } = bip39TestVectors;
+  const privateKey = "0000000000000000000000000000000000000000000000000000000000000001";
+
+  it("names the type the path purpose picked", () => {
+    const bitcoin = new Bitcoin();
+    for (const [path, addressType, address] of [
+      ["m/44'/0'/0'/0/0", "legacy", "1LqBGSKuX5yYUonjxT5qGfpUsXKYYWeabA"],
+      ["m/49'/0'/0'/0/0", "p2sh", "37VucYSaXLCAsxYyAPfbSi9eh4iEcbShgf"],
+      ["m/84'/0'/0'/0/0", "segwit", "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu"],
+      [
+        "m/86'/0'/0'/0/0",
+        "taproot",
+        "bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr",
+      ],
+    ] as const) {
+      expect(bitcoin.deriveHDWallet(mnemonic, path)).toMatchObject({ addressType, address });
+    }
+    expect(bitcoin.deriveHDWallet(mnemonic, "m/0'/0'/0'")).toEqual(
+      bitcoin.deriveHDWallet(mnemonic, "m/0'/0'/0'", {}, "legacy"),
+    );
+    expect(bitcoin.deriveHDWallet(mnemonic, "m/0'/0'/0'").addressType).toBe("legacy");
+    expect(bitcoin.deriveHDWallet(mnemonic, "m/84'/0'/0'/0/0", {}, "p2wsh").addressType).toBe(
+      "p2wsh",
+    );
+  });
+
+  it("names the default when none is given, and nothing on chains with one format", () => {
+    expect(new Litecoin().deriveWallet(privateKey).addressType).toBe("legacy");
+    expect(new Sui().generateWallet().addressType).toBe("ed25519");
+    expect(new Sui().deriveWallet(privateKey, { scheme: "secp256k1" }).addressType).toBe(
+      "secp256k1",
+    );
+    expect(new Ethereum().deriveWallet(privateKey)).not.toHaveProperty("addressType");
+    expect(new Ethereum().defaultAddressType).toBeUndefined();
   });
 });

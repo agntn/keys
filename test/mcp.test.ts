@@ -339,8 +339,27 @@ describe("keys MCP server", () => {
     });
 
     expect(response.isError).not.toBe(true);
-    expect(text(response.content)).toContain("Address: bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu");
+    expect(text(response.content)).toContain(
+      "Address type: segwit\nPublic key: 0330d54fd0dd420a6e5f8d3624f5f3482cae350f79d5f0753bf5beef9c2d91af3c\nAddress: bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu",
+    );
     expect(text(response.content)).not.toContain(mnemonic);
+  });
+
+  it("says which address type keys_get_address wrote", async () => {
+    const client = await connectTestClient();
+    const publicKey = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+    const address = async (args: Readonly<Record<string, string>>): Promise<string> =>
+      text((await client.callTool({ name: "keys_get_address", arguments: args })).content);
+
+    expect(await address({ chain: "bitcoin", publicKey })).toBe(
+      "Address type: legacy\nAddress: 1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH",
+    );
+    expect(await address({ chain: "bitcoin", publicKey, addressType: "taproot" })).toContain(
+      "Address type: taproot\nAddress: bc1p",
+    );
+    expect(await address({ chain: "ethereum", publicKey })).toBe(
+      "Address: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf",
+    );
   });
 
   it("derives a watch-only address from an extended public key through MCP", async () => {

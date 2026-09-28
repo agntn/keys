@@ -68,25 +68,36 @@ export abstract class AbstractBlockchain implements Blockchain {
     };
   }
 
+  /**
+   * Address type written when none is given, on chains that write more than one.
+   * @returns {AddressType | undefined} The default type, or undefined on chains with one format
+   */
+  get defaultAddressType(): AddressType | undefined {
+    return undefined;
+  }
+
   deriveWallet(keyPrivate: string, options?: KeyOptions, addressType?: AddressType): Wallet {
     const keyPublic = this.getKeyPublic(keyPrivate, options);
+    const type = addressType ?? this.defaultAddressType;
 
     return {
       keys: {
         private: keyPrivate,
         public: keyPublic,
       },
-      address: this.getAddress(keyPublic, addressType),
+      address: this.getAddress(keyPublic, type),
+      ...(type === undefined ? {} : { addressType: type }),
     };
   }
 
   generateWallet(options?: KeyOptions, addressType?: AddressType): Wallet {
     const keys = this.generateKeys(options);
-    const address = this.getAddress(keys.keys.public, addressType);
+    const type = addressType ?? this.defaultAddressType;
 
     return {
       ...keys,
-      address,
+      address: this.getAddress(keys.keys.public, type),
+      ...(type === undefined ? {} : { addressType: type }),
     };
   }
 
@@ -191,7 +202,7 @@ export abstract class AbstractBlockchain implements Blockchain {
       this.extendedKeyFormats,
       `${this.name} ${this.network}`,
     );
-    const type = addressType ?? child.addressType;
+    const type = addressType ?? child.addressType ?? this.defaultAddressType;
     return {
       keys: { public: child.publicKey },
       address: this.getAddress(child.publicKey, type),
