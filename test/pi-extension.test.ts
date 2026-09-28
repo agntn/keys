@@ -898,6 +898,12 @@ describe("keys Pi extension", () => {
     expect(agreeing.content.map((part) => part.text ?? "").join("\n")).toContain(
       "Address index: 7",
     );
+
+    const testnet = await tool.execute("testnet-path", {
+      chain: "bitcoin",
+      path: "m/44'/1'/0'/0/0",
+    });
+    expect(testnet.content.map((part) => part.text ?? "").join("\n")).toContain("Coin type: 1");
   });
 
   it("derives a Sui wallet from an existing private key", async () => {

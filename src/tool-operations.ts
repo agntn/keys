@@ -12,7 +12,7 @@ import { convertSecp256k1PublicKey } from "./utils/public-key.ts";
 import { describeInvalidMnemonic } from "./utils/hd.ts";
 import { encodeWIF, decodeWIF, type DecodedWIF, type WIFNetworkOptions } from "./utils/wif.ts";
 import type { AbstractBlockchain } from "./blockchain.ts";
-import { blockchains, getBlockchainPath, parseBIP44Path, useBlockchain } from "./index.ts";
+import { BIP44, blockchains, getBlockchainPath, parseBIP44Path, useBlockchain } from "./index.ts";
 import {
   MAX_BIP39_LOOKUP_ITEMS,
   BIP39_ENTROPY_BYTE_LENGTHS,
@@ -291,7 +291,8 @@ async function assertPathAgrees(
   assertIndexMatchesPath(accountValue, "account", parsed.account);
   assertIndexMatchesPath(changeValue, "change", parsed.change);
   assertIndexMatchesPath(addressIndexValue, "addressIndex", parsed.addressIndex);
-  if (isUnset(chainValue)) return;
+  // SLIP-44 gives coin type 1 to the testnet of every coin, so it fits any chain.
+  if (isUnset(chainValue) || parsed.coinType === BIP44.TESTNET) return;
   const { blockchain } = await getBlockchain(chainValue);
   if (blockchain.bip44 !== parsed.coinType) {
     throw new RangeError(
