@@ -291,10 +291,10 @@ async function assertPathAgrees(
   assertIndexMatchesPath(accountValue, "account", parsed.account);
   assertIndexMatchesPath(changeValue, "change", parsed.change);
   assertIndexMatchesPath(addressIndexValue, "addressIndex", parsed.addressIndex);
-  // SLIP-44 gives coin type 1 to the testnet of every coin, so it fits any chain.
-  if (isUnset(chainValue) || parsed.coinType === BIP44.TESTNET) return;
+  if (isUnset(chainValue)) return;
   const { blockchain } = await getBlockchain(chainValue);
-  if (blockchain.bip44 !== parsed.coinType) {
+  // SLIP-44 gives coin type 1 to the testnet of every coin, so it fits any chain.
+  if (parsed.coinType !== BIP44.TESTNET && blockchain.bip44 !== parsed.coinType) {
     throw new RangeError(
       `${blockchain.name} uses coin type ${blockchain.bip44}, and the path has ${parsed.coinType}`,
     );
