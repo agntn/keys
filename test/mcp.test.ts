@@ -135,6 +135,22 @@ describe("keys MCP server", () => {
     }
   });
 
+  it("names the BIP39 check a seed input fails through MCP", async () => {
+    const client = await connectTestClient();
+    for (const [args, reason] of [
+      [{ mnemonic: "abandon ".repeat(12).trim() }, "the checksum does not match"],
+      [
+        { mnemonic: bip39TestVectors.mnemonic, language: "french" },
+        "word 12 is not in the french list",
+      ],
+    ] as const) {
+      const result = await client.callTool({ name: "keys_derive_bip39_seed", arguments: args });
+      expect(result.isError).toBe(true);
+      expect(text(result.content)).toContain(`Invalid BIP39 mnemonic: ${reason}`);
+      expect(text(result.content)).not.toContain("allowInvalidChecksum");
+    }
+  });
+
   it("converts public keys through MCP and rejects invalid points", async () => {
     const client = await connectTestClient();
     const { compressed, uncompressed } = publicKeyEncodingVector;
