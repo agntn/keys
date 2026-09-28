@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { describe, expect, it } from "vite-plus/test";
-import { bitcoinSVTestVectors } from "./fixtures.ts";
+import { bip39TestVectors, bitcoinSVTestVectors, ethereumTestVectors } from "./fixtures.ts";
 import ompExtension from "../packages/omp/extensions/keys.ts";
 import piExtension from "../packages/pi/extensions/keys.ts";
 
@@ -52,5 +52,26 @@ describe("keys OMP extension", () => {
 
     expect(omp).toEqual(pi);
     expect(JSON.stringify(omp?.content)).toContain(bitcoinSVTestVectors.keyOne.address);
+  });
+
+  it("takes the blank options OMP fills in as omitted", async () => {
+    const tools = registerTools(ompExtension);
+    const call = async (name: string, params: Readonly<Record<string, unknown>>) =>
+      JSON.stringify((await tools.get(name)?.execute("omp", params))?.content);
+
+    const address = await call("keys_get_address", {
+      chain: "ethereum",
+      publicKey: ethereumTestVectors.publicKey,
+      addressType: "",
+      network: " ",
+    });
+    expect(address).toContain(ethereumTestVectors.address);
+
+    const path = await call("keys_bip44_path", { chain: "bitcoin", path: "", addressType: "" });
+    expect(path).toContain("m/44'/0'/0'/0/0");
+
+    const { mnemonic } = bip39TestVectors;
+    const seed = (passphrase: string) => call("keys_derive_bip39_seed", { mnemonic, passphrase });
+    expect(await seed("")).not.toBe(await seed(" "));
   });
 });

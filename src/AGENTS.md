@@ -17,4 +17,5 @@ Core package source plus the MCP and CLI entry points. Blockchain implementation
 - Keep cryptographic behavior in the library classes and utilities. Tool executors only compose public capabilities.
 - Secret inputs must not be copied into errors or structured details.
 - Every surface validates input, while `tool-operations.ts` remains the final boundary when a host skips schemas.
+- OMP skips schemas and fills every property, so a blank optional name (network, address type, BIP44 path) counts as omitted there. Passphrases keep blank and whitespace values, and the BIP39 language still rejects `""`.
 - Published ESM uses `.mjs` and declarations use `.d.mts`.
