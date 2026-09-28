@@ -93,18 +93,28 @@ export abstract class AbstractBlockchain implements Blockchain {
   /**
    * Picks the curve a derivation walks: chains with two curves read `options.scheme`, the rest ignore it.
    * @param options - Key options that may carry a signature scheme
-   * @returns {Curve} The curve to derive on
+   * @returns {Curve} The curve to derive on, the first declared one when no scheme is given
+   * @throws {RangeError} When the scheme names none of the chain's curves
    */
   protected resolveCurve(options?: KeyOptions): Curve {
     if (typeof this.curve === "string") {
       return this.curve;
     }
-    const scheme = options?.scheme?.toLowerCase();
     const [fallback] = this.curve;
     if (fallback === undefined) {
       throw new Error(`${this.name} declares no curve`);
     }
-    return this.curve.find((curve) => curve === scheme) ?? fallback;
+    if (options?.scheme === undefined) {
+      return fallback;
+    }
+    const scheme = options.scheme.toLowerCase();
+    const curve = this.curve.find((candidate) => candidate === scheme);
+    if (curve === undefined) {
+      throw new RangeError(
+        `Scheme ${JSON.stringify(options.scheme)} is not supported for ${this.name}. Supported: ${this.curve.join(", ")}`,
+      );
+    }
+    return curve;
   }
 
   /**
