@@ -190,6 +190,8 @@ Decred and Cardano throw on `deriveHDWallet`, on purpose, `deriveWallet` with a 
 
 ```bash
 npx -y @agntn/keys mcp
+pi install npm:@agntn/keys
+omp install @agntn/keys
 ```
 
 ```json
@@ -200,7 +202,7 @@ npx -y @agntn/keys mcp
 }
 ```
 
-20 tools, `keys_derive_electrum_wallet` through `keys_bip44_path`, and the Pi extension in [`packages/pi`](./packages/pi) runs the exact same executors from a checkout. Ask for a mnemonic and this is the whole answer:
+20 tools, `keys_derive_electrum_wallet` through `keys_bip44_path`, and the Pi and OMP extensions in [`packages`](./packages) run the exact same executors, installed from npm or from a checkout. Ask for a mnemonic and this is the whole answer:
 
 ```
 Language: english

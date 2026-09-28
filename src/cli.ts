@@ -7,7 +7,7 @@ import { defineCommand, runMain } from "citty";
 import type McpCommand from "./commands/mcp.ts";
 import { version } from "./version.ts";
 
-/** The same file from `src/cli.ts` and `dist/cli.mjs`; the npm package ships only `dist`. */
+/** The same file from `src/cli.ts` and `dist/cli.mjs`; the npm package leaves `src/commands` out. */
 const sourceMcpCommand = new URL("../src/commands/mcp.ts", import.meta.url);
 const sourceMcpCommandPath = fileURLToPath(sourceMcpCommand);
 
