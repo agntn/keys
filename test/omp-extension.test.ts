@@ -75,6 +75,14 @@ describe("keys OMP extension", () => {
     const path = await call("keys_bip44_path", { chain: "bitcoin", path: "", addressType: "" });
     expect(path).toContain("m/44'/0'/0'/0/0");
 
+    const path5 = "m/44'/0'/0'/0/5";
+    for (const params of [
+      { chain: "bitcoin", path: path5, account: 0, change: 0, addressIndex: 5, addressType: "" },
+      { chain: "", path: path5, account: 0, change: 0, addressIndex: 0, addressType: "" },
+    ]) {
+      expect(await call("keys_bip44_path", params)).toContain("Address index: 5");
+    }
+
     const [wif] = wifTestVectors;
     const encoded = await call("keys_encode_wif", {
       chain: wif.chain,
