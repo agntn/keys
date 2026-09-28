@@ -236,6 +236,21 @@ function optionalString(value: unknown, name: string): string | undefined {
   return requiredString(value, name);
 }
 
+/**
+ * Tells whether an optional name such as a network or an address type was left out.
+ * OMP sends every property of the schema, so an option the model leaves alone arrives as `""`.
+ * Passphrases skip this check, because spaces are a passphrase of their own.
+ * @param value - Argument as the host passed it.
+ * @returns {boolean} True when the argument is missing or a blank string.
+ */
+function isUnset(value: unknown): boolean {
+  return value === undefined || (typeof value === "string" && value.trim() === "");
+}
+
+function optionalName(value: unknown, name: string): string | undefined {
+  return isUnset(value) ? undefined : requiredString(value, name);
+}
+
 function optionalIndex(value: unknown, name: string, maximum = 0x7fffffff): number | undefined {
   if (value === undefined) return undefined;
   if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > maximum) {
@@ -249,9 +264,9 @@ function assertBip44PathMode(
   pathValue: unknown,
   generationOptions: readonly unknown[],
 ): void {
-  if (pathValue === undefined) {
-    if (chainValue !== undefined) return;
-  } else if (chainValue === undefined && generationOptions.every((value) => value === undefined)) {
+  if (isUnset(pathValue)) {
+    if (!isUnset(chainValue)) return;
+  } else if (isUnset(chainValue) && generationOptions.every(isUnset)) {
     return;
   }
   throw new TypeError(
@@ -297,7 +312,7 @@ function formatCurve(curve: string | readonly string[]): string {
 }
 
 function parseNetwork(value: unknown): ToolNetwork {
-  const network = optionalString(value, "Network") ?? "mainnet";
+  const network = optionalName(value, "Network") ?? "mainnet";
   const matched = TOOL_NETWORKS.find((candidate) => candidate === network);
   if (matched === undefined) {
     throw new RangeError(
@@ -308,12 +323,14 @@ function parseNetwork(value: unknown): ToolNetwork {
 }
 
 function parseAddressType(chain: ToolChain, value: unknown): string | undefined {
-  const addressType = optionalString(value, "Address type");
+  const addressType = optionalName(value, "Address type");
   if (addressType === undefined) return undefined;
 
   const supported = TOOL_ADDRESS_TYPES_BY_CHAIN[chain];
   if (supported.length === 0) {
-    throw new RangeError(`Address type is not supported for ${chain}`);
+    throw new RangeError(
+      `Address type ${JSON.stringify(addressType)} is not supported for ${chain}, which has one address format. Omit addressType`,
+    );
   }
   const matched = supported.find((candidate) => candidate === addressType);
   if (matched === undefined) {
@@ -1009,7 +1026,7 @@ export async function bip44Path(
     addressIndexValue,
     addressTypeValue,
   ]);
-  const path = optionalString(pathValue, "BIP44 path");
+  const path = optionalName(pathValue, "BIP44 path");
   if (path !== undefined) {
     const parsed = parseBIP44Path(path);
     if (!parsed) {
@@ -1070,7 +1087,7 @@ function parseWIFContext(chainValue: unknown, networkValue: unknown): WIFNetwork
   const chain = TOOL_WIF_CHAINS.find((candidate) => candidate === chainValue);
   if (chain === undefined)
     throw new Error(`Unsupported WIF chain. Use ${TOOL_WIF_CHAINS.join(", ")}`);
-  const network = networkValue === undefined ? "mainnet" : networkValue;
+  const network = isUnset(networkValue) ? "mainnet" : networkValue;
   if (network !== "mainnet" && network !== "testnet")
     throw new Error("Unsupported WIF network. Use mainnet or testnet");
   return { chain, network };
