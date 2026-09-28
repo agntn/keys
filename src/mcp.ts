@@ -328,7 +328,9 @@ function mcpInputSchema(schema: ReadonlyObjectSchema): Tool["inputSchema"] {
 function validationError(schema: ReadonlyObjectSchema, value: unknown): string {
   const first = Value.Errors(schema, value)[0];
   if (!first) return "Invalid arguments";
-  return `Invalid arguments at ${first.instancePath || "/"}: ${first.message}`;
+  const allowed = first.keyword === "enum" ? first.params.allowedValues : undefined;
+  const message = Array.isArray(allowed) ? `must be one of ${allowed.join(", ")}` : first.message;
+  return `Invalid arguments at ${first.instancePath || "/"}: ${message}`;
 }
 
 function errorResult(text: string): CallToolResult {
