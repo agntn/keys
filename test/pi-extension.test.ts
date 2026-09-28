@@ -885,6 +885,7 @@ describe("keys Pi extension", () => {
       [{ path, change: 1 }, "change 1 contradicts the path, which has 0"],
       [{ path, addressIndex: 1 }, "addressIndex 1 contradicts the path, which has 0"],
       [{ chain: "bogus", path: "m/44'/1'/0'/0/0" }, 'Unknown chain "bogus"'],
+      [{ path: "m/not/a/path" }, 'Invalid BIP44 path: "m/not/a/path"'],
     ] as const) {
       await expect(tool.execute("contradicting-path", params)).rejects.toThrow(message);
     }

@@ -337,13 +337,6 @@ function errorResult(text: string): CallToolResult {
   return { content: [{ type: "text", text: sanitizeToolText(text) }], isError: true };
 }
 
-function toCallToolResult(result: ToolResult<unknown>): CallToolResult {
-  return {
-    content: result.content,
-    ...(result.isError === undefined ? {} : { isError: result.isError }),
-  };
-}
-
 /** The `tools/list` entries, in order, shared by `keys mcp` and the MCP server of the docs site. */
 export const toolListings: readonly Tool[] = tools.map((tool) => ({
   name: tool.name,
@@ -375,7 +368,7 @@ export async function callTool(
   }
 
   try {
-    return toCallToolResult(await tool.execute(args));
+    return { content: (await tool.execute(args)).content };
   } catch (error) {
     return errorResult(
       `${tool.name} failed: ${error instanceof Error ? error.message : String(error)}`,
