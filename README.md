@@ -11,7 +11,7 @@
 > **@agntn/keys is experimental.** The public API and the tool surfaces can still move before the first stable release. Pin exact versions if you build on it now.
 
 > [!CAUTION]
-> **Not audited.** No security audit has touched this code, so I don't recommend it for production, real funds or sensitive data. It's made for agents, puzzles and local experiments, and that's where it should stay. The curves, BIP32 and BIP39 come from audited @noble and @scure. Everything else never had an audit, SLIP-10 and the hashes from @agntn/hashes included.
+> **Not audited.** No security audit has touched this code, so I don't recommend it for production, real funds or sensitive data. It's made for agents, puzzles and local experiments, and that's where it should stay. Anything that matters wants an audited library.
 
 ## Why?
 
