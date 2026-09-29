@@ -78,15 +78,19 @@ keys/
 
 ```bash
 pnpm dev              # vp test in watch mode
-pnpm test             # lint + type check + vp test with coverage
-pnpm test:types       # tsc --noEmit --skipLibCheck
+pnpm test             # lint + types + build + test:ext + vp test with coverage + MCP eval
+pnpm test:types       # tsc --noEmit --skipLibCheck, then the type tests
+pnpm test:ext         # type check the Pi and OMP extensions
 pnpm build            # vp pack via vite.config.ts
-pnpm lint             # vp lint + vp fmt --check
-pnpm lint:fix         # vp lint --fix + vp fmt
+pnpm lint             # vp pack, then vp lint + vp fmt --check
+pnpm lint:fix         # vp pack, then vp lint --fix + vp fmt
+pnpm fmt              # same as lint:fix
 pnpm playground <f>   # run any TS file via tsx
 pnpm docs             # Docus + keyspace explorer on :3000
 pnpm test:mcp         # build and exercise all 20 MCP tools over stdio
 ```
+
+`build`, `lint`, `lint:fix`, `fmt`, `test` and `test:mcp` all rewrite `dist/`, and so does packing or publishing through `prepack`. The lint scripts pack first because the Pi and OMP extensions take their executor types from `dist/tool-operations.d.mts`, and without that file the type-aware lint reads every executor call there as `error` typed. A checkout whose `dist/` serves the `keys` bin or the extensions gets a new bundle under them, so run these in a separate worktree while that server is live.
 
 ## NOTES
 
