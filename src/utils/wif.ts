@@ -1,6 +1,6 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { blake256 } from "@noble/hashes/blake1.js";
-import { bytesToHex, concatBytes, hexToBytes } from "@noble/hashes/utils.js";
+import { blake256 } from "@agntn/hashes";
+import { concatBytes } from "./bytes.ts";
 import { equalBytes } from "@noble/curves/utils.js";
 import { base58 } from "@scure/base";
 import { decodeBase58Check, encodeBase58Check } from "./encoding.ts";
@@ -66,7 +66,7 @@ function parsePrivateKey(privateKey: string): Uint8Array {
   ) {
     throw new Error("WIF private key must be 32 bytes of hex without a prefix");
   }
-  const key = hexToBytes(privateKey);
+  const key = Uint8Array.fromHex(privateKey);
   if (!secp256k1.utils.isValidSecretKey(key)) {
     throw new Error("Invalid WIF private key scalar");
   }
@@ -172,5 +172,5 @@ export function decodeWIF(wif: string, options: WIFNetworkOptions): DecodedWIF {
   if (!secp256k1.utils.isValidSecretKey(key)) {
     throw new Error("Invalid WIF private key scalar");
   }
-  return { privateKey: bytesToHex(key), chain, network, compressed };
+  return { privateKey: key.toHex(), chain, network, compressed };
 }

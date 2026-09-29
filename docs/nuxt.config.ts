@@ -6,9 +6,9 @@ const librarySource = resolve(import.meta.dirname, "../src");
 
 /** Runtime deps under src/index.ts and src/mcp.ts, installed here so they resolve from docs/node_modules. */
 const libraryDependencies = [
+  "@agntn/hashes",
   "@modelcontextprotocol/sdk",
   "@noble/curves",
-  "@noble/hashes",
   "@scure/base",
   "@scure/bip32",
   "@scure/bip39",
@@ -18,17 +18,10 @@ const libraryDependencies = [
 
 /** Every subpath src/ imports, dynamic ones too, so dev bundles them up front, not on demand. */
 const libraryEntries = [
+  "@agntn/hashes",
   "@noble/curves/ed25519.js",
   "@noble/curves/secp256k1.js",
   "@noble/curves/utils.js",
-  "@noble/hashes/blake1.js",
-  "@noble/hashes/blake2.js",
-  "@noble/hashes/legacy.js",
-  "@noble/hashes/sha2.js",
-  "@noble/hashes/hmac.js",
-  "@noble/hashes/pbkdf2.js",
-  "@noble/hashes/sha3.js",
-  "@noble/hashes/utils.js",
   "@scure/base",
   "@scure/bip32",
   "@scure/bip39",

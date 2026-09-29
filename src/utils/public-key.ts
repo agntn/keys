@@ -1,5 +1,4 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 
 /** SEC1 output encoding; this does not change the curve point. */
 export interface PublicKeyEncodingOptions {
@@ -25,8 +24,8 @@ export function convertSecp256k1PublicKey(
     ) {
       throw new Error("Invalid encoding");
     }
-    const point = secp256k1.Point.fromBytes(hexToBytes(publicKey));
-    return bytesToHex(point.toBytes(compressed));
+    const point = secp256k1.Point.fromBytes(Uint8Array.fromHex(publicKey));
+    return point.toBytes(compressed).toHex();
   } catch {
     throw new Error("Invalid SEC1 secp256k1 public key");
   }

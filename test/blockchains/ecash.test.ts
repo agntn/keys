@@ -1,6 +1,7 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { sha256 } from "@noble/hashes/sha2.js";
-import { bytesToHex, concatBytes, hexToBytes } from "@noble/hashes/utils.js";
+import { sha256 } from "@agntn/hashes";
+import { hex } from "@scure/base";
+import { concatBytes } from "../../src/utils/bytes.ts";
 import { base64 } from "@scure/base";
 import { describe, expect, it } from "vite-plus/test";
 import { blockchains, getBlockchainPath } from "../../src/index.ts";
@@ -46,15 +47,15 @@ describe("eCash", () => {
     const chain = new ECash();
     const { privateKey, publicKeyCompressed } = secp256k1TestVectors;
     const hash = decodeCashAddr(chain.getAddress(publicKeyCompressed), "ecash")?.hash;
-    expect(bytesToHex(hash ?? new Uint8Array())).toBe(
-      bytesToHex(
+    expect(hex.encode(hash ?? new Uint8Array())).toBe(
+      hex.encode(
         decodeCashAddr(new BitcoinCash().getAddress(publicKeyCompressed), "bitcoincash")?.hash ??
           new Uint8Array(1),
       ),
     );
     expect(chain.deriveWallet(privateKey).address).toBe(chain.getAddress(publicKeyCompressed));
-    for (const { hash: hex, p2pkh } of vector.encoded) {
-      expect(encodeCashAddr("ecash", 0, hexToBytes(hex))).toBe(p2pkh);
+    for (const { hash: hashHex, p2pkh } of vector.encoded) {
+      expect(encodeCashAddr("ecash", 0, hex.decode(hashHex))).toBe(p2pkh);
     }
   });
 
@@ -116,8 +117,8 @@ describe("eCash", () => {
   it("verifies ecash-lib's signature under its key", () => {
     const chain = new ECash();
     const { privateKey, message, digest, signature } = vector.signed;
-    expect(bytesToHex(bitcoinAbcDigest(message))).toBe(digest);
-    const rs = bytesToHex(base64.decode(signature).slice(1));
+    expect(hex.encode(bitcoinAbcDigest(message))).toBe(digest);
+    const rs = hex.encode(base64.decode(signature).slice(1));
     const publicKey = chain.getKeyPublic(privateKey);
     expect(chain.verifyMessage(message, rs, publicKey)).toBe(true);
     expect(chain.verifyMessage(`${message}!`, rs, publicKey)).toBe(false);
@@ -127,10 +128,10 @@ describe("eCash", () => {
     const chain = new ECash();
     const { privateKey, publicKeyCompressed } = secp256k1TestVectors;
     const signed = chain.signMessage(testMessages.simple, privateKey);
-    const expected = secp256k1.sign(bitcoinAbcDigest(testMessages.simple), hexToBytes(privateKey), {
+    const expected = secp256k1.sign(bitcoinAbcDigest(testMessages.simple), hex.decode(privateKey), {
       prehash: false,
     });
-    expect(signed).toBe(bytesToHex(expected));
+    expect(signed).toBe(hex.encode(expected));
     expect(chain.verifyMessage(testMessages.simple, signed, publicKeyCompressed)).toBe(true);
   });
 

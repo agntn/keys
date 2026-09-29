@@ -8,11 +8,11 @@ import {
   isHardenedIndex,
   formatIndex,
 } from "../../src/utils/slip10";
-import { hexToBytes } from "@noble/hashes/utils.js";
+import { hex } from "@scure/base";
 
 describe("SLIP-0010 Utils", () => {
   // Test vector from SLIP-0010 (ed25519)
-  const testSeed = hexToBytes("000102030405060708090a0b0c0d0e0f");
+  const testSeed = hex.decode("000102030405060708090a0b0c0d0e0f");
 
   it("creates a master key from seed", () => {
     const masterKey = getMasterKeyFromSeed(testSeed);

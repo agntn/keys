@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-TypeScript library providing a unified interface for key generation, address derivation, wallet creation, and message signing across 18 blockchains (Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, Cardano, SUI, TRON). Built entirely on the @noble/@scure audited crypto ecosystem.
+TypeScript library providing a unified interface for key generation, address derivation, wallet creation, and message signing across 18 blockchains (Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, Cardano, SUI, TRON). Curves, base encodings and HD derivation come from the audited @noble/@scure libraries, every hash from @agntn/hashes.
 
 ## STRUCTURE
 
@@ -52,7 +52,8 @@ keys/
 
 ## CONVENTIONS
 
-- **All crypto from @noble/@scure** - never import raw crypto from Node or other libs
+- **Crypto from @noble/@scure and @agntn/hashes** - curves, base encodings and HD from @noble/@scure, every hash from `@agntn/hashes`; never import raw crypto from Node or other libs
+- **Hex and bytes** - `Uint8Array.fromHex`, `.toHex()` and `concatBytes` from `src/utils/bytes.ts` in `src/`; tests and playground use `hex` from `@scure/base`, because the type-aware lint types them without the `esnext` lib of `tsconfig.json`
 - **Class pattern** - every blockchain exports a named concrete class and the same class as its default export
 - **Abstract bases** - all chains extend `AbstractBlockchain`; Ethereum and Base extend `AbstractEVMBlockchain`
 - **Lazy double-call** - `blockchains.chain(options)()` passes constructor options, then imports and constructs the class
@@ -68,7 +69,7 @@ keys/
 ## ANTI-PATTERNS
 
 - **No type assertions in src/** - zero `as any`, `@ts-ignore`, `@ts-expect-error` in source code (`@ts-expect-error` exists in tests only, for intentional invalid input testing)
-- **No non-noble crypto** - never import Node `crypto`, not even for randomness. Keys come from the curve's `utils.randomSecretKey()`
+- **No Node crypto** - never import Node `crypto`, not even for randomness. Keys come from the curve's `utils.randomSecretKey()`
 - **No syntax Node cannot strip** - `src/` runs under plain Node type stripping, so no `enum`, `namespace` or parameter properties (`erasableSyntaxOnly` enforces it), and relative imports end in `.ts`
 - **No logic in index.ts** - only re-exports
 - **Don't bypass the lazy registry by accident** - use `blockchains.chain(options)()` for routine public loading; direct constructors are for explicit per-chain imports and subclassing

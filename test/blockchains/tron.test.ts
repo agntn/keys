@@ -1,6 +1,6 @@
 import { expect, describe, it } from "vite-plus/test";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { hexToBytes } from "@noble/hashes/utils.js";
+import { hex } from "@scure/base";
 import { bip39TestVectors, tronTestVectors } from "../fixtures";
 import Ethereum from "../../src/blockchains/ethereum";
 import Tron from "../../src/blockchains/tron";
@@ -120,13 +120,13 @@ describe("TRON Blockchain", () => {
       "signs TronWeb signMessageV2 vector %# over the same digest",
       (message, digest, signatureWithV) => {
         const signature = signatureWithV.slice(0, 128);
-        const publicKey = hexToBytes(vector.publicKey);
+        const publicKey = hex.decode(vector.publicKey);
         expect(blockchain.signMessage(message, vector.privateKey)).toBe(signature);
         expect(blockchain.signMessage(new TextEncoder().encode(message), vector.privateKey)).toBe(
           signature,
         );
         expect(
-          secp256k1.verify(hexToBytes(signature), hexToBytes(digest), publicKey, {
+          secp256k1.verify(hex.decode(signature), hex.decode(digest), publicKey, {
             prehash: false,
           }),
         ).toBe(true);
@@ -141,7 +141,7 @@ describe("TRON Blockchain", () => {
       (message, _digest, signatureWithV) => {
         const recovered = blockchain.signMessage(message, vector.privateKey, { recovered: true });
         expect(recovered).toBe(signatureWithV);
-        expect(hexToBytes(recovered).length).toBe(65);
+        expect(hex.decode(recovered).length).toBe(65);
         expect(blockchain.verifyMessage(message, recovered, vector.publicKey)).toBe(true);
       },
     );

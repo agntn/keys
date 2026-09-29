@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { bytesToHex } from "@noble/hashes/utils.js";
+import { hex } from "@scure/base";
 import { blockchains } from "../../src/index.ts";
 import { mnemonicToSeed } from "../../src/utils/bip39/index.ts";
 import { getMasterKeyFromSeed } from "../../src/utils/slip10/index.ts";
@@ -114,7 +114,7 @@ describe("HD checksum policy", () => {
     const solanaPath = "m/44'/501'/0'/0'";
     const key = getMasterKeyFromSeed(mnemonicToSeed(mnemonic)).derive(solanaPath).privateKey;
     const wallet = chain.deriveHDWallet(mnemonic, solanaPath, { allowInvalidChecksum: true });
-    expect(wallet.address).toBe(chain.deriveWallet(bytesToHex(key)).address);
+    expect(wallet.address).toBe(chain.deriveWallet(hex.encode(key)).address);
     expect(wallet.warnings).toHaveLength(1);
     expect(() => chain.deriveHDWallet(mnemonic, solanaPath)).toThrow("Invalid BIP39 mnemonic");
     expect(() =>

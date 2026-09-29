@@ -1,5 +1,4 @@
-import { blake2b } from "@noble/hashes/blake2.js";
-import { hexToBytes } from "@noble/hashes/utils.js";
+import { blake2b } from "@agntn/hashes";
 import { bech32 } from "@scure/base";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { getBIP32Path } from "../utils/bip44/index.ts";
@@ -80,7 +79,7 @@ export class Cardano extends AbstractBlockchain {
   }
 
   private getKeyHash(keyPublic: string): Uint8Array {
-    return blake2b(hexToBytes(keyPublic), { dkLen: 28 });
+    return blake2b(Uint8Array.fromHex(keyPublic), 28);
   }
 
   private encodeAddress(hrp: string, header: number, payload: Uint8Array): string {

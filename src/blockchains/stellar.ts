@@ -1,5 +1,5 @@
-import { sha256 } from "@noble/hashes/sha2.js";
-import { concatBytes, hexToBytes } from "@noble/hashes/utils.js";
+import { crc16Xmodem, sha256 } from "@agntn/hashes";
+import { concatBytes } from "../utils/bytes.ts";
 import { base32nopad } from "@scure/base";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { BIP44, getHardenedPath } from "../utils/bip44/index.ts";
@@ -22,19 +22,12 @@ const ACCOUNT_VERSION = 6 << 3;
 const MESSAGE_PREFIX = new TextEncoder().encode("Stellar Signed Message:\n");
 
 /**
- * Computes the CRC16-XModem checksum a StrKey carries in its last two bytes.
+ * Computes the CRC16-XModem checksum a StrKey carries in its last two bytes, little-endian.
  * @param payload - The version byte and the key
- * @returns {number} The unsigned 16-bit checksum
+ * @returns {Uint8Array} The two checksum bytes, low byte first
  */
-function crc16Xmodem(payload: Uint8Array): number {
-  let checksum = 0;
-  for (const byte of payload) {
-    checksum ^= byte << 8;
-    for (let bit = 0; bit < 8; bit++) {
-      checksum = checksum & 0x8000 ? ((checksum << 1) ^ 0x1021) & 0xffff : (checksum << 1) & 0xffff;
-    }
-  }
-  return checksum;
+function strKeyChecksum(payload: Uint8Array): Uint8Array {
+  return crc16Xmodem(payload).toReversed();
 }
 
 /**
@@ -46,8 +39,7 @@ function crc16Xmodem(payload: Uint8Array): number {
  */
 function encodeStrKey(version: number, payload: Uint8Array): string {
   const data = concatBytes(Uint8Array.from([version]), payload);
-  const checksum = crc16Xmodem(data);
-  return base32nopad.encode(concatBytes(data, Uint8Array.from([checksum & 0xff, checksum >> 8])));
+  return base32nopad.encode(concatBytes(data, strKeyChecksum(data)));
 }
 
 /**
@@ -96,7 +88,7 @@ export class Stellar extends AbstractBlockchain {
    * @returns {string} The 56-character StrKey
    */
   override getAddress(keyPublic: string): string {
-    const keyPublicBytes = hexToBytes(keyPublic);
+    const keyPublicBytes = Uint8Array.fromHex(keyPublic);
     if (keyPublicBytes.length !== 32) {
       throw new RangeError("Stellar public key must be 32 bytes");
     }
@@ -121,10 +113,8 @@ export class Stellar extends AbstractBlockchain {
     }
     if (decoded.length !== type.bytes || decoded[0] !== type.version) return false;
 
-    const checksum = crc16Xmodem(decoded.subarray(0, -2));
-    return (
-      decoded[type.bytes - 2] === (checksum & 0xff) && decoded[type.bytes - 1] === checksum >> 8
-    );
+    const [low, high] = strKeyChecksum(decoded.subarray(0, -2));
+    return decoded[type.bytes - 2] === low && decoded[type.bytes - 1] === high;
   }
 
   /**

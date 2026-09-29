@@ -1,7 +1,6 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { blake256 } from "@noble/hashes/blake1.js";
-import { ripemd160 } from "@noble/hashes/legacy.js";
-import { bytesToHex, concatBytes, hexToBytes } from "@noble/hashes/utils.js";
+import { blake256, ripemd160 } from "@agntn/hashes";
+import { concatBytes } from "../utils/bytes.ts";
 import { base58check } from "@scure/base";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
@@ -65,7 +64,9 @@ export class Decred extends AbstractBlockchain {
   override getAddress(keyPublic: string, type = "legacy"): string {
     if (type !== "legacy") throw new RangeError("Decred supports legacy ECDSA P2PKH only");
     secp256k1.Point.fromHex(keyPublic);
-    return codec.encode(concatBytes(this.prefix, ripemd160(blake256(hexToBytes(keyPublic)))));
+    return codec.encode(
+      concatBytes(this.prefix, ripemd160(blake256(Uint8Array.fromHex(keyPublic)))),
+    );
   }
 
   override validateAddress(address: string): boolean {
@@ -89,9 +90,9 @@ export class Decred extends AbstractBlockchain {
       options,
       "dcrd encodes its recoverable signature as base64 of header||r||s, not r||s||v",
     );
-    return bytesToHex(
-      secp256k1.sign(hashMessage(message), hexToBytes(keyPrivate), { prehash: false }),
-    );
+    return secp256k1
+      .sign(hashMessage(message), Uint8Array.fromHex(keyPrivate), { prehash: false })
+      .toHex();
   }
 
   override verifyMessage(
@@ -103,9 +104,14 @@ export class Decred extends AbstractBlockchain {
       return false;
     }
     try {
-      return secp256k1.verify(hexToBytes(signature), hashMessage(message), hexToBytes(keyPublic), {
-        prehash: false,
-      });
+      return secp256k1.verify(
+        Uint8Array.fromHex(signature),
+        hashMessage(message),
+        Uint8Array.fromHex(keyPublic),
+        {
+          prehash: false,
+        },
+      );
     } catch {
       return false;
     }

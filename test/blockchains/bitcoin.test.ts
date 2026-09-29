@@ -1,6 +1,6 @@
 import { webcrypto } from "node:crypto";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
+import { hex } from "@scure/base";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { bip39TestVectors, bitcoinMessageVectors as messageVectors } from "../fixtures";
 import { useBlockchain } from "../../src";
@@ -40,7 +40,7 @@ describe("Bitcoin blockchain", () => {
 
       expect(getRandomValues).toHaveBeenCalledOnce();
       expect(getRandomValues.mock.calls[0]?.[0].byteLength).toBe(seed.byteLength);
-      expect(keyPrivate).toBe(bytesToHex(secp256k1.utils.randomSecretKey(seed)));
+      expect(keyPrivate).toBe(hex.encode(secp256k1.utils.randomSecretKey(seed)));
     } finally {
       getRandomValues.mockRestore();
     }
@@ -359,7 +359,7 @@ describe("Bitcoin blockchain", () => {
         const publicKey = blockchain.getKeyPublic(messageVectors.privateKey);
         const signature = blockchain.signMessage(message, messageVectors.privateKey);
         expect(
-          secp256k1.verify(hexToBytes(signature), hexToBytes(digest), hexToBytes(publicKey), {
+          secp256k1.verify(hex.decode(signature), hex.decode(digest), hex.decode(publicKey), {
             prehash: false,
           }),
         ).toBe(true);

@@ -1,4 +1,4 @@
-import { bytesToHex } from "@noble/hashes/utils.js";
+import { hex } from "@scure/base";
 import { describe, expect, it } from "vite-plus/test";
 import { deriveElectrumSeed, inspectElectrumMnemonic } from "../../src/index.ts";
 import { normalizeElectrumText } from "../../src/utils/electrum.ts";
@@ -10,7 +10,7 @@ describe("Electrum seed derivation", () => {
   it.each(electrumVectors)("matches upstream seed bytes and addresses: $name", async (vector) => {
     expect(inspectElectrumMnemonic(vector.mnemonic)).toBe(vector.seedType);
     const result = deriveElectrumSeed(vector.mnemonic, vector.passphrase);
-    expect(bytesToHex(result.seed)).toBe(vector.seed);
+    expect(hex.encode(result.seed)).toBe(vector.seed);
     expect(result.scheme).toBe("electrum");
     const wallet = await deriveElectrumWallet(vector.mnemonic, vector.path, vector.passphrase);
     expect(wallet.details).toMatchObject({

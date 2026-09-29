@@ -5,8 +5,8 @@ import {
   formatIndex,
   HARDENED_OFFSET,
 } from "../src/utils/bip32";
-import { hexToBytes } from "@noble/hashes/utils.js";
-import { sha256 } from "@noble/hashes/sha2.js";
+import { sha256 } from "@agntn/hashes";
+import { hex } from "@scure/base";
 
 // Commented out but kept for reference
 // Generate a seed from random bytes
@@ -18,7 +18,7 @@ import { sha256 } from "@noble/hashes/sha2.js";
 // };
 
 // Use a static seed for reproducible results in this example
-const testSeed = hexToBytes("000102030405060708090a0b0c0d0e0f");
+const testSeed = hex.decode("000102030405060708090a0b0c0d0e0f");
 
 // Create master key from seed
 console.log("1. Creating master key from seed");

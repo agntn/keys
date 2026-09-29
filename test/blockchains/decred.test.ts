@@ -1,7 +1,6 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { blake256 } from "@noble/hashes/blake1.js";
-import { sha256 } from "@noble/hashes/sha2.js";
-import { hexToBytes } from "@noble/hashes/utils.js";
+import { blake256, sha256 } from "@agntn/hashes";
+import { hex } from "@scure/base";
 import { base58check } from "@scure/base";
 import { describe, expect, it } from "vite-plus/test";
 import Decred, { Decred as NamedDecred } from "../../src/blockchains/decred.ts";
@@ -84,7 +83,7 @@ describe("Decred", () => {
     const chain = await blockchains.decred()();
     const signature = chain.signMessage(message, vector.privateKey);
     expect(
-      secp256k1.verify(hexToBytes(signature), hexToBytes(digest), hexToBytes(vector.publicKey), {
+      secp256k1.verify(hex.decode(signature), hex.decode(digest), hex.decode(vector.publicKey), {
         prehash: false,
       }),
     ).toBe(true);

@@ -1,6 +1,5 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { sha256 } from "@noble/hashes/sha2.js";
-import { hexToBytes } from "@noble/hashes/utils.js";
+import { sha256 } from "@agntn/hashes";
 import { AbstractBlockchain } from "../blockchain.ts";
 import {
   generateAddressLegacy,
@@ -371,7 +370,7 @@ export abstract class AbstractCashAddrBlockchain extends AbstractBitcoinMessageB
    */
   override getAddress(keyPublic: string, type = "legacy"): string {
     if (type !== "legacy") throw new RangeError(`${this.label} supports legacy P2PKH only`);
-    const bytesKeyPublic = hexToBytes(keyPublic);
+    const bytesKeyPublic = Uint8Array.fromHex(keyPublic);
     secp256k1.Point.fromBytes(bytesKeyPublic);
     return encodeCashAddr(this.prefix, 0, hash160(bytesKeyPublic));
   }

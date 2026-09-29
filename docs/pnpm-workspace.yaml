@@ -9,3 +9,6 @@ allowBuilds:
   workerd: true
   vue-demi: true
   core-js-pure: false
+
+minimumReleaseAgeExclude:
+  - "@agntn/hashes"

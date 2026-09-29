@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
+import { hex } from "@scure/base";
 import { bip39TestVectors, ethereumTestVectors } from "../fixtures";
 import { useBlockchain } from "../../src";
 import Ethereum from "../../src/blockchains/ethereum";
@@ -224,20 +224,20 @@ describe("Ethereum blockchain", () => {
       (message, digest, signatureWithV) => {
         const signature = signatureWithV.slice(0, 128);
         const recovery = Number.parseInt(signatureWithV.slice(128), 16) - 27;
-        const publicKey = hexToBytes(vector.publicKey);
+        const publicKey = hex.decode(vector.publicKey);
         expect(blockchain.signMessage(message, vector.privateKey)).toBe(signature);
         expect(blockchain.signMessage(new TextEncoder().encode(message), vector.privateKey)).toBe(
           signature,
         );
         expect(
-          secp256k1.verify(hexToBytes(signature), hexToBytes(digest), publicKey, {
+          secp256k1.verify(hex.decode(signature), hex.decode(digest), publicKey, {
             prehash: false,
           }),
         ).toBe(true);
-        const recovered = secp256k1.Signature.fromBytes(hexToBytes(signature), "compact")
+        const recovered = secp256k1.Signature.fromBytes(hex.decode(signature), "compact")
           .addRecoveryBit(recovery)
-          .recoverPublicKey(hexToBytes(digest));
-        expect(bytesToHex(recovered.toBytes(true))).toBe(vector.publicKey);
+          .recoverPublicKey(hex.decode(digest));
+        expect(hex.encode(recovered.toBytes(true))).toBe(vector.publicKey);
         expect(blockchain.verifyMessage(message, signature, vector.publicKey)).toBe(true);
         expect(blockchain.verifyMessage(message + "!", signature, vector.publicKey)).toBe(false);
         expect(blockchain.verifyMessage(message, "invalid", vector.publicKey)).toBe(false);
@@ -249,7 +249,7 @@ describe("Ethereum blockchain", () => {
       (message, _digest, signatureWithV) => {
         const recovered = blockchain.signMessage(message, vector.privateKey, { recovered: true });
         expect(recovered).toBe(signatureWithV);
-        expect(hexToBytes(recovered).length).toBe(65);
+        expect(hex.decode(recovered).length).toBe(65);
         expect(blockchain.verifyMessage(message, recovered, vector.publicKey)).toBe(true);
         expect(blockchain.verifyMessage(message + "!", recovered, vector.publicKey)).toBe(false);
       },

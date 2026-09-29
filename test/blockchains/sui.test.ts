@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vite-plus/test";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
+import { hex } from "@scure/base";
 import { bip39TestVectors, slip10WalletVectors, suiTestVectors } from "../fixtures";
 import Sui from "../../src/blockchains/sui";
 import Ethereum from "../../src/blockchains/ethereum";
@@ -214,19 +214,19 @@ describe("Sui", () => {
     it.each(vector.messages)(
       "signs @mysten/sui signPersonalMessage vector %# on both schemes",
       (message, digest, ed25519Signature, secp256k1Signature) => {
-        const digestBytes = hexToBytes(digest);
+        const digestBytes = hex.decode(digest);
         expect(
           ed25519.verify(
-            hexToBytes(ed25519Signature),
+            hex.decode(ed25519Signature),
             digestBytes,
-            hexToBytes(vector.ed25519.publicKey),
+            hex.decode(vector.ed25519.publicKey),
           ),
         ).toBe(true);
         expect(
           secp256k1.verify(
-            hexToBytes(secp256k1Signature),
+            hex.decode(secp256k1Signature),
             digestBytes,
-            hexToBytes(vector.secp256k1.publicKey),
+            hex.decode(vector.secp256k1.publicKey),
             { prehash: true },
           ),
         ).toBe(true);
@@ -291,8 +291,8 @@ describe("Sui", () => {
 
     it("rejects a raw ed25519 signature and an Ethereum preamble one", () => {
       const [message, , ed25519Signature, secp256k1Signature] = vector.messages[1];
-      const raw = bytesToHex(
-        ed25519.sign(new TextEncoder().encode(message), hexToBytes(vector.privateKey)),
+      const raw = hex.encode(
+        ed25519.sign(new TextEncoder().encode(message), hex.decode(vector.privateKey)),
       );
       const ethereum = new Ethereum().signMessage(message, vector.privateKey);
 

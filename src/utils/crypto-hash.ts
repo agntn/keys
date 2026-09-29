@@ -1,8 +1,4 @@
-import { hexToBytes } from "@noble/hashes/utils.js";
-import { sha256 } from "@noble/hashes/sha2.js";
-import { ripemd160 } from "@noble/hashes/legacy.js";
-import { keccak_256, sha3_256 } from "@noble/hashes/sha3.js";
-import { blake2b } from "@noble/hashes/blake2.js";
+import { blake2b, keccak256, ripemd160, sha256, sha3_256 } from "@agntn/hashes";
 
 /**
  * Unified hash function types that are commonly used in blockchains
@@ -15,8 +11,8 @@ export type HashFunction = (data: Uint8Array) => Uint8Array;
 export const hashFunctions = {
   sha256,
   ripemd160,
-  keccak256: keccak_256,
-  blake2b: (data: Uint8Array) => blake2b(data, { dkLen: 32 }),
+  keccak256,
+  blake2b: (data: Uint8Array) => blake2b(data, 32),
   sha3_256,
   hash160: (data: Uint8Array) => ripemd160(sha256(data)),
 };
@@ -35,7 +31,7 @@ export function hashData(
   slice?: { readonly start?: number; readonly end?: number },
 ): Uint8Array {
   // Convert hex string to bytes
-  const bytes = hexToBytes(data);
+  const bytes = Uint8Array.fromHex(data);
 
   // Apply hash function
   const hashed = hashFn(bytes);

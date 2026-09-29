@@ -1,8 +1,8 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { equalBytes } from "@noble/curves/utils.js";
-import { bytesToHex, concatBytes, hexToBytes } from "@noble/hashes/utils.js";
-import { sha256 } from "@noble/hashes/sha2.js";
+import { sha256 } from "@agntn/hashes";
+import { concatBytes } from "./bytes.ts";
 import type { SigningOptions } from "../types.ts";
 
 export type { SigningOptions } from "../types.ts";
@@ -53,7 +53,7 @@ export function assertNoRecoveryByte(
  */
 export function hasRecoveryByte(signature: string): boolean {
   try {
-    return hexToBytes(signature).length === COMPACT_SIGNATURE_LENGTH + 1;
+    return Uint8Array.fromHex(signature).length === COMPACT_SIGNATURE_LENGTH + 1;
   } catch {
     return false;
   }
@@ -73,7 +73,7 @@ function signSecp256k1(
 ): string {
   if (!recovered) {
     // In @noble/curves v2, sign() returns Uint8Array directly (compact format)
-    return bytesToHex(secp256k1.sign(messageHash, keyPrivateBytes, { prehash: false }));
+    return secp256k1.sign(messageHash, keyPrivateBytes, { prehash: false }).toHex();
   }
   // v2 puts the recovery byte first; Ethereum, TRON and ecrecover want it last, as 27 or 28.
   const signature = secp256k1.sign(messageHash, keyPrivateBytes, {
@@ -84,9 +84,10 @@ function signSecp256k1(
   if (recoveryByte === undefined) {
     throw new Error("Missing recovery byte");
   }
-  return bytesToHex(
-    concatBytes(signature.subarray(1), Uint8Array.of(RECOVERY_BYTE_OFFSET + recoveryByte)),
-  );
+  return concatBytes(
+    signature.subarray(1),
+    Uint8Array.of(RECOVERY_BYTE_OFFSET + recoveryByte),
+  ).toHex();
 }
 
 /**
@@ -147,7 +148,7 @@ export function signMessage(
   let messageBytes = typeof message === "string" ? new TextEncoder().encode(message) : message;
 
   // Convert private key from hex string to Uint8Array
-  const keyPrivateBytes = hexToBytes(keyPrivate);
+  const keyPrivateBytes = Uint8Array.fromHex(keyPrivate);
 
   // Different handling based on curve type
   if (curve === "secp256k1") {
@@ -165,7 +166,7 @@ export function signMessage(
 
     // Ed25519 doesn't typically prehash the message
     const signature = ed25519.sign(messageBytes, keyPrivateBytes);
-    return bytesToHex(signature);
+    return signature.toHex();
   }
 
   throw new Error(`Unsupported curve: ${curve}`);
@@ -180,9 +181,9 @@ export function signMessage(
  */
 function verifySecp256k1(signature: string, messageHash: Uint8Array, keyPublic: string): boolean {
   try {
-    const keyPublicBytes = hexToBytes(keyPublic);
+    const keyPublicBytes = Uint8Array.fromHex(keyPublic);
     // In @noble/curves v2, verify() accepts Uint8Array signature directly
-    const signatureBytes = hexToBytes(signature);
+    const signatureBytes = Uint8Array.fromHex(signature);
     if (signatureBytes.length === COMPACT_SIGNATURE_LENGTH + 1) {
       return verifyRecoveredSignature(signatureBytes, messageHash, keyPublicBytes);
     }
@@ -226,8 +227,8 @@ export function verifyMessage(
   } else if (curve === "ed25519") {
     // Ed25519 doesn't typically prehash the message
     try {
-      const keyPublicBytes = hexToBytes(keyPublic);
-      return ed25519.verify(hexToBytes(signature), messageBytes, keyPublicBytes);
+      const keyPublicBytes = Uint8Array.fromHex(keyPublic);
+      return ed25519.verify(Uint8Array.fromHex(signature), messageBytes, keyPublicBytes);
     } catch {
       return false;
     }

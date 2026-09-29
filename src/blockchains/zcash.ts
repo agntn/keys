@@ -1,5 +1,5 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { concatBytes, hexToBytes } from "@noble/hashes/utils.js";
+import { concatBytes } from "../utils/bytes.ts";
 import { bech32m } from "@scure/base";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { hash160 } from "../utils/address.ts";
@@ -73,7 +73,9 @@ export class Zcash extends AbstractBitcoinMessageBlockchain {
   override getAddress(keyPublic: string, type = "legacy"): string {
     if (type !== "legacy") throw new RangeError("Zcash supports transparent P2PKH only");
     secp256k1.Point.fromHex(keyPublic);
-    return encodeBase58Check(concatBytes(this.params.prefixP2PKH, hash160(hexToBytes(keyPublic))));
+    return encodeBase58Check(
+      concatBytes(this.params.prefixP2PKH, hash160(Uint8Array.fromHex(keyPublic))),
+    );
   }
 
   /**
