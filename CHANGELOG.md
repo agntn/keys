@@ -1,5 +1,45 @@
 # Changelog
 
+## v0.3.5
+
+[compare changes](https://github.com/agntn/keys/compare/v0.3.4...v0.3.5)
+
+### 🚀 Enhancements
+
+- **wif:** Add `dash` and `dogecoin` ([#115](https://github.com/agntn/keys/pull/115))
+- **chains:** Add `ecash` ([#119](https://github.com/agntn/keys/pull/119))
+- Watch-only wallets from an xpub ([#120](https://github.com/agntn/keys/pull/120))
+- **docs:** Move to the agntn instrument design ([#121](https://github.com/agntn/keys/pull/121))
+- **chains:** Wallets carry their address type ([#130](https://github.com/agntn/keys/pull/130))
+- **docs:** Remote MCP at keys.agntn.dev/mcp ([#136](https://github.com/agntn/keys/pull/136))
+
+### 🩹 Fixes
+
+- **chains:** An unknown network isn't mainnet ([#117](https://github.com/agntn/keys/pull/117))
+- **chains:** Throw on an unsupported address type ([#122](https://github.com/agntn/keys/pull/122))
+- **sui:** Refuse a scheme it has no curve for ([#125](https://github.com/agntn/keys/pull/125))
+- **bip39:** Say why a mnemonic is rejected ([#126](https://github.com/agntn/keys/pull/126))
+- **package:** Ship the Pi and OMP extensions ([#127](https://github.com/agntn/keys/pull/127))
+- **mcp:** List the values an option takes ([#128](https://github.com/agntn/keys/pull/128))
+- **tools:** Spot an address on the other network ([#131](https://github.com/agntn/keys/pull/131))
+- **tools:** Take a blank option as omitted ([#133](https://github.com/agntn/keys/pull/133))
+- **tools:** Parse a path OMP pads with zeros ([#135](https://github.com/agntn/keys/pull/135))
+- **tools:** Mark an unparsable BIP44 path failed ([#141](https://github.com/agntn/keys/pull/141))
+
+### 💅 Refactors
+
+- **chains:** One base for base58 P2PKH chains ([#118](https://github.com/agntn/keys/pull/118))
+- **tools:** Load chains from the registry ([#129](https://github.com/agntn/keys/pull/129))
+
+### 📖 Documentation
+
+- Drop the puzzles copy from the DESIGN.md pointer ([#123](https://github.com/agntn/keys/pull/123))
+
+### ❤️ Contributors
+
+- Aeitwoen
+- Ori
+
 ## v0.3.4
 
 [compare changes](https://github.com/agntn/keys/compare/v0.3.3...v0.3.4)
