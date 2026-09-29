@@ -36,7 +36,7 @@ The docs live at [keys.agntn.dev](https://keys.agntn.dev), keyspace explorer inc
 pnpm add @agntn/keys
 ```
 
-Node.js 24 or newer. Pure JavaScript all the way down, nothing to compile.
+Node.js 26 or newer. Pure JavaScript all the way down, nothing to compile.
 
 ## 🚀 First wallet
 
