@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-TypeScript library providing a unified interface for key generation, address derivation, wallet creation, and message signing across 18 blockchains (Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, Cardano, SUI, TRON). Curves, base encodings and HD derivation come from the audited @noble/@scure libraries, every hash from @agntn/hashes.
+TypeScript library providing a unified interface for key generation, address derivation, wallet creation, and message signing across 18 blockchains (Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, Cardano, SUI, TRON). Curves, base encodings and HD derivation come from @noble/@scure, every hash from @agntn/hashes. Nothing in the package is audited or meant for production, real funds or sensitive data.
 
 ## STRUCTURE
 
@@ -52,7 +52,7 @@ keys/
 
 ## CONVENTIONS
 
-- **Crypto from @noble/@scure and @agntn/hashes** - curves, base encodings and HD from @noble/@scure, every hash from `@agntn/hashes`; never import raw crypto from Node or other libs
+- **Crypto from @agntn first** - a primitive an `@agntn/*` package covers comes from it (every hash from `@agntn/hashes`); curves, base encodings and HD stay on @noble/@scure until one does. A missing primitive is an issue on the sibling package, not a new @noble dependency, and an audit is no argument for one. Never import raw crypto from Node or other libs
 - **Hex and bytes** - `Uint8Array.fromHex`, `.toHex()` and `concatBytes` from `src/utils/bytes.ts` in `src/`; tests and playground use `hex` from `@scure/base`, because the type-aware lint types them without the `esnext` lib of `tsconfig.json`
 - **Class pattern** - every blockchain exports a named concrete class and the same class as its default export
 - **Abstract bases** - all chains extend `AbstractBlockchain`; Ethereum and Base extend `AbstractEVMBlockchain`
@@ -103,4 +103,5 @@ pnpm test:mcp         # build and exercise all 20 MCP tools over stdio
 - **utils/ has mixed structure** - plain `.ts` files (address, encoding, crypto-hash, secp256k1, ed25519, ed25519-chains, evm, signing) and subdirectories with `index.ts` (bip32/, bip39/, bip44/, slip10/).
 - **`__cardano/notes.md`** - research notes for Cardano implementation, not code. The actual implementation is `cardano.ts`.
 - **Shared secp256k1 fixture** - `secp256k1TestVectors.publicKeyCompressed` is the key of `privateKey`, shared by the signing round trips and the address tests. The Bitcoin address generators decode the SEC1 point before hashing, so an invented key fails them.
+- **Not audited** - the README and the first guide page open with a `Not audited` caution. It names no dependency, so it stays true when @noble/@scure give way to `@agntn/*`.
 - **`createVersionedHash` is deprecated** in `address.ts` - use `addSchemeByte` instead.
