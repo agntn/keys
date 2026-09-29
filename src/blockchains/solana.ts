@@ -1,4 +1,3 @@
-import { hexToBytes } from "@noble/hashes/utils.js";
 import { base58 } from "@scure/base";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { generateKeyPublic } from "../utils/ed25519.ts";
@@ -36,7 +35,7 @@ export class Solana extends AbstractBlockchain {
   }
 
   override getAddress(keyPublic: string): string {
-    const keyPublicBytes = hexToBytes(keyPublic);
+    const keyPublicBytes = Uint8Array.fromHex(keyPublic);
     if (keyPublicBytes.length !== 32) {
       throw new RangeError("Solana public key must be 32 bytes");
     }

@@ -1,6 +1,5 @@
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { bytesToHex } from "@noble/hashes/utils.js";
 import { BIP44Change, getBIP44Path } from "./utils/bip44/index.ts";
 import {
   deriveExtendedPublicChild,
@@ -53,7 +52,7 @@ export abstract class AbstractBlockchain implements Blockchain {
   generateKeyPrivate(): string {
     const curve = this.curve.includes("secp256k1") ? secp256k1 : ed25519;
 
-    return bytesToHex(curve.utils.randomSecretKey());
+    return curve.utils.randomSecretKey().toHex();
   }
 
   generateKeys(options?: KeyOptions): Keys {

@@ -1,6 +1,4 @@
-import { sha256 } from "@noble/hashes/sha2.js";
-import { ripemd160 } from "@noble/hashes/legacy.js";
-import { hexToBytes, bytesToHex } from "@noble/hashes/utils.js";
+import { ripemd160, sha256 } from "@agntn/hashes";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { encodeBase58Check, validateBase58Check } from "./encoding.ts";
 import { bech32, bech32m } from "@scure/base";
@@ -15,7 +13,7 @@ export function hash160(data: Uint8Array): Uint8Array {
 }
 
 function bytesToNumberBE(bytes: Uint8Array): bigint {
-  return BigInt(`0x${bytesToHex(bytes)}`);
+  return BigInt(`0x${bytes.toHex()}`);
 }
 
 function taggedHash(tag: string, data: Uint8Array): Uint8Array {
@@ -34,7 +32,7 @@ function xOnlyFromPublicKey(keyPublicBytes: Uint8Array): Uint8Array {
 
 function generateTaprootProgram(keyPublicBytes: Uint8Array): Uint8Array {
   const internalKey = xOnlyFromPublicKey(keyPublicBytes);
-  const internalPoint = secp256k1.Point.fromHex(bytesToHex(new Uint8Array([0x02, ...internalKey])));
+  const internalPoint = secp256k1.Point.fromHex(new Uint8Array([0x02, ...internalKey]).toHex());
   const tweak = bytesToNumberBE(taggedHash("TapTweak", internalKey));
 
   if (tweak >= secp256k1.Point.Fn.ORDER) {
@@ -56,7 +54,7 @@ function generateTaprootProgram(keyPublicBytes: Uint8Array): Uint8Array {
  * @returns {Uint8Array} The public key bytes as given
  */
 function publicKeyBytes(keyPublic: string, compressedOnly = false): Uint8Array {
-  const bytesKeyPublic = hexToBytes(keyPublic);
+  const bytesKeyPublic = Uint8Array.fromHex(keyPublic);
   secp256k1.Point.fromBytes(bytesKeyPublic);
   if (compressedOnly && bytesKeyPublic.length !== 33) {
     throw new RangeError("SegWit v0 addresses take a compressed public key");
@@ -347,7 +345,7 @@ export function validateAddressHex(address: string, options: OptionsAddressHex =
  * @returns {string} Prefixed hex address
  */
 export function createPrefixedAddress(hash: Uint8Array, prefix: string = "0x"): string {
-  return prefix + bytesToHex(hash);
+  return prefix + hash.toHex();
 }
 
 /**

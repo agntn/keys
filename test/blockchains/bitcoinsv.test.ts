@@ -1,5 +1,4 @@
-import { base64 } from "@scure/base";
-import { bytesToHex } from "@noble/hashes/utils.js";
+import { base64, hex } from "@scure/base";
 import { describe, expect, it } from "vite-plus/test";
 import { blockchains, getBlockchainPath } from "../../src/index.ts";
 import Bitcoin from "../../src/blockchains/bitcoin.ts";
@@ -16,7 +15,7 @@ import {
  * @param signature - Compact signature in base64
  * @returns {string} r||s as hex
  */
-const compactToRS = (signature: string): string => bytesToHex(base64.decode(signature).slice(1));
+const compactToRS = (signature: string): string => hex.encode(base64.decode(signature).slice(1));
 const privateKeyOf = (wif: string): string => decodeWIF(wif, { chain: "bitcoin" }).privateKey;
 
 describe("Bitcoin SV", () => {

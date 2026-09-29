@@ -1,5 +1,4 @@
-import { hexToBytes, bytesToHex } from "@noble/hashes/utils.js";
-import { keccak_256 } from "@noble/hashes/sha3.js";
+import { keccak256 } from "@agntn/hashes";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { generateKeyPublic as getSecp256k1KeyPublic } from "./secp256k1.ts";
@@ -15,18 +14,18 @@ import type { KeyOptions, RecoverableSigningOptions } from "../types.ts";
  */
 export function generateAddress(keyPublic: string): string {
   // Convert public key to bytes
-  const keyPublicBytes = hexToBytes(keyPublic);
+  const keyPublicBytes = Uint8Array.fromHex(keyPublic);
 
   const publicKeyForHashing = secp256k1.Point.fromBytes(keyPublicBytes).toBytes(false).slice(1);
 
   // Apply Keccak-256 hash to the public key
-  const keccakHash = keccak_256(publicKeyForHashing);
+  const keccakHash = keccak256(publicKeyForHashing);
 
   // Take the last 20 bytes of the hash result
   const addressBytes = keccakHash.slice(-20);
 
   // Convert to hex string
-  const addressHex = bytesToHex(addressBytes);
+  const addressHex = addressBytes.toHex();
 
   // Apply EIP-55 checksum and return with 0x prefix
   return "0x" + toChecksumAddress(addressHex);
@@ -44,7 +43,7 @@ export function toChecksumAddress(address: string): string {
   const lowercaseAddress = address.toLowerCase();
 
   // Hash the lowercase address (keccak_256 requires Uint8Array in v2)
-  const addressHash = bytesToHex(keccak_256(new TextEncoder().encode(lowercaseAddress)));
+  const addressHash = keccak256(new TextEncoder().encode(lowercaseAddress)).toHex();
 
   // Apply checksum rules - using array for better performance
   const result = Array.from({ length: lowercaseAddress.length });
@@ -119,7 +118,7 @@ export function hashWithPreamble(
   const fullMessage = new Uint8Array(preambleBytes.length + messageBytes.length);
   fullMessage.set(preambleBytes);
   fullMessage.set(messageBytes, preambleBytes.length);
-  return keccak_256(fullMessage);
+  return keccak256(fullMessage);
 }
 
 /**

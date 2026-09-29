@@ -24,11 +24,14 @@
  *
  */
 
-import { hmac } from "@noble/hashes/hmac.js";
-import { pbkdf2 } from "@noble/hashes/pbkdf2.js";
-import { sha512 } from "@noble/hashes/sha2.js";
-import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js";
+import { Sha512Hasher, hmac, pbkdf2 } from "@agntn/hashes";
 import { ELECTRUM_LEGACY_WORDS } from "./electrum-legacy.ts";
+
+/**
+ * Starts the SHA-512 state that Electrum's HMAC and PBKDF2 run on.
+ * @returns {Sha512Hasher} A fresh hasher
+ */
+const createSha512 = (): Sha512Hasher => new Sha512Hasher();
 
 /** Electrum seed versions, including those this library refuses to derive. */
 export type ElectrumSeedType = "standard" | "segwit" | "old" | "2fa" | "2fa_segwit" | "unknown";
@@ -136,7 +139,11 @@ export function inspectElectrumMnemonic(mnemonic: string): ElectrumSeedType {
   if (isLegacySeed(normalized)) {
     return "old";
   }
-  const version = bytesToHex(hmac(sha512, utf8ToBytes("Seed version"), utf8ToBytes(normalized)));
+  const version = hmac(
+    createSha512,
+    new TextEncoder().encode("Seed version"),
+    new TextEncoder().encode(normalized),
+  ).toHex();
   if (version.startsWith("01")) return "standard";
   if (version.startsWith("100")) return "segwit";
   if (version.startsWith("101") && (wordCount === 12 || wordCount >= 20)) return "2fa";
@@ -167,10 +174,11 @@ export function deriveElectrumSeed(
     scheme: "electrum",
     seedType,
     seed: pbkdf2(
-      sha512,
-      utf8ToBytes(normalizeElectrumText(mnemonic)),
-      utf8ToBytes(`electrum${normalizedPassphrase}`),
-      { c: 2048, dkLen: 64 },
+      createSha512,
+      new TextEncoder().encode(normalizeElectrumText(mnemonic)),
+      new TextEncoder().encode(`electrum${normalizedPassphrase}`),
+      2048,
+      64,
     ),
   };
 }

@@ -9,11 +9,11 @@ import {
   isHardenedIndex,
   formatIndex,
 } from "../../src/utils/bip32";
-import { hexToBytes } from "@noble/hashes/utils.js";
+import { hex } from "@scure/base";
 
 describe("BIP32 Utils", () => {
   // Vector 1 from BIP32 test vectors
-  const testSeed = hexToBytes("000102030405060708090a0b0c0d0e0f");
+  const testSeed = hex.decode("000102030405060708090a0b0c0d0e0f");
   const expectedMasterKey =
     "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi";
 

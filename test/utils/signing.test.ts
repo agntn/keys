@@ -1,8 +1,8 @@
 import { describe, it, expect, expectTypeOf } from "vite-plus/test";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { signMessage, verifyMessage } from "../../src/utils/signing";
-import { hexToBytes, bytesToHex } from "@noble/hashes/utils.js";
-import { sha256 } from "@noble/hashes/sha2.js";
+import { sha256 } from "@agntn/hashes";
+import { hex } from "@scure/base";
 import { evmSignMessage, evmVerifyMessage } from "../../src/utils/evm";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../../src/utils/ed25519-chains";
 import { secp256k1TestVectors, ed25519TestVectors, testMessages } from "../fixtures";
@@ -25,7 +25,7 @@ describe("Signing utilities", () => {
       });
 
       expect(signature).toBeTypeOf("string");
-      expect(hexToBytes(signature).length).toBeGreaterThanOrEqual(64); // Secp256k1 sigs are at least 64 bytes
+      expect(hex.decode(signature).length).toBeGreaterThanOrEqual(64); // Secp256k1 sigs are at least 64 bytes
 
       const isValid = verifyMessage(testMessage, signature, secp256k1TestPublicKey, {
         curve: "secp256k1",
@@ -41,7 +41,7 @@ describe("Signing utilities", () => {
       const digest = sha256(new TextEncoder().encode(testMessage));
 
       expect(
-        secp256k1.verify(hexToBytes(signature), digest, hexToBytes(secp256k1TestPublicKey), {
+        secp256k1.verify(hex.decode(signature), digest, hex.decode(secp256k1TestPublicKey), {
           prehash: false,
         }),
       ).toBe(true);
@@ -56,7 +56,7 @@ describe("Signing utilities", () => {
       });
 
       expect(signature).toBeTypeOf("string");
-      expect(hexToBytes(signature).length).toBe(64); // Ed25519 sigs are exactly 64 bytes
+      expect(hex.decode(signature).length).toBe(64); // Ed25519 sigs are exactly 64 bytes
 
       const isValid = verifyMessage(testMessage, signature, ed25519TestPublicKey, {
         curve: "ed25519",
@@ -82,7 +82,7 @@ describe("Signing utilities", () => {
         curve: "secp256k1",
       });
 
-      const wrongPublicKey = "04" + bytesToHex(new Uint8Array(64).fill(1));
+      const wrongPublicKey = "04" + hex.encode(new Uint8Array(64).fill(1));
 
       const isValid = verifyMessage(testMessage, signature, wrongPublicKey, {
         curve: "secp256k1",
@@ -186,7 +186,7 @@ describe("Signing utilities", () => {
       const signature = evmSignMessage(messageBytes, secp256k1TestPrivateKey);
 
       expect(signature).toBeTypeOf("string");
-      expect(hexToBytes(signature).length).toBeGreaterThanOrEqual(64);
+      expect(hex.decode(signature).length).toBeGreaterThanOrEqual(64);
     });
   });
 
@@ -200,7 +200,7 @@ describe("Signing utilities", () => {
         recovered: true,
       });
 
-      expect(hexToBytes(recovered).length).toBe(65);
+      expect(hex.decode(recovered).length).toBe(65);
       expect(recovered.slice(0, 128)).toBe(compact);
       expect([27, 28]).toContain(Number.parseInt(recovered.slice(128), 16));
     });
@@ -211,11 +211,11 @@ describe("Signing utilities", () => {
         recovered: true,
       });
       const recovery = Number.parseInt(recovered.slice(128), 16) - 27;
-      const signer = secp256k1.Signature.fromBytes(hexToBytes(recovered.slice(0, 128)), "compact")
+      const signer = secp256k1.Signature.fromBytes(hex.decode(recovered.slice(0, 128)), "compact")
         .addRecoveryBit(recovery)
         .recoverPublicKey(digest);
 
-      expect(bytesToHex(signer.toBytes(true))).toBe(secp256k1TestPublicKey);
+      expect(hex.encode(signer.toBytes(true))).toBe(secp256k1TestPublicKey);
       expect(verifyMessage(digest, recovered, secp256k1TestPublicKey, { hash: false })).toBe(true);
     });
 
@@ -281,7 +281,7 @@ describe("Signing utilities", () => {
     it("should have correct Ed25519 signature length", () => {
       const signature = ed25519SignMessage(testMessage, ed25519TestPrivateKey);
 
-      expect(hexToBytes(signature).length).toBe(64);
+      expect(hex.decode(signature).length).toBe(64);
     });
   });
 });

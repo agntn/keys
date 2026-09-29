@@ -13,7 +13,7 @@ import {
   lookupBIP39Words,
   loadBIP39Wordlist,
 } from "../../src/utils/bip39";
-import { hexToBytes } from "@noble/hashes/utils.js";
+import { hex } from "@scure/base";
 import { bip39TestVectors, invalidChecksumPuzzle, localizedMnemonicVectors } from "../fixtures";
 
 describe("BIP39 Utils", () => {
@@ -258,7 +258,7 @@ describe("BIP39 Utils", () => {
 
   it("converts entropy to mnemonic and back", () => {
     for (const vector of testVectors) {
-      const entropy = hexToBytes(vector.entropy);
+      const entropy = hex.decode(vector.entropy);
       const mnemonic = entropyToMnemonic(entropy);
       expect(mnemonic).toBe(vector.mnemonic);
 

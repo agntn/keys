@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { ed25519 } from "@noble/curves/ed25519.js";
-import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
+import { hex } from "@scure/base";
 import { stellarTestVectors } from "../fixtures";
 import Stellar from "../../src/blockchains/stellar";
 import { useBlockchain } from "../../src/blockchain";
@@ -66,7 +66,7 @@ describe("Stellar", () => {
       "signs @stellar/stellar-sdk signMessage vector %#",
       (message, digest, signature) => {
         expect(
-          ed25519.verify(hexToBytes(signature), hexToBytes(digest), hexToBytes(vector.publicKey)),
+          ed25519.verify(hex.decode(signature), hex.decode(digest), hex.decode(vector.publicKey)),
         ).toBe(true);
 
         expect(blockchain.signMessage(message, vector.privateKey)).toBe(signature);
@@ -81,8 +81,8 @@ describe("Stellar", () => {
 
     it("rejects a raw ed25519 signature over the message bytes", () => {
       const [message, , signature] = vector.messages[1];
-      const raw = bytesToHex(
-        ed25519.sign(new TextEncoder().encode(message), hexToBytes(vector.privateKey)),
+      const raw = hex.encode(
+        ed25519.sign(new TextEncoder().encode(message), hex.decode(vector.privateKey)),
       );
       expect(raw).not.toBe(signature);
       expect(blockchain.verifyMessage(message, raw, vector.publicKey)).toBe(false);

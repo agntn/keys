@@ -1,5 +1,4 @@
-import { sha3_256 } from "@noble/hashes/sha3.js";
-import { hexToBytes } from "@noble/hashes/utils.js";
+import { sha3_256 } from "@agntn/hashes";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { addSchemeByte, createPrefixedAddress, validateAddressHex } from "../utils/address.ts";
 import { BIP44Change, getHardenedPath } from "../utils/bip44/index.ts";
@@ -34,7 +33,7 @@ export class Aptos extends AbstractBlockchain {
   }
 
   override getAddress(keyPublic: string): string {
-    const keyPublicBytes = hexToBytes(keyPublic);
+    const keyPublicBytes = Uint8Array.fromHex(keyPublic);
     const dataToHash = addSchemeByte(keyPublicBytes, 0x00, false);
     return createPrefixedAddress(sha3_256(dataToHash));
   }

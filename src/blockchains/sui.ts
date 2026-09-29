@@ -1,5 +1,5 @@
-import { blake2b } from "@noble/hashes/blake2.js";
-import { concatBytes, hexToBytes } from "@noble/hashes/utils.js";
+import { blake2b } from "@agntn/hashes";
+import { concatBytes } from "../utils/bytes.ts";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { addSchemeByte, createPrefixedAddress, validateAddressHex } from "../utils/address.ts";
 import { BIP44Change, getBIP32Path, getHardenedPath } from "../utils/bip44/index.ts";
@@ -51,9 +51,7 @@ function encodeUleb128(value: number): Uint8Array {
  */
 function hashPersonalMessage(message: string | Uint8Array): Uint8Array {
   const bytes = typeof message === "string" ? new TextEncoder().encode(message) : message;
-  return blake2b(concatBytes(PERSONAL_MESSAGE_INTENT, encodeUleb128(bytes.length), bytes), {
-    dkLen: 32,
-  });
+  return blake2b(concatBytes(PERSONAL_MESSAGE_INTENT, encodeUleb128(bytes.length), bytes), 32);
 }
 
 /**
@@ -145,11 +143,11 @@ export class Sui extends AbstractBlockchain {
         `Address type ${JSON.stringify(type)} is not supported for sui. Supported: ed25519, secp256k1`,
       );
     }
-    const keyPublicBytes = hexToBytes(keyPublic);
+    const keyPublicBytes = Uint8Array.fromHex(keyPublic);
     const flagByte =
       scheme === "secp256k1" ? SIGNATURE_SCHEME_FLAGS.SECP256K1 : SIGNATURE_SCHEME_FLAGS.ED25519;
     const input = addSchemeByte(keyPublicBytes, flagByte, true);
-    return createPrefixedAddress(blake2b(input, { dkLen: 32 }));
+    return createPrefixedAddress(blake2b(input, 32));
   }
 
   override validateAddress(address: string): boolean {

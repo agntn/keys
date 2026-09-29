@@ -1,5 +1,4 @@
 import { HDKey } from "@scure/bip32";
-import { bytesToHex } from "@noble/hashes/utils.js";
 import { decodeBase58Check } from "./encoding.ts";
 import { HARDENED_OFFSET } from "./hd-index.ts";
 import type { AddressType } from "../types.ts";
@@ -106,6 +105,6 @@ export function deriveExtendedPublicChild(
   return {
     prefix,
     ...(format.addressType === undefined ? {} : { addressType: format.addressType }),
-    publicKey: bytesToHex(key.publicKey),
+    publicKey: key.publicKey.toHex(),
   };
 }

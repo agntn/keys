@@ -1,4 +1,4 @@
-import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
+import { hex } from "@scure/base";
 import { describe, expect, it } from "vite-plus/test";
 import { decodeCashAddr, encodeCashAddr } from "../../src/utils/cashaddr.ts";
 import { bitcoinCashTestVectors } from "../fixtures.ts";
@@ -10,10 +10,10 @@ describe("CashAddr", () => {
     "encodes and decodes type %i as %s",
     (type, address, hash) => {
       const prefix = address.slice(0, address.indexOf(":"));
-      expect(encodeCashAddr(prefix, type, hexToBytes(hash))).toBe(address);
+      expect(encodeCashAddr(prefix, type, hex.decode(hash))).toBe(address);
       const content = decodeCashAddr(address, prefix);
       expect(content?.type).toBe(type);
-      expect(bytesToHex(content?.hash ?? new Uint8Array())).toBe(hash);
+      expect(hex.encode(content?.hash ?? new Uint8Array())).toBe(hash);
     },
   );
 
@@ -21,7 +21,7 @@ describe("CashAddr", () => {
     const { address, publicKeyHash } = bitcoinCashTestVectors.prize;
     const payload = address.slice("bitcoincash:".length);
     for (const candidate of [payload, address.toUpperCase(), payload.toUpperCase()]) {
-      expect(bytesToHex(decodeCashAddr(candidate, "bitcoincash")?.hash ?? new Uint8Array())).toBe(
+      expect(hex.encode(decodeCashAddr(candidate, "bitcoincash")?.hash ?? new Uint8Array())).toBe(
         publicKeyHash,
       );
     }

@@ -1,8 +1,8 @@
 import { getMasterKeyFromSeed, deriveHDKey } from "../src/utils/slip10";
-import { hexToBytes } from "@noble/hashes/utils.js";
+import { hex } from "@scure/base";
 
 // Use a static seed for reproducible results
-const testSeed = hexToBytes("000102030405060708090a0b0c0d0e0f");
+const testSeed = hex.decode("000102030405060708090a0b0c0d0e0f");
 
 // Create master key from seed
 console.log("1. Creating master key from seed");

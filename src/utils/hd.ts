@@ -1,4 +1,3 @@
-import { bytesToHex } from "@noble/hashes/utils.js";
 import { getMasterKeyFromSeed as getBIP32MasterKey } from "./bip32/index.ts";
 import {
   inspectBIP39Mnemonic,
@@ -101,5 +100,5 @@ export function deriveMnemonicKey(
   if (!privateKey) {
     throw new Error(`No private key at ${path}`);
   }
-  return { privateKey: bytesToHex(privateKey), checksumValid: inspection.valid };
+  return { privateKey: privateKey.toHex(), checksumValid: inspection.valid };
 }

@@ -1,6 +1,5 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
-import { sha256 } from "@noble/hashes/sha2.js";
+import { sha256 } from "@agntn/hashes";
 
 type KeyPublicOptions = {
   readonly compressed?: boolean;
@@ -18,13 +17,13 @@ export function generateKeyPublic(keyPrivate: string, options: KeyPublicOptions 
   const { compressed = true } = options;
 
   // Convert hex string to Uint8Array
-  const keyPrivateBytes = hexToBytes(keyPrivate);
+  const keyPrivateBytes = Uint8Array.fromHex(keyPrivate);
 
   // Get public key point from private key
   const keyPublic = secp256k1.getPublicKey(keyPrivateBytes, compressed);
 
   // Return hex string
-  return bytesToHex(keyPublic);
+  return keyPublic.toHex();
 }
 
 /**
@@ -44,7 +43,7 @@ export function signMessage(
   const { hash = true } = options;
 
   // Convert private key from hex string to Uint8Array
-  const keyPrivateBytes = hexToBytes(keyPrivate);
+  const keyPrivateBytes = Uint8Array.fromHex(keyPrivate);
 
   // Convert message to Uint8Array if it's a string
   let messageBytes = typeof message === "string" ? new TextEncoder().encode(message) : message;
@@ -58,7 +57,7 @@ export function signMessage(
   const signature = secp256k1.sign(messageBytes, keyPrivateBytes, { prehash: false });
 
   // Return hex string
-  return bytesToHex(signature);
+  return signature.toHex();
 }
 
 /**
@@ -80,10 +79,10 @@ export function verifyMessage(
   const { hash = true } = options;
 
   // Convert signature from hex string to Uint8Array (v2 accepts bytes directly)
-  const signatureBytes = hexToBytes(signature);
+  const signatureBytes = Uint8Array.fromHex(signature);
 
   // Convert public key from hex string to Uint8Array
-  const keyPublicBytes = hexToBytes(keyPublic);
+  const keyPublicBytes = Uint8Array.fromHex(keyPublic);
 
   // Convert message to Uint8Array if it's a string
   let messageBytes = typeof message === "string" ? new TextEncoder().encode(message) : message;

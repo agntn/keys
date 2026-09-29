@@ -1,6 +1,7 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { sha256 } from "@noble/hashes/sha2.js";
-import { bytesToHex, concatBytes, hexToBytes } from "@noble/hashes/utils.js";
+import { sha256 } from "@agntn/hashes";
+import { hex } from "@scure/base";
+import { concatBytes } from "../../src/utils/bytes.ts";
 import { base58check, base64, bech32m } from "@scure/base";
 import { describe, expect, it } from "vite-plus/test";
 import { blockchains, decodeWIF, getBlockchainPath } from "../../src/index.ts";
@@ -118,7 +119,7 @@ describe("Zcash", () => {
     const { address, message, signature } = vector.signed;
     const compact = base64.decode(signature);
     const recovery = (compact[0] - 27) & 3;
-    const publicKey = bytesToHex(
+    const publicKey = hex.encode(
       secp256k1.recoverPublicKey(
         concatBytes(Uint8Array.of(recovery), compact.slice(1)),
         zcashdDigest(message),
@@ -126,7 +127,7 @@ describe("Zcash", () => {
       ),
     );
     expect(chain.getAddress(publicKey)).toBe(address);
-    const rs = bytesToHex(compact.slice(1));
+    const rs = hex.encode(compact.slice(1));
     expect(chain.verifyMessage(message, rs, publicKey)).toBe(true);
     expect(chain.verifyMessage(`${message}!`, rs, publicKey)).toBe(false);
   });
@@ -135,10 +136,10 @@ describe("Zcash", () => {
     const chain = new Zcash();
     const { privateKey, publicKeyCompressed } = secp256k1TestVectors;
     const signed = chain.signMessage(testMessages.simple, privateKey);
-    const expected = secp256k1.sign(zcashdDigest(testMessages.simple), hexToBytes(privateKey), {
+    const expected = secp256k1.sign(zcashdDigest(testMessages.simple), hex.decode(privateKey), {
       prehash: false,
     });
-    expect(signed).toBe(bytesToHex(expected));
+    expect(signed).toBe(hex.encode(expected));
     expect(chain.verifyMessage(testMessages.simple, signed, publicKeyCompressed)).toBe(true);
   });
 

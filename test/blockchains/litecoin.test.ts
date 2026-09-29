@@ -1,6 +1,6 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { sha256 } from "@noble/hashes/sha2.js";
-import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
+import { sha256 } from "@agntn/hashes";
+import { hex } from "@scure/base";
 import { base58check, bech32, bech32m } from "@scure/base";
 import { describe, expect, it } from "vite-plus/test";
 import { blockchains, getBlockchainPath } from "../../src/index.ts";
@@ -37,7 +37,7 @@ describe("Litecoin", () => {
     it(`${network} encodes the Core network prefixes and witness programs`, () => {
       const legacy = base58.decode(chain.getAddress(vector.publicKey));
       expect(legacy[0]).toBe(p2pkh);
-      expect(bytesToHex(legacy.slice(1))).toBe(vector.publicKeyHash);
+      expect(hex.encode(legacy.slice(1))).toBe(vector.publicKeyHash);
       const nested = base58.decode(chain.getAddress(vector.publicKey, "p2sh"));
       expect(nested[0]).toBe(p2sh);
       expect(nested.length).toBe(21);
@@ -48,7 +48,7 @@ describe("Litecoin", () => {
         expect(decoded.words[0]).toBe(type === "taproot" ? 1 : 0);
         expect(codec.fromWords(decoded.words.slice(1)).length).toBe(type === "segwit" ? 20 : 32);
         if (type === "segwit") {
-          expect(bytesToHex(codec.fromWords(decoded.words.slice(1)))).toBe(vector.publicKeyHash);
+          expect(hex.encode(codec.fromWords(decoded.words.slice(1)))).toBe(vector.publicKeyHash);
         }
       }
     });
@@ -130,7 +130,7 @@ describe("Litecoin", () => {
       const chain = new Litecoin();
       const signature = chain.signMessage(message, vector.privateKey);
       expect(
-        secp256k1.verify(hexToBytes(signature), hexToBytes(digest), hexToBytes(vector.publicKey), {
+        secp256k1.verify(hex.decode(signature), hex.decode(digest), hex.decode(vector.publicKey), {
           prehash: false,
         }),
       ).toBe(true);

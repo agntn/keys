@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-Shared cryptographic primitives and encoding utilities. BIP32, BIP39, and SLIP-10 are public package subpaths; other utilities are internal.
+Shared cryptographic primitives and encoding utilities. BIP32, BIP39, and SLIP-10 are public package subpaths; other utilities are internal. Every hash comes from `@agntn/hashes`, hex goes through the native `Uint8Array.fromHex` and `toHex`.
 
 ## STRUCTURE
 
@@ -20,6 +20,7 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP39, and SLIP-1
 | `ed25519.ts`        | ~50   | the ed25519 chains and sui                                                           | Ed25519 public key generation                                                                                                            |
 | `encoding.ts`       | ~60   | address.ts, tron, zcash                                                              | Base58Check encode/decode/validate                                                                                                       |
 | `crypto-hash.ts`    | ~70   | (internal)                                                                           | Hash function wrappers                                                                                                                   |
+| `bytes.ts`          | ~15   | signing, wif, decred, stellar, sui, zcash                                            | `concatBytes`, the one byte helper without a native equivalent                                                                           |
 | `hd.ts`             | ~100  | blockchain.ts, tool-operations.ts                                                    | Mnemonic to private key at a path: BIP32 for secp256k1, SLIP-10 for ed25519; names the BIP39 check a rejected phrase fails               |
 | `extended-key.ts`   | ~110  | blockchain.ts, bitcoin.ts, litecoin                                                  | SLIP-0132 prefixes; an xpub down normal levels to a child public key, refusing xprv and hardened levels                                  |
 
@@ -42,14 +43,14 @@ blockchains/*.ts
 evm.ts
   ├── secp256k1.ts (key gen)
   ├── signing.ts (generic sign dispatch)
-  └── @noble/curves, @noble/hashes (keccak, secp256k1 Point)
+  └── @noble/curves (secp256k1 Point), @agntn/hashes (keccak256)
 
 signing.ts
   └── @noble/curves (secp256k1.sign, ed25519.sign)
 
 address.ts
   ├── encoding.ts (base58check)
-  └── @noble/hashes (sha256, ripemd160), @scure/base (bech32, bech32m)
+  └── @agntn/hashes (sha256, ripemd160), @scure/base (bech32, bech32m)
 
 bip44/ → bip32/ (imports HARDENED_OFFSET, formatIndex)
 ```

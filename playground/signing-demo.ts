@@ -1,5 +1,5 @@
 import { webcrypto } from "node:crypto";
-import { bytesToHex } from "@noble/hashes/utils.js";
+import { hex } from "@scure/base";
 import { useBlockchain } from "../src/blockchain";
 
 // Dynamiczne importy blockchainów
@@ -12,7 +12,7 @@ const Solana = solanaImport.default;
 // Generate random private keys
 function generateRandomKeyPrivate(): string {
   const keyPrivateBytes = webcrypto.getRandomValues(new Uint8Array(32));
-  return bytesToHex(keyPrivateBytes);
+  return hex.encode(keyPrivateBytes);
 }
 
 // Demo dla podpisów Ethereum (EVM)

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
-import { blake256 } from "@noble/hashes/blake1.js";
-import { concatBytes, hexToBytes } from "@noble/hashes/utils.js";
+import { blake256 } from "@agntn/hashes";
+import { hex } from "@scure/base";
+import { concatBytes } from "../../src/utils/bytes.ts";
 import { base58 } from "@scure/base";
 import { decodeWIF, encodeWIF } from "../../src/index.ts";
 import { encodeBase58Check } from "../../src/utils/encoding.ts";
@@ -12,8 +13,8 @@ const bitcoin = { chain: "bitcoin" } as const;
 const decred = { chain: "decred" } as const;
 
 /* Build malformed Decred payloads with a valid native checksum. */
-function decredWIF(hex: string): string {
-  const payload = hexToBytes(hex);
+function decredWIF(payloadHex: string): string {
+  const payload = hex.decode(payloadHex);
   return base58.encode(concatBytes(payload, blake256(payload).slice(0, 4)));
 }
 
@@ -74,11 +75,11 @@ describe("WIF", () => {
       expect(() => encodeWIF(key, { chain })).toThrow("Invalid WIF private key scalar");
     }
     for (const suffix of ["", "01"]) {
-      expect(() => decodeWIF(encodeBase58Check(hexToBytes("80" + key + suffix)), bitcoin)).toThrow(
+      expect(() => decodeWIF(encodeBase58Check(hex.decode("80" + key + suffix)), bitcoin)).toThrow(
         "Invalid WIF private key scalar",
       );
       expect(() =>
-        decodeWIF(encodeBase58Check(hexToBytes("b0" + key + suffix)), { chain: "litecoin" }),
+        decodeWIF(encodeBase58Check(hex.decode("b0" + key + suffix)), { chain: "litecoin" }),
       ).toThrow("Invalid WIF private key scalar");
     }
     expect(() => decodeWIF(decredWIF("22de00" + key), decred)).toThrow(
@@ -109,7 +110,7 @@ describe("WIF", () => {
       );
     }
     for (const flag of ["00", "02", "ff"]) {
-      expect(() => decodeWIF(encodeBase58Check(hexToBytes("80" + keyOne + flag)), bitcoin)).toThrow(
+      expect(() => decodeWIF(encodeBase58Check(hex.decode("80" + keyOne + flag)), bitcoin)).toThrow(
         "Invalid WIF compression flag",
       );
     }
@@ -125,7 +126,7 @@ describe("WIF", () => {
       "Decred WIF requires a compressed public key",
     );
     expect(() => decodeWIF(decredWIF("22de00" + keyOne + "01"), decred)).toThrow();
-    expect(() => decodeWIF(encodeBase58Check(hexToBytes("22de00" + keyOne)), decred)).toThrow(
+    expect(() => decodeWIF(encodeBase58Check(hex.decode("22de00" + keyOne)), decred)).toThrow(
       "Invalid WIF encoding or checksum",
     );
   });
