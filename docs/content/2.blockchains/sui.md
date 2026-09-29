@@ -81,11 +81,10 @@ What comes back is the 64 signature bytes in hex, `r||s` without a recovery byte
 ```js
 import { toBase64 } from "@mysten/sui/utils";
 import { verifyPersonalMessageSignature } from "@mysten/sui/verify";
-import { hexToBytes } from "@noble/hashes/utils.js";
 
 const flag = 0x00; // 0x01 for secp256k1
 const serialized = toBase64(
-  Uint8Array.from([flag, ...hexToBytes(signature), ...hexToBytes(publicKey)]),
+  Uint8Array.from([flag, ...Uint8Array.fromHex(signature), ...Uint8Array.fromHex(publicKey)]),
 );
 await verifyPersonalMessageSignature(new TextEncoder().encode("hello"), serialized, { address });
 ```

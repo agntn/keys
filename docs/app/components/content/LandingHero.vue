@@ -38,7 +38,7 @@ const { copied, copy } = useCopied();
       <h1 class="hero-title">One key. <span>Every chain.</span></h1>
       <p class="hero-lead">
         Key generation, address derivation and message signing for eighteen blockchains, typed and
-        built on the audited noble and scure libraries. One interface in TypeScript, the same tools
+        built on noble, scure and our own hashes. One interface in TypeScript, the same tools
         over MCP, Pi and OMP, and nothing ever leaves the process.
       </p>
 
