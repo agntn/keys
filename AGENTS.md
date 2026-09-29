@@ -90,7 +90,7 @@ pnpm test:mcp         # build and exercise all 20 MCP tools over stdio
 
 ## NOTES
 
-- **CI runs**: lint -> type check -> build -> vp test with coverage (Node 24, pnpm through `setup-vp`). Autofix workflow commits lint fixes on PRs.
+- **CI runs**: lint -> type check -> build -> vp test with coverage (Node 26, pnpm through `setup-vp`). Autofix workflow commits lint fixes on PRs.
 - **Package exports** expose `"."`, `"./mcp"`, `"./blockchains/*"`, and the HD derivation subpaths `"./bip32"`, `"./bip39"`, and `"./slip10"`; other utils remain internal.
 - **Shipped extensions** - `files` lists both extensions and the `src/` files their schemas import at runtime (`tool-schemas.ts`, `tool-parameters.ts`, `utils/bip39/languages.ts`); the executors come from `dist`. A new value import in that graph goes into `files` too. `test/public-exports.test.ts` runs a tool from each extension with only the shipped files.
 - **OMP extension** - `packages/omp/extensions/keys.ts` is a full copy of the Pi file, with both dynamic imports of the executors kept literal. OMP does not expand globs in the manifest, so `omp.extensions` names the file. `test/omp-extension.test.ts` keeps the two registrations identical.
