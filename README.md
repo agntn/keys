@@ -10,6 +10,9 @@
 > [!WARNING]
 > **@agntn/keys is experimental.** The public API and the tool surfaces can still move before the first stable release. Pin exact versions if you build on it now.
 
+> [!CAUTION]
+> **Not audited.** No security audit has touched this code, so I don't recommend it for production, real funds or sensitive data. It's made for agents, puzzles and local experiments, and that's where it should stay. The curves, BIP32 and BIP39 come from audited @noble and @scure. Everything else never had an audit, SLIP-10 and the hashes from @agntn/hashes included.
+
 ## Why?
 
 Every chain has its own wallet library and its own idea of what a key is. One wants a Buffer, one wants a Uint8Array, one has a KeyPair class and a second one for testnet. Then a mnemonic shows up from a puzzle instead of a wallet app and all of them answer "invalid checksum" and stop talking to you. So this is one `Blockchain` interface over noble curves, the same `generateWallet()` on every chain, and the puzzle cases live in the API instead of in a fork.
