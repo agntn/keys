@@ -90,7 +90,7 @@ pnpm docs             # Docus + keyspace explorer on :3000
 pnpm test:mcp         # build and exercise all 20 MCP tools over stdio
 ```
 
-`lint`, `lint:fix`, `fmt`, `test` and `test:mcp` all rewrite `dist/`. The lint scripts pack first because the Pi and OMP extensions take their executor types from `dist/tool-operations.d.mts`, and without that file the type-aware lint reads every executor call there as `error` typed. A checkout whose `dist/` serves the `keys` bin or the extensions gets a new bundle under them, so run these in a separate worktree while that server is live.
+`build`, `lint`, `lint:fix`, `fmt`, `test` and `test:mcp` all rewrite `dist/`, and so does packing or publishing through `prepack`. The lint scripts pack first because the Pi and OMP extensions take their executor types from `dist/tool-operations.d.mts`, and without that file the type-aware lint reads every executor call there as `error` typed. A checkout whose `dist/` serves the `keys` bin or the extensions gets a new bundle under them, so run these in a separate worktree while that server is live.
 
 ## NOTES
 
