@@ -241,7 +241,7 @@ pnpm install
 pnpm dev          # vp test in watch mode
 pnpm lint         # builds first, then vp lint and vp fmt --check
 pnpm test:types   # tsc over the library and the type tests
-pnpm build        # vp pack
+pnpm build        # obuild
 pnpm test:mcp     # builds, then calls every tool over stdio
 pnpm playground playground/bip39-demo.ts
 ```

@@ -5,6 +5,7 @@ minimumReleaseAgeExclude:
   - typebox
   - vite
   - "@agntn/hashes"
+  - obuild@0.4.43
 
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@0.3.3
