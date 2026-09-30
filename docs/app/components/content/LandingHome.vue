@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { CHAINS } from "../../utils/chains";
+import { TOOL_COUNT, spellOut } from "../../utils/tools";
 
 const { hex, decimal, rows, pipeline, hd, ready, paused, tick, changedBytes, step, randomKey } =
   useLandingKey();
@@ -110,7 +111,7 @@ const { hex, decimal, rows, pipeline, hd, ready, paused, tick, changedBytes, ste
     </section>
 
     <LandingFeature
-      title="Twenty tools over MCP"
+      :title="`${spellOut(TOOL_COUNT)} tools over MCP`"
       to="/guide#agents"
       link="MCP server setup"
       :checks="[

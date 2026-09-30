@@ -6,6 +6,7 @@ import { Text } from "@earendil-works/pi-tui";
 import type * as KeysTools from "../../../dist/tool-operations.d.mts";
 import {
   CONVERT_PUBLIC_KEY_PARAMETERS,
+  INSPECT_BIP38_PARAMETERS,
   WIF_ENCODE_PARAMETERS,
   WIF_DECODE_PARAMETERS,
   GENERATE_MNEMONIC_PARAMETERS,
@@ -129,6 +130,19 @@ export default function keysExtension(pi: ExtensionAPI) {
     },
     async execute(_toolCallId, params) {
       return (await loadToolOperations()).decodeWif(params.chain, params.wif, params.network);
+    },
+  });
+  pi.registerTool({
+    name: "keys_bip38_inspect",
+    label: "Inspect BIP38",
+    description:
+      "Read a BIP38 encrypted private key (6P...) without its passphrase: EC multiply or not, compression, lot and sequence, owner entropy, and the stored address hash. Given an address, reports whether its hash matches. Nothing is decrypted.",
+    parameters: INSPECT_BIP38_PARAMETERS,
+    renderCall() {
+      return new Text("🔒 Inspect BIP38", 0, 0);
+    },
+    async execute(_toolCallId, params) {
+      return (await loadToolOperations()).inspectBip38(params.encrypted, params.address);
     },
   });
   // ─── generate_wallet ────────────────────────────────────────────────────

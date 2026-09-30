@@ -5,7 +5,7 @@
 [![license](https://npmx.dev/api/registry/badge/license/@agntn/keys)](https://npmx.dev/package/@agntn/keys)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/agntn/keys)
 
-🔑 Keys, addresses and signatures for eighteen chains, from a mnemonic or from nothing at all. Bitcoin gets its five address types, Solana gets ed25519, your agent gets 20 tools, and none of it should ever meet real money.
+🔑 Keys, addresses and signatures for eighteen chains, from a mnemonic or from nothing at all. Bitcoin gets its five address types, Solana gets ed25519, your agent gets them as MCP tools, and none of it should ever meet real money.
 
 > [!WARNING]
 > **@agntn/keys is experimental.** The public API and the tool surfaces can still move before the first stable release. Pin exact versions if you build on it now.
@@ -31,7 +31,7 @@ The docs live at [keys.agntn.dev](https://keys.agntn.dev), keyspace explorer inc
 - ✍️ **Signing on both curves.** Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash and eCash hash the message the way Core does, EVM chains the way ethers does, TRON the way TronWeb's `signMessageV2` does, Sui the way the Sui SDK's `signPersonalMessage` does on either curve, Stellar the way the Stellar SDK's `signMessage` does under SEP-53, and Solana, Aptos and Cardano sign the raw bytes. What comes back is 64 bytes of compact `r||s` hex, so it's not Core's base64.
 - 🔁 **`v` when you need it.** `{ recovered: true }` on Ethereum, Base or TRON gives 65 bytes of `r||s||v`, byte for byte what ethers and TronWeb produce. Skip it and ethers reads your 64 bytes as an EIP-2098 compact signature and answers with the wrong address instead of an error.
 - 🔌 **Loads one chain at a time.** `blockchains.solana()()` imports Solana and nothing else, so a Bitcoin tool never pays for Cardano.
-- 🤖 **20 agent tools.** MCP over stdio, MCP over HTTP from [keys.agntn.dev/mcp](https://keys.agntn.dev/guide#remote-mcp) and a Pi extension run the same code, and a generated mnemonic comes back with a note that it's in the transcript now.
+- 🤖 **Tools for your agent.** MCP over stdio, MCP over HTTP from [keys.agntn.dev/mcp](https://keys.agntn.dev/guide#remote-mcp) and a Pi extension run the same code, and a generated mnemonic comes back with a note that it's in the transcript now.
 
 ## 📦 Install
 
@@ -206,7 +206,7 @@ omp install @agntn/keys
 }
 ```
 
-20 tools, `keys_derive_electrum_wallet` through `keys_bip44_path`, and the Pi and OMP extensions in [`packages`](./packages) run the exact same executors, installed from npm or from a checkout. Ask for a mnemonic and this is the whole answer:
+Every tool from `keys_derive_electrum_wallet` through `keys_bip44_path` runs here, and the Pi and OMP extensions in [`packages`](./packages) run the exact same executors, installed from npm or from a checkout. Ask for a mnemonic and this is the whole answer:
 
 ```
 Language: english
@@ -240,7 +240,7 @@ pnpm dev          # vp test in watch mode
 pnpm lint         # builds first, then vp lint and vp fmt --check
 pnpm test:types   # tsc over the library and the type tests
 pnpm build        # vp pack
-pnpm test:mcp     # builds, then calls all 20 tools over stdio
+pnpm test:mcp     # builds, then calls every tool over stdio
 pnpm playground playground/bip39-demo.ts
 ```
 

@@ -15,6 +15,7 @@ import {
   TOOL_NETWORKS,
   TOOL_MNEMONIC_WORD_COUNTS,
   MAX_BIP39_SEED_INPUT_LENGTH,
+  MAX_BIP38_ADDRESS_LENGTH,
 } from "./tool-parameters.ts";
 import { BIP39_LANGUAGES } from "./utils/bip39/languages.ts";
 
@@ -82,6 +83,26 @@ export const WIF_DECODE_PARAMETERS = Type.Object(
       pattern: "^[1-9A-HJ-NP-Za-km-z]+$",
       description: "Public or disposable WIF string",
     }),
+  },
+  { additionalProperties: false },
+);
+
+/** Shared MCP and Pi schema for reading a BIP38 key without its passphrase. */
+export const INSPECT_BIP38_PARAMETERS = Type.Object(
+  {
+    encrypted: Type.String({
+      minLength: 1,
+      maxLength: 64,
+      pattern: "^[1-9A-HJ-NP-Za-km-z]+$",
+      description: "BIP38 encrypted private key, 58 characters starting with 6P",
+    }),
+    address: Type.Optional(
+      Type.String({
+        minLength: 1,
+        maxLength: MAX_BIP38_ADDRESS_LENGTH,
+        description: "Address to compare with the address hash stored in the key",
+      }),
+    ),
   },
   { additionalProperties: false },
 );

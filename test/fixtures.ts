@@ -1219,3 +1219,60 @@ export const slip132Vectors = [
 /** SLIP-0132 private counterpart of the `xpub` vector, which the watch-only path refuses. */
 export const slip132PrivateKey =
   "xprv9xpXFhFpqdQK3TmytPBqXtGSwS3DLjojFhTGht8gwAAii8py5X6pxeBnQ6ehJiyJ6nDjWGJfZ95WxByFXVkDxHXrqu53WCRGypk2ttuqncb";
+
+/**
+ * BIP38 test vectors (bitcoin/bips bip-0038.mediawiki): the header of each key, read without its
+ * passphrase. `address` is the one the spec lists; the compressed vector lists none.
+ */
+export const bip38Vectors = [
+  {
+    encrypted: "6PRW5o9FLp4gJDDVqJQKJFTpMvdsSGJxMYHtHaQBF3ooa8mwD69bapcDQn",
+    address: "16ktGzmfrurhbhi6JGqsMWf7TyqK9HNAeF",
+    inspection: {
+      mode: "non-ec",
+      flagByte: 0xc0,
+      compressed: false,
+      hasLotSequence: false,
+      addressHash: "f4e775a8",
+    },
+  },
+  {
+    encrypted: "6PYNKZ1EAgYgmQfmNVamxyXVWHzK5s6DGhwP4J5o44cvXdoY7sRzhtpUeo",
+    address: undefined,
+    inspection: {
+      mode: "non-ec",
+      flagByte: 0xe0,
+      compressed: true,
+      hasLotSequence: false,
+      addressHash: "43be4179",
+    },
+  },
+  {
+    encrypted: "6PfQu77ygVyJLZjfvMLyhLMQbYnu5uguoJJ4kMCLqWwPEdfpwANVS76gTX",
+    address: "1PE6TQi6HTVNz5DLwB1LcpMBALubfuN2z2",
+    inspection: {
+      mode: "ec-multiply",
+      flagByte: 0x00,
+      compressed: false,
+      hasLotSequence: false,
+      addressHash: "62b5b722",
+      ownerEntropy: "a50dba6772cb9383",
+      ownerSalt: "a50dba6772cb9383",
+    },
+  },
+  {
+    encrypted: "6PgNBNNzDkKdhkT6uJntUXwwzQV8Rr2tZcbkDcuC9DZRsS6AtHts4Ypo1j",
+    address: "1Jscj8ALrYu2y9TD8NrpvDBugPedmbj4Yh",
+    inspection: {
+      mode: "ec-multiply",
+      flagByte: 0x04,
+      compressed: false,
+      hasLotSequence: true,
+      addressHash: "bb458cef",
+      ownerEntropy: "4fca5a974040f001",
+      ownerSalt: "4fca5a97",
+      lot: 263183,
+      sequence: 1,
+    },
+  },
+] as const;

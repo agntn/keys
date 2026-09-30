@@ -88,7 +88,7 @@ pnpm lint:fix         # vp pack, then vp lint --fix + vp fmt
 pnpm fmt              # same as lint:fix
 pnpm playground <f>   # run any TS file via tsx
 pnpm docs             # Docus + keyspace explorer on :3000
-pnpm test:mcp         # build and exercise all 20 MCP tools over stdio
+pnpm test:mcp         # build and exercise every MCP tool over stdio
 ```
 
 `build`, `lint`, `lint:fix`, `fmt`, `test` and `test:mcp` all rewrite `dist/`, and so does packing or publishing through `prepack`. The lint scripts pack first because the Pi and OMP extensions take their executor types from `dist/tool-operations.d.mts`, and without that file the type-aware lint reads every executor call there as `error` typed. A checkout whose `dist/` serves the `keys` bin or the extensions gets a new bundle under them, so run these in a separate worktree while that server is live.
@@ -96,7 +96,7 @@ pnpm test:mcp         # build and exercise all 20 MCP tools over stdio
 ## NOTES
 
 - **CI runs**: lint -> type check -> build -> vp test with coverage (Node 26, pnpm through `setup-vp`). Autofix workflow commits lint fixes on PRs.
-- **Package exports** expose `"."`, `"./mcp"`, `"./blockchains/*"`, and the HD derivation subpaths `"./bip32"`, `"./bip39"`, and `"./slip10"`; other utils remain internal.
+- **Package exports** expose `"."`, `"./mcp"`, `"./blockchains/*"`, and the HD derivation subpaths `"./bip32"`, `"./bip39"`, and `"./slip10"`, plus `"./bip38"` for encrypted key headers; other utils remain internal.
 - **Shipped extensions** - `files` lists both extensions and the `src/` files their schemas import at runtime (`tool-schemas.ts`, `tool-parameters.ts`, `utils/bip39/languages.ts`); the executors come from `dist`. A new value import in that graph goes into `files` too. `test/public-exports.test.ts` runs a tool from each extension with only the shipped files.
 - **OMP extension** - `packages/omp/extensions/keys.ts` is a full copy of the Pi file, with both dynamic imports of the executors kept literal. OMP does not expand globs in the manifest, so `omp.extensions` names the file. `test/omp-extension.test.ts` keeps the two registrations identical.
 - **MCP transport** runs through `keys mcp`. Inside a checkout, `dist/cli.mjs` loads the MCP command from `src/`, like the Pi and OMP extensions, so a local server only needs a restart after a change. The npm package has no `src/commands` and runs the bundle. A copy under `node_modules` keeps the bundle too, because Node does not strip types there, and so does a checkout without dev dependencies, whose source cannot import `typebox`. `KEYS_DIST=1` forces the bundle in a checkout, as `test/cli.test.ts` and `test/eval-mcp.mjs` do. Changes to `src/cli.ts` itself still need `pnpm build`. stdout is reserved for JSON-RPC, and `createMcpServer()` remains importable for hosts with their own transport. `toolListings` and `callTool()` from the same module feed the remote server at `keys.agntn.dev/mcp` (see `docs/AGENTS.md`).

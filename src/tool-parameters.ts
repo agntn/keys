@@ -15,8 +15,41 @@ export const BIP44_PATH_MODE_SCHEMA = {
   ],
 } as const;
 
+/**
+ * Every tool `keys mcp` lists, in its order. The docs count them from here, so a new tool
+ * changes the number on the landing and in the OG image without an edit there.
+ */
+export const TOOL_NAMES = [
+  "keys_derive_electrum_wallet",
+  "keys_derive_bip39_seed",
+  "keys_convert_public_key",
+  "keys_encode_wif",
+  "keys_decode_wif",
+  "keys_bip38_inspect",
+  "keys_generate_wallet",
+  "keys_derive_wallet",
+  "keys_derive_hd_wallet",
+  "keys_derive_xpub_wallet",
+  "keys_generate_mnemonic",
+  "keys_inspect_mnemonic",
+  "keys_encode_bip39_entropy",
+  "keys_lookup_bip39_indices",
+  "keys_lookup_bip39_words",
+  "keys_recover_mnemonic_word",
+  "keys_get_address",
+  "keys_validate_address",
+  "keys_sign_message",
+  "keys_verify_message",
+  "keys_bip44_path",
+] as const;
+
+export type ToolName = (typeof TOOL_NAMES)[number];
+
 /** Maximum text length accepted by the BIP39 seed tool. */
 export const MAX_BIP39_SEED_INPUT_LENGTH = 4096;
+
+/** Maximum address length the BIP38 tool hashes against a key. */
+export const MAX_BIP38_ADDRESS_LENGTH = 128;
 
 /** Supported BIP39 mnemonic lengths for generation tools. */
 export const TOOL_MNEMONIC_WORD_COUNTS: readonly number[] = [12, 15, 18, 21, 24];

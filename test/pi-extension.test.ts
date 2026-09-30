@@ -25,6 +25,7 @@ import {
   ethereumTestVectors,
   secp256k1TestVectors,
   slip132Vectors,
+  bip38Vectors,
 } from "./fixtures.ts";
 import keysExtension from "../packages/pi/extensions/keys.ts";
 import { mnemonicToSeed, mnemonicToEntropy, validateMnemonic } from "../src/utils/bip39/index.ts";
@@ -324,6 +325,30 @@ describe("keys Pi extension", () => {
       content: [{ type: "text", text: JSON.stringify({ privateKey, chain, network, compressed }) }],
       details: { privateKey, chain, network, compressed },
     });
+  });
+
+  it("reads a BIP38 header with the shared executor", async () => {
+    const tool = registerTools().get("keys_bip38_inspect");
+    if (!tool) throw new Error("Missing BIP38 tool");
+    const { encrypted, address, inspection } = bip38Vectors[2];
+    const args = { encrypted, address };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    expect(Value.Check(tool.parameters, { encrypted, address: "" })).toBe(false);
+    await expect(tool.execute("bip38", args)).resolves.toMatchObject({
+      details: { ...inspection, addressMatches: true },
+    });
+    await expect(tool.execute("bip38", { encrypted, address: "" })).resolves.toEqual({
+      content: [{ type: "text", text: JSON.stringify(inspection) }],
+      details: inspection,
+    });
+    await expect(tool.execute("bip38", { encrypted: 42 })).rejects.toThrow(
+      "BIP38 key must be a string",
+    );
+    const longAddress = { encrypted, address: "1".repeat(129) };
+    expect(Value.Check(tool.parameters, longAddress)).toBe(false);
+    await expect(tool.execute("bip38", longAddress)).rejects.toThrow(
+      "Address must not exceed 128 characters",
+    );
   });
 
   it("validates WIF inputs even when Pi skips schema validation", async () => {

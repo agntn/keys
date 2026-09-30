@@ -24,31 +24,10 @@ import {
   slip132PrivateKey,
   secp256k1TestVectors,
   slip132Vectors,
+  bip38Vectors,
 } from "./fixtures.ts";
 import { callTool, createMcpServer, toolListings } from "../src/mcp.ts";
-
-const TOOL_NAMES = [
-  "keys_derive_electrum_wallet",
-  "keys_derive_bip39_seed",
-  "keys_convert_public_key",
-  "keys_encode_wif",
-  "keys_decode_wif",
-  "keys_generate_wallet",
-  "keys_derive_wallet",
-  "keys_derive_hd_wallet",
-  "keys_derive_xpub_wallet",
-  "keys_generate_mnemonic",
-  "keys_inspect_mnemonic",
-  "keys_encode_bip39_entropy",
-  "keys_lookup_bip39_indices",
-  "keys_lookup_bip39_words",
-  "keys_recover_mnemonic_word",
-  "keys_get_address",
-  "keys_validate_address",
-  "keys_sign_message",
-  "keys_verify_message",
-  "keys_bip44_path",
-] as const;
+import { TOOL_NAMES } from "../src/tool-parameters.ts";
 
 const openConnections: Array<{ close(): Promise<void> }> = [];
 
@@ -292,20 +271,57 @@ describe("keys MCP server", () => {
     expect(text(wrongChain.content)).not.toContain(vector.wif);
   });
 
+  it("reads a BIP38 header and checks an address through MCP", async () => {
+    const client = await connectTestClient();
+    const { encrypted, address, inspection } = bip38Vectors[3];
+
+    const response = await client.callTool({
+      name: "keys_bip38_inspect",
+      arguments: { encrypted, address },
+    });
+    expect(response.isError).not.toBe(true);
+    expect(JSON.parse(text(response.content))).toEqual({ ...inspection, addressMatches: true });
+
+    const omitted = await client.callTool({
+      name: "keys_bip38_inspect",
+      arguments: { encrypted: bip38Vectors[0].encrypted },
+    });
+    expect(JSON.parse(text(omitted.content))).toEqual(bip38Vectors[0].inspection);
+
+    for (const [args, message] of [
+      [{ encrypted: encrypted.slice(0, -1) + "1" }, "Invalid BIP38 base58 encoding or checksum"],
+      [{ encrypted: "0OIl" }, "Invalid arguments at /encrypted"],
+      [{ encrypted, extra: true }, "Invalid arguments"],
+    ] as const) {
+      const failed = await client.callTool({ name: "keys_bip38_inspect", arguments: args });
+      expect(failed.isError).toBe(true);
+      expect(text(failed.content)).toContain(message);
+    }
+  });
+
+  it.each([
+    "README.md",
+    "AGENTS.md",
+    "packages/pi/README.md",
+    "packages/pi/AGENTS.md",
+    "docs/DESIGN.md",
+    "docs/content/1.guide/1.index.md",
+    "docs/app/components/content/LandingHero.vue",
+    "docs/app/components/content/LandingHome.vue",
+    "docs/app/components/OgImage/Landing.takumi.vue",
+  ])("leaves the tool count out of %s, which TOOL_NAMES owns", (file) => {
+    const text = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
+    expect(text).not.toMatch(/\b\d+ (?:agent |MCP )?tools\b/iu);
+    expect(text).not.toMatch(/\b(?:nineteen|twenty|thirty)[a-z-]* (?:agent |MCP )?tools\b/iu);
+    expect(text).not.toMatch(/value: "\d+", unit: "", note: "MCP/u);
+  });
+
   it("advertises every keys tool with explicit safety annotations", async () => {
     const client = await connectTestClient();
 
     const response = await client.listTools();
 
     expect(response.tools.map((tool) => tool.name)).toEqual(TOOL_NAMES);
-    const landing = readFileSync(
-      new URL("../docs/app/components/content/LandingHero.vue", import.meta.url),
-      "utf8",
-    );
-    const advertisedTools = landing.match(/const MCP_TOOLS = ([0-9]+);/u)?.[1];
-    expect(advertisedTools, "LandingHero.vue must declare the current MCP tool count").toBe(
-      String(response.tools.length),
-    );
     expect(
       response.tools.find((tool) => tool.name === "keys_generate_wallet")?.annotations,
     ).toMatchObject({

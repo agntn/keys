@@ -12,7 +12,9 @@ import {
   publicKeyEncodingVector,
   bip39TestVectors,
   slip132Vectors,
+  bip38Vectors,
 } from "./fixtures.ts";
+import { TOOL_NAMES } from "../src/tool-parameters.ts";
 
 const server = path.resolve(import.meta.dirname, "../dist/cli.mjs");
 /** `KEYS_DIST=1` keeps the bundle; a checkout would otherwise serve the live source. */
@@ -77,12 +79,19 @@ await client.connect(transport);
 
 try {
   const listed = await client.listTools();
-  if (listed.tools.length !== 20) throw new Error(`Expected 20 tools, got ${listed.tools.length}`);
+  if (listed.tools.length !== TOOL_NAMES.length)
+    throw new Error(`Expected ${TOOL_NAMES.length} tools, got ${listed.tools.length}`);
 
   await call(
     "keys_convert_public_key",
     { publicKey: publicKeyEncodingVector.compressed, compressed: false },
     new RegExp(publicKeyEncodingVector.uncompressed),
+  );
+
+  await call(
+    "keys_bip38_inspect",
+    { encrypted: bip38Vectors[3].encrypted, address: bip38Vectors[3].address },
+    /"lot":263183,"sequence":1,"addressMatches":true/,
   );
 
   await call(

@@ -7,7 +7,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
-import { BIP44_PATH_MODE_SCHEMA } from "./tool-parameters.ts";
+import { BIP44_PATH_MODE_SCHEMA, type ToolName } from "./tool-parameters.ts";
 import {
   bip44Path,
   convertPublicKey,
@@ -22,6 +22,7 @@ import {
   generateWallet,
   generateBip39Mnemonic,
   getAddress,
+  inspectBip38,
   inspectMnemonic,
   lookupBip39Indices,
   lookupBip39Words,
@@ -35,6 +36,7 @@ import {
 import { version } from "./version.ts";
 import {
   CONVERT_PUBLIC_KEY_PARAMETERS,
+  INSPECT_BIP38_PARAMETERS,
   WIF_ENCODE_PARAMETERS,
   WIF_DECODE_PARAMETERS,
   GENERATE_MNEMONIC_PARAMETERS,
@@ -63,7 +65,7 @@ type ReadonlyObjectSchema = Readonly<TSchema> & {
 };
 
 interface ToolDefinition {
-  readonly name: string;
+  readonly name: ToolName;
   readonly title: string;
   readonly description: string;
   readonly inputSchema: ReadonlyObjectSchema;
@@ -141,6 +143,15 @@ const tools: readonly ToolDefinition[] = [
     inputSchema: WIF_DECODE_PARAMETERS,
     annotations: LOCAL_READ,
     execute: (args) => decodeWif(args["chain"], args["wif"], args["network"]),
+  },
+  {
+    name: "keys_bip38_inspect",
+    title: "Inspect BIP38",
+    description:
+      "Read a BIP38 encrypted private key (6P...) without its passphrase: EC multiply or not, compression, lot and sequence, owner entropy, and the stored address hash. Given an address, reports whether its hash matches. Nothing is decrypted.",
+    inputSchema: INSPECT_BIP38_PARAMETERS,
+    annotations: LOCAL_READ,
+    execute: (args) => inspectBip38(args["encrypted"], args["address"]),
   },
   {
     name: "keys_generate_wallet",
@@ -346,7 +357,7 @@ export const toolListings: readonly Tool[] = tools.map((tool) => ({
   annotations: tool.annotations,
 }));
 
-const toolsByName = new Map(tools.map((tool) => [tool.name, tool]));
+const toolsByName = new Map<string, ToolDefinition>(tools.map((tool) => [tool.name, tool]));
 
 /**
  * Runs one tool the way `tools/call` does. An unknown name, a schema miss and an executor failure

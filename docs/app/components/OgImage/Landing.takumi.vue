@@ -6,16 +6,17 @@
  */
 import { version } from "../../../../package.json";
 import { CHAINS } from "../../utils/chains";
+import { TOOL_COUNT } from "../../utils/tools";
 
 defineProps<{ title?: string; description?: string }>();
 
 const TAGLINE =
   "Keys to addresses to signatures from a mnemonic or from nothing at all. Nothing leaves the process.";
 
-/** The same three readouts as the hero; the tool count is pinned by test/mcp.test.ts through LandingHero. */
+/** The same three readouts as the hero, counted from the library like the hero counts them. */
 const METRICS = [
   { label: "Chains", value: String(CHAINS.length), unit: "", note: "two curves", accent: false },
-  { label: "Tools", value: "20", unit: "", note: "MCP · Pi · OMP", accent: false },
+  { label: "Tools", value: String(TOOL_COUNT), unit: "", note: "MCP · Pi · OMP", accent: false },
   { label: "Network", value: "0", unit: "calls", note: "in process", accent: true },
 ];
 
