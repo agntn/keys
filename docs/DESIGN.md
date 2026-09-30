@@ -11,7 +11,7 @@ The instruments keys owns:
 | [LandingPipeline.vue](app/components/content/LandingPipeline.vue) | "Keys in, addresses out" | secret bytes, public key, three Bitcoin formats                         |
 | [LandingRotatingCode.vue](app/components/content/LandingRotatingCode.vue) | "Same calls, every chain" | the same seven lines with the driver swapped, as a file         |
 | [LandingPath.vue](app/components/content/LandingPath.vue)         | "Mnemonic to wallet"     | the BIP44 path levels and the derived address                           |
-| [LandingToolCall.vue](app/components/content/LandingToolCall.vue) | "Twenty-one tools over MCP"  | `keys_get_address` arguments and result                                 |
+| [LandingToolCall.vue](app/components/content/LandingToolCall.vue) | "… tools over MCP", counted | `keys_get_address` arguments and result                                 |
 | [LandingStart.vue](app/components/content/LandingStart.vue)       | closing section          | install, notes, first address as a file                                 |
 | [ChainList.vue](app/components/content/ChainList.vue)             | landing and `/blockchains` | roster of the drivers on `UTable`, sortable                           |
 | [ChainFacts.vue](app/components/content/ChainFacts.vue)           | every chain page         | chain dossier: ID bar with position, reticle, formats, readout, access  |

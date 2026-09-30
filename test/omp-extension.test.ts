@@ -8,6 +8,7 @@ import {
 } from "./fixtures.ts";
 import ompExtension from "../packages/omp/extensions/keys.ts";
 import piExtension from "../packages/pi/extensions/keys.ts";
+import { TOOL_NAMES } from "../src/tool-parameters.ts";
 
 interface RegisteredTool {
   readonly name: string;
@@ -41,7 +42,7 @@ describe("keys OMP extension", () => {
     const pi = registerTools(piExtension);
 
     expect([...omp.keys()]).toEqual([...pi.keys()]);
-    expect(omp.size).toBe(21);
+    expect(new Set(omp.keys())).toEqual(new Set(TOOL_NAMES));
     for (const [name, tool] of omp) {
       const expected = pi.get(name);
       expect(tool.label, name).toBe(expected?.label);

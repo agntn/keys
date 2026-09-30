@@ -10,7 +10,7 @@ import { deriveHDKey, getMasterKeyFromSeed } from "./utils/bip32/index.ts";
 import { convertSecp256k1PublicKey } from "./utils/public-key.ts";
 import { describeInvalidMnemonic } from "./utils/hd.ts";
 import { encodeWIF, decodeWIF, type DecodedWIF, type WIFNetworkOptions } from "./utils/wif.ts";
-import { inspectBIP38, type BIP38Inspection } from "./utils/bip38.ts";
+import { inspect as inspectBIP38, type BIP38Inspection } from "./utils/bip38/index.ts";
 import type { AbstractBlockchain } from "./blockchain.ts";
 import { BIP44, blockchains, getBlockchainPath, parseBIP44Path, useBlockchain } from "./index.ts";
 import {

@@ -20,6 +20,7 @@ import { ELECTRUM_LEGACY_WORDS } from "../src/utils/electrum-legacy.ts";
 
 const EXPORTS = [
   ["@agntn/keys/bip32", "/dist/utils/bip32/index.mjs"],
+  ["@agntn/keys/bip38", "/dist/utils/bip38/index.mjs"],
   ["@agntn/keys/bip39", "/dist/utils/bip39/index.mjs"],
   ["@agntn/keys/slip10", "/dist/utils/slip10/index.mjs"],
 ] as const;
@@ -154,7 +155,7 @@ describe("Consumer bundles", () => {
     );
   };
 
-  it.each(["encodeWIF", "decodeWIF", "convertSecp256k1PublicKey", "inspectBIP38"])(
+  it.each(["encodeWIF", "decodeWIF", "convertSecp256k1PublicKey"])(
     "leaves the chain registry and the Electrum list out of an app importing %s",
     async (name) => {
       const chunks = await bundle(name);

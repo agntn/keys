@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-Shared cryptographic primitives and encoding utilities. BIP32, BIP39, and SLIP-10 are public package subpaths; other utilities are internal. Every hash comes from `@agntn/hashes`, hex goes through the native `Uint8Array.fromHex` and `toHex`.
+Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, and SLIP-10 are public package subpaths; other utilities are internal. Every hash comes from `@agntn/hashes`, hex goes through the native `Uint8Array.fromHex` and `toHex`.
 
 ## STRUCTURE
 
@@ -23,13 +23,13 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP39, and SLIP-1
 | `bytes.ts`          | ~15   | signing, wif, decred, stellar, sui, zcash                                            | `concatBytes`, the one byte helper without a native equivalent                                                                           |
 | `hd.ts`             | ~100  | blockchain.ts, tool-operations.ts                                                    | Mnemonic to private key at a path: BIP32 for secp256k1, SLIP-10 for ed25519; names the BIP39 check a rejected phrase fails               |
 | `extended-key.ts`   | ~110  | blockchain.ts, bitcoin.ts, litecoin                                                  | SLIP-0132 prefixes; an xpub down normal levels to a child public key, refusing xprv and hardened levels                                  |
-| `bip38.ts`          |       | index.ts, tool-operations.ts                                                         | BIP38 header without the passphrase: mode, flags, address hash, owner entropy, lot and sequence; no decryption                           |
 
 **Subdirectories** (each has `index.ts`):
 
 | Dir       | Purpose                       | Exports                                                                                                                         |
 | --------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | `bip32/`  | HD key derivation (secp256k1) | `getMasterKeyFromSeed`, `deriveHDKey`, `HARDENED_OFFSET`                                                                        |
+| `bip38/`  | Encrypted key headers         | `inspect`: mode, flags, address hash, owner entropy, lot and sequence without the passphrase; no decryption                     |
 | `bip39/`  | Mnemonic phrases              | `generateMnemonic`, `mnemonicToSeed`, `validateMnemonic`, `getMnemonicWordCandidates`, `lookupBIP39Words`, `lookupBIP39Indices` |
 | `bip44/`  | Derivation paths              | `BIP44` enum, `getBIP44Path`, `getBIP32Path`, `getHardenedPath`, `parseBIP44Path`, `getBlockchainPath`                          |
 | `slip10/` | ED25519 HD derivation         | `getMasterKeyFromSeed`, `deriveHDKey`                                                                                           |

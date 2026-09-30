@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { inspectBIP38 } from "../../src/index.ts";
+import { inspect as inspectBIP38 } from "../../src/utils/bip38/index.ts";
 import { decodeBase58Check, encodeBase58Check } from "../../src/utils/encoding.ts";
 import { bip38Vectors } from "../fixtures.ts";
 
@@ -18,7 +18,7 @@ function withByte(encrypted: string, index: number, value: number): string {
   return encodeBase58Check(payload);
 }
 
-describe("inspectBIP38", () => {
+describe("bip38 inspect", () => {
   it.each(bip38Vectors)("reads the header of $encrypted", ({ encrypted, inspection }) => {
     expect(inspectBIP38(encrypted)).toEqual(inspection);
   });

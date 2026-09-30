@@ -328,7 +328,7 @@ describe("keys Pi extension", () => {
   });
 
   it("reads a BIP38 header with the shared executor", async () => {
-    const tool = registerTools().get("keys_inspect_bip38");
+    const tool = registerTools().get("keys_bip38_inspect");
     if (!tool) throw new Error("Missing BIP38 tool");
     const { encrypted, address, inspection } = bip38Vectors[2];
     const args = { encrypted, address };

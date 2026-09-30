@@ -133,7 +133,7 @@ export default function keysExtension(pi: ExtensionAPI) {
     },
   });
   pi.registerTool({
-    name: "keys_inspect_bip38",
+    name: "keys_bip38_inspect",
     label: "Inspect BIP38",
     description:
       "Read a BIP38 encrypted private key (6P...) without its passphrase: EC multiply or not, compression, lot and sequence, owner entropy, and the stored address hash. Given an address, reports whether its hash matches. Nothing is decrypted.",

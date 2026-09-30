@@ -1,6 +1,6 @@
 import { sha256 } from "@agntn/hashes";
 import { equalBytes } from "@noble/curves/utils.js";
-import { decodeBase58Check } from "./encoding.ts";
+import { decodeBase58Check } from "../encoding.ts";
 
 /** How the key was encrypted: from a private key, or from an owner's intermediate code. */
 export type BIP38Mode = "non-ec" | "ec-multiply";
@@ -108,7 +108,7 @@ function matchesAddress(address: unknown, addressHash: Uint8Array): boolean {
  * @param options - An address to check against the stored address hash
  * @returns {BIP38Inspection} Mode, flags, address hash and, for EC multiply, owner entropy
  */
-export function inspectBIP38(
+export function inspect(
   encrypted: string,
   options: { readonly address?: string } = {},
 ): BIP38Inspection {

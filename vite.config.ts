@@ -69,6 +69,7 @@ export default defineConfig({
       mcp: "src/mcp.ts",
       "tool-operations": "src/tool-operations.ts",
       "utils/bip32/index": "src/utils/bip32/index.ts",
+      "utils/bip38/index": "src/utils/bip38/index.ts",
       "utils/bip39/index": "src/utils/bip39/index.ts",
       "utils/slip10/index": "src/utils/slip10/index.ts",
       "blockchains/*": "src/blockchains/*.ts",

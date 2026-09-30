@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { version } from "../../../../package.json";
 import { CHAINS } from "../../utils/chains";
+import { TOOL_COUNT } from "../../utils/tools";
 import type { AddressRow } from "../../utils/derive";
 import type { Pipeline } from "../../utils/landing";
 
@@ -15,8 +16,6 @@ defineProps<{
 const emit = defineEmits<{ pause: [paused: boolean]; step: [delta: bigint]; random: [] }>();
 
 const INSTALL = "pnpm add @agntn/keys";
-/** The tools `keys mcp` lists; test/mcp.test.ts fails when the server's count changes. */
-const MCP_TOOLS = 21;
 const { copied, copy } = useCopied();
 </script>
 
@@ -50,7 +49,7 @@ const { copied, copy } = useCopied();
         </div>
         <div>
           <dt>Tools</dt>
-          <dd>{{ MCP_TOOLS }}</dd>
+          <dd>{{ TOOL_COUNT }}</dd>
           <dd class="hero-metric-sub">MCP · Pi · OMP</dd>
         </div>
         <div>

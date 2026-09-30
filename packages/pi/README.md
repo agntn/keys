@@ -1,6 +1,6 @@
 # @agntn/keys: Pi extension
 
-Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as 21 agent tools for key generation, WIF conversion, BIP39 generation, entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across 18 blockchains (Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, TRON, SUI, Cardano).
+Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as agent tools for key generation, WIF conversion, BIP38 inspection, BIP39 generation, entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across 18 blockchains (Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, TRON, SUI, Cardano).
 
 > [!WARNING]
 > **This extension is experimental.** The package name, public API, provider model, CLI flags, and tool surfaces may change before the first stable release. Pin exact versions if you build on it now.
@@ -14,7 +14,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 | `keys_convert_public_key`     | Convert secp256k1 public keys between SEC1 encodings               |
 | `keys_encode_wif`             | Export a disposable private key as native BTC, LTC or DCR WIF      |
 | `keys_decode_wif`             | Read native WIF into a hex key, network and compression flag       |
-| `keys_inspect_bip38`          | Read a BIP38 key's header and check an address, no passphrase      |
+| `keys_bip38_inspect`          | Read a BIP38 key's header and check an address, no passphrase      |
 | `keys_generate_wallet`        | Generate private key + public key + address for a chain            |
 | `keys_derive_wallet`          | Derive public key + address from an existing private key           |
 | `keys_derive_hd_wallet`       | Derive public key + address from a mnemonic and path               |
