@@ -42,7 +42,7 @@ const BIP39_WORDLIST_LOADERS = {
  * @param language - Official language key, defaulting to English
  * @returns {Promise<string[]>} The selected BIP39 word list
  */
-export async function loadBIP39Wordlist(language: BIP39Language = "english"): Promise<string[]> {
+export async function loadWordlist(language: BIP39Language = "english"): Promise<string[]> {
   if (!isBIP39Language(language)) throw new RangeError("Unknown BIP39 language");
   const { wordlist: selectedWordlist } = await BIP39_WORDLIST_LOADERS[language]();
   return [...selectedWordlist];
@@ -54,11 +54,11 @@ export async function loadBIP39Wordlist(language: BIP39Language = "english"): Pr
  * @param language - Official BIP39 language key
  * @returns {Promise<ReadonlyArray<BIP39WordLookup>>} Normalized words and zero-based indices
  */
-export async function lookupBIP39Words(
+export async function lookupWords(
   words: readonly string[],
   language: BIP39Language = "english",
 ): Promise<readonly BIP39WordLookup[]> {
-  const selectedWordlist = await loadBIP39Wordlist(language);
+  const selectedWordlist = await loadWordlist(language);
   return words.map((word) => {
     const normalizedWord = word.normalize("NFKD").toLowerCase().normalize("NFKD");
     const zeroBasedIndex = selectedWordlist.indexOf(normalizedWord);
@@ -76,7 +76,7 @@ export async function lookupBIP39Words(
  * @param indexBase - Whether the supplied positions start at 0 or 1
  * @returns {Promise<ReadonlyArray<BIP39IndexLookup>>} Requested positions and matching words
  */
-export async function lookupBIP39Indices(
+export async function lookupIndices(
   indices: readonly number[],
   language: BIP39Language = "english",
   indexBase: 0 | 1 = 0,
@@ -85,7 +85,7 @@ export async function lookupBIP39Indices(
     throw new RangeError("BIP39 index base must be 0 or 1");
   }
 
-  const selectedWordlist = await loadBIP39Wordlist(language);
+  const selectedWordlist = await loadWordlist(language);
   return indices.map((index) => ({
     index,
     word: selectedWordlist[index - indexBase] ?? null,
@@ -118,7 +118,7 @@ export interface BIP39MnemonicInspection {
  * @param selectedWordlist - BIP39 word list, defaulting to English
  * @returns {BIP39MnemonicInspection} Diagnostics without echoing the phrase
  */
-export function inspectBIP39Mnemonic(
+export function inspect(
   mnemonic: string,
   selectedWordlist: readonly string[] = wordlist,
 ): BIP39MnemonicInspection {

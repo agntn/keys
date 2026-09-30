@@ -108,9 +108,9 @@ describe("Public derivation exports", () => {
 
   it("exports checksum diagnostics and the explicit HD override from the built package", async () => {
     const { blockchains } = await import("@agntn/keys");
-    const { inspectBIP39Mnemonic } = await import("@agntn/keys/bip39");
+    const { inspect } = await import("@agntn/keys/bip39");
     const { mnemonic, path, address } = invalidChecksumPuzzle;
-    const inspection: BIP39MnemonicInspection = inspectBIP39Mnemonic(mnemonic);
+    const inspection: BIP39MnemonicInspection = inspect(mnemonic);
     expect(inspection).toMatchObject({
       valid: false,
       wordCountValid: true,
@@ -125,12 +125,25 @@ describe("Public derivation exports", () => {
     expect(wallet.warnings).toEqual([expect.stringContaining("checksum is invalid")]);
   });
 
+  it("drops the family from BIP39 export names", async () => {
+    const bip39 = await import("@agntn/keys/bip39");
+    for (const name of ["inspect", "loadWordlist", "lookupIndices", "lookupWords"])
+      expect(bip39).toHaveProperty(name);
+    for (const name of [
+      "inspectBIP39Mnemonic",
+      "loadBIP39Wordlist",
+      "lookupBIP39Indices",
+      "lookupBIP39Words",
+    ])
+      expect(bip39).not.toHaveProperty(name);
+  });
+
   it("loads localized lists for the published BIP39 codec", async () => {
-    const { loadBIP39Wordlist, bip39, generateMnemonic, validateMnemonic } =
+    const { loadWordlist, bip39, generateMnemonic, validateMnemonic } =
       await import("@agntn/keys/bip39");
     expect(validateMnemonic(generateMnemonic())).toBe(true);
     for (const { language, entropy, mnemonic } of localizedMnemonicVectors) {
-      const wordlist = await loadBIP39Wordlist(language);
+      const wordlist = await loadWordlist(language);
       expect(bip39.entropyToMnemonic(Buffer.from(entropy, "hex"), wordlist)).toBe(mnemonic);
       expect(bip39.validateMnemonic(mnemonic.normalize("NFC"), wordlist)).toBe(true);
       expect(Buffer.from(bip39.mnemonicToEntropy(mnemonic, wordlist)).toString("hex")).toBe(

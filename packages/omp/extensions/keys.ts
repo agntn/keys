@@ -72,7 +72,7 @@ export default function keysExtension(pi: ExtensionAPI) {
     },
   });
   pi.registerTool({
-    name: "keys_derive_bip39_seed",
+    name: "keys_bip39_seed_derive",
     label: "Derive BIP39 Seed",
     description:
       "Derive a 64-byte BIP39 seed from a valid mnemonic and optional passphrase. Not a BIP32 master key. Inputs and seed enter the transcript; use only public or disposable material, never keys controlling real funds.",
@@ -273,12 +273,12 @@ export default function keysExtension(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
-    name: "keys_generate_mnemonic",
+    name: "keys_bip39_generate",
     label: "Generate BIP39 Mnemonic",
     description: "Generate a random BIP39 mnemonic for tests or disposable wallets",
     promptSnippet: "Use when a test needs a fresh BIP39 mnemonic rather than supplied entropy.",
     promptGuidelines: [
-      "keys_generate_mnemonic accepts an explicit BIP39 language; omission means english, not automatic detection",
+      "keys_bip39_generate accepts an explicit BIP39 language; omission means english, not automatic detection",
       "Choose 12, 15, 18, 21 or 24 words. Default: 12",
       "The result is saved in the transcript. Never use it for real funds",
     ],
@@ -292,13 +292,13 @@ export default function keysExtension(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
-    name: "keys_inspect_mnemonic",
+    name: "keys_bip39_inspect",
     label: "Inspect Mnemonic",
     description:
       "Inspect BIP39 word count, dictionary membership and checksum, with entropy only when valid",
     promptSnippet: "Use to check mnemonic candidates from public crypto puzzles.",
     promptGuidelines: [
-      "keys_inspect_mnemonic accepts an explicit BIP39 language; omission means english, not automatic detection",
+      "keys_bip39_inspect accepts an explicit BIP39 language; omission means english, not automatic detection",
       "Provide a BIP39 mnemonic",
       "Use only public or disposable candidates because tool arguments are saved in the transcript",
       "Returns wordCountValid, wordlistValid and checksumValid separately, with entropy only for valid mnemonics",
@@ -315,12 +315,12 @@ export default function keysExtension(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
-    name: "keys_encode_bip39_entropy",
+    name: "keys_bip39_entropy_encode",
     label: "Encode BIP39 Entropy",
     description: "Encode hexadecimal entropy as a BIP39 mnemonic",
     promptSnippet: "Use to turn public puzzle entropy into BIP39 words.",
     promptGuidelines: [
-      "keys_encode_bip39_entropy accepts an explicit BIP39 language; omission means english, not automatic detection",
+      "keys_bip39_entropy_encode accepts an explicit BIP39 language; omission means english, not automatic detection",
       "Provide 16, 20, 24, 28, or 32 bytes as hexadecimal text",
       "Use only public or disposable entropy because tool arguments are saved in the transcript",
       "Returns the canonical mnemonic with its word count",
@@ -335,7 +335,7 @@ export default function keysExtension(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
-    name: "keys_lookup_bip39_indices",
+    name: "keys_bip39_indices_lookup",
     label: "Lookup BIP39 Indices",
     description: "Read words at numeric positions in an official BIP39 list",
     promptSnippet: "Use to map public puzzle indices to BIP39 words.",
@@ -359,7 +359,7 @@ export default function keysExtension(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
-    name: "keys_lookup_bip39_words",
+    name: "keys_bip39_words_lookup",
     label: "Lookup BIP39 Words",
     description: "Look up word membership and indices in an official BIP39 list",
     promptSnippet: "Use to map public puzzle words to their BIP39 indices.",
@@ -379,7 +379,7 @@ export default function keysExtension(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
-    name: "keys_recover_mnemonic_word",
+    name: "keys_bip39_word_recover",
     label: "Recover Mnemonic Word",
     description: "List English BIP39 words that make the checksum valid for one missing position",
     promptSnippet: "Use to narrow one missing word in a public BIP39 puzzle candidate.",

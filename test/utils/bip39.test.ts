@@ -6,12 +6,12 @@ import {
   mnemonicToEntropy,
   entropyToMnemonic,
   getMnemonicWordCandidates,
-  inspectBIP39Mnemonic,
+  inspect,
   BIP39_LANGUAGES,
   isBIP39Language,
-  lookupBIP39Indices,
-  lookupBIP39Words,
-  loadBIP39Wordlist,
+  lookupIndices,
+  lookupWords,
+  loadWordlist,
 } from "../../src/utils/bip39";
 import { hex } from "@scure/base";
 import { bip39TestVectors, invalidChecksumPuzzle, localizedMnemonicVectors } from "../fixtures";
@@ -56,18 +56,18 @@ describe("BIP39 Utils", () => {
   });
 
   it.each(wordlistVectors)("looks up words in the %s BIP39 list", async (language, word) => {
-    const lookups = await lookupBIP39Words([word], language);
+    const lookups = await lookupWords([word], language);
 
     expect(lookups).toEqual([{ word: word.toLowerCase().normalize("NFKD"), zeroBasedIndex: 0 }]);
   });
 
   it("loads English by default and rejects unknown word lists", async () => {
-    const words = await loadBIP39Wordlist();
+    const words = await loadWordlist();
     expect(words[0]).toBe("abandon");
     words[0] = "changed";
-    expect((await loadBIP39Wordlist())[0]).toBe("abandon");
+    expect((await loadWordlist())[0]).toBe("abandon");
     for (const language of ["unknown", "constructor", "__proto__"]) {
-      await expect(Reflect.apply(loadBIP39Wordlist, undefined, [language])).rejects.toThrow(
+      await expect(Reflect.apply(loadWordlist, undefined, [language])).rejects.toThrow(
         "Unknown BIP39 language",
       );
     }
@@ -80,8 +80,8 @@ describe("BIP39 Utils", () => {
   });
 
   it("normalizes localized BIP39 words before lookup", async () => {
-    const lookups = await lookupBIP39Words(["ÁBACO", "acción"], "spanish");
-    const compatibilityLookup = await lookupBIP39Words(["𝐀𝐁𝐀𝐍𝐃𝐎𝐍"]);
+    const lookups = await lookupWords(["ÁBACO", "acción"], "spanish");
+    const compatibilityLookup = await lookupWords(["𝐀𝐁𝐀𝐍𝐃𝐎𝐍"]);
 
     expect(lookups).toEqual([
       { word: "ábaco", zeroBasedIndex: 0 },
@@ -91,21 +91,21 @@ describe("BIP39 Utils", () => {
   });
 
   it("maps indices from either base to localized BIP39 words", async () => {
-    await expect(lookupBIP39Indices([0, 1619, 2047])).resolves.toEqual([
+    await expect(lookupIndices([0, 1619, 2047])).resolves.toEqual([
       { index: 0, word: "abandon" },
       { index: 1619, word: "skill" },
       { index: 2047, word: "zoo" },
     ]);
-    await expect(lookupBIP39Indices([1, 1179, 2048], "italian", 1)).resolves.toEqual([
+    await expect(lookupIndices([1, 1179, 2048], "italian", 1)).resolves.toEqual([
       { index: 1, word: "abaco" },
       { index: 1179, word: "orologio" },
       { index: 2048, word: "zuppa" },
     ]);
-    await expect(lookupBIP39Indices([-1, 2048])).resolves.toEqual([
+    await expect(lookupIndices([-1, 2048])).resolves.toEqual([
       { index: -1, word: null },
       { index: 2048, word: null },
     ]);
-    await expect(Reflect.apply(lookupBIP39Indices, undefined, [[1], "english", 2])).rejects.toThrow(
+    await expect(Reflect.apply(lookupIndices, undefined, [[1], "english", 2])).rejects.toThrow(
       "BIP39 index base must be 0 or 1",
     );
   });
@@ -160,42 +160,42 @@ describe("BIP39 Utils", () => {
 
   it("reports a checksum failure independently from word count and dictionary membership", () => {
     const { mnemonic } = invalidChecksumPuzzle;
-    expect(inspectBIP39Mnemonic(mnemonic)).toEqual({
+    expect(inspect(mnemonic)).toEqual({
       valid: false,
       words: 24,
       wordCountValid: true,
       wordlistValid: true,
       checksumValid: false,
     });
-    expect(inspectBIP39Mnemonic(bip39TestVectors.mnemonic)).toEqual({
+    expect(inspect(bip39TestVectors.mnemonic)).toEqual({
       valid: true,
       words: 12,
       wordCountValid: true,
       wordlistValid: true,
       checksumValid: true,
     });
-    expect(inspectBIP39Mnemonic(mnemonic.replace("path", "notaword"))).toMatchObject({
+    expect(inspect(mnemonic.replace("path", "notaword"))).toMatchObject({
       valid: false,
       wordCountValid: true,
       wordlistValid: false,
       checksumValid: null,
     });
-    expect(inspectBIP39Mnemonic("abandon")).toMatchObject({
+    expect(inspect("abandon")).toMatchObject({
       valid: false,
       wordCountValid: false,
       wordlistValid: true,
       checksumValid: null,
     });
-    expect(inspectBIP39Mnemonic("")).toMatchObject({
+    expect(inspect("")).toMatchObject({
       valid: false,
       words: 0,
       wordCountValid: false,
       wordlistValid: false,
       checksumValid: null,
     });
-    expect(inspectBIP39Mnemonic(bip39TestVectors.mnemonic.replaceAll("a", "\uFF41"))).toMatchObject(
-      { valid: true },
-    );
+    expect(inspect(bip39TestVectors.mnemonic.replaceAll("a", "\uFF41"))).toMatchObject({
+      valid: true,
+    });
     expect(getMnemonicWordCandidates(mnemonic.replace(/shine$/u, "?"))).not.toContain("shine");
     expect(validateMnemonic(mnemonic)).toBe(false);
     expect(() => mnemonicToEntropy(mnemonic)).toThrow("Invalid checksum");
@@ -204,8 +204,8 @@ describe("BIP39 Utils", () => {
   it.each(localizedMnemonicVectors)(
     "inspects $language with the explicitly selected word list",
     async ({ language, mnemonic }) => {
-      const wordlist = await loadBIP39Wordlist(language);
-      expect(inspectBIP39Mnemonic(mnemonic.normalize("NFC"), wordlist)).toEqual({
+      const wordlist = await loadWordlist(language);
+      expect(inspect(mnemonic.normalize("NFC"), wordlist)).toEqual({
         valid: true,
         words: 12,
         wordCountValid: true,
@@ -216,15 +216,15 @@ describe("BIP39 Utils", () => {
   );
 
   it("distinguishes a localized checksum failure from the wrong dictionary", async () => {
-    const wordlist = await loadBIP39Wordlist("spanish");
+    const wordlist = await loadWordlist("spanish");
     const mnemonic = Array.from({ length: 12 }, () => "ábaco").join(" ");
-    expect(inspectBIP39Mnemonic(mnemonic, wordlist)).toMatchObject({
+    expect(inspect(mnemonic, wordlist)).toMatchObject({
       valid: false,
       wordCountValid: true,
       wordlistValid: true,
       checksumValid: false,
     });
-    expect(inspectBIP39Mnemonic(mnemonic)).toMatchObject({
+    expect(inspect(mnemonic)).toMatchObject({
       valid: false,
       wordCountValid: true,
       wordlistValid: false,

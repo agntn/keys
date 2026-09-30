@@ -37,11 +37,11 @@ import {
 } from "./tool-parameters.ts";
 import {
   bip39,
-  loadBIP39Wordlist,
+  loadWordlist as loadBIP39Wordlist,
   getMnemonicWordCandidates,
-  inspectBIP39Mnemonic,
-  lookupBIP39Indices,
-  lookupBIP39Words,
+  inspect as inspectBIP39Mnemonic,
+  lookupIndices as lookupBIP39Indices,
+  lookupWords as lookupBIP39Words,
 } from "./utils/bip39/index.ts";
 import { BIP39_LANGUAGES, isBIP39Language, type BIP39Language } from "./utils/bip39/languages.ts";
 

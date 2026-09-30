@@ -87,7 +87,7 @@ describe("keys Pi extension", () => {
     );
   });
   it("derives disposable BIP39 seeds without echoing the input", async () => {
-    const tool = registerTools().get("keys_derive_bip39_seed");
+    const tool = registerTools().get("keys_bip39_seed_derive");
     if (!tool) throw new Error("Missing BIP39 seed tool");
     const { mnemonic, passphrase, seed, seedWithPassphrase } = bip39TestVectors;
     for (const [args, expected] of [
@@ -108,7 +108,7 @@ describe("keys Pi extension", () => {
   });
 
   it("shares the JSON Schema character limit with the seed executor", async () => {
-    const tool = registerTools().get("keys_derive_bip39_seed");
+    const tool = registerTools().get("keys_bip39_seed_derive");
     if (!tool) throw new Error("Missing BIP39 seed tool");
     for (const character of ["x", "😀"]) {
       const args = { mnemonic: bip39TestVectors.mnemonic, passphrase: character.repeat(4096) };
@@ -124,7 +124,7 @@ describe("keys Pi extension", () => {
   it.each(localizedMnemonicVectors)(
     "derives seeds for the $language list",
     async ({ language, mnemonic }) => {
-      const tool = registerTools().get("keys_derive_bip39_seed");
+      const tool = registerTools().get("keys_bip39_seed_derive");
       if (!tool) throw new Error("Missing BIP39 seed tool");
       const result = await tool.execute("seed", { language, mnemonic: mnemonic.normalize("NFC") });
       expect(result).toMatchObject({
@@ -134,7 +134,7 @@ describe("keys Pi extension", () => {
   );
 
   it("rejects malformed seed inputs even when the host skips schemas", async () => {
-    const tool = registerTools().get("keys_derive_bip39_seed");
+    const tool = registerTools().get("keys_bip39_seed_derive");
     if (!tool) throw new Error("Missing BIP39 seed tool");
     for (const args of [
       { mnemonic: null },
@@ -189,8 +189,8 @@ describe("keys Pi extension", () => {
     "encodes and inspects $language mnemonics through Pi",
     async ({ language, entropy, mnemonic }) => {
       const tools = registerTools();
-      const encode = tools.get("keys_encode_bip39_entropy");
-      const inspect = tools.get("keys_inspect_mnemonic");
+      const encode = tools.get("keys_bip39_entropy_encode");
+      const inspect = tools.get("keys_bip39_inspect");
       if (!encode || !inspect) throw new Error("Missing mnemonic tools");
       const encoded = await encode.execute("encode", { entropy, language });
       expect(encoded).toMatchObject({ details: { language, words: 12, mnemonic } });
@@ -226,8 +226,8 @@ describe("keys Pi extension", () => {
     "generates a $language mnemonic through Pi",
     async ({ language }) => {
       const tools = registerTools();
-      const generate = tools.get("keys_generate_mnemonic");
-      const inspect = tools.get("keys_inspect_mnemonic");
+      const generate = tools.get("keys_bip39_generate");
+      const inspect = tools.get("keys_bip39_inspect");
       if (!generate || !inspect) throw new Error("Missing mnemonic tools");
       expect(Value.Check(generate.parameters, { words: 24, language })).toBe(true);
       const generated = await generate.execute("generate", { words: 24, language });
@@ -246,9 +246,9 @@ describe("keys Pi extension", () => {
   it("rejects unsupported languages even when Pi skips schemas", async () => {
     const tools = registerTools();
     for (const [name, args] of [
-      ["keys_generate_mnemonic", {}],
-      ["keys_inspect_mnemonic", { mnemonic: localizedMnemonicVectors[8].mnemonic }],
-      ["keys_encode_bip39_entropy", { entropy: "00".repeat(16) }],
+      ["keys_bip39_generate", {}],
+      ["keys_bip39_inspect", { mnemonic: localizedMnemonicVectors[8].mnemonic }],
+      ["keys_bip39_entropy_encode", { entropy: "00".repeat(16) }],
     ] as const) {
       const tool = tools.get(name);
       if (!tool) throw new Error(`Missing ${name}`);
@@ -262,7 +262,7 @@ describe("keys Pi extension", () => {
   });
 
   it("does not guess a language or repair invalid localized phrases", async () => {
-    const tool = registerTools().get("keys_inspect_mnemonic");
+    const tool = registerTools().get("keys_bip39_inspect");
     if (!tool) throw new Error("Missing inspection tool");
     const { mnemonic } = localizedMnemonicVectors[8];
     for (const args of [
@@ -282,8 +282,8 @@ describe("keys Pi extension", () => {
   it.each([12, 15, 18, 21, 24])(
     "generates a disposable %i-word mnemonic through Pi",
     async (words) => {
-      const tool = registerTools().get("keys_generate_mnemonic");
-      if (!tool) throw new Error("keys_generate_mnemonic was not registered");
+      const tool = registerTools().get("keys_bip39_generate");
+      if (!tool) throw new Error("keys_bip39_generate was not registered");
       expect(Value.Check(tool.parameters, { words })).toBe(true);
       const result = await tool.execute("generate", { words });
       const mnemonic = result.content[0]?.text?.match(/Mnemonic: ([a-z ]+)/)?.[1];
@@ -297,8 +297,8 @@ describe("keys Pi extension", () => {
   );
 
   it("rejects invalid mnemonic lengths even when Pi skips schemas", async () => {
-    const tool = registerTools().get("keys_generate_mnemonic");
-    if (!tool) throw new Error("keys_generate_mnemonic was not registered");
+    const tool = registerTools().get("keys_bip39_generate");
+    if (!tool) throw new Error("keys_bip39_generate was not registered");
     for (const words of [0, 11, 13, 25, 12.5, "12", null, true, NaN, Infinity]) {
       expect(Value.Check(tool.parameters, { words })).toBe(false);
       await expect(tool.execute("invalid", { words })).rejects.toThrow(
@@ -622,8 +622,8 @@ describe("keys Pi extension", () => {
   });
 
   it("maps BIP39 indices to words with an explicit base", async () => {
-    const tool = registerTools().get("keys_lookup_bip39_indices");
-    if (!tool) throw new Error("keys_lookup_bip39_indices was not registered");
+    const tool = registerTools().get("keys_bip39_indices_lookup");
+    if (!tool) throw new Error("keys_bip39_indices_lookup was not registered");
 
     const zeroBasedResult = await tool.execute("call-1", {
       indices: [0, 1619, 2047],
@@ -656,8 +656,8 @@ describe("keys Pi extension", () => {
   });
 
   it("looks up English BIP39 word membership and both index conventions", async () => {
-    const tool = registerTools().get("keys_lookup_bip39_words");
-    if (!tool) throw new Error("keys_lookup_bip39_words was not registered");
+    const tool = registerTools().get("keys_bip39_words_lookup");
+    if (!tool) throw new Error("keys_bip39_words_lookup was not registered");
 
     const result = await tool.execute("call-1", {
       words: ["abandon", "Skill", "zoo", "eleven", "abandon"],
@@ -695,8 +695,8 @@ describe("keys Pi extension", () => {
   });
 
   it("looks up words from an explicit BIP39 language", async () => {
-    const tool = registerTools().get("keys_lookup_bip39_words");
-    if (!tool) throw new Error("keys_lookup_bip39_words was not registered");
+    const tool = registerTools().get("keys_bip39_words_lookup");
+    if (!tool) throw new Error("keys_bip39_words_lookup was not registered");
 
     const result = await tool.execute("call-1", {
       words: ["orologio", "civetta"],
@@ -725,8 +725,8 @@ describe("keys Pi extension", () => {
   });
 
   it("lists words compatible with the checksum for one missing mnemonic position", async () => {
-    const tool = registerTools().get("keys_recover_mnemonic_word");
-    if (!tool) throw new Error("keys_recover_mnemonic_word was not registered");
+    const tool = registerTools().get("keys_bip39_word_recover");
+    if (!tool) throw new Error("keys_bip39_word_recover was not registered");
 
     const template =
       "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon ?";
@@ -742,8 +742,8 @@ describe("keys Pi extension", () => {
   });
 
   it("inspects a public BIP39 mnemonic without echoing its words", async () => {
-    const tool = registerTools().get("keys_inspect_mnemonic");
-    if (!tool) throw new Error("keys_inspect_mnemonic was not registered");
+    const tool = registerTools().get("keys_bip39_inspect");
+    if (!tool) throw new Error("keys_bip39_inspect was not registered");
 
     const mnemonic =
       "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
@@ -783,8 +783,8 @@ describe("keys Pi extension", () => {
   });
 
   it("encodes public entropy as an English BIP39 mnemonic", async () => {
-    const tool = registerTools().get("keys_encode_bip39_entropy");
-    if (!tool) throw new Error("keys_encode_bip39_entropy was not registered");
+    const tool = registerTools().get("keys_bip39_entropy_encode");
+    if (!tool) throw new Error("keys_bip39_entropy_encode was not registered");
 
     const entropy = "00000000000000000000000000000000";
     const result = await tool.execute("call-1", { entropy });
