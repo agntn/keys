@@ -1,7 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import type { Tool } from "@modelcontextprotocol/sdk/types.js";
+import { Client, InMemoryTransport, type Tool } from "@modelcontextprotocol/client";
 import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
@@ -10,7 +8,7 @@ import { createMcpServer } from "../src/mcp.ts";
 import { ed25519TestVectors, ethereumTestVectors, secp256k1TestVectors } from "./fixtures.ts";
 
 const piSchemas = new Map<string, TSchema>();
-keysExtension({
+await keysExtension({
   registerTool(tool: { readonly name: string; readonly parameters: TSchema }) {
     piSchemas.set(tool.name, tool.parameters);
   },

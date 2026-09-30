@@ -1,4 +1,4 @@
-import { Type } from "typebox";
+import { Type } from "@agntn/tools";
 import {
   TOOL_CHAINS,
   TOOL_ADDRESS_TYPES,

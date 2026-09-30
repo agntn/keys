@@ -59,12 +59,12 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 
 `pi install npm:@agntn/keys` for Pi, `omp install @agntn/keys` for OMP. Read the security note below first, it isn't boilerplate.
 
-Installed from npm, the extension loads the shared executors from `dist/tool-operations.mjs`; in a checkout it uses `src/tool-operations.ts`. MCP and Pi therefore run the same boundary checks and produce the same answers.
+Installed from npm, the extension loads the tool definitions from `dist/tools.mjs`; in a checkout it uses `src/tools.ts`. MCP, Pi and OMP serve the same definitions through `@agntn/tools`, so they run the same checks and give the same answers.
 
 ## Requirements in a checkout
 
 - A built library (`pnpm build`) for production resolution of the `@agntn/keys` import.
-- Dev deps `@earendil-works/pi-coding-agent`, `@earendil-works/pi-tui`, `typebox`.
+- Dev deps `@earendil-works/pi-coding-agent`, `@earendil-works/pi-tui`.
 
 Both WIF tools require a chain and default to mainnet. Encoding defaults to compressed keys; decoding preserves the encoded flag. Bitcoin, Litecoin and Dash testnet WIFs overlap, so decoding checks the requested context rather than identifying ownership. Decred supports compressed ECDSA keys only.
 

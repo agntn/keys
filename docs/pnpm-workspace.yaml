@@ -12,3 +12,4 @@ allowBuilds:
 
 minimumReleaseAgeExclude:
   - "@agntn/hashes"
+  - "@agntn/tools"

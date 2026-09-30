@@ -138,11 +138,11 @@ describe("keys usage paths", () => {
     expect(run.packages).not.toContain("@scure/bip39");
   });
 
-  it("keys mcp loads the server stack once it runs", async () => {
+  it("keys mcp loads the server stack once it runs and the executors on the first call", async () => {
     const { code, packages } = await runBin(["mcp"]);
     expect(code).toBe(0);
-    expect(packages).toContain("@modelcontextprotocol/sdk");
-    expect(packages).toContain("@noble/curves");
+    expect(packages).toContain("@modelcontextprotocol/server");
+    expect(packages).not.toContain("@noble/curves");
   });
 
   it("keys mcp runs the live source from a checkout and the bundle under KEYS_DIST=1", async () => {
@@ -174,7 +174,7 @@ describe("keys usage paths", () => {
     }
   });
 
-  it("keys mcp keeps the bundle in a checkout without dev dependencies", async () => {
+  it("keys mcp runs the live source in a checkout with production dependencies only", async () => {
     const copy = mkdtempSync(join(tmpdir(), "keys-prod-"));
     try {
       for (const entry of ["dist", "src", "package.json"]) {
@@ -185,7 +185,6 @@ describe("keys usage paths", () => {
         typeof manifest === "object" && manifest !== null && "dependencies" in manifest
           ? Object.keys(manifest.dependencies ?? {})
           : [];
-      expect(dependencies).not.toContain("typebox");
       for (const name of dependencies) {
         mkdirSync(join(copy, "node_modules", name, ".."), { recursive: true });
         symlinkSync(resolve(root, "node_modules", name), join(copy, "node_modules", name));
@@ -194,7 +193,7 @@ describe("keys usage paths", () => {
       const copiedSource = pathToFileURL(join(copy, "src")).href;
 
       expect(run.code).toBe(0);
-      expect(run.modules.filter((url) => url.startsWith(copiedSource))).toEqual([]);
+      expect(run.modules).toContain(`${copiedSource}/mcp.ts`);
     } finally {
       rmSync(copy, { recursive: true, force: true });
     }

@@ -11,13 +11,12 @@ export default defineBuildConfig({
     {
       /** One bundle, so the chains share the curve and encoding chunks under `_chunks/`. */
       type: "bundle",
-      /** The inlined typebox ships minified, which halves its chunk. */
-      minifyLibs: ["typebox"],
       input: [
         "./src/index.ts",
         "./src/cli.ts",
         "./src/mcp.ts",
         "./src/tool-operations.ts",
+        "./src/tools.ts",
         "./src/utils/bip32/index.ts",
         "./src/utils/bip38/index.ts",
         "./src/utils/bip39/index.ts",
