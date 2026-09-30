@@ -126,6 +126,20 @@ describe("BIP44 Path Parsing", () => {
     });
   });
 
+  test.each(["m/44h/501h/3h/1/7", "m/44'/501h/3'/1/7"])(
+    "should read h as the hardened marker in %s, as BIP380 descriptors write it",
+    (path) => {
+      expect(parseBIP44Path(path)).toEqual(parseBIP44Path("m/44'/501'/3'/1/7"));
+    },
+  );
+
+  test.each(["m/44H/60H/0H/0/0", "m/44h/60h/0h/0h/0", "m/44hh/60h/0h/0/0", "m/44'h/60h/0h/0/0"])(
+    "should return undefined for the hardened markers of %s",
+    (path) => {
+      expect(parseBIP44Path(path)).toBeUndefined();
+    },
+  );
+
   test("should return null for invalid BIP44 path with wrong purpose", () => {
     const result = parseBIP44Path("m/43'/60'/0'/0/0");
     expect(result).toBeUndefined();

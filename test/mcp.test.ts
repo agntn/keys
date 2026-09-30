@@ -347,6 +347,37 @@ describe("keys MCP server", () => {
     expect(text(response.content)).not.toContain(mnemonic);
   });
 
+  it("takes the h hardened marker of BIP380 descriptors in every path argument", async () => {
+    const client = await connectTestClient();
+    const call = async (name: string, args: Readonly<Record<string, string>>) =>
+      client.callTool({ name, arguments: args });
+    const [electrum] = electrumVectors;
+
+    const wallet = await call("keys_derive_hd_wallet", {
+      chain: "bitcoin",
+      mnemonic: bip39TestVectors.mnemonic,
+      path: "m/84h/0h/0h/0/0",
+    });
+    expect(text(wallet.content)).toContain(
+      "Address type: segwit\nPublic key: 0330d54fd0dd420a6e5f8d3624f5f3482cae350f79d5f0753bf5beef9c2d91af3c",
+    );
+    const electrumWallet = await call("keys_derive_electrum_wallet", {
+      mnemonic: electrum.mnemonic,
+      path: electrum.path.replaceAll("'", "h"),
+    });
+    expect(text(electrumWallet.content)).toContain(electrum.address);
+    const parsed = await call("keys_bip44_path", { path: "m/44h/60h/0h/0/0" });
+    expect(text(parsed.content)).toContain("Coin type: 60\nAccount: 0\nChange: 0");
+
+    const rejected = await call("keys_derive_hd_wallet", {
+      chain: "bitcoin",
+      mnemonic: bip39TestVectors.mnemonic,
+      path: "m/84H/0H/0H/0/0",
+    });
+    expect(rejected.isError).toBe(true);
+    expect(text(rejected.content)).toContain("Invalid arguments at /path");
+  });
+
   it("says which address type keys_get_address wrote", async () => {
     const client = await connectTestClient();
     const publicKey = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";

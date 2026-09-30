@@ -44,6 +44,8 @@ describe("SLIP-0010 Utils", () => {
       "008c8a13df77a28f3445213a0f432fde644acaa215fc72dcdf300d5efaa85d350c",
     );
 
+    expect(deriveHDKey(masterKey, "m/0h").privateKey).toEqual(child1.privateKey);
+
     // Test vector from SLIP-0010
     const child2 = deriveHDKey(masterKey, "m/0'/1'");
     expect(Buffer.from(child2.privateKey).toString("hex")).toBe(

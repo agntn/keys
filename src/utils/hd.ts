@@ -5,6 +5,7 @@ import {
   wordlist as englishWordlist,
   type BIP39MnemonicInspection,
 } from "./bip39/index.ts";
+import { normalizeHardenedMarkers } from "./hd-index.ts";
 import { getMasterKeyFromSeed as getSLIP10MasterKey } from "./slip10/index.ts";
 import type { Curve } from "../types.ts";
 
@@ -70,7 +71,7 @@ function describeRejectedMnemonic(mnemonic: string, inspection: BIP39MnemonicIns
 /**
  * Walks an English BIP39 mnemonic down a path: BIP32 for secp256k1, SLIP-10 for ed25519.
  * @param mnemonic - English BIP39 words, never repaired to satisfy a checksum
- * @param path - Derivation path such as `m/84'/0'/0'/0/0`
+ * @param path - Derivation path such as `m/84'/0'/0'/0/0`, or `m/84h/0h/0h/0/0` as descriptors write it
  * @param curve - Curve of the key the chain expects
  * @param passphrase - BIP39 passphrase, empty by default
  * @param allowInvalidChecksum - Accept only checksum failures when explicitly true
@@ -93,10 +94,11 @@ export function deriveMnemonicKey(
   }
 
   const seed = mnemonicToSeed(normalizedMnemonic, passphrase);
+  const hdPath = normalizeHardenedMarkers(path);
   const privateKey =
     curve === "ed25519"
-      ? getSLIP10MasterKey(seed).derive(path).privateKey
-      : getBIP32MasterKey(seed).derive(path).privateKey;
+      ? getSLIP10MasterKey(seed).derive(hdPath).privateKey
+      : getBIP32MasterKey(seed).derive(hdPath).privateKey;
   if (!privateKey) {
     throw new Error(`No private key at ${path}`);
   }

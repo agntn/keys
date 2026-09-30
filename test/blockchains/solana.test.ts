@@ -115,6 +115,13 @@ describe("Solana Blockchain", () => {
       );
     });
 
+    it("reads the h hardened marker of BIP380 descriptors over SLIP-10", () => {
+      expect(
+        blockchain.deriveHDWallet(bip39TestVectors.mnemonic, vector.path.replaceAll("'", "h"))
+          .address,
+      ).toBe(vector.address);
+    });
+
     it("hardens the account and the change branch and has no address index", () => {
       expect(blockchain.getDerivationPath(3, 1)).toBe("m/44'/501'/3'/1'");
       expect(() => blockchain.getDerivationPath(0, 2)).toThrow(RangeError);

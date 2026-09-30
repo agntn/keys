@@ -154,7 +154,7 @@ export function getHardenedPath(coinType: number, levels: readonly number[]): st
 /**
  * Parse a BIP44 path string into its components
  *
- * @param path - BIP44 path string (e.g., "m/44'/0'/0'/0/0")
+ * @param path - BIP44 path string (e.g., "m/44'/0'/0'/0/0" or "m/44h/0h/0h/0/0")
  * @returns {{ purpose: number; coinType: number; account: number; change: number; addressIndex: number } | undefined} Object with parsed components or undefined if invalid BIP44 path
  */
 export function parseBIP44Path(path: string):
@@ -249,11 +249,11 @@ function isValidBIP44Components(
 /**
  * Parse a path segment, hardened or not, rejecting what `parseInt` reads loosely.
  *
- * @param segment - Path segment string (e.g., "44'" or "0")
+ * @param segment - Path segment string (e.g., "44'", "44h" or "0")
  * @returns {number | undefined} Parsed number value, or undefined when the segment is not a level index
  */
 function parseSegment(segment: string): number | undefined {
-  const hardened = segment.endsWith("'");
+  const hardened = segment.endsWith("'") || segment.endsWith("h");
   const digits = hardened ? segment.slice(0, -1) : segment;
 
   if (!/^\d+$/.test(digits)) {

@@ -23,6 +23,15 @@ export function isHardenedIndex(index: number): boolean {
 }
 
 /**
+ * Rewrites the `h` hardened marker of BIP380 descriptors as the `'` the BIP32 libraries read.
+ * @param path - Derivation path such as `m/84h/0h/0h/0/0`
+ * @returns {string} The path with `'` on every hardened level
+ */
+export function normalizeHardenedMarkers(path: string): string {
+  return path.replaceAll(/(?<=\d)h(?=\/|$)/gu, "'");
+}
+
+/**
  * Formats an index to a string representation, appending ' to hardened indices
  * @param index - Index to format
  * @returns {string} Formatted string representation
