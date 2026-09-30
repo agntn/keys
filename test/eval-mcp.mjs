@@ -13,6 +13,8 @@ import {
   bip39TestVectors,
   slip132Vectors,
   bip38Vectors,
+  brainwalletInput,
+  brainwalletVectors,
 } from "./fixtures.ts";
 import { TOOL_NAMES } from "../src/tool-parameters.ts";
 
@@ -86,6 +88,19 @@ try {
     "keys_secp256k1_public_key_convert",
     { publicKey: publicKeyEncodingVector.compressed, compressed: false },
     new RegExp(publicKeyEncodingVector.uncompressed),
+  );
+
+  await call(
+    "keys_brainwallet_derive",
+    {
+      passphrase: brainwalletInput.passphrase,
+      salt: brainwalletInput.salt,
+      saltEncoding: "utf8",
+      compressed: brainwalletVectors[0].compressed,
+      ...brainwalletVectors[0].recipe,
+      target: brainwalletVectors[0].address,
+    },
+    new RegExp(`Address: ${brainwalletVectors[0].address}\nTarget: match`),
   );
 
   await call(

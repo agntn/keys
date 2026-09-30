@@ -13,6 +13,7 @@ import {
   deriveHdWallet,
   deriveBip39Seed,
   deriveElectrumWallet,
+  deriveBrainwallet,
   deriveXpubWallet,
   deriveWallet,
   encodeBip39Entropy,
@@ -43,6 +44,7 @@ import {
   GENERATE_MNEMONIC_PARAMETERS,
   DERIVE_BIP39_SEED_PARAMETERS,
   DERIVE_ELECTRUM_WALLET_PARAMETERS,
+  DERIVE_BRAINWALLET_PARAMETERS,
   GENERATE_WALLET_PARAMETERS,
   DERIVE_WALLET_PARAMETERS,
   DERIVE_HD_WALLET_PARAMETERS,
@@ -108,6 +110,15 @@ const tools: readonly ToolDefinition[] = [
     annotations: LOCAL_READ,
     execute: (args) =>
       deriveElectrumWallet(args["mnemonic"], args["path"], args["passphrase"], args["network"]),
+  },
+  {
+    name: "keys_brainwallet_derive",
+    title: "Derive Brainwallet",
+    description:
+      "Derive the Bitcoin public key and P2PKH address of a salted brainwallet from its full recipe: scrypt or PBKDF2 over the passphrase and salt, then SHA-256 of the output bytes or of their hex text. Given a target address, reports whether it matches. The private key is never returned; the passphrase enters the transcript, so use only public or disposable material.",
+    inputSchema: DERIVE_BRAINWALLET_PARAMETERS,
+    annotations: LOCAL_READ,
+    execute: (args) => deriveBrainwallet(args),
   },
   {
     name: "keys_bip39_seed_derive",

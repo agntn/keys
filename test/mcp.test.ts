@@ -25,6 +25,8 @@ import {
   secp256k1TestVectors,
   slip132Vectors,
   bip38Vectors,
+  brainwalletInput,
+  brainwalletVectors,
 } from "./fixtures.ts";
 import { callTool, createMcpServer, toolListings } from "../src/mcp.ts";
 import { TOOL_NAMES } from "../src/tool-parameters.ts";
@@ -299,6 +301,81 @@ describe("keys MCP server", () => {
       const failed = await client.callTool({ name: "keys_bip38_inspect", arguments: args });
       expect(failed.isError).toBe(true);
       expect(text(failed.content)).toContain(message);
+    }
+  });
+
+  it.each(brainwalletVectors)(
+    "derives the $recipe.kdf brainwallet at $address through MCP without its private key",
+    async ({ recipe, compressed, publicKey, address, privateKey }) => {
+      const client = await connectTestClient();
+      const { passphrase, salt } = brainwalletInput;
+      const response = await client.callTool({
+        name: "keys_brainwallet_derive",
+        arguments: {
+          passphrase,
+          salt,
+          saltEncoding: "utf8",
+          compressed,
+          ...recipe,
+          target: address,
+        },
+      });
+      expect(response.isError).not.toBe(true);
+      expect(text(response.content).split("\n")).toEqual([
+        "Chain: bitcoin (mainnet)",
+        `Address type: legacy, ${compressed ? "compressed" : "uncompressed"}`,
+        `Public key: ${publicKey}`,
+        `Address: ${address}`,
+        "Target: match",
+      ]);
+      expect(text(response.content)).not.toContain(privateKey);
+      expect(text(response.content)).not.toContain(passphrase);
+    },
+  );
+
+  it("reads a hex salt, a testnet and a target that differs through MCP", async () => {
+    const client = await connectTestClient();
+    const [vector, other] = brainwalletVectors;
+    const { passphrase, saltHex } = brainwalletInput;
+    const response = await client.callTool({
+      name: "keys_brainwallet_derive",
+      arguments: {
+        passphrase,
+        salt: saltHex,
+        saltEncoding: "hex",
+        compressed: vector.compressed,
+        ...vector.recipe,
+        network: "testnet",
+        target: other.testnetAddress,
+      },
+    });
+    expect(text(response.content)).toContain(`Address: ${vector.testnetAddress}`);
+    expect(text(response.content)).toContain("Target: no match");
+  });
+
+  it("refuses a brainwallet recipe it cannot run exactly, echoing no secret", async () => {
+    const client = await connectTestClient();
+    const { passphrase, salt } = brainwalletInput;
+    const base = { passphrase, salt, saltEncoding: "utf8", hashed: "hex", compressed: false };
+    const scrypt = { kdf: "scrypt", N: 1024, r: 8, p: 1 };
+    for (const [args, message] of [
+      [{ ...base, ...scrypt, iterations: 1000 }, "scrypt does not take iterations"],
+      [
+        { ...base, kdf: "pbkdf2", iterations: 1000, digest: "sha256", N: 1024 },
+        "pbkdf2 does not take N",
+      ],
+      [{ ...base, ...scrypt, N: 1000 }, "N must be a power of 2"],
+      [{ ...base, ...scrypt, N: 2 ** 19, r: 8 }, "N * r must not exceed 2097152"],
+      [{ ...base, kdf: "scrypt", N: 1024, r: 8 }, "p must be an integer"],
+      [{ ...base, kdf: "pbkdf2", iterations: 1000 }, "digest must be one of sha256, sha512"],
+      [{ ...base, ...scrypt, salt: "abc", saltEncoding: "hex" }, "Salt must be hex digit pairs"],
+      [{ ...base, ...scrypt, N: 2 ** 21 }, "Invalid arguments at /N"],
+      [{ ...base, ...scrypt, compressed: undefined }, "Invalid arguments"],
+    ] as const) {
+      const failed = await client.callTool({ name: "keys_brainwallet_derive", arguments: args });
+      expect(failed.isError, message).toBe(true);
+      expect(text(failed.content)).toContain(message);
+      expect(text(failed.content)).not.toContain(passphrase);
     }
   });
 

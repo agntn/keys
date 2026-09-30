@@ -166,6 +166,8 @@ Without the flag `deriveHDWallet` throws. With it you get the wallet and a warni
 
 `inspect` splits the verdict three ways, count, dictionary and checksum, so you see which one failed. The candidate filter and `deriveHDWallet` are English only. The other nine word lists are there for lookups and generation: `lookupWords(["orologio", "civetta"], "italian")` finds them, orologio at 1178 and civetta at 361 counting from zero, and `loadWordlist("japanese")` fed to the `bip39` codec gives you mnemonics with the ideographic spaces the spec asks for. The flag in the docs: [Wallets](https://keys.agntn.dev/guide/wallets).
 
+Brainwallets are a puzzle favorite too, and the salted kind hides a trap. brainwallet.io runs scrypt, then SHA-256 over the hex of the result, not its bytes. Miss that and you get a valid key to the wrong address. `derive` from `@agntn/keys/brainwallet` takes the whole recipe: KDF, costs, salt and what SHA-256 reads. Agents get `keys_brainwallet_derive`. It answers with the public key, the address and a match against your target. Never the private key. Recipes: [Wallets](https://keys.agntn.dev/guide/wallets).
+
 ## ⛓️ Chains
 
 | Chain            | Curve              | Address Formats                      | Testnet |

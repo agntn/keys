@@ -17,6 +17,9 @@ import {
   MAX_BIP39_SEED_INPUT_LENGTH,
   MAX_BIP38_ADDRESS_LENGTH,
   MAX_ADDRESS_LENGTH,
+  MAX_BRAINWALLET_INPUT_LENGTH,
+  MAX_BRAINWALLET_SCRYPT_BLOCKS,
+  BRAINWALLET_COST_LIMITS,
 } from "./tool-parameters.ts";
 import { BIP39_LANGUAGES } from "./utils/bip39/languages.ts";
 
@@ -167,6 +170,88 @@ export const DERIVE_ELECTRUM_WALLET_PARAMETERS = Type.Object(
     ),
     network: Type.Optional(
       Type.String({ enum: TOOL_NETWORKS, description: "Bitcoin network. Default: mainnet" }),
+    ),
+  },
+  { additionalProperties: false },
+);
+
+/** Shared MCP and Pi parameters for a salted brainwallet with an explicit recipe. */
+export const DERIVE_BRAINWALLET_PARAMETERS = Type.Object(
+  {
+    passphrase: Type.String({
+      maxLength: MAX_BRAINWALLET_INPUT_LENGTH,
+      description: "Public or disposable passphrase, hashed as UTF-8, never trimmed or normalized",
+    }),
+    salt: Type.String({
+      maxLength: MAX_BRAINWALLET_INPUT_LENGTH,
+      description: "Salt, read as saltEncoding says. Empty for none",
+    }),
+    saltEncoding: Type.String({
+      enum: ["utf8", "hex"],
+      description: "utf8 hashes the salt text, hex decodes it to bytes first",
+    }),
+    kdf: Type.String({
+      enum: ["scrypt", "pbkdf2"],
+      description: "scrypt takes N, r and p; pbkdf2 takes iterations and digest",
+    }),
+    N: Type.Optional(
+      Type.Integer({
+        minimum: 2,
+        maximum: BRAINWALLET_COST_LIMITS.N,
+        description: `scrypt only, required there: CPU and memory cost, a power of 2. N * r at most ${MAX_BRAINWALLET_SCRYPT_BLOCKS}`,
+      }),
+    ),
+    r: Type.Optional(
+      Type.Integer({
+        minimum: 1,
+        maximum: BRAINWALLET_COST_LIMITS.r,
+        description: "scrypt only, required there: block size",
+      }),
+    ),
+    p: Type.Optional(
+      Type.Integer({
+        minimum: 1,
+        maximum: BRAINWALLET_COST_LIMITS.p,
+        description: "scrypt only, required there: parallelization",
+      }),
+    ),
+    iterations: Type.Optional(
+      Type.Integer({
+        minimum: 1,
+        maximum: BRAINWALLET_COST_LIMITS.iterations,
+        description: "pbkdf2 only, required there: iteration count",
+      }),
+    ),
+    digest: Type.Optional(
+      Type.String({
+        enum: ["sha256", "sha512"],
+        description: "pbkdf2 only, required there: hash under HMAC",
+      }),
+    ),
+    keyLength: Type.Optional(
+      Type.Integer({
+        minimum: 1,
+        maximum: BRAINWALLET_COST_LIMITS.keyLength,
+        description: "KDF output length in bytes. Default: 32",
+      }),
+    ),
+    hashed: Type.String({
+      enum: ["bytes", "hex"],
+      description:
+        "What SHA-256 reads after the KDF to make the key: its raw bytes, or their lowercase hex as text (brainwallet.io)",
+    }),
+    compressed: Type.Boolean({
+      description: "Compressed SEC1 public key for the address. brainwallet.io writes uncompressed",
+    }),
+    network: Type.Optional(
+      Type.String({ enum: TOOL_NETWORKS, description: "Bitcoin network. Default: mainnet" }),
+    ),
+    target: Type.Optional(
+      Type.String({
+        minLength: 1,
+        maxLength: MAX_ADDRESS_LENGTH,
+        description: "Address to compare with the derived one",
+      }),
     ),
   },
   { additionalProperties: false },

@@ -1276,3 +1276,51 @@ export const bip38Vectors = [
     },
   },
 ] as const;
+
+/**
+ * Salted brainwallets of `example passphrase` with `example salt`. Each `privateKey` comes from
+ * Python's `hashlib.scrypt` or `pbkdf2_hmac` and `sha256`; public key and addresses from it.
+ */
+export const brainwalletVectors = [
+  {
+    recipe: { kdf: "scrypt", N: 1024, r: 8, p: 1, hashed: "hex" },
+    compressed: false,
+    privateKey: "89d8021942b4241334ca682fbe2a212ee94920f4ea55c345743e1429d9bbd74a",
+    publicKey:
+      "04230b1e542924b40e8fa88667c93daa19e68288f7e7fede1ce6d9357679bfc942697e337b1ac45889076f6fc172c8e02d6d484e1bbca220dbd43b761600299d57",
+    address: "12j4woaXhDT5YfdmHSaC8hDUG4X8di7JAM",
+    testnetAddress: "mhF2ErfWWEtLKn7P11YZxcRo847qc5XhUb",
+  },
+  {
+    recipe: { kdf: "scrypt", N: 1024, r: 8, p: 1, hashed: "bytes" },
+    compressed: false,
+    privateKey: "c1cc2e47e68caf25a7dcc4e8c9058d979df41d2316019af163a0b0a039ddef1e",
+    publicKey:
+      "044e7663f74542805c5d31768e6239a5a78fbd8af5e6a127c15b0fa61ee400131c6f663dccd4f404305472cfdda7d461a938a775dcdbe51c41e11c75504e1cb156",
+    address: "1J9JW57dqgrH6TGuXRnLp8BKSP3QWLjt72",
+    testnetAddress: "mxfFo8CceiHXsZkXEzkie3PeJNe7QH4TSb",
+  },
+  {
+    recipe: { kdf: "pbkdf2", iterations: 1000, digest: "sha512", hashed: "bytes" },
+    compressed: true,
+    privateKey: "1e1e4bf6918c3f5713adffaee6faea3fb3859a761d4fefeb0a1dae82c6c7193b",
+    publicKey: "03ee2b4bbf4bc8b3820a992c24ca166f7e7df660f7cce0ee9dfaf38c96680b59cc",
+    address: "1CA2Xkf5EGW5yqwxAMnDzSGLJRQRK8r8CV",
+    testnetAddress: "mrfypok43HwLkxRZsvkbpMUfAR18DbVCgq",
+  },
+  {
+    recipe: { kdf: "pbkdf2", iterations: 1000, digest: "sha256", hashed: "hex", keyLength: 64 },
+    compressed: true,
+    privateKey: "d930872d990ef9c789771f480b8aba1edc0cc1f197b6538fb84ab1d8ccb775b9",
+    publicKey: "032920154c36303cc151514c0d5cfbf5b7a3df72267169d9bd236e304221024ab2",
+    address: "143jSNCEzfsBEKriKVcLnRHC5ScioHpqrX",
+    testnetAddress: "miZgjRHDohJS1SLL34aicLVWwSDRhcGQV2",
+  },
+] as const;
+
+/** Passphrase and salt of `brainwalletVectors`, the salt also as the hex the tool takes. */
+export const brainwalletInput = {
+  passphrase: "example passphrase",
+  salt: "example salt",
+  saltHex: "6578616d706c652073616c74",
+} as const;

@@ -12,6 +12,7 @@ import {
   GENERATE_MNEMONIC_PARAMETERS,
   DERIVE_BIP39_SEED_PARAMETERS,
   DERIVE_ELECTRUM_WALLET_PARAMETERS,
+  DERIVE_BRAINWALLET_PARAMETERS,
   GENERATE_WALLET_PARAMETERS,
   DERIVE_WALLET_PARAMETERS,
   DERIVE_HD_WALLET_PARAMETERS,
@@ -70,6 +71,19 @@ export default function keysExtension(pi: ExtensionAPI) {
         params.passphrase,
         params.network,
       );
+    },
+  });
+  pi.registerTool({
+    name: "keys_brainwallet_derive",
+    label: "Derive Brainwallet",
+    description:
+      "Derive the Bitcoin public key and P2PKH address of a salted brainwallet from its full recipe: scrypt or PBKDF2 over the passphrase and salt, then SHA-256 of the output bytes or of their hex text. Given a target address, reports whether it matches. The private key is never returned; the passphrase enters the transcript, so use only public or disposable material.",
+    parameters: DERIVE_BRAINWALLET_PARAMETERS,
+    renderCall() {
+      return new Text("🧠 Derive brainwallet", 0, 0);
+    },
+    async execute(_toolCallId, params) {
+      return (await loadToolOperations()).deriveBrainwallet(params);
     },
   });
   pi.registerTool({

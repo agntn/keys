@@ -16,6 +16,11 @@ import {
   type WIFNetworkOptions,
 } from "./utils/wif/index.ts";
 import { inspect as inspectBIP38, type BIP38Inspection } from "./utils/bip38/index.ts";
+import {
+  derive as deriveBrainwalletKey,
+  type BrainwalletKDF,
+  type BrainwalletOptions,
+} from "./utils/brainwallet/index.ts";
 import { getBlockchainPath, useBlockchain, type AbstractBlockchain } from "./blockchain.ts";
 import { blockchains } from "./_blockchains.ts";
 import { parse as parseBIP44Path } from "./utils/bip44/index.ts";
@@ -29,6 +34,9 @@ import {
   MAX_BIP39_SEED_INPUT_LENGTH,
   MAX_BIP38_ADDRESS_LENGTH,
   MAX_ADDRESS_LENGTH,
+  MAX_BRAINWALLET_INPUT_LENGTH,
+  MAX_BRAINWALLET_SCRYPT_BLOCKS,
+  BRAINWALLET_COST_LIMITS,
   TOOL_WIF_CHAINS,
   PRIVATE_KEY_SCHEMA_PATTERN,
   PUBLIC_KEY_SCHEMA_PATTERN,
@@ -616,6 +624,171 @@ export async function deriveElectrumWallet(
   return {
     content: content(
       `Scheme: ${scheme}\nSeed type: ${seedType}\nChain: bitcoin (${details.network})\nPath: ${path}\nPublic key: ${details.publicKey}\nAddress: ${details.address}`,
+    ),
+    details,
+  };
+}
+
+/** Public Bitcoin wallet of a salted brainwallet, with the target verdict when one was given. */
+export interface DerivedBrainwalletDetails {
+  chain: "bitcoin";
+  network: string;
+  addressType: "legacy";
+  compressed: boolean;
+  publicKey: string;
+  address: string;
+  matches?: boolean;
+}
+
+const EVEN_HEX = /^(?:[0-9a-f]{2})*$/iu;
+
+/**
+ * Picks one value out of a closed set, naming the set when the value is not in it.
+ * @param value - Raw argument
+ * @param name - Argument name for the error
+ * @param allowed - Values the argument takes
+ * @returns {Value} The matched value
+ */
+function oneOf<const Value extends string>(
+  value: unknown,
+  name: string,
+  allowed: readonly Value[],
+): Value {
+  const matched = allowed.find((candidate) => candidate === value);
+  if (matched === undefined) throw new RangeError(`${name} must be one of ${allowed.join(", ")}`);
+  return matched;
+}
+
+/**
+ * Reads one cost parameter against the ceiling the brainwallet tool sets.
+ * @param value - Raw argument
+ * @param name - Parameter name, a key of `BRAINWALLET_COST_LIMITS`
+ * @param minimum - Smallest value the KDF takes
+ * @returns {number} The parameter
+ */
+function costArgument(
+  value: unknown,
+  name: keyof typeof BRAINWALLET_COST_LIMITS,
+  minimum = 1,
+): number {
+  const maximum = BRAINWALLET_COST_LIMITS[name];
+  if (typeof value !== "number" || !Number.isInteger(value) || value < minimum || value > maximum) {
+    throw new RangeError(`${name} must be an integer from ${minimum} to ${maximum}`);
+  }
+  return value;
+}
+
+/**
+ * Tells whether a cost was left out. OMP sends 0 for an unused number, which no KDF takes.
+ * @param value - Raw argument
+ * @returns {boolean} True for a missing, zero or blank value
+ */
+function isUnsetCost(value: unknown): boolean {
+  return value === 0 || isUnset(value);
+}
+
+/**
+ * Reads the KDF and its costs, refusing the other KDF's so no option drops silently.
+ * @param args - Tool arguments
+ * @returns {BrainwalletKDF} The KDF with its parameters
+ */
+function brainwalletKDF(args: Readonly<Record<string, unknown>>): BrainwalletKDF {
+  const kdf = oneOf(args["kdf"], "kdf", ["scrypt", "pbkdf2"]);
+  const foreign = (kdf === "scrypt" ? ["iterations", "digest"] : ["N", "r", "p"]).filter(
+    (name) => !isUnsetCost(args[name]),
+  );
+  if (foreign.length > 0) throw new RangeError(`${kdf} does not take ${foreign.join(", ")}`);
+  if (kdf === "pbkdf2") {
+    const iterations = costArgument(args["iterations"], "iterations");
+    return { kdf, iterations, digest: oneOf(args["digest"], "digest", ["sha256", "sha512"]) };
+  }
+  const N = costArgument(args["N"], "N", 2);
+  if ((N & (N - 1)) !== 0) throw new RangeError("N must be a power of 2");
+  const r = costArgument(args["r"], "r");
+  if (N * r > MAX_BRAINWALLET_SCRYPT_BLOCKS) {
+    throw new RangeError(`N * r must not exceed ${MAX_BRAINWALLET_SCRYPT_BLOCKS}`);
+  }
+  return { kdf, N, r, p: costArgument(args["p"], "p") };
+}
+
+/**
+ * Reads a passphrase or salt under the tool's length limit.
+ * @param value - Raw argument
+ * @param name - Argument name for the error
+ * @returns {string} The text, untouched
+ */
+function brainwalletText(value: unknown, name: string): string {
+  const text = requiredString(value, name);
+  if (Array.from(text).length > MAX_BRAINWALLET_INPUT_LENGTH) {
+    throw new RangeError(`${name} must not exceed ${MAX_BRAINWALLET_INPUT_LENGTH} characters`);
+  }
+  return text;
+}
+
+/**
+ * Reads the passphrase and the full recipe, refusing anything the KDF would not run as given.
+ * @param args - Tool arguments
+ * @returns {{ passphrase: string; options: BrainwalletOptions }} Passphrase and recipe
+ */
+function brainwalletRecipe(args: Readonly<Record<string, unknown>>): {
+  passphrase: string;
+  options: BrainwalletOptions;
+} {
+  const passphrase = brainwalletText(args["passphrase"], "Passphrase");
+  const saltText = brainwalletText(args["salt"], "Salt");
+  const saltEncoding = oneOf(args["saltEncoding"], "saltEncoding", ["utf8", "hex"]);
+  if (saltEncoding === "hex" && !EVEN_HEX.test(saltText)) {
+    throw new TypeError("Salt must be hex digit pairs without 0x when saltEncoding is hex");
+  }
+  const kdf = brainwalletKDF(args);
+  const hashed = oneOf(args["hashed"], "hashed", ["bytes", "hex"]);
+  const salt = saltEncoding === "hex" ? Uint8Array.fromHex(saltText) : saltText;
+  const options = { ...kdf, salt, hashed };
+  if (isUnsetCost(args["keyLength"])) return { passphrase, options };
+  return {
+    passphrase,
+    options: { ...options, keyLength: costArgument(args["keyLength"], "keyLength") },
+  };
+}
+
+/**
+ * Derives the public Bitcoin wallet of a salted brainwallet, never echoing its key or passphrase.
+ * @param args - Tool arguments, as `DERIVE_BRAINWALLET_PARAMETERS` names them
+ * @returns {Promise<ToolResult<DerivedBrainwalletDetails>>} Public key, P2PKH address and verdict
+ */
+export async function deriveBrainwallet(
+  args: Readonly<Record<string, unknown>>,
+): Promise<ToolResult<DerivedBrainwalletDetails>> {
+  const { passphrase, options } = brainwalletRecipe(args);
+  const compressed = args["compressed"];
+  if (typeof compressed !== "boolean") throw new TypeError("compressed must be a boolean");
+  const target = optionalName(args["target"], "Target");
+  if (target !== undefined && Array.from(target).length > MAX_ADDRESS_LENGTH) {
+    throw new RangeError(`Target must not exceed ${MAX_ADDRESS_LENGTH} characters`);
+  }
+  const { blockchain } = await getBlockchain("bitcoin", args["network"]);
+  const privateKey = deriveBrainwalletKey(passphrase, options);
+  const wallet = blockchain.deriveWallet(privateKey.toHex(), { compressed }, "legacy");
+  const details: DerivedBrainwalletDetails = {
+    chain: "bitcoin",
+    network: blockchain.network,
+    addressType: "legacy",
+    compressed,
+    publicKey: wallet.keys.public,
+    address: wallet.address,
+    ...(target === undefined ? {} : { matches: wallet.address === target }),
+  };
+  return {
+    content: content(
+      [
+        `Chain: bitcoin (${details.network})`,
+        `Address type: legacy, ${compressed ? "compressed" : "uncompressed"}`,
+        `Public key: ${details.publicKey}`,
+        `Address: ${details.address}`,
+        ...(details.matches === undefined
+          ? []
+          : [`Target: ${details.matches ? "match" : "no match"}`]),
+      ].join("\n"),
     ),
     details,
   };

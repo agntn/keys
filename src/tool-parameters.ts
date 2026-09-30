@@ -6,6 +6,7 @@ import type { WIFChain } from "./utils/wif/index.ts";
  */
 export const TOOL_NAMES = [
   "keys_electrum_wallet_derive",
+  "keys_brainwallet_derive",
   "keys_bip39_seed_derive",
   "keys_secp256k1_public_key_convert",
   "keys_wif_encode",
@@ -33,6 +34,21 @@ export type ToolName = (typeof TOOL_NAMES)[number];
 
 /** Maximum text length accepted by the BIP39 seed tool. */
 export const MAX_BIP39_SEED_INPUT_LENGTH = 4096;
+
+/** Maximum passphrase and salt length the brainwallet tool takes, in characters. */
+export const MAX_BRAINWALLET_INPUT_LENGTH = 4096;
+
+/** Cost ceilings of the brainwallet tool, the ones `@agntn/hashes` sets on its own tools. */
+export const BRAINWALLET_COST_LIMITS = {
+  N: 2 ** 20,
+  r: 32,
+  p: 16,
+  iterations: 10_000_000,
+  keyLength: 1024,
+} as const;
+
+/** Largest scrypt `N * r` per call, 256 MiB of blocks, enough for brainwallet.io. */
+export const MAX_BRAINWALLET_SCRYPT_BLOCKS = 2 ** 21;
 
 /** Maximum address length the BIP38 tool hashes against a key. */
 export const MAX_BIP38_ADDRESS_LENGTH = 128;

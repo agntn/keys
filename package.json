@@ -62,6 +62,10 @@
       "types": "./dist/utils/bip38/index.d.mts",
       "default": "./dist/utils/bip38/index.mjs"
     },
+    "./brainwallet": {
+      "types": "./dist/utils/brainwallet/index.d.mts",
+      "default": "./dist/utils/brainwallet/index.mjs"
+    },
     "./bip39": {
       "types": "./dist/utils/bip39/index.d.mts",
       "default": "./dist/utils/bip39/index.mjs"
