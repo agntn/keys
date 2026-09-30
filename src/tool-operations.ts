@@ -21,6 +21,7 @@ import {
   TOOL_NETWORKS,
   TOOL_MNEMONIC_WORD_COUNTS,
   MAX_BIP39_SEED_INPUT_LENGTH,
+  MAX_BIP38_ADDRESS_LENGTH,
   TOOL_WIF_CHAINS,
   PRIVATE_KEY_SCHEMA_PATTERN,
   PUBLIC_KEY_SCHEMA_PATTERN,
@@ -1188,6 +1189,9 @@ export function inspectBip38(
   addressValue?: unknown,
 ): ToolResult<BIP38Inspection> {
   const address = optionalName(addressValue, "Address");
+  if (address !== undefined && Array.from(address).length > MAX_BIP38_ADDRESS_LENGTH) {
+    throw new RangeError(`Address must not exceed ${MAX_BIP38_ADDRESS_LENGTH} characters`);
+  }
   const details = inspectBIP38(
     requiredString(encryptedValue, "BIP38 key"),
     address === undefined ? {} : { address },

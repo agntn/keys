@@ -15,6 +15,7 @@ import {
   TOOL_NETWORKS,
   TOOL_MNEMONIC_WORD_COUNTS,
   MAX_BIP39_SEED_INPUT_LENGTH,
+  MAX_BIP38_ADDRESS_LENGTH,
 } from "./tool-parameters.ts";
 import { BIP39_LANGUAGES } from "./utils/bip39/languages.ts";
 
@@ -98,7 +99,7 @@ export const INSPECT_BIP38_PARAMETERS = Type.Object(
     address: Type.Optional(
       Type.String({
         minLength: 1,
-        maxLength: 128,
+        maxLength: MAX_BIP38_ADDRESS_LENGTH,
         description: "Address to compare with the address hash stored in the key",
       }),
     ),

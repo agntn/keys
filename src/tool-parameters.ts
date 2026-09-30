@@ -18,6 +18,9 @@ export const BIP44_PATH_MODE_SCHEMA = {
 /** Maximum text length accepted by the BIP39 seed tool. */
 export const MAX_BIP39_SEED_INPUT_LENGTH = 4096;
 
+/** Maximum address length the BIP38 tool hashes against a key. */
+export const MAX_BIP38_ADDRESS_LENGTH = 128;
+
 /** Supported BIP39 mnemonic lengths for generation tools. */
 export const TOOL_MNEMONIC_WORD_COUNTS: readonly number[] = [12, 15, 18, 21, 24];
 

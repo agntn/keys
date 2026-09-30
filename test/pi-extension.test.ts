@@ -344,6 +344,11 @@ describe("keys Pi extension", () => {
     await expect(tool.execute("bip38", { encrypted: 42 })).rejects.toThrow(
       "BIP38 key must be a string",
     );
+    const longAddress = { encrypted, address: "1".repeat(129) };
+    expect(Value.Check(tool.parameters, longAddress)).toBe(false);
+    await expect(tool.execute("bip38", longAddress)).rejects.toThrow(
+      "Address must not exceed 128 characters",
+    );
   });
 
   it("validates WIF inputs even when Pi skips schema validation", async () => {
