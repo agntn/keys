@@ -518,7 +518,7 @@ describe("Bitcoin blockchain", () => {
       );
     });
 
-    it("keys_get_address passes the rejection on", async () => {
+    it("keys_address_get passes the rejection on", async () => {
       await expect(getAddress("bitcoin", "00".repeat(33), "segwit")).rejects.toThrow();
     });
   });

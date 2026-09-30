@@ -287,7 +287,7 @@ describe("Published extensions", () => {
           },
         } as unknown as ExtensionAPI);
         const vector = slip132Vectors[2];
-        const result = await tools.get("keys_derive_hd_wallet")?.execute("packed", {
+        const result = await tools.get("keys_hd_wallet_derive")?.execute("packed", {
           chain: "bitcoin",
           mnemonic: bip39TestVectors.mnemonic,
           path: `${vector.path}/0/0`,

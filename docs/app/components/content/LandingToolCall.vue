@@ -39,7 +39,7 @@ const address = computed(
       <!-- prettier-ignore -->
       <span class="console-title call-title"
         ><span class="console-tag">Call</span
-        ><span class="call-text">keys_get_address(<span class="tok-str">"{{ current.chain }}"</span>)</span></span
+        ><span class="call-text">keys_address_get(<span class="tok-str">"{{ current.chain }}"</span>)</span></span
       >
       <span class="console-mark" aria-hidden="true" />
     </header>

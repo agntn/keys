@@ -95,7 +95,7 @@ try {
   );
 
   await call(
-    "keys_derive_xpub_wallet",
+    "keys_xpub_wallet_derive",
     { chain: "bitcoin", extendedKey: slip132Vectors[2].extendedKey, path: "m/0/0" },
     new RegExp(
       `Address type: segwit\\nPublic key: [0-9a-f]{66}\\nAddress: ${slip132Vectors[2].address}`,
@@ -131,17 +131,17 @@ try {
     }
   }
 
-  await call("keys_generate_wallet", { chain: "bitcoin" }, /Private key: [0-9a-f]{64}/);
+  await call("keys_wallet_generate", { chain: "bitcoin" }, /Private key: [0-9a-f]{64}/);
   const derived = await call(
-    "keys_derive_wallet",
+    "keys_wallet_derive",
     { chain: "ethereum", privateKey },
     /Address: 0x/,
   );
   const publicKey = /Public key: ([0-9a-f]+)/.exec(derived)?.[1];
-  if (!publicKey) throw new Error("keys_derive_wallet returned no public key");
+  if (!publicKey) throw new Error("keys_wallet_derive returned no public key");
 
   await call(
-    "keys_derive_hd_wallet",
+    "keys_hd_wallet_derive",
     { chain: "bitcoin", mnemonic, path: "m/84'/0'/0'/0/0" },
     /bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu/,
   );
@@ -155,14 +155,14 @@ try {
     path: invalidChecksumPuzzle.path,
   };
   const strictPuzzle = await client.callTool({
-    name: "keys_derive_hd_wallet",
+    name: "keys_hd_wallet_derive",
     arguments: puzzleArgs,
   });
   if (strictPuzzle.isError !== true || !text(strictPuzzle).includes("Invalid BIP39 mnemonic")) {
     throw new Error("Invalid puzzle checksum must be rejected by default");
   }
   const puzzleWallet = await call(
-    "keys_derive_hd_wallet",
+    "keys_hd_wallet_derive",
     { ...puzzleArgs, allowInvalidChecksum: true },
     /Warning: BIP39 checksum is invalid\./,
   );
@@ -197,21 +197,21 @@ try {
     /^Language: english\nIndices: zero-based, one-based\nskill: 1619, 1620\nzoo: 2047, 2048$/,
   );
   await call("keys_bip39_word_recover", { mnemonic: missing }, /Candidates \(128\):/);
-  await call("keys_get_address", { chain: "ethereum", publicKey }, /Address: 0x/);
+  await call("keys_address_get", { chain: "ethereum", publicKey }, /Address: 0x/);
   await call(
-    "keys_validate_address",
+    "keys_address_validate",
     { chain: "bitcoin", address: "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu" },
     /is a valid bitcoin address/,
   );
   const signed = await call(
-    "keys_sign_message",
+    "keys_message_sign",
     { chain: "ethereum", message: "disposable MCP test", privateKey },
     /Signature: [0-9a-f]+/,
   );
   const signature = /Signature: ([0-9a-f]+)/.exec(signed)?.[1];
-  if (!signature) throw new Error("keys_sign_message returned no signature");
+  if (!signature) throw new Error("keys_message_sign returned no signature");
   await call(
-    "keys_verify_message",
+    "keys_message_verify",
     { chain: "ethereum", message: "disposable MCP test", signature, publicKey },
     /Signature is valid/,
   );

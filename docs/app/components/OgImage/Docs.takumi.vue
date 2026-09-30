@@ -12,7 +12,7 @@ const { title, description, headline } = defineProps<{
 
 const { name: siteName } = useSiteConfig();
 
-const TOOLS = ["keys_generate_wallet", "keys_derive_hd_wallet", "keys_get_address", "keys_sign_message"];
+const TOOLS = ["keys_wallet_generate", "keys_hd_wallet_derive", "keys_address_get", "keys_message_sign"];
 
 const LINE = "#262c35";
 const CORNER = "#5b636d";

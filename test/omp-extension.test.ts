@@ -53,8 +53,8 @@ describe("keys OMP extension", () => {
 
   it("answers through the shared executors", async () => {
     const params = { chain: "bitcoinsv", publicKey: bitcoinSVTestVectors.keyOne.publicKey };
-    const omp = await registerTools(ompExtension).get("keys_get_address")?.execute("omp", params);
-    const pi = await registerTools(piExtension).get("keys_get_address")?.execute("pi", params);
+    const omp = await registerTools(ompExtension).get("keys_address_get")?.execute("omp", params);
+    const pi = await registerTools(piExtension).get("keys_address_get")?.execute("pi", params);
 
     expect(omp).toEqual(pi);
     expect(JSON.stringify(omp?.content)).toContain(bitcoinSVTestVectors.keyOne.address);
@@ -65,7 +65,7 @@ describe("keys OMP extension", () => {
     const call = async (name: string, params: Readonly<Record<string, unknown>>) =>
       JSON.stringify((await tools.get(name)?.execute("omp", params))?.content);
 
-    const address = await call("keys_get_address", {
+    const address = await call("keys_address_get", {
       chain: "ethereum",
       publicKey: ethereumTestVectors.publicKey,
       addressType: "",

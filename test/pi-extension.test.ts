@@ -73,7 +73,7 @@ describe("keys Pi extension", () => {
     await expect(tool.execute("electrum", { ...args, passphrase: false })).rejects.toThrow();
   });
   it("derives a watch-only wallet from an xpub with the shared executor", async () => {
-    const tool = registerTools().get("keys_derive_xpub_wallet");
+    const tool = registerTools().get("keys_xpub_wallet_derive");
     if (!tool) throw new Error("Missing xpub wallet tool");
     const [, ypub] = slip132Vectors;
     const args = { chain: "bitcoin", extendedKey: ypub.extendedKey, path: "m/0/0" };
@@ -352,7 +352,7 @@ describe("keys Pi extension", () => {
   });
 
   it("refuses an overlong address even when Pi skips the schema", async () => {
-    const tool = registerTools().get("keys_validate_address");
+    const tool = registerTools().get("keys_address_validate");
     if (!tool) throw new Error("Missing address validation tool");
     const longest = { chain: "bitcoin", address: "1".repeat(256) };
     const longer = { chain: "bitcoin", address: "1".repeat(257) };
@@ -390,8 +390,8 @@ describe("keys Pi extension", () => {
   });
 
   it("derives Litecoin through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_derive_wallet");
-    if (!tool) throw new Error("keys_derive_wallet was not registered");
+    const tool = registerTools().get("keys_wallet_derive");
+    if (!tool) throw new Error("keys_wallet_derive was not registered");
     const args = { chain: "litecoin", privateKey: litecoinTestVectors.privateKey };
     expect(Value.Check(tool.parameters, args)).toBe(true);
     const result = await tool.execute("litecoin", args);
@@ -404,8 +404,8 @@ describe("keys Pi extension", () => {
   });
 
   it("derives Bitcoin Cash through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_derive_wallet");
-    if (!tool) throw new Error("keys_derive_wallet was not registered");
+    const tool = registerTools().get("keys_wallet_derive");
+    if (!tool) throw new Error("keys_wallet_derive was not registered");
     const { privateKey, address } = bitcoinCashTestVectors.keyOne;
     const args = { chain: "bitcoincash", privateKey };
     expect(Value.Check(tool.parameters, args)).toBe(true);
@@ -419,8 +419,8 @@ describe("keys Pi extension", () => {
   });
 
   it("derives Bitcoin Gold through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_derive_wallet");
-    if (!tool) throw new Error("keys_derive_wallet was not registered");
+    const tool = registerTools().get("keys_wallet_derive");
+    if (!tool) throw new Error("keys_wallet_derive was not registered");
     const { privateKey, publicKey, legacyAddress } = bitcoinGoldTestVectors.signed;
     const args = { chain: "bitcoingold", privateKey };
     expect(Value.Check(tool.parameters, args)).toBe(true);
@@ -434,8 +434,8 @@ describe("keys Pi extension", () => {
   });
 
   it("derives Bitcoin SV through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_derive_wallet");
-    if (!tool) throw new Error("keys_derive_wallet was not registered");
+    const tool = registerTools().get("keys_wallet_derive");
+    if (!tool) throw new Error("keys_wallet_derive was not registered");
     const { privateKey, publicKey, address } = bitcoinSVTestVectors.keyOne;
     const args = { chain: "bitcoinsv", privateKey };
     expect(Value.Check(tool.parameters, args)).toBe(true);
@@ -446,8 +446,8 @@ describe("keys Pi extension", () => {
   });
 
   it("derives Dogecoin through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_derive_wallet");
-    if (!tool) throw new Error("keys_derive_wallet was not registered");
+    const tool = registerTools().get("keys_wallet_derive");
+    if (!tool) throw new Error("keys_wallet_derive was not registered");
     const [key] = dogecoinTestVectors.keys;
     const args = { chain: "dogecoin", privateKey: key.privateKey };
     expect(Value.Check(tool.parameters, args)).toBe(true);
@@ -456,8 +456,8 @@ describe("keys Pi extension", () => {
   });
 
   it("derives Dash through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_derive_wallet");
-    if (!tool) throw new Error("keys_derive_wallet was not registered");
+    const tool = registerTools().get("keys_wallet_derive");
+    if (!tool) throw new Error("keys_wallet_derive was not registered");
     const [key] = dashTestVectors.keys;
     const args = { chain: "dash", privateKey: key.privateKey };
     expect(Value.Check(tool.parameters, args)).toBe(true);
@@ -466,8 +466,8 @@ describe("keys Pi extension", () => {
   });
 
   it("derives Zcash through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_derive_wallet");
-    if (!tool) throw new Error("keys_derive_wallet was not registered");
+    const tool = registerTools().get("keys_wallet_derive");
+    if (!tool) throw new Error("keys_wallet_derive was not registered");
     const [key] = zcashTestVectors.keys;
     const args = { chain: "zcash", privateKey: key.privateKey };
     expect(Value.Check(tool.parameters, args)).toBe(true);
@@ -476,8 +476,8 @@ describe("keys Pi extension", () => {
   });
 
   it("derives eCash through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_derive_hd_wallet");
-    if (!tool) throw new Error("keys_derive_hd_wallet was not registered");
+    const tool = registerTools().get("keys_hd_wallet_derive");
+    if (!tool) throw new Error("keys_hd_wallet_derive was not registered");
     const [path, address] = eCashTestVectors.hd.mainnet;
     const args = { chain: "ecash", mnemonic: bip39TestVectors.mnemonic, path };
     expect(Value.Check(tool.parameters, args)).toBe(true);
@@ -486,8 +486,8 @@ describe("keys Pi extension", () => {
   });
 
   it("derives Decred through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_derive_wallet");
-    if (!tool) throw new Error("keys_derive_wallet was not registered");
+    const tool = registerTools().get("keys_wallet_derive");
+    if (!tool) throw new Error("keys_wallet_derive was not registered");
     const args = { chain: "decred", privateKey: decredTestVectors.privateKey };
     expect(Value.Check(tool.parameters, args)).toBe(true);
     const result = await tool.execute("decred", args);
@@ -500,8 +500,8 @@ describe("keys Pi extension", () => {
   });
 
   it("derives Stellar through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_derive_wallet");
-    if (!tool) throw new Error("keys_derive_wallet was not registered");
+    const tool = registerTools().get("keys_wallet_derive");
+    if (!tool) throw new Error("keys_wallet_derive was not registered");
     const args = { chain: "stellar", privateKey: stellarTestVectors.privateKey };
     expect(Value.Check(tool.parameters, args)).toBe(true);
     const result = await tool.execute("stellar", args);
@@ -520,22 +520,22 @@ describe("keys Pi extension", () => {
 
     for (const [name, params, error] of [
       [
-        "keys_verify_message",
+        "keys_message_verify",
         { chain: "ethereum", message, signature: `0x${signature}`, publicKey },
         "Signature must be 64 or 65 bytes of hex without 0x",
       ],
       [
-        "keys_verify_message",
+        "keys_message_verify",
         { chain: "ethereum", message, signature, publicKey: `0x${publicKey}` },
         "Public key must be",
       ],
       [
-        "keys_sign_message",
+        "keys_message_sign",
         { chain: "ethereum", message, privateKey: `0x${privateKey}` },
         "Private key must be 64 hex characters without 0x",
       ],
-      ["keys_derive_wallet", { chain: "ethereum", privateKey: `0x${privateKey}` }, "Private key"],
-      ["keys_get_address", { chain: "ethereum", publicKey: `0x${publicKey}` }, "Public key"],
+      ["keys_wallet_derive", { chain: "ethereum", privateKey: `0x${privateKey}` }, "Private key"],
+      ["keys_address_get", { chain: "ethereum", publicKey: `0x${publicKey}` }, "Public key"],
     ] as const) {
       const tool = tools.get(name);
       if (!tool) throw new Error(`${name} was not registered`);
@@ -549,17 +549,17 @@ describe("keys Pi extension", () => {
   it("rejects unsupported networks and address types on every relevant tool", async () => {
     const tools = registerTools();
     const networkCases = [
-      ["keys_generate_wallet", { chain: "bitcoin" }],
-      ["keys_derive_wallet", { chain: "ethereum", privateKey: secp256k1TestVectors.privateKey }],
-      ["keys_derive_hd_wallet", { chain: "base", mnemonic: "unused", path: "m/0" }],
-      ["keys_get_address", { chain: "solana", publicKey: ed25519TestVectors.publicKey }],
-      ["keys_validate_address", { chain: "aptos", address: "unused" }],
+      ["keys_wallet_generate", { chain: "bitcoin" }],
+      ["keys_wallet_derive", { chain: "ethereum", privateKey: secp256k1TestVectors.privateKey }],
+      ["keys_hd_wallet_derive", { chain: "base", mnemonic: "unused", path: "m/0" }],
+      ["keys_address_get", { chain: "solana", publicKey: ed25519TestVectors.publicKey }],
+      ["keys_address_validate", { chain: "aptos", address: "unused" }],
       [
-        "keys_sign_message",
+        "keys_message_sign",
         { chain: "tron", message: "unused", privateKey: secp256k1TestVectors.privateKey },
       ],
       [
-        "keys_verify_message",
+        "keys_message_verify",
         {
           chain: "sui",
           message: "unused",
@@ -581,30 +581,30 @@ describe("keys Pi extension", () => {
     }
 
     const addressTypeCases = [
-      ["keys_generate_wallet", { chain: "bitcoin", addressType: "stake" }],
+      ["keys_wallet_generate", { chain: "bitcoin", addressType: "stake" }],
       [
-        "keys_derive_wallet",
+        "keys_wallet_derive",
         { chain: "ethereum", privateKey: secp256k1TestVectors.privateKey, addressType: "segwit" },
       ],
       [
-        "keys_derive_hd_wallet",
+        "keys_hd_wallet_derive",
         { chain: "base", mnemonic: "unused", path: "m/0", addressType: "segwit" },
       ],
       [
-        "keys_get_address",
+        "keys_address_get",
         { chain: "solana", publicKey: ed25519TestVectors.publicKey, addressType: "segwit" },
       ],
-      ["keys_generate_wallet", { chain: "aptos", addressType: "segwit" }],
+      ["keys_wallet_generate", { chain: "aptos", addressType: "segwit" }],
       [
-        "keys_derive_wallet",
+        "keys_wallet_derive",
         { chain: "tron", privateKey: secp256k1TestVectors.privateKey, addressType: "segwit" },
       ],
       [
-        "keys_derive_hd_wallet",
+        "keys_hd_wallet_derive",
         { chain: "sui", mnemonic: "unused", path: "m/0", addressType: "taproot" },
       ],
       [
-        "keys_get_address",
+        "keys_address_get",
         { chain: "cardano", publicKey: ed25519TestVectors.publicKey, addressType: "secp256k1" },
       ],
     ] as const;
@@ -810,8 +810,8 @@ describe("keys Pi extension", () => {
   });
 
   it("derives an HD wallet from a public mnemonic and path", async () => {
-    const tool = registerTools().get("keys_derive_hd_wallet");
-    if (!tool) throw new Error("keys_derive_hd_wallet was not registered");
+    const tool = registerTools().get("keys_hd_wallet_derive");
+    if (!tool) throw new Error("keys_hd_wallet_derive was not registered");
     const mnemonic =
       "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
@@ -867,8 +867,8 @@ describe("keys Pi extension", () => {
   });
 
   it("exposes the checksum override and warning in Pi content and details", async () => {
-    const tool = registerTools().get("keys_derive_hd_wallet");
-    if (!tool) throw new Error("keys_derive_hd_wallet was not registered");
+    const tool = registerTools().get("keys_hd_wallet_derive");
+    if (!tool) throw new Error("keys_hd_wallet_derive was not registered");
     const { mnemonic, path, address, publicKey } = invalidChecksumPuzzle;
     const args = { chain: "bitcoin", mnemonic, path, allowInvalidChecksum: true };
     expect(Value.Check(tool.parameters, args)).toBe(true);
@@ -949,8 +949,8 @@ describe("keys Pi extension", () => {
   });
 
   it("derives a Sui wallet from an existing private key", async () => {
-    const tool = registerTools().get("keys_derive_wallet");
-    if (!tool) throw new Error("keys_derive_wallet was not registered");
+    const tool = registerTools().get("keys_wallet_derive");
+    if (!tool) throw new Error("keys_wallet_derive was not registered");
 
     const result = await tool.execute("call-1", {
       chain: "sui",
@@ -993,12 +993,12 @@ async function registerThroughHostLoader(): Promise<ReadonlyMap<string, Register
 describe("Pi host loader", () => {
   it("answers parallel calls on chains that share modules", async () => {
     const calls = [
-      ["keys_validate_address", { chain: "bitcoin", address: invalidChecksumPuzzle.address }],
+      ["keys_address_validate", { chain: "bitcoin", address: invalidChecksumPuzzle.address }],
       [
-        "keys_derive_hd_wallet",
+        "keys_hd_wallet_derive",
         { chain: "bitcoin", mnemonic: bip39TestVectors.mnemonic, path: "m/84'/0'/0'/0/0" },
       ],
-      ["keys_get_address", { chain: "litecoin", publicKey: litecoinTestVectors.publicKey }],
+      ["keys_address_get", { chain: "litecoin", publicKey: litecoinTestVectors.publicKey }],
     ] as const;
     const hosted = await registerThroughHostLoader();
     const direct = registerTools();

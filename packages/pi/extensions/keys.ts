@@ -136,9 +136,9 @@ export default function keysExtension(pi: ExtensionAPI) {
       return (await loadToolOperations()).inspectBip38(params.encrypted, params.address);
     },
   });
-  // ─── generate_wallet ────────────────────────────────────────────────────
+  // ─── wallet_generate ────────────────────────────────────────────────────
   pi.registerTool({
-    name: "keys_generate_wallet",
+    name: "keys_wallet_generate",
     label: "Generate Wallet",
     description:
       "Generate a new wallet (private key, public key, and address) for any supported blockchain",
@@ -172,7 +172,7 @@ export default function keysExtension(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
-    name: "keys_derive_wallet",
+    name: "keys_wallet_derive",
     label: "Derive Wallet",
     description: "Derive a public key and address from an existing private key",
     promptSnippet: "Use to derive the public key and address for an existing burner private key.",
@@ -198,7 +198,7 @@ export default function keysExtension(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
-    name: "keys_derive_hd_wallet",
+    name: "keys_hd_wallet_derive",
     label: "Derive HD Wallet",
     description:
       "Derive a public key and address from English BIP39 words and a path, optionally accepting an invalid checksum for public puzzles",
@@ -235,7 +235,7 @@ export default function keysExtension(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
-    name: "keys_derive_xpub_wallet",
+    name: "keys_xpub_wallet_derive",
     label: "Derive Xpub Wallet",
     description:
       "Derive a watch-only public key and address from an extended public key and normal levels below it",
@@ -294,7 +294,7 @@ export default function keysExtension(pi: ExtensionAPI) {
       "Use only public or disposable candidates because tool arguments are saved in the transcript",
       "Returns wordCountValid, wordlistValid and checksumValid separately, with entropy only for valid mnemonics",
       "checksumValid is null when word count or dictionary membership prevents checking it",
-      "A checksum failure is not proof that a puzzle candidate is wrong. keys_derive_hd_wallet accepts allowInvalidChecksum=true explicitly",
+      "A checksum failure is not proof that a puzzle candidate is wrong. keys_hd_wallet_derive accepts allowInvalidChecksum=true explicitly",
     ],
     parameters: INSPECT_MNEMONIC_PARAMETERS,
     renderCall(_args, _theme) {
@@ -389,9 +389,9 @@ export default function keysExtension(pi: ExtensionAPI) {
     },
   });
 
-  // ─── get_address ────────────────────────────────────────────────────────
+  // ─── address_get ────────────────────────────────────────────────────────
   pi.registerTool({
-    name: "keys_get_address",
+    name: "keys_address_get",
     label: "Get Address",
     description: "Derive a blockchain address from a public key",
     promptSnippet: "Use to get an address from a public key for any supported blockchain.",
@@ -413,9 +413,9 @@ export default function keysExtension(pi: ExtensionAPI) {
     },
   });
 
-  // ─── validate_address ───────────────────────────────────────────────────
+  // ─── address_validate ───────────────────────────────────────────────────
   pi.registerTool({
-    name: "keys_validate_address",
+    name: "keys_address_validate",
     label: "Validate Address",
     description: "Check if a blockchain address is valid",
     promptSnippet: "Use to verify an address is valid for a given blockchain.",
@@ -437,9 +437,9 @@ export default function keysExtension(pi: ExtensionAPI) {
     },
   });
 
-  // ─── sign_message ───────────────────────────────────────────────────────
+  // ─── message_sign ───────────────────────────────────────────────────────
   pi.registerTool({
-    name: "keys_sign_message",
+    name: "keys_message_sign",
     label: "Sign Message",
     description: "Sign a message using a blockchain private key",
     promptSnippet: "Use to sign a message with a private key for any supported blockchain.",
@@ -465,9 +465,9 @@ export default function keysExtension(pi: ExtensionAPI) {
     },
   });
 
-  // ─── verify_message ─────────────────────────────────────────────────────
+  // ─── message_verify ─────────────────────────────────────────────────────
   pi.registerTool({
-    name: "keys_verify_message",
+    name: "keys_message_verify",
     label: "Verify Message",
     description: "Verify a message signature using a blockchain public key",
     promptSnippet: "Use to verify that a signature is valid for a given message and public key.",

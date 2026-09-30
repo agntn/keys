@@ -326,7 +326,7 @@ describe("keys MCP server", () => {
 
     expect(response.tools.map((tool) => tool.name)).toEqual(TOOL_NAMES);
     expect(
-      response.tools.find((tool) => tool.name === "keys_generate_wallet")?.annotations,
+      response.tools.find((tool) => tool.name === "keys_wallet_generate")?.annotations,
     ).toMatchObject({
       readOnlyHint: false,
       destructiveHint: false,
@@ -334,14 +334,14 @@ describe("keys MCP server", () => {
       openWorldHint: false,
     });
     expect(
-      response.tools.find((tool) => tool.name === "keys_sign_message")?.annotations,
+      response.tools.find((tool) => tool.name === "keys_message_sign")?.annotations,
     ).toMatchObject({
       readOnlyHint: false,
       destructiveHint: false,
       openWorldHint: false,
     });
     expect(
-      response.tools.find((tool) => tool.name === "keys_validate_address")?.annotations,
+      response.tools.find((tool) => tool.name === "keys_address_validate")?.annotations,
     ).toMatchObject({
       readOnlyHint: true,
       destructiveHint: false,
@@ -355,7 +355,7 @@ describe("keys MCP server", () => {
       "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
     const response = await client.callTool({
-      name: "keys_derive_hd_wallet",
+      name: "keys_hd_wallet_derive",
       arguments: { chain: "bitcoin", mnemonic, path: "m/84'/0'/0'/0/0" },
     });
 
@@ -372,7 +372,7 @@ describe("keys MCP server", () => {
       client.callTool({ name, arguments: args });
     const [electrum] = electrumVectors;
 
-    const wallet = await call("keys_derive_hd_wallet", {
+    const wallet = await call("keys_hd_wallet_derive", {
       chain: "bitcoin",
       mnemonic: bip39TestVectors.mnemonic,
       path: "m/84h/0h/0h/0/0",
@@ -388,7 +388,7 @@ describe("keys MCP server", () => {
     const parsed = await call("keys_bip44_path", { path: "m/44h/60h/0h/0/0" });
     expect(text(parsed.content)).toContain("Coin type: 60\nAccount: 0\nChange: 0");
 
-    const rejected = await call("keys_derive_hd_wallet", {
+    const rejected = await call("keys_hd_wallet_derive", {
       chain: "bitcoin",
       mnemonic: bip39TestVectors.mnemonic,
       path: "m/84H/0H/0H/0/0",
@@ -397,11 +397,11 @@ describe("keys MCP server", () => {
     expect(text(rejected.content)).toContain("Invalid arguments at /path");
   });
 
-  it("says which address type keys_get_address wrote", async () => {
+  it("says which address type keys_address_get wrote", async () => {
     const client = await connectTestClient();
     const publicKey = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
     const address = async (args: Readonly<Record<string, string>>): Promise<string> =>
-      text((await client.callTool({ name: "keys_get_address", arguments: args })).content);
+      text((await client.callTool({ name: "keys_address_get", arguments: args })).content);
 
     expect(await address({ chain: "bitcoin", publicKey })).toBe(
       "Address type: legacy\nAddress: 1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH",
@@ -419,7 +419,7 @@ describe("keys MCP server", () => {
     const [xpub, , zpub] = slip132Vectors;
 
     const response = await client.callTool({
-      name: "keys_derive_xpub_wallet",
+      name: "keys_xpub_wallet_derive",
       arguments: { chain: "bitcoin", extendedKey: zpub.extendedKey, path: "m/0/0" },
     });
     expect(response.isError).not.toBe(true);
@@ -440,7 +440,7 @@ describe("keys MCP server", () => {
       [{ extendedKey: xpub.extendedKey, path: "m/0", chain: "solana" }, "solana does not derive"],
     ] as const) {
       const failed = await client.callTool({
-        name: "keys_derive_xpub_wallet",
+        name: "keys_xpub_wallet_derive",
         arguments: { chain: "bitcoin", ...args },
       });
       expect(failed.isError).toBe(true);
@@ -453,11 +453,11 @@ describe("keys MCP server", () => {
     const client = await connectTestClient();
     const { mnemonic, path, address, publicKey } = invalidChecksumPuzzle;
     const args = { chain: "bitcoin", mnemonic, path };
-    const strict = await client.callTool({ name: "keys_derive_hd_wallet", arguments: args });
+    const strict = await client.callTool({ name: "keys_hd_wallet_derive", arguments: args });
     expect(strict.isError).toBe(true);
     expect(text(strict.content)).toContain("Invalid BIP39 mnemonic");
     const result = await client.callTool({
-      name: "keys_derive_hd_wallet",
+      name: "keys_hd_wallet_derive",
       arguments: { ...args, allowInvalidChecksum: true },
     });
     expect(result.isError).not.toBe(true);
@@ -467,7 +467,7 @@ describe("keys MCP server", () => {
     expect(text(result.content)).not.toContain(mnemonic);
     for (const allowInvalidChecksum of [false, "true", "false", 1, null]) {
       const rejected = await client.callTool({
-        name: "keys_derive_hd_wallet",
+        name: "keys_hd_wallet_derive",
         arguments: { ...args, allowInvalidChecksum },
       });
       expect(rejected.isError).toBe(true);
@@ -485,7 +485,7 @@ describe("keys MCP server", () => {
   it("derives Litecoin through the MCP schema and executor", async () => {
     const client = await connectTestClient();
     const response = await client.callTool({
-      name: "keys_derive_wallet",
+      name: "keys_wallet_derive",
       arguments: { chain: "litecoin", privateKey: litecoinTestVectors.privateKey },
     });
     expect(response.isError).not.toBe(true);
@@ -497,7 +497,7 @@ describe("keys MCP server", () => {
     const client = await connectTestClient();
     const { privateKey, address } = bitcoinCashTestVectors.prize;
     const response = await client.callTool({
-      name: "keys_derive_wallet",
+      name: "keys_wallet_derive",
       arguments: { chain: "bitcoincash", privateKey },
     });
     expect(response.isError).not.toBe(true);
@@ -505,13 +505,13 @@ describe("keys MCP server", () => {
     expect(text(response.content)).not.toContain(privateKey);
 
     const validation = await client.callTool({
-      name: "keys_validate_address",
+      name: "keys_address_validate",
       arguments: { chain: "bitcoincash", address },
     });
     expect(text(validation.content)).toContain("is a valid bitcoincash address");
 
     const rejected = await client.callTool({
-      name: "keys_derive_wallet",
+      name: "keys_wallet_derive",
       arguments: { chain: "bitcoincash", privateKey, addressType: "segwit" },
     });
     expect(rejected.isError).toBe(true);
@@ -522,7 +522,7 @@ describe("keys MCP server", () => {
     const client = await connectTestClient();
     const { privateKey, segwitAddress } = bitcoinGoldTestVectors.signed;
     const response = await client.callTool({
-      name: "keys_derive_wallet",
+      name: "keys_wallet_derive",
       arguments: { chain: "bitcoingold", privateKey, addressType: "segwit" },
     });
     expect(response.isError).not.toBe(true);
@@ -530,14 +530,14 @@ describe("keys MCP server", () => {
     expect(text(response.content)).not.toContain(privateKey);
 
     const rejected = await client.callTool({
-      name: "keys_derive_wallet",
+      name: "keys_wallet_derive",
       arguments: { chain: "bitcoingold", privateKey, addressType: "taproot" },
     });
     expect(rejected.isError).toBe(true);
     expect(text(rejected.content)).toContain("Supported: legacy, p2sh, segwit, p2wsh");
 
     const unprotected = await client.callTool({
-      name: "keys_validate_address",
+      name: "keys_address_validate",
       arguments: { chain: "bitcoingold", address: bitcoinGoldTestVectors.unprotected[0] },
     });
     expect(text(unprotected.content)).toContain("is not a valid bitcoingold address");
@@ -553,7 +553,7 @@ describe("keys MCP server", () => {
     const client = await connectTestClient();
     const { privateKey, address } = bitcoinSVTestVectors.keyOne;
     const response = await client.callTool({
-      name: "keys_derive_wallet",
+      name: "keys_wallet_derive",
       arguments: { chain: "bitcoinsv", privateKey },
     });
     expect(response.isError).not.toBe(true);
@@ -561,7 +561,7 @@ describe("keys MCP server", () => {
     expect(text(response.content)).not.toContain(privateKey);
 
     const rejected = await client.callTool({
-      name: "keys_validate_address",
+      name: "keys_address_validate",
       arguments: { chain: "bitcoinsv", address: bitcoinSVTestVectors.p2shAddress },
     });
     expect(text(rejected.content)).toContain("is not a valid bitcoinsv address");
@@ -577,7 +577,7 @@ describe("keys MCP server", () => {
     const client = await connectTestClient();
     const [key] = dogecoinTestVectors.keys;
     const response = await client.callTool({
-      name: "keys_derive_wallet",
+      name: "keys_wallet_derive",
       arguments: { chain: "dogecoin", privateKey: key.privateKey },
     });
     expect(response.isError).not.toBe(true);
@@ -585,14 +585,14 @@ describe("keys MCP server", () => {
     expect(text(response.content)).not.toContain(key.privateKey);
 
     const rejected = await client.callTool({
-      name: "keys_derive_wallet",
+      name: "keys_wallet_derive",
       arguments: { chain: "dogecoin", privateKey: key.privateKey, addressType: "p2sh" },
     });
     expect(rejected.isError).toBe(true);
     expect(text(rejected.content)).toContain("Supported: legacy");
 
     const script = await client.callTool({
-      name: "keys_validate_address",
+      name: "keys_address_validate",
       arguments: { chain: "dogecoin", address: dogecoinTestVectors.mainnet[1] },
     });
     expect(text(script.content)).toContain("is a valid dogecoin address");
@@ -608,7 +608,7 @@ describe("keys MCP server", () => {
     const client = await connectTestClient();
     const [key] = dashTestVectors.keys;
     const response = await client.callTool({
-      name: "keys_derive_wallet",
+      name: "keys_wallet_derive",
       arguments: { chain: "dash", privateKey: key.privateKey },
     });
     expect(response.isError).not.toBe(true);
@@ -616,14 +616,14 @@ describe("keys MCP server", () => {
     expect(text(response.content)).not.toContain(key.privateKey);
 
     const rejected = await client.callTool({
-      name: "keys_derive_wallet",
+      name: "keys_wallet_derive",
       arguments: { chain: "dash", privateKey: key.privateKey, addressType: "p2sh" },
     });
     expect(rejected.isError).toBe(true);
     expect(text(rejected.content)).toContain("Supported: legacy");
 
     const script = await client.callTool({
-      name: "keys_validate_address",
+      name: "keys_address_validate",
       arguments: { chain: "dash", address: dashTestVectors.mainnet[1] },
     });
     expect(text(script.content)).toContain("is a valid dash address");
@@ -639,7 +639,7 @@ describe("keys MCP server", () => {
     const client = await connectTestClient();
     const [key] = zcashTestVectors.keys;
     const response = await client.callTool({
-      name: "keys_derive_wallet",
+      name: "keys_wallet_derive",
       arguments: { chain: "zcash", privateKey: key.privateKey },
     });
     expect(response.isError).not.toBe(true);
@@ -647,14 +647,14 @@ describe("keys MCP server", () => {
     expect(text(response.content)).not.toContain(key.privateKey);
 
     const rejected = await client.callTool({
-      name: "keys_derive_wallet",
+      name: "keys_wallet_derive",
       arguments: { chain: "zcash", privateKey: key.privateKey, addressType: "p2sh" },
     });
     expect(rejected.isError).toBe(true);
     expect(text(rejected.content)).toContain("Supported: legacy");
 
     const tex = await client.callTool({
-      name: "keys_validate_address",
+      name: "keys_address_validate",
       arguments: { chain: "zcash", address: zcashTestVectors.tex.tex },
     });
     expect(text(tex.content)).toContain("is a valid zcash address");
@@ -670,7 +670,7 @@ describe("keys MCP server", () => {
     const client = await connectTestClient();
     const { privateKey } = eCashTestVectors.signed;
     const response = await client.callTool({
-      name: "keys_derive_wallet",
+      name: "keys_wallet_derive",
       arguments: { chain: "ecash", privateKey },
     });
     expect(response.isError).not.toBe(true);
@@ -678,7 +678,7 @@ describe("keys MCP server", () => {
     expect(text(response.content)).not.toContain(privateKey);
 
     const rejected = await client.callTool({
-      name: "keys_derive_wallet",
+      name: "keys_wallet_derive",
       arguments: { chain: "ecash", privateKey, addressType: "p2sh" },
     });
     expect(rejected.isError).toBe(true);
@@ -686,7 +686,7 @@ describe("keys MCP server", () => {
 
     const [{ p2sh }] = eCashTestVectors.encoded;
     const validation = await client.callTool({
-      name: "keys_validate_address",
+      name: "keys_address_validate",
       arguments: { chain: "ecash", address: p2sh },
     });
     expect(text(validation.content)).toContain("is a valid ecash address");
@@ -701,7 +701,7 @@ describe("keys MCP server", () => {
   it("derives Decred through the MCP schema and executor", async () => {
     const client = await connectTestClient();
     const response = await client.callTool({
-      name: "keys_derive_wallet",
+      name: "keys_wallet_derive",
       arguments: { chain: "decred", privateKey: decredTestVectors.privateKey },
     });
     expect(response.isError).not.toBe(true);
@@ -713,7 +713,7 @@ describe("keys MCP server", () => {
     const client = await connectTestClient();
     const [message, , signature] = stellarTestVectors.messages[1];
     const wallet = await client.callTool({
-      name: "keys_derive_wallet",
+      name: "keys_wallet_derive",
       arguments: { chain: "stellar", privateKey: stellarTestVectors.privateKey },
     });
     expect(wallet.isError).not.toBe(true);
@@ -721,7 +721,7 @@ describe("keys MCP server", () => {
     expect(text(wallet.content)).not.toContain(stellarTestVectors.privateKey);
 
     const signed = await client.callTool({
-      name: "keys_sign_message",
+      name: "keys_message_sign",
       arguments: { chain: "stellar", message, privateKey: stellarTestVectors.privateKey },
     });
     expect(signed.isError).not.toBe(true);
@@ -733,7 +733,7 @@ describe("keys MCP server", () => {
     const [message, , signatureWithV] = ethereumTestVectors.messages[1];
 
     const plain = await client.callTool({
-      name: "keys_sign_message",
+      name: "keys_message_sign",
       arguments: {
         chain: "ethereum",
         message,
@@ -744,7 +744,7 @@ describe("keys MCP server", () => {
     expect(text(plain.content)).not.toContain(signatureWithV);
 
     const recovered = await client.callTool({
-      name: "keys_sign_message",
+      name: "keys_message_sign",
       arguments: {
         chain: "ethereum",
         message,
@@ -756,7 +756,7 @@ describe("keys MCP server", () => {
     expect(text(recovered.content)).toContain(signatureWithV);
 
     const verified = await client.callTool({
-      name: "keys_verify_message",
+      name: "keys_message_verify",
       arguments: {
         chain: "ethereum",
         message,
@@ -774,22 +774,22 @@ describe("keys MCP server", () => {
 
     for (const [name, arguments_, field] of [
       [
-        "keys_verify_message",
+        "keys_message_verify",
         { chain: "ethereum", message, signature: `0x${signature}`, publicKey },
         "/signature",
       ],
       [
-        "keys_verify_message",
+        "keys_message_verify",
         { chain: "ethereum", message, signature, publicKey: `0x${publicKey}` },
         "/publicKey",
       ],
       [
-        "keys_sign_message",
+        "keys_message_sign",
         { chain: "ethereum", message, privateKey: `0x${privateKey}` },
         "/privateKey",
       ],
-      ["keys_derive_wallet", { chain: "ethereum", privateKey: `0x${privateKey}` }, "/privateKey"],
-      ["keys_get_address", { chain: "ethereum", publicKey: `0x${publicKey}` }, "/publicKey"],
+      ["keys_wallet_derive", { chain: "ethereum", privateKey: `0x${privateKey}` }, "/privateKey"],
+      ["keys_address_get", { chain: "ethereum", publicKey: `0x${publicKey}` }, "/publicKey"],
     ] as const) {
       const response = await client.callTool({ name, arguments: arguments_ });
       expect(response.isError).toBe(true);
@@ -801,7 +801,7 @@ describe("keys MCP server", () => {
     const client = await connectTestClient();
 
     const response = await client.callTool({
-      name: "keys_sign_message",
+      name: "keys_message_sign",
       arguments: {
         chain: "litecoin",
         message: "hello",
@@ -818,7 +818,7 @@ describe("keys MCP server", () => {
     const client = await connectTestClient();
 
     const response = await client.callTool({
-      name: "keys_validate_address",
+      name: "keys_address_validate",
       arguments: { chain: "bitcoin", address: "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu" },
     });
 
@@ -831,11 +831,11 @@ describe("keys MCP server", () => {
     const { mainnet, testnet } = bitcoinTestVectors.addresses.p2pkh;
 
     const onMainnet = await client.callTool({
-      name: "keys_validate_address",
+      name: "keys_address_validate",
       arguments: { chain: "bitcoin", address: testnet },
     });
     const onTestnet = await client.callTool({
-      name: "keys_validate_address",
+      name: "keys_address_validate",
       arguments: { chain: "bitcoin", address: mainnet, network: "testnet" },
     });
 
@@ -851,7 +851,7 @@ describe("keys MCP server", () => {
     const client = await connectTestClient();
 
     const response = await client.callTool({
-      name: "keys_validate_address",
+      name: "keys_address_validate",
       arguments: { chain: "bitcoin" },
     });
 
@@ -877,7 +877,7 @@ describe("keys MCP server", () => {
       expect(text(generated.content)).toContain(`Path: ${expected}`);
 
       const derived = await client.callTool({
-        name: "keys_derive_hd_wallet",
+        name: "keys_hd_wallet_derive",
         arguments: { chain, mnemonic, path: expected },
       });
       expect(derived.isError).not.toBe(true);
@@ -964,7 +964,7 @@ describe("keys MCP server", () => {
       { chain: "bitcoin", addressType: "bogus" },
     ]) {
       const response = await client.callTool({
-        name: "keys_generate_wallet",
+        name: "keys_wallet_generate",
         arguments: arguments_,
       });
 
@@ -978,7 +978,7 @@ describe("keys MCP server", () => {
 
     for (const [name, arguments_, message] of [
       [
-        "keys_generate_wallet",
+        "keys_wallet_generate",
         { chain: "bitcoin", network: "testnett" },
         "Invalid arguments at /network: must be one of mainnet, testnet",
       ],
@@ -1032,7 +1032,7 @@ describe("keys MCP server", () => {
     const client = await connectTestClient();
 
     const response = await client.callTool({
-      name: "keys_validate_address",
+      name: "keys_address_validate",
       arguments: { chain: "bitcoin", address: "not-an-address\nforged output" },
     });
 
@@ -1046,7 +1046,7 @@ describe("keys MCP server", () => {
     const privateKey = "private-fixture-that-must-not-be-echoed";
 
     const response = await client.callTool({
-      name: "keys_derive_wallet",
+      name: "keys_wallet_derive",
       arguments: { chain: "ethereum", privateKey },
     });
 
@@ -1060,9 +1060,9 @@ describe("keys MCP server", () => {
 
     expect((await client.listTools()).tools).toEqual(toolListings);
     for (const [name, arguments_] of [
-      ["keys_get_address", { chain: "bitcoin", publicKey: publicKeyCompressed }],
-      ["keys_get_address", { chain: "bitcoin", publicKey: publicKeyCompressed, extra: 1 }],
-      ["keys_derive_wallet", { chain: "nochain", privateKey }],
+      ["keys_address_get", { chain: "bitcoin", publicKey: publicKeyCompressed }],
+      ["keys_address_get", { chain: "bitcoin", publicKey: publicKeyCompressed, extra: 1 }],
+      ["keys_wallet_derive", { chain: "nochain", privateKey }],
       ["keys_missing", {}],
     ] as const) {
       const direct = await callTool(name, arguments_);
