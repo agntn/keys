@@ -20,5 +20,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["src"]
+  "include": ["src", "build.config.ts"]
 }

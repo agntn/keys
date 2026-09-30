@@ -63,8 +63,8 @@ keys/
 - **Test imports** - test files import from `vite-plus/test`, not `vitest`
 - **Shared fixtures** - test vectors live in `test/fixtures.ts`, not duplicated per test file
 - **ESM only** - `"type": "module"` in package.json, `.mjs` output
-- **Vite+** - `vite.config.ts` is the one config for `vp lint`, `vp fmt`, `vp test` and `vp pack`. The `lint` and `fmt` blocks spread the shared `@agntn/ox` policy (type-aware); keep only repository-local additions (ignore patterns, the readonly-parameter allow-list) there
-- **`vp pack`** - entry points are explicit in the `pack` block; keep package `exports` aligned with emitted `.mjs`/`.d.mts` files
+- **Vite+** - `vite.config.ts` is the one config for `vp lint`, `vp fmt` and `vp test`. The `lint` and `fmt` blocks spread the shared `@agntn/ox` policy (type-aware); keep only repository-local additions (ignore patterns, the readonly-parameter allow-list) there
+- **obuild** - `build.config.ts` bundles every entry at once; chain files come from reading `src/blockchains/`, the other entries are listed by hand. Keep package `exports` aligned with emitted `.mjs`/`.d.mts` files
 
 ## ANTI-PATTERNS
 
@@ -82,16 +82,16 @@ pnpm dev              # vp test in watch mode
 pnpm test             # lint + types + build + test:ext + vp test with coverage + MCP eval
 pnpm test:types       # tsc --noEmit --skipLibCheck, then the type tests
 pnpm test:ext         # type check the Pi and OMP extensions
-pnpm build            # vp pack via vite.config.ts
-pnpm lint             # vp pack, then vp lint + vp fmt --check
-pnpm lint:fix         # vp pack, then vp lint --fix + vp fmt
+pnpm build            # obuild via build.config.ts
+pnpm lint             # obuild, then vp lint + vp fmt --check
+pnpm lint:fix         # obuild, then vp lint --fix + vp fmt
 pnpm fmt              # same as lint:fix
 pnpm playground <f>   # run any TS file via tsx
 pnpm docs             # Docus + keyspace explorer on :3000
 pnpm test:mcp         # build and exercise every MCP tool over stdio
 ```
 
-`build`, `lint`, `lint:fix`, `fmt`, `test` and `test:mcp` all rewrite `dist/`, and so does packing or publishing through `prepack`. The lint scripts pack first because the Pi and OMP extensions take their executor types from `dist/tool-operations.d.mts`, and without that file the type-aware lint reads every executor call there as `error` typed. A checkout whose `dist/` serves the `keys` bin or the extensions gets a new bundle under them, so run these in a separate worktree while that server is live.
+`build`, `lint`, `lint:fix`, `fmt`, `test` and `test:mcp` all rewrite `dist/`, and so does packing or publishing through `prepack`. The lint scripts build first because the Pi and OMP extensions take their executor types from `dist/tool-operations.d.mts`, and without that file the type-aware lint reads every executor call there as `error` typed. A checkout whose `dist/` serves the `keys` bin or the extensions gets a new bundle under them, so run these in a separate worktree while that server is live.
 
 ## NOTES
 

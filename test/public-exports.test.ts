@@ -276,6 +276,12 @@ describe("Published dependencies", () => {
     ) as { dependencies: Record<string, string> };
     expect(imported).toEqual(new Set(Object.keys(manifest.dependencies)));
   });
+
+  it("ships the license of the typebox it inlines", () => {
+    expect(
+      readFileSync(new URL("../dist/THIRD-PARTY-LICENSES.md", import.meta.url), "utf8"),
+    ).toMatch(/^## typebox$[\s\S]*?Copyright \(c\) .* Haydn Paterson/mu);
+  });
 });
 
 interface PackedTool {
