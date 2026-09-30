@@ -8,12 +8,12 @@
 
 - **hd:** Paths take the h hardened marker ([#151](https://github.com/agntn/keys/pull/151))
 - **bip38:** Read a key without its passphrase ([#153](https://github.com/agntn/keys/pull/153))
-- **wif:** ⚠️  Move WIF to its own subpath ([#162](https://github.com/agntn/keys/pull/162))
-- **electrum:** ⚠️  Split Electrum off the root ([#163](https://github.com/agntn/keys/pull/163))
-- **secp256k1:** ⚠️  Name the curve in key conversion ([#164](https://github.com/agntn/keys/pull/164))
-- **bip39:** ⚠️  Name the family once ([#165](https://github.com/agntn/keys/pull/165))
-- **tools:** ⚠️  Put the object before the verb ([#166](https://github.com/agntn/keys/pull/166))
-- **bip44:** ⚠️  Give parse and generate a tool each ([#167](https://github.com/agntn/keys/pull/167))
+- **wif:** ⚠️ Move WIF to its own subpath ([#162](https://github.com/agntn/keys/pull/162))
+- **electrum:** ⚠️ Split Electrum off the root ([#163](https://github.com/agntn/keys/pull/163))
+- **secp256k1:** ⚠️ Name the curve in key conversion ([#164](https://github.com/agntn/keys/pull/164))
+- **bip39:** ⚠️ Name the family once ([#165](https://github.com/agntn/keys/pull/165))
+- **tools:** ⚠️ Put the object before the verb ([#166](https://github.com/agntn/keys/pull/166))
+- **bip44:** ⚠️ Give parse and generate a tool each ([#167](https://github.com/agntn/keys/pull/167))
 - **tools:** Derive salted brainwallets ([#170](https://github.com/agntn/keys/pull/170))
 
 ### 🩹 Fixes
@@ -36,17 +36,17 @@
 
 ### 🏡 Chore
 
-- ⚠️  Node.js 26 or newer ([#142](https://github.com/agntn/keys/pull/142))
+- ⚠️ Node.js 26 or newer ([#142](https://github.com/agntn/keys/pull/142))
 
 #### ⚠️ Breaking Changes
 
-- **wif:** ⚠️  Move WIF to its own subpath ([#162](https://github.com/agntn/keys/pull/162))
-- **electrum:** ⚠️  Split Electrum off the root ([#163](https://github.com/agntn/keys/pull/163))
-- **secp256k1:** ⚠️  Name the curve in key conversion ([#164](https://github.com/agntn/keys/pull/164))
-- **bip39:** ⚠️  Name the family once ([#165](https://github.com/agntn/keys/pull/165))
-- **tools:** ⚠️  Put the object before the verb ([#166](https://github.com/agntn/keys/pull/166))
-- **bip44:** ⚠️  Give parse and generate a tool each ([#167](https://github.com/agntn/keys/pull/167))
-- ⚠️  Node.js 26 or newer ([#142](https://github.com/agntn/keys/pull/142))
+- **wif:** ⚠️ Move WIF to its own subpath ([#162](https://github.com/agntn/keys/pull/162))
+- **electrum:** ⚠️ Split Electrum off the root ([#163](https://github.com/agntn/keys/pull/163))
+- **secp256k1:** ⚠️ Name the curve in key conversion ([#164](https://github.com/agntn/keys/pull/164))
+- **bip39:** ⚠️ Name the family once ([#165](https://github.com/agntn/keys/pull/165))
+- **tools:** ⚠️ Put the object before the verb ([#166](https://github.com/agntn/keys/pull/166))
+- **bip44:** ⚠️ Give parse and generate a tool each ([#167](https://github.com/agntn/keys/pull/167))
+- ⚠️ Node.js 26 or newer ([#142](https://github.com/agntn/keys/pull/142))
 
 ### ❤️ Contributors
 
