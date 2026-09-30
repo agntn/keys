@@ -16,7 +16,7 @@ import { z } from "zod";
  * are written with `not`, which Zod cannot read. `callTool()` checks the full TypeBox schema, so the
  * mode rule still holds and answers in the words of `keys mcp`.
  *
- * @param {string} name - The tool's name, such as `keys_get_address`.
+ * @param {string} name - The tool's name, such as `keys_address_get`.
  * @returns {McpToolDefinitionListItem} The tool definition for `server/mcp/tools/`.
  */
 export function keysMcpTool(name: string): McpToolDefinitionListItem {

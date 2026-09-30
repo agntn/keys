@@ -54,24 +54,24 @@ describe("MCP and Pi tool parameters", () => {
   });
 
   it.each([
-    ["keys_derive_wallet", { chain: "bitcoin", privateKey }, "privateKey", `0x${privateKey}`],
-    ["keys_get_address", { chain: "bitcoin", publicKey }, "publicKey", publicKey.slice(0, -1)],
+    ["keys_wallet_derive", { chain: "bitcoin", privateKey }, "privateKey", `0x${privateKey}`],
+    ["keys_address_get", { chain: "bitcoin", publicKey }, "publicKey", publicKey.slice(0, -1)],
     [
-      "keys_get_address",
+      "keys_address_get",
       { chain: "solana", publicKey: ed25519Key },
       "publicKey",
       `0x${ed25519Key}`,
     ],
-    ["keys_validate_address", { chain: "bitcoin", address: "a" }, "address", "a".repeat(257)],
-    ["keys_sign_message", { chain: "bitcoin", message: "", privateKey }, "chain", ""],
+    ["keys_address_validate", { chain: "bitcoin", address: "a" }, "address", "a".repeat(257)],
+    ["keys_message_sign", { chain: "bitcoin", message: "", privateKey }, "chain", ""],
     [
-      "keys_verify_message",
+      "keys_message_verify",
       { chain: "bitcoin", message: "", signature, publicKey },
       "signature",
       `0x${signature}`,
     ],
     [
-      "keys_verify_message",
+      "keys_message_verify",
       { chain: "ethereum", message: "", signature: signatureWithV, publicKey },
       "publicKey",
       `0x${publicKey}`,

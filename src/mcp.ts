@@ -154,7 +154,7 @@ const tools: readonly ToolDefinition[] = [
     execute: (args) => inspectBip38(args["encrypted"], args["address"]),
   },
   {
-    name: "keys_generate_wallet",
+    name: "keys_wallet_generate",
     title: "Generate Wallet",
     description:
       "Generate a disposable private key, public key, and address for a supported blockchain. The plaintext private key enters the MCP transcript, so never use the result for real funds.",
@@ -163,7 +163,7 @@ const tools: readonly ToolDefinition[] = [
     execute: (args) => generateWallet(args["chain"], args["network"], args["addressType"]),
   },
   {
-    name: "keys_derive_wallet",
+    name: "keys_wallet_derive",
     title: "Derive Wallet",
     description:
       "Derive a public key and address from an existing private key. Use only public or disposable keys because tool arguments enter the MCP transcript.",
@@ -173,7 +173,7 @@ const tools: readonly ToolDefinition[] = [
       deriveWallet(args["chain"], args["privateKey"], args["addressType"], args["network"]),
   },
   {
-    name: "keys_derive_hd_wallet",
+    name: "keys_hd_wallet_derive",
     title: "Derive HD Wallet",
     description:
       "Derive a public key and address from English BIP39 words and a path. Use allowInvalidChecksum for public puzzle candidates that fail only the checksum. Words are not repaired. Inputs enter the MCP transcript, so use only public or disposable material.",
@@ -191,7 +191,7 @@ const tools: readonly ToolDefinition[] = [
       ),
   },
   {
-    name: "keys_derive_xpub_wallet",
+    name: "keys_xpub_wallet_derive",
     title: "Derive Xpub Wallet",
     description:
       "Derive a watch-only public key and address from an extended public key and normal levels below it, such as m/0/0 for the first receiving address. secp256k1 BIP32 chains only; hardened levels and extended private keys are refused. A zpub writes SegWit and a ypub P2SH, but many wallets export a BIP84 or BIP49 account as xpub, so pass addressType segwit or p2sh for those. The key reveals every address of its account and enters the transcript.",
@@ -261,7 +261,7 @@ const tools: readonly ToolDefinition[] = [
     execute: (args) => recoverMnemonicWord(args["mnemonic"]),
   },
   {
-    name: "keys_get_address",
+    name: "keys_address_get",
     title: "Get Address",
     description: "Derive a blockchain address from a public key.",
     inputSchema: GET_ADDRESS_PARAMETERS,
@@ -270,7 +270,7 @@ const tools: readonly ToolDefinition[] = [
       getAddress(args["chain"], args["publicKey"], args["addressType"], args["network"]),
   },
   {
-    name: "keys_validate_address",
+    name: "keys_address_validate",
     title: "Validate Address",
     description: "Check whether an address matches one blockchain's format rules.",
     inputSchema: VALIDATE_ADDRESS_PARAMETERS,
@@ -278,7 +278,7 @@ const tools: readonly ToolDefinition[] = [
     execute: (args) => validateAddress(args["chain"], args["address"], args["network"]),
   },
   {
-    name: "keys_sign_message",
+    name: "keys_message_sign",
     title: "Sign Message",
     description:
       "Sign a message with a blockchain private key. Ask for recovered on Ethereum, base or tron when the signature goes to ethers, viem or TronWeb, which need v to recover the signer. The key, message, and signature enter the MCP transcript, so use only public or disposable material.",
@@ -294,7 +294,7 @@ const tools: readonly ToolDefinition[] = [
       ),
   },
   {
-    name: "keys_verify_message",
+    name: "keys_message_verify",
     title: "Verify Message",
     description: "Verify a message signature against a blockchain public key.",
     inputSchema: VERIFY_MESSAGE_PARAMETERS,
@@ -363,7 +363,7 @@ const toolsByName = new Map<string, ToolDefinition>(tools.map((tool) => [tool.na
  * Runs one tool the way `tools/call` does. An unknown name, a schema miss and an executor failure
  * all come back as an error result, never as a throw, so every transport answers with the same text.
  *
- * @param {string} name - The tool's name, such as `keys_get_address`.
+ * @param {string} name - The tool's name, such as `keys_address_get`.
  * @param {Readonly<Record<string, unknown>>} args - The arguments the client sent.
  * @returns {Promise<CallToolResult>} The tool's text, or the sanitized error.
  */
