@@ -12,6 +12,7 @@ import {
 } from "./address.ts";
 import { decodeCashAddr, encodeCashAddr } from "./cashaddr.ts";
 import { SLIP132_FORMATS, type ExtendedKeyFormats } from "./extended-key.ts";
+import { normalizeHardenedMarkers } from "./hd-index.ts";
 import { generateKeyPublic } from "./secp256k1.ts";
 import {
   assertNoRecoveryByte,
@@ -252,7 +253,7 @@ export abstract class AbstractBitcoinBlockchain extends AbstractBitcoinMessageBl
     options?: HDWalletOptions,
     addressType?: AddressType,
   ): Wallet {
-    const purpose = /^[mM]'?\/(\d+)'/u.exec(path)?.[1];
+    const purpose = /^[mM]'?\/(\d+)'/u.exec(normalizeHardenedMarkers(path))?.[1];
     const inferredType = purpose === undefined ? undefined : PURPOSE_ADDRESS_TYPES[Number(purpose)];
     return super.deriveHDWallet(mnemonic, path, options, addressType ?? inferredType);
   }

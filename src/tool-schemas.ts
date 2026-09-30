@@ -134,7 +134,7 @@ export const DERIVE_ELECTRUM_WALLET_PARAMETERS = Type.Object(
     path: Type.String({
       minLength: 1,
       maxLength: 256,
-      pattern: "^m(/[0-9]+'?)+$",
+      pattern: DERIVATION_PATH_SCHEMA_PATTERN,
       description: "Exact BIP32 path; no path search or inference",
     }),
     passphrase: Type.Optional(

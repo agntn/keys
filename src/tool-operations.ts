@@ -6,7 +6,7 @@
  */
 
 import { deriveElectrumSeed } from "./utils/electrum.ts";
-import { getMasterKeyFromSeed } from "./utils/bip32/index.ts";
+import { deriveHDKey, getMasterKeyFromSeed } from "./utils/bip32/index.ts";
 import { convertSecp256k1PublicKey } from "./utils/public-key.ts";
 import { describeInvalidMnemonic } from "./utils/hd.ts";
 import { encodeWIF, decodeWIF, type DecodedWIF, type WIFNetworkOptions } from "./utils/wif.ts";
@@ -187,7 +187,7 @@ function assertIndexRange(indices: readonly number[], indexBase: 0 | 1): void {
   }
 }
 const BIP39_WORD_PATTERN = /^[\p{L}\p{M}]+$/u;
-const DERIVATION_PATH_PATTERN = /^m(?:\/\d+'?)+$/u;
+const DERIVATION_PATH_PATTERN = /^m(?:\/\d+['h]?)+$/u;
 
 /**
  * Removes terminal and line control bytes from text crossing an agent boundary.
@@ -630,7 +630,7 @@ export async function deriveElectrumWallet(
   const passphrase = optionalString(passphraseValue, "Electrum passphrase") ?? "";
   const { blockchain } = await getBlockchain("bitcoin", networkValue);
   const { seed, seedType, scheme } = deriveElectrumSeed(mnemonic, passphrase);
-  const privateKey = getMasterKeyFromSeed(seed).derive(path).privateKey;
+  const privateKey = deriveHDKey(getMasterKeyFromSeed(seed), path).privateKey;
   if (!privateKey) throw new Error("No private key at the supplied path");
   const wallet = blockchain.deriveWallet(
     privateKey.toHex(),

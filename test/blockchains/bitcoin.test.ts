@@ -445,8 +445,10 @@ describe("Bitcoin blockchain", () => {
       const wallet = blockchain.deriveHDWallet(mnemonic, path);
       expect(wallet.address).toBe(address);
 
-      for (const prefix of ["M/", "m'/", "M'/", "m/0"]) {
-        const equivalentPath = prefix + path.slice(2);
+      for (const equivalentPath of [
+        ...["M/", "m'/", "M'/", "m/0"].map((prefix) => prefix + path.slice(2)),
+        path.replaceAll("'", "h"),
+      ]) {
         const equivalentWallet = blockchain.deriveHDWallet(mnemonic, equivalentPath);
         expect(equivalentWallet.keys).toEqual(wallet.keys);
         expect(equivalentWallet.address, equivalentPath).toBe(address);

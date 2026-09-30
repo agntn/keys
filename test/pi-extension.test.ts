@@ -812,7 +812,7 @@ describe("keys Pi extension", () => {
       false,
     );
     await expect(
-      tool.execute("call-3", { chain: "bitcoin", mnemonic, path: "m/84h/0" }),
+      tool.execute("call-3", { chain: "bitcoin", mnemonic, path: "m/84H/0" }),
     ).rejects.toThrow("must look like");
     await expect(
       tool.execute("call-4", { chain: "cardano", mnemonic, path: "m/1852'/1815'/0'/0/0" }),

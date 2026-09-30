@@ -3,6 +3,8 @@ import { HDKey } from "micro-key-producer/slip10.js";
 // Reexport the SLIP10 implementation
 export { HDKey };
 
+import { normalizeHardenedMarkers } from "../hd-index.ts";
+
 export { HARDENED_OFFSET, hardenedIndex, isHardenedIndex, formatIndex } from "../hd-index.ts";
 
 /**
@@ -17,12 +19,12 @@ export function getMasterKeyFromSeed(seed: Uint8Array): HDKey {
 /**
  * Derives a child key from a parent key using a derivation path
  * @param parent - Parent HDKey instance
- * @param path - Derivation path (e.g., "m/44'/0'/0'/0/0")
+ * @param path - Derivation path (e.g., "m/44'/0'/0'/0/0"), with `'` or `h` marking hardened levels
  * @param forceHardened - Whether to force hardened derivation for ed25519
  * @returns {HDKey} Derived HDKey instance
  */
 export function deriveHDKey(parent: HDKey, path: string, forceHardened = true): HDKey {
-  return parent.derive(path, forceHardened);
+  return parent.derive(normalizeHardenedMarkers(path), forceHardened);
 }
 
 /**

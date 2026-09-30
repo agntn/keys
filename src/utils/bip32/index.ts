@@ -1,6 +1,8 @@
 import { HDKey } from "@scure/bip32";
 export { HDKey };
 
+import { normalizeHardenedMarkers } from "../hd-index.ts";
+
 export { HARDENED_OFFSET, hardenedIndex, isHardenedIndex, formatIndex } from "../hd-index.ts";
 
 /**
@@ -24,11 +26,11 @@ export function getHDKeyFromExtended(xkey: string): HDKey {
 /**
  * Derives a child key from a parent key using a derivation path
  * @param parent - Parent HDKey instance
- * @param path - Derivation path (e.g., "m/44'/0'/0'/0/0")
+ * @param path - Derivation path (e.g., "m/44'/0'/0'/0/0"), with `'` or `h` marking hardened levels
  * @returns {HDKey} Derived HDKey instance
  */
 export function deriveHDKey(parent: HDKey, path: string): HDKey {
-  return parent.derive(path);
+  return parent.derive(normalizeHardenedMarkers(path));
 }
 
 /**

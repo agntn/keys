@@ -49,6 +49,17 @@ describe("BIP32 Utils", () => {
     );
   });
 
+  it("reads h as the hardened marker, as BIP380 descriptors write it", () => {
+    const masterKey = getMasterKeyFromSeed(testSeed);
+
+    expect(deriveHDKey(masterKey, "m/0h/1").privateExtendedKey).toBe(
+      deriveHDKey(masterKey, "m/0'/1").privateExtendedKey,
+    );
+    for (const path of ["m/0H/1", "m/0hh/1", "m/0'h/1", "m/0h'/1", "m/h/1", "mh/1"]) {
+      expect(() => deriveHDKey(masterKey, path), path).toThrow();
+    }
+  });
+
   it("derives child key at specific index", () => {
     const masterKey = getMasterKeyFromSeed(testSeed);
     const hardened0 = deriveHDChild(masterKey, HARDENED_OFFSET);
