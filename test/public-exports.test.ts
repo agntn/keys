@@ -5,7 +5,8 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { createJiti } from "jiti/static";
 import { build } from "vite-plus";
 import { describe, expect, it } from "vite-plus/test";
-import type { DecodedWIF, WIFOptions, HDWalletOptions } from "@agntn/keys";
+import type { HDWalletOptions } from "@agntn/keys";
+import type { DecodedWIF, WIFOptions } from "@agntn/keys/wif";
 import type { BIP39MnemonicInspection } from "@agntn/keys/bip39";
 import {
   electrumVectors,
@@ -23,6 +24,7 @@ const EXPORTS = [
   ["@agntn/keys/bip38", "/dist/utils/bip38/index.mjs"],
   ["@agntn/keys/bip39", "/dist/utils/bip39/index.mjs"],
   ["@agntn/keys/slip10", "/dist/utils/slip10/index.mjs"],
+  ["@agntn/keys/wif", "/dist/utils/wif/index.mjs"],
 ] as const;
 
 /** Static and dynamic import specifiers in the built ESM. */
@@ -33,15 +35,22 @@ const PACKAGE_NAME = /^(?:@[^/.][^/]*\/)?[^/.][^/]*/u;
 
 describe("Public WIF exports", () => {
   it("imports the built API and preserves compression when deriving a wallet", async () => {
-    const { encodeWIF, decodeWIF, blockchains } = await import("@agntn/keys");
+    const { encode, decode } = await import("@agntn/keys/wif");
+    const { blockchains } = await import("@agntn/keys");
     const vector = wifTestVectors[1];
     const options: WIFOptions = { chain: vector.chain, compressed: vector.compressed };
-    expect(encodeWIF(vector.privateKey, options)).toBe(vector.wif);
-    const decoded: DecodedWIF = decodeWIF(vector.wif, options);
+    expect(encode(vector.privateKey, options)).toBe(vector.wif);
+    const decoded: DecodedWIF = decode(vector.wif, options);
     const btc = await blockchains.bitcoin()();
     const wallet = btc.deriveWallet(decoded.privateKey, { compressed: decoded.compressed });
     expect(wallet).toEqual(btc.deriveWallet(vector.privateKey, { compressed: false }));
     expect(wallet.address).not.toBe(btc.deriveWallet(decoded.privateKey).address);
+  });
+
+  it("keeps WIF out of the root entry", async () => {
+    const root = await import("@agntn/keys");
+    expect(root).not.toHaveProperty("encodeWIF");
+    expect(root).not.toHaveProperty("decodeWIF");
   });
 });
 
@@ -128,9 +137,10 @@ describe("Consumer bundles", () => {
   /**
    * Builds an app that imports one export from the built package.
    * @param name - Export the app imports and logs
+   * @param from - Package entry the export comes from
    * @returns {Promise<string[]>} Code of every chunk the Vite build emits
    */
-  const bundle = async (name: string): Promise<string[]> => {
+  const bundle = async (name: string, from = "@agntn/keys"): Promise<string[]> => {
     const result = await build({
       configFile: false,
       logLevel: "silent",
@@ -140,9 +150,7 @@ describe("Consumer bundles", () => {
           enforce: "pre",
           resolveId: (id) => (id === "entry" ? "\0entry" : null),
           load: (id) =>
-            id === "\0entry"
-              ? `import { ${name} } from "@agntn/keys"; console.log(${name});`
-              : null,
+            id === "\0entry" ? `import { ${name} } from "${from}"; console.log(${name});` : null,
         },
       ],
       build: { write: false, minify: false, rollupOptions: { input: "entry" } },
@@ -155,10 +163,14 @@ describe("Consumer bundles", () => {
     );
   };
 
-  it.each(["encodeWIF", "decodeWIF", "convertSecp256k1PublicKey"])(
-    "leaves the chain registry and the Electrum list out of an app importing %s",
-    async (name) => {
-      const chunks = await bundle(name);
+  it.each([
+    ["encode", "@agntn/keys/wif"],
+    ["decode", "@agntn/keys/wif"],
+    ["convertSecp256k1PublicKey", "@agntn/keys"],
+  ])(
+    "leaves the chain registry and the Electrum list out of an app importing %s from %s",
+    async (name, from) => {
+      const chunks = await bundle(name, from);
       expect(chunks).toHaveLength(1);
       expect(chunks[0]).not.toContain([...ELECTRUM_LEGACY_WORDS].slice(0, 8).join(" "));
     },

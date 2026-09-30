@@ -70,6 +70,10 @@
       "types": "./dist/utils/slip10/index.d.mts",
       "default": "./dist/utils/slip10/index.mjs"
     },
+    "./wif": {
+      "types": "./dist/utils/wif/index.d.mts",
+      "default": "./dist/utils/wif/index.mjs"
+    },
     "./mcp": {
       "types": "./dist/mcp.d.mts",
       "default": "./dist/mcp.mjs"

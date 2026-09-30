@@ -62,7 +62,7 @@ bchChain.deriveHDWallet(mnemonic, "m/44'/145'/0'/0/0").address;
 // bitcoincash:qr08q88p9etk89wgv05nwlrkm4l0urz4cyl36hh9sv, what a Trezor shows for that seed
 ```
 
-WIF is Bitcoin's too, prefix `0x80`. `encodeWIF(privateKey, { chain: "bitcoin" })` gives the string a Bitcoin Cash wallet imports.
+WIF is Bitcoin's too, prefix `0x80`. `encode(privateKey, { chain: "bitcoin" })` from `@agntn/keys/wif` gives the string a Bitcoin Cash wallet imports.
 
 ## Signing
 

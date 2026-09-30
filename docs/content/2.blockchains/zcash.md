@@ -72,7 +72,7 @@ The purpose level doesn't pick a format, there's only one. `m/84'` still gives y
 
 One trap on testnet. zcashd walks coin type 1 there, but `getDerivationPath` writes 133 on every network, like every other driver in the library. For a testnet wallet that has to match zcashd, pass `m/44'/1'/0'/0/0` yourself.
 
-WIF works without a Zcash entry. Zcash kept Bitcoin's `0x80` and `0xef`, so `decodeWIF(wif, { chain: "bitcoin" })` reads a key exported from zcashd.
+WIF works without a Zcash entry. Zcash kept Bitcoin's `0x80` and `0xef`, so `decode(wif, { chain: "bitcoin" })` from `@agntn/keys/wif` reads a key exported from zcashd.
 
 ## Signing
 

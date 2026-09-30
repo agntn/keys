@@ -4,7 +4,8 @@ import { hex } from "@scure/base";
 import { concatBytes } from "../../src/utils/bytes.ts";
 import { base58check, base64, bech32m } from "@scure/base";
 import { describe, expect, it } from "vite-plus/test";
-import { blockchains, decodeWIF, getBlockchainPath } from "../../src/index.ts";
+import { blockchains, getBlockchainPath } from "../../src/index.ts";
+import { decode as decodeWIF } from "../../src/utils/wif/index.ts";
 import Bitcoin from "../../src/blockchains/bitcoin.ts";
 import Zcash, { Zcash as NamedZcash } from "../../src/blockchains/zcash.ts";
 import {

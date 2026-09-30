@@ -67,9 +67,9 @@ litecoinChain.deriveHDWallet(mnemonic, "m/44'/2'/0'/0/0").address; // L..., lega
 ## WIF
 
 ```js
-import { encodeWIF } from "@agntn/keys";
+import { encode } from "@agntn/keys/wif";
 
-encodeWIF(privateKey, { chain: "litecoin" }); // T33ydQRKp4FCW5LCLLUB7deioUMoveiwekdwUwyfRDeGZm76aUjV
+encode(privateKey, { chain: "litecoin" }); // T33ydQRKp4FCW5LCLLUB7deioUMoveiwekdwUwyfRDeGZm76aUjV
 ```
 
 Version `0xb0` on mainnet, so compressed keys start with `T` and uncompressed ones with `6`. Testnet is `0xef`, the Bitcoin one.

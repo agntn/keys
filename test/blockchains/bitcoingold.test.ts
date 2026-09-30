@@ -3,7 +3,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { blockchains, getBlockchainPath } from "../../src/index.ts";
 import Bitcoin from "../../src/blockchains/bitcoin.ts";
 import BitcoinGold, { BitcoinGold as NamedBitcoinGold } from "../../src/blockchains/bitcoingold.ts";
-import { decodeWIF } from "../../src/utils/wif.ts";
+import { decode as decodeWIF } from "../../src/utils/wif/index.ts";
 import {
   bip39TestVectors,
   bitcoinGoldTestVectors as vector,

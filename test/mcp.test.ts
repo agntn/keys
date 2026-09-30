@@ -235,13 +235,13 @@ describe("keys MCP server", () => {
     const client = await connectTestClient();
     const { chain, network, compressed, privateKey, wif } = vector;
     const encoded = await client.callTool({
-      name: "keys_encode_wif",
+      name: "keys_wif_encode",
       arguments: { chain, network, compressed, privateKey },
     });
     expect(encoded.isError).not.toBe(true);
     expect(JSON.parse(text(encoded.content))).toEqual({ chain, network, compressed, wif });
     const decoded = await client.callTool({
-      name: "keys_decode_wif",
+      name: "keys_wif_decode",
       arguments: { chain, network, wif },
     });
     expect(decoded.isError).not.toBe(true);
@@ -258,13 +258,13 @@ describe("keys MCP server", () => {
       { chain: "bitcoin", wif: "111", network: "unknown" },
       { chain: "bitcoin", wif: "111", extra: secret },
     ]) {
-      const result = await client.callTool({ name: "keys_decode_wif", arguments: args });
+      const result = await client.callTool({ name: "keys_wif_decode", arguments: args });
       expect(result.isError).toBe(true);
       expect(text(result.content)).not.toContain(secret);
     }
     const vector = wifTestVectors[0];
     const wrongChain = await client.callTool({
-      name: "keys_decode_wif",
+      name: "keys_wif_decode",
       arguments: { chain: "litecoin", wif: vector.wif },
     });
     expect(wrongChain.isError).toBe(true);
@@ -980,7 +980,7 @@ describe("keys MCP server", () => {
         "Invalid arguments at /network: must be one of mainnet, testnet",
       ],
       [
-        "keys_decode_wif",
+        "keys_wif_decode",
         { chain: "ethereum", wif: wifTestVectors[0].wif },
         "Invalid arguments at /chain: must be one of bitcoin, litecoin, dash, decred, dogecoin",
       ],

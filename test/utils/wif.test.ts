@@ -3,7 +3,7 @@ import { blake256 } from "@agntn/hashes";
 import { hex } from "@scure/base";
 import { concatBytes } from "../../src/utils/bytes.ts";
 import { base58 } from "@scure/base";
-import { decodeWIF, encodeWIF } from "../../src/index.ts";
+import { decode as decodeWIF, encode as encodeWIF } from "../../src/utils/wif/index.ts";
 import { encodeBase58Check } from "../../src/utils/encoding.ts";
 import { wifTestVectors } from "../fixtures.ts";
 

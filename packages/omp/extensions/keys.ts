@@ -102,7 +102,7 @@ export default function keysExtension(pi: ExtensionAPI) {
     },
   });
   pi.registerTool({
-    name: "keys_encode_wif",
+    name: "keys_wif_encode",
     label: "Encode WIF",
     description:
       "Encode a disposable private key as Bitcoin, Litecoin, Dash, Decred or Dogecoin ECDSA WIF. WIF is not encryption; inputs and results enter the transcript. Never use keys controlling real funds.",
@@ -120,7 +120,7 @@ export default function keysExtension(pi: ExtensionAPI) {
     },
   });
   pi.registerTool({
-    name: "keys_decode_wif",
+    name: "keys_wif_decode",
     label: "Decode WIF",
     description:
       "Decode public or disposable Bitcoin, Litecoin, Dash, Decred or Dogecoin ECDSA WIF into a hex private key and wallet options. Specify the expected chain and network; Bitcoin, Litecoin and Dash testnet WIFs overlap. Both forms enter the transcript.",

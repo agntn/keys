@@ -1,9 +1,9 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { blake256 } from "@agntn/hashes";
-import { concatBytes } from "./bytes.ts";
+import { concatBytes } from "../bytes.ts";
 import { equalBytes } from "@noble/curves/utils.js";
 import { base58 } from "@scure/base";
-import { decodeBase58Check, encodeBase58Check } from "./encoding.ts";
+import { decodeBase58Check, encodeBase58Check } from "../encoding.ts";
 
 /** Chains in keys with native WIF support. */
 export type WIFChain = "bitcoin" | "litecoin" | "dash" | "decred" | "dogecoin";
@@ -136,7 +136,7 @@ function readCompression(payload: Uint8Array, chain: WIFChain): boolean {
  * @param options - Chain, network and compression flag
  * @returns {string} Native WIF, not encrypted
  */
-export function encodeWIF(privateKey: string, options: WIFOptions): string {
+export function encode(privateKey: string, options: WIFOptions): string {
   const { chain, prefix } = resolveNetwork(options);
   const { compressed = true } = options;
   if (typeof compressed !== "boolean") {
@@ -160,7 +160,7 @@ export function encodeWIF(privateKey: string, options: WIFOptions): string {
  * @param options - Expected chain and network, defaulting to mainnet
  * @returns {DecodedWIF} Hex private key and effective wallet options
  */
-export function decodeWIF(wif: string, options: WIFNetworkOptions): DecodedWIF {
+export function decode(wif: string, options: WIFNetworkOptions): DecodedWIF {
   const { chain, network, prefix } = resolveNetwork(options);
   const payload = readPayload(wif, chain);
   const compressed = readCompression(payload, chain);

@@ -85,13 +85,13 @@ describe("keys OMP extension", () => {
     }
 
     const [wif] = wifTestVectors;
-    const encoded = await call("keys_encode_wif", {
+    const encoded = await call("keys_wif_encode", {
       chain: wif.chain,
       privateKey: wif.privateKey,
       network: "",
     });
     expect(encoded).toContain(wif.wif);
-    const decoded = await call("keys_decode_wif", { chain: wif.chain, wif: wif.wif, network: "" });
+    const decoded = await call("keys_wif_decode", { chain: wif.chain, wif: wif.wif, network: "" });
     expect(decoded).toContain(wif.privateKey);
 
     const { mnemonic } = bip39TestVectors;

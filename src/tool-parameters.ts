@@ -1,4 +1,4 @@
-import type { WIFChain } from "./utils/wif.ts";
+import type { WIFChain } from "./utils/wif/index.ts";
 
 /** Require either parse mode by itself or generation mode with its optional indices. */
 export const BIP44_PATH_MODE_SCHEMA = {
@@ -23,8 +23,8 @@ export const TOOL_NAMES = [
   "keys_derive_electrum_wallet",
   "keys_derive_bip39_seed",
   "keys_convert_public_key",
-  "keys_encode_wif",
-  "keys_decode_wif",
+  "keys_wif_encode",
+  "keys_wif_decode",
   "keys_bip38_inspect",
   "keys_generate_wallet",
   "keys_derive_wallet",

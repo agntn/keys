@@ -70,7 +70,7 @@ btgChain.deriveHDWallet(mnemonic, "m/49'/156'/0'/0/0").address; // AL8uaqKrP4n61
 btgChain.deriveHDWallet(mnemonic, "m/84'/156'/0'/0/0").address; // btg1qkwnu2phwvard2spr2n0a9d84x590ahywl3yacu
 ```
 
-WIF is Bitcoin's, prefix `0x80` on mainnet and `0xef` on testnet. `encodeWIF(privateKey, { chain: "bitcoin" })` gives a string a Bitcoin Gold wallet imports.
+WIF is Bitcoin's, prefix `0x80` on mainnet and `0xef` on testnet. `encode(privateKey, { chain: "bitcoin" })` from `@agntn/keys/wif` gives a string a Bitcoin Gold wallet imports.
 
 ## Signing
 
