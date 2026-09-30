@@ -1,6 +1,6 @@
 # @agntn/keys: Pi extension
 
-Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as agent tools for key generation, WIF conversion, BIP38 inspection, BIP39 generation, entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across 18 blockchains (Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, TRON, SUI, Cardano).
+Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as agent tools for key generation, salted brainwallets, WIF conversion, BIP38 inspection, BIP39 generation, entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across 18 blockchains (Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, TRON, SUI, Cardano).
 
 > [!WARNING]
 > **This extension is experimental.** The package name, public API, provider model, CLI flags, and tool surfaces may change before the first stable release. Pin exact versions if you build on it now.
@@ -10,6 +10,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 | Tool                                | Purpose                                                            |
 | ----------------------------------- | ------------------------------------------------------------------ |
 | `keys_electrum_wallet_derive`       | Derive a Bitcoin address from an explicit Electrum phrase and path |
+| `keys_brainwallet_derive`           | Derive a Bitcoin address from a salted brainwallet recipe          |
 | `keys_bip39_seed_derive`            | Derive seed hex from a valid mnemonic and optional passphrase      |
 | `keys_secp256k1_public_key_convert` | Convert secp256k1 public keys between SEC1 encodings               |
 | `keys_wif_encode`                   | Export a disposable private key as native BTC, LTC or DCR WIF      |
@@ -39,6 +40,10 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 ## Electrum wallets
 
 `keys_electrum_wallet_derive` is separate from BIP39. Supply the complete Electrum phrase and exact BIP32 `path`, with an optional `passphrase` and Bitcoin `network`. Standard seeds produce P2PKH addresses, SegWit seeds P2WPKH. The result includes `scheme: "electrum"` and `seedType`, but no seed or private key. Legacy, 2FA and unrecognized versions are rejected. Both phrase and passphrase use Electrum normalization. Inputs are saved in the transcript, so never submit real wallet secrets.
+
+## Salted brainwallets
+
+`keys_brainwallet_derive` wants the whole recipe, no defaults to guess: `passphrase`, `salt` with its `saltEncoding`, `kdf` with its costs (`N`, `r`, `p` for scrypt, `iterations` and `digest` for PBKDF2), `hashed` for what SHA-256 reads after the KDF, and `compressed`. brainwallet.io is scrypt with `N` 262144, `r` 8, `p` 1, `hashed: "hex"` and `compressed: false`. The answer is the public key and the P2PKH address, plus a match against an optional `target`. The private key never leaves, but the passphrase sits in the transcript.
 
 `keys_xpub_wallet_derive` takes a `chain`, an `extendedKey` and normal levels below it, such as `m/0/0`. On Bitcoin, Bitcoin Gold and Litecoin the SLIP-0132 prefix picks the address type, and `addressType` overrides it for a BIP84 or BIP49 account exported as `xpub`. Hardened levels and extended private keys are rejected. The key reveals every address of its account and is saved in the transcript.
 

@@ -3,6 +3,8 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   bip39TestVectors,
   bitcoinSVTestVectors,
+  brainwalletInput,
+  brainwalletVectors,
   ethereumTestVectors,
   wifTestVectors,
 } from "./fixtures.ts";
@@ -98,5 +100,22 @@ describe("keys OMP extension", () => {
     const { mnemonic } = bip39TestVectors;
     const seed = (passphrase: string) => call("keys_bip39_seed_derive", { mnemonic, passphrase });
     expect(await seed("")).not.toBe(await seed(" "));
+
+    const [scrypt, , pbkdf2] = brainwalletVectors;
+    const { passphrase, salt } = brainwalletInput;
+    const brainwallet = (vector: (typeof brainwalletVectors)[number], filled: object) =>
+      call("keys_brainwallet_derive", {
+        passphrase,
+        salt,
+        saltEncoding: "utf8",
+        compressed: vector.compressed,
+        keyLength: 0,
+        network: "",
+        target: "",
+        ...filled,
+        ...vector.recipe,
+      });
+    expect(await brainwallet(scrypt, { iterations: 0, digest: "" })).toContain(scrypt.address);
+    expect(await brainwallet(pbkdf2, { N: 0, r: 0, p: 0 })).toContain(pbkdf2.address);
   });
 });

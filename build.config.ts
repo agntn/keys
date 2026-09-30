@@ -21,6 +21,7 @@ export default defineBuildConfig({
         "./src/utils/bip32/index.ts",
         "./src/utils/bip38/index.ts",
         "./src/utils/bip39/index.ts",
+        "./src/utils/brainwallet/index.ts",
         "./src/utils/bip44/index.ts",
         "./src/utils/electrum/index.ts",
         "./src/utils/secp256k1/index.ts",

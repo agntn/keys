@@ -26,6 +26,8 @@ import {
   secp256k1TestVectors,
   slip132Vectors,
   bip38Vectors,
+  brainwalletInput,
+  brainwalletVectors,
 } from "./fixtures.ts";
 import keysExtension from "../packages/pi/extensions/keys.ts";
 import { mnemonicToSeed, mnemonicToEntropy, validateMnemonic } from "../src/utils/bip39/index.ts";
@@ -325,6 +327,30 @@ describe("keys Pi extension", () => {
       content: [{ type: "text", text: JSON.stringify({ privateKey, chain, network, compressed }) }],
       details: { privateKey, chain, network, compressed },
     });
+  });
+
+  it("derives a brainwallet with the shared executor and keeps its private key out", async () => {
+    const tool = registerTools().get("keys_brainwallet_derive");
+    if (!tool) throw new Error("Missing brainwallet tool");
+    const [vector] = brainwalletVectors;
+    const { passphrase, salt } = brainwalletInput;
+    const args = { passphrase, salt, saltEncoding: "utf8", compressed: false, ...vector.recipe };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    expect(Value.Check(tool.parameters, { ...args, N: 1024.5 })).toBe(false);
+    const result = await tool.execute("brainwallet", { ...args, target: vector.address });
+    expect(result.details).toEqual({
+      chain: "bitcoin",
+      network: "mainnet",
+      addressType: "legacy",
+      compressed: false,
+      publicKey: vector.publicKey,
+      address: vector.address,
+      matches: true,
+    });
+    expect(JSON.stringify(result)).not.toContain(vector.privateKey);
+    await expect(tool.execute("brainwallet", { ...args, N: 1024.5 })).rejects.toThrow(
+      "N must be an integer from 2 to 1048576",
+    );
   });
 
   it("reads a BIP38 header with the shared executor", async () => {
