@@ -1,16 +1,14 @@
 import { describe, expect, it } from "vite-plus/test";
-import { convertSecp256k1PublicKey } from "../../src/index.ts";
+import { convertPublicKey } from "../../src/utils/secp256k1/index.ts";
 import { publicKeyEncodingVector } from "../fixtures.ts";
 
-describe("convertSecp256k1PublicKey", () => {
+describe("convertPublicKey", () => {
   it("converts the SEC 2 generator in both directions without a private key", () => {
     const { compressed, uncompressed } = publicKeyEncodingVector;
-    expect(convertSecp256k1PublicKey(uncompressed)).toBe(compressed);
-    expect(convertSecp256k1PublicKey(compressed, { compressed: false })).toBe(uncompressed);
-    expect(convertSecp256k1PublicKey(compressed)).toBe(compressed);
-    expect(convertSecp256k1PublicKey(uncompressed.toUpperCase(), { compressed: false })).toBe(
-      uncompressed,
-    );
+    expect(convertPublicKey(uncompressed)).toBe(compressed);
+    expect(convertPublicKey(compressed, { compressed: false })).toBe(uncompressed);
+    expect(convertPublicKey(compressed)).toBe(compressed);
+    expect(convertPublicKey(uncompressed.toUpperCase(), { compressed: false })).toBe(uncompressed);
   });
 
   it("preserves the odd y coordinate instead of silently choosing the even point", () => {
@@ -19,14 +17,14 @@ describe("convertSecp256k1PublicKey", () => {
     const oddY = (field - BigInt("0x" + publicKeyEncodingVector.uncompressed.slice(66)))
       .toString(16)
       .padStart(64, "0");
-    expect(convertSecp256k1PublicKey("03" + x, { compressed: false })).toBe("04" + x + oddY);
-    expect(convertSecp256k1PublicKey("04" + x + oddY)).toBe("03" + x);
+    expect(convertPublicKey("03" + x, { compressed: false })).toBe("04" + x + oddY);
+    expect(convertPublicKey("04" + x + oddY)).toBe("03" + x);
   });
 
   it("rejects a non-boolean output encoding at the library boundary", () => {
     expect(() =>
       /** @ts-expect-error Exercise callers that bypass TypeScript. */
-      convertSecp256k1PublicKey(publicKeyEncodingVector.compressed, { compressed: "false" }),
+      convertPublicKey(publicKeyEncodingVector.compressed, { compressed: "false" }),
     ).toThrow("Compressed must be a boolean");
   });
 
@@ -41,6 +39,6 @@ describe("convertSecp256k1PublicKey", () => {
     publicKeyEncodingVector.compressed + "\n",
     publicKeyEncodingVector.compressed.slice(0, -1) + "z",
   ])("rejects malformed, hybrid, x-only and off-curve inputs: %s", (key) => {
-    expect(() => convertSecp256k1PublicKey(key)).toThrow("Invalid SEC1 secp256k1 public key");
+    expect(() => convertPublicKey(key)).toThrow("Invalid SEC1 secp256k1 public key");
   });
 });

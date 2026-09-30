@@ -83,7 +83,7 @@ try {
     throw new Error(`Expected ${TOOL_NAMES.length} tools, got ${listed.tools.length}`);
 
   await call(
-    "keys_convert_public_key",
+    "keys_secp256k1_public_key_convert",
     { publicKey: publicKeyEncodingVector.compressed, compressed: false },
     new RegExp(publicKeyEncodingVector.uncompressed),
   );

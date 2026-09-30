@@ -7,7 +7,7 @@
 
 import { deriveSeed as deriveElectrumSeed } from "./utils/electrum/index.ts";
 import { deriveHDKey, getMasterKeyFromSeed } from "./utils/bip32/index.ts";
-import { convertSecp256k1PublicKey } from "./utils/public-key.ts";
+import { convertPublicKey as convertSecp256k1PublicKey } from "./utils/secp256k1/index.ts";
 import { describeInvalidMnemonic } from "./utils/hd.ts";
 import {
   encode as encodeWIF,

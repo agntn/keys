@@ -22,7 +22,7 @@ export const BIP44_PATH_MODE_SCHEMA = {
 export const TOOL_NAMES = [
   "keys_electrum_wallet_derive",
   "keys_derive_bip39_seed",
-  "keys_convert_public_key",
+  "keys_secp256k1_public_key_convert",
   "keys_wif_encode",
   "keys_wif_decode",
   "keys_bip38_inspect",

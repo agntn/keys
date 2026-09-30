@@ -11,7 +11,7 @@ export interface PublicKeyEncodingOptions {
  * @param options - Output encoding; compressed by default.
  * @returns {string} Canonical lowercase SEC1 hex.
  */
-export function convertSecp256k1PublicKey(
+export function convertPublicKey(
   publicKey: string,
   options: PublicKeyEncodingOptions = {},
 ): string {

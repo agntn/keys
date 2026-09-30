@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { generateKeyPublic } from "../../src/utils/secp256k1";
+import { generateKeyPublic } from "../../src/utils/secp256k1/keys.ts";
 
 describe("secp256k1 utilities", () => {
   const validPrivateKey = "1111111111111111111111111111111111111111111111111111111111111111";

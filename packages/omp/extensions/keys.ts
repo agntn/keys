@@ -89,7 +89,7 @@ export default function keysExtension(pi: ExtensionAPI) {
     },
   });
   pi.registerTool({
-    name: "keys_convert_public_key",
+    name: "keys_secp256k1_public_key_convert",
     label: "Convert Public Key",
     description:
       "Convert a secp256k1 public key between compressed and uncompressed SEC1 hex. No private key required. Rejects hybrid and x-only encodings.",

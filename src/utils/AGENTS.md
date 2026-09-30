@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, Electrum, SLIP-10 and WIF are public package subpaths; other utilities are internal. Every hash comes from `@agntn/hashes`, hex goes through the native `Uint8Array.fromHex` and `toHex`.
+Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, Electrum, secp256k1, SLIP-10 and WIF are public package subpaths; other utilities are internal. Every hash comes from `@agntn/hashes`, hex goes through the native `Uint8Array.fromHex` and `toHex`.
 
 ## STRUCTURE
 
@@ -16,7 +16,6 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, Ele
 | `evm.ts`            | ~220  | EVM classes and secp256k1 chains                                                     | EVM address generation, EIP-55 checksum, preamble signing, `AbstractEVMBlockchain`                                                       |
 | `signing.ts`        | ~100  | evm.ts, ed25519-chains.ts                                                            | Generic sign/verify dispatching by curve type                                                                                            |
 | `ed25519-chains.ts` | ~50   | solana, aptos, cardano                                                               | Shared raw Ed25519 signing and verification                                                                                              |
-| `secp256k1.ts`      | ~100  | bitcoin, tron, sui, evm.ts                                                           | Public key generation (compressed/uncompressed)                                                                                          |
 | `ed25519.ts`        | ~50   | the ed25519 chains and sui                                                           | Ed25519 public key generation                                                                                                            |
 | `encoding.ts`       | ~60   | address.ts, tron, zcash                                                              | Base58Check encode/decode/validate                                                                                                       |
 | `crypto-hash.ts`    | ~70   | (internal)                                                                           | Hash function wrappers                                                                                                                   |
@@ -26,25 +25,26 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, Ele
 
 **Subdirectories** (each has `index.ts`):
 
-| Dir         | Purpose                       | Exports                                                                                                                                       |
-| ----------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bip32/`    | HD key derivation (secp256k1) | `getMasterKeyFromSeed`, `deriveHDKey`, `HARDENED_OFFSET`                                                                                      |
-| `bip38/`    | Encrypted key headers         | `inspect`: mode, flags, address hash, owner entropy, lot and sequence without the passphrase; no decryption                                   |
-| `bip39/`    | Mnemonic phrases              | `generateMnemonic`, `mnemonicToSeed`, `validateMnemonic`, `getMnemonicWordCandidates`, `lookupBIP39Words`, `lookupBIP39Indices`               |
-| `bip44/`    | Derivation paths              | `BIP44` enum, `getBIP44Path`, `getBIP32Path`, `getHardenedPath`, `parseBIP44Path`, `getBlockchainPath`                                        |
-| `electrum/` | Electrum seeds                | `inspect` names the seed version, `deriveSeed` gives the seed of a standard or SegWit phrase; normalization and the legacy list stay internal |
-| `slip10/`   | ED25519 HD derivation         | `getMasterKeyFromSeed`, `deriveHDKey`                                                                                                         |
-| `wif/`      | Wallet import format          | `encode` and `decode` for Bitcoin, Litecoin, Dash, Decred and Dogecoin, checked against an explicit chain and network                         |
+| Dir          | Purpose                       | Exports                                                                                                                                       |
+| ------------ | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bip32/`     | HD key derivation (secp256k1) | `getMasterKeyFromSeed`, `deriveHDKey`, `HARDENED_OFFSET`                                                                                      |
+| `bip38/`     | Encrypted key headers         | `inspect`: mode, flags, address hash, owner entropy, lot and sequence without the passphrase; no decryption                                   |
+| `bip39/`     | Mnemonic phrases              | `generateMnemonic`, `mnemonicToSeed`, `validateMnemonic`, `getMnemonicWordCandidates`, `lookupBIP39Words`, `lookupBIP39Indices`               |
+| `bip44/`     | Derivation paths              | `BIP44` enum, `getBIP44Path`, `getBIP32Path`, `getHardenedPath`, `parseBIP44Path`, `getBlockchainPath`                                        |
+| `electrum/`  | Electrum seeds                | `inspect` names the seed version, `deriveSeed` gives the seed of a standard or SegWit phrase; normalization and the legacy list stay internal |
+| `secp256k1/` | SEC1 public keys              | `convertPublicKey` between compressed and uncompressed; key generation and signing for the secp256k1 chains stay internal in `keys.ts`        |
+| `slip10/`    | ED25519 HD derivation         | `getMasterKeyFromSeed`, `deriveHDKey`                                                                                                         |
+| `wif/`       | Wallet import format          | `encode` and `decode` for Bitcoin, Litecoin, Dash, Decred and Dogecoin, checked against an explicit chain and network                         |
 
 ## DEPENDENCY FLOW
 
 ```
 blockchains/*.ts
-  ├── secp256k1 chains → secp256k1.ts + evm.ts (signing) + address.ts
+  ├── secp256k1 chains → secp256k1/keys.ts + evm.ts (signing) + address.ts
   └── ed25519 chains   → ed25519.ts + ed25519-chains.ts (signing)
 
 evm.ts
-  ├── secp256k1.ts (key gen)
+  ├── secp256k1/keys.ts (key gen)
   ├── signing.ts (generic sign dispatch)
   └── @noble/curves (secp256k1 Point), @agntn/hashes (keccak256)
 

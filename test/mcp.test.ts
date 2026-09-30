@@ -140,7 +140,7 @@ describe("keys MCP server", () => {
       [uncompressed, true, compressed],
     ] as const) {
       const result = await client.callTool({
-        name: "keys_convert_public_key",
+        name: "keys_secp256k1_public_key_convert",
         arguments: { publicKey, compressed: flag },
       });
       expect(result.isError).not.toBe(true);
@@ -151,7 +151,10 @@ describe("keys MCP server", () => {
       { publicKey: compressed, compressed: "false" },
       { publicKey: compressed, chain: "bitcoin" },
     ]) {
-      const result = await client.callTool({ name: "keys_convert_public_key", arguments: args });
+      const result = await client.callTool({
+        name: "keys_secp256k1_public_key_convert",
+        arguments: args,
+      });
       expect(result.isError).toBe(true);
     }
   });

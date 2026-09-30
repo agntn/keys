@@ -107,7 +107,8 @@ Same address as `m/84'/0'/0'/0/0` above, and the `z` picked segwit. Don't lean o
 ## 🧠 Library
 
 ```ts
-import { blockchains, useBlockchain, convertSecp256k1PublicKey } from "@agntn/keys";
+import { blockchains, useBlockchain } from "@agntn/keys";
+import { convertPublicKey } from "@agntn/keys/secp256k1";
 import { encode } from "@agntn/keys/wif";
 
 const sol = useBlockchain(await blockchains.solana()());
@@ -119,10 +120,10 @@ sol.validateAddress(wallet.address); // true
 const btc = useBlockchain(await blockchains.bitcoin()());
 const { keys } = btc.generateWallet();
 encode(keys.private, { chain: "bitcoin" }); // WIF, K... or L..., compressed
-convertSecp256k1PublicKey(keys.public, { compressed: false }); // 04..., 130 hex chars
+convertPublicKey(keys.public, { compressed: false }); // 04..., 130 hex chars
 ```
 
-There isn't much more to it. Every chain has `generateKeyPrivate`, `getKeyPublic`, `getAddress`, `validateAddress`, `signMessage` and `verifyMessage`, the HD walk is BIP32 on secp256k1 and SLIP-10 on ed25519, so Solana paths are hardened all the way down. Ethereum and Base give the same address for the same key, as they should. WIF goes both ways on Bitcoin, Litecoin, Dash, Decred and Dogecoin through `@agntn/keys/wif`, and `convertSecp256k1PublicKey` flips compressed to uncompressed and back. Mind that a legacy address hashes those bytes, so the two encodings are two different addresses from one key, keep the `compressed` flag next to it. Everything else, traps included: [Keys](https://keys.agntn.dev/guide/keys), [Addresses](https://keys.agntn.dev/guide/addresses), [Wallets](https://keys.agntn.dev/guide/wallets), [EVM chains](https://keys.agntn.dev/guide/evm).
+There isn't much more to it. Every chain has `generateKeyPrivate`, `getKeyPublic`, `getAddress`, `validateAddress`, `signMessage` and `verifyMessage`, the HD walk is BIP32 on secp256k1 and SLIP-10 on ed25519, so Solana paths are hardened all the way down. Ethereum and Base give the same address for the same key, as they should. WIF goes both ways on Bitcoin, Litecoin, Dash, Decred and Dogecoin through `@agntn/keys/wif`, and `convertPublicKey` from `@agntn/keys/secp256k1` flips compressed to uncompressed and back. Mind that a legacy address hashes those bytes, so the two encodings are two different addresses from one key, keep the `compressed` flag next to it. Everything else, traps included: [Keys](https://keys.agntn.dev/guide/keys), [Addresses](https://keys.agntn.dev/guide/addresses), [Wallets](https://keys.agntn.dev/guide/wallets), [EVM chains](https://keys.agntn.dev/guide/evm).
 
 ## 🧩 Puzzles
 

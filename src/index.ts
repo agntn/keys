@@ -1,5 +1,3 @@
-export { convertSecp256k1PublicKey } from "./utils/public-key.ts";
-export type { PublicKeyEncodingOptions } from "./utils/public-key.ts";
 export { AbstractBlockchain, useBlockchain } from "./blockchain.ts";
 export { AbstractEVMBlockchain } from "./utils/evm.ts";
 
