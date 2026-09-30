@@ -1,5 +1,58 @@
 # Changelog
 
+## v0.4.0
+
+[compare changes](https://github.com/agntn/keys/compare/v0.3.5...v0.4.0)
+
+### 🚀 Enhancements
+
+- **hd:** Paths take the h hardened marker ([#151](https://github.com/agntn/keys/pull/151))
+- **bip38:** Read a key without its passphrase ([#153](https://github.com/agntn/keys/pull/153))
+- **wif:** ⚠️  Move WIF to its own subpath ([#162](https://github.com/agntn/keys/pull/162))
+- **electrum:** ⚠️  Split Electrum off the root ([#163](https://github.com/agntn/keys/pull/163))
+- **secp256k1:** ⚠️  Name the curve in key conversion ([#164](https://github.com/agntn/keys/pull/164))
+- **bip39:** ⚠️  Name the family once ([#165](https://github.com/agntn/keys/pull/165))
+- **tools:** ⚠️  Put the object before the verb ([#166](https://github.com/agntn/keys/pull/166))
+- **bip44:** ⚠️  Give parse and generate a tool each ([#167](https://github.com/agntn/keys/pull/167))
+- **tools:** Derive salted brainwallets ([#170](https://github.com/agntn/keys/pull/170))
+
+### 🩹 Fixes
+
+- **tools:** Refuse an address past 256 characters ([#155](https://github.com/agntn/keys/pull/155))
+
+### 💅 Refactors
+
+- Move hashing to agntn/hashes ([#146](https://github.com/agntn/keys/pull/146))
+
+### 📖 Documentation
+
+- Name the scripts that rewrite dist ([#145](https://github.com/agntn/keys/pull/145))
+- Say the package is not audited ([#148](https://github.com/agntn/keys/pull/148))
+- Align agent notes with the audit warning ([#149](https://github.com/agntn/keys/pull/149))
+
+### 📦 Build
+
+- Hand the bundle back to obuild ([#168](https://github.com/agntn/keys/pull/168))
+
+### 🏡 Chore
+
+- ⚠️  Node.js 26 or newer ([#142](https://github.com/agntn/keys/pull/142))
+
+#### ⚠️ Breaking Changes
+
+- **wif:** ⚠️  Move WIF to its own subpath ([#162](https://github.com/agntn/keys/pull/162))
+- **electrum:** ⚠️  Split Electrum off the root ([#163](https://github.com/agntn/keys/pull/163))
+- **secp256k1:** ⚠️  Name the curve in key conversion ([#164](https://github.com/agntn/keys/pull/164))
+- **bip39:** ⚠️  Name the family once ([#165](https://github.com/agntn/keys/pull/165))
+- **tools:** ⚠️  Put the object before the verb ([#166](https://github.com/agntn/keys/pull/166))
+- **bip44:** ⚠️  Give parse and generate a tool each ([#167](https://github.com/agntn/keys/pull/167))
+- ⚠️  Node.js 26 or newer ([#142](https://github.com/agntn/keys/pull/142))
+
+### ❤️ Contributors
+
+- Aeitwoen ([@aeitwoen](https://github.com/aeitwoen))
+- Ori ([@oritwoen](https://github.com/oritwoen))
+
 ## v0.3.5
 
 [compare changes](https://github.com/agntn/keys/compare/v0.3.4...v0.3.5)
