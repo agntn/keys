@@ -16,6 +16,7 @@ describe("Electrum wallet documentation", () => {
     if (!example) throw new Error("Missing Electrum example");
     const script = example
       .replaceAll('"@agntn/keys"', '"./src/index.ts"')
+      .replaceAll('"@agntn/keys/electrum"', '"./src/utils/electrum/index.ts"')
       .replaceAll('"@agntn/keys/bip32"', '"./src/utils/bip32/index.ts"')
       .replaceAll('"@agntn/keys/blockchains/bitcoin"', '"./src/blockchains/bitcoin.ts"')
       .replace(/const phrase = .*;/u, `const phrase = ${JSON.stringify(vector.mnemonic)};`)

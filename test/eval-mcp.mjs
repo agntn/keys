@@ -103,7 +103,7 @@ try {
   );
 
   await call(
-    "keys_derive_electrum_wallet",
+    "keys_electrum_wallet_derive",
     {
       mnemonic: electrumVectors[0].mnemonic,
       path: electrumVectors[0].path,

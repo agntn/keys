@@ -9,7 +9,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 
 | Tool                          | Purpose                                                            |
 | ----------------------------- | ------------------------------------------------------------------ |
-| `keys_derive_electrum_wallet` | Derive a Bitcoin address from an explicit Electrum phrase and path |
+| `keys_electrum_wallet_derive` | Derive a Bitcoin address from an explicit Electrum phrase and path |
 | `keys_derive_bip39_seed`      | Derive seed hex from a valid mnemonic and optional passphrase      |
 | `keys_convert_public_key`     | Convert secp256k1 public keys between SEC1 encodings               |
 | `keys_wif_encode`             | Export a disposable private key as native BTC, LTC or DCR WIF      |
@@ -37,7 +37,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 
 ## Electrum wallets
 
-`keys_derive_electrum_wallet` is separate from BIP39. Supply the complete Electrum phrase and exact BIP32 `path`, with an optional `passphrase` and Bitcoin `network`. Standard seeds produce P2PKH addresses, SegWit seeds P2WPKH. The result includes `scheme: "electrum"` and `seedType`, but no seed or private key. Legacy, 2FA and unrecognized versions are rejected. Both phrase and passphrase use Electrum normalization. Inputs are saved in the transcript, so never submit real wallet secrets.
+`keys_electrum_wallet_derive` is separate from BIP39. Supply the complete Electrum phrase and exact BIP32 `path`, with an optional `passphrase` and Bitcoin `network`. Standard seeds produce P2PKH addresses, SegWit seeds P2WPKH. The result includes `scheme: "electrum"` and `seedType`, but no seed or private key. Legacy, 2FA and unrecognized versions are rejected. Both phrase and passphrase use Electrum normalization. Inputs are saved in the transcript, so never submit real wallet secrets.
 
 `keys_derive_xpub_wallet` takes a `chain`, an `extendedKey` and normal levels below it, such as `m/0/0`. On Bitcoin, Bitcoin Gold and Litecoin the SLIP-0132 prefix picks the address type, and `addressType` overrides it for a BIP84 or BIP49 account exported as `xpub`. Hardened levels and extended private keys are rejected. The key reveals every address of its account and is saved in the transcript.
 

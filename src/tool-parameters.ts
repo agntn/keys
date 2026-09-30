@@ -20,7 +20,7 @@ export const BIP44_PATH_MODE_SCHEMA = {
  * changes the number on the landing and in the OG image without an edit there.
  */
 export const TOOL_NAMES = [
-  "keys_derive_electrum_wallet",
+  "keys_electrum_wallet_derive",
   "keys_derive_bip39_seed",
   "keys_convert_public_key",
   "keys_wif_encode",

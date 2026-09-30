@@ -1,5 +1,3 @@
-export { deriveElectrumSeed, inspectElectrumMnemonic } from "./utils/electrum.ts";
-export type { ElectrumSeedType } from "./utils/electrum.ts";
 export { convertSecp256k1PublicKey } from "./utils/public-key.ts";
 export type { PublicKeyEncodingOptions } from "./utils/public-key.ts";
 export { AbstractBlockchain, useBlockchain } from "./blockchain.ts";

@@ -5,7 +5,7 @@
  * Errors never echo secret inputs; conversion results contain the equivalent secret.
  */
 
-import { deriveElectrumSeed } from "./utils/electrum.ts";
+import { deriveSeed as deriveElectrumSeed } from "./utils/electrum/index.ts";
 import { deriveHDKey, getMasterKeyFromSeed } from "./utils/bip32/index.ts";
 import { convertSecp256k1PublicKey } from "./utils/public-key.ts";
 import { describeInvalidMnemonic } from "./utils/hd.ts";

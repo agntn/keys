@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, SLIP-10 and WIF are public package subpaths; other utilities are internal. Every hash comes from `@agntn/hashes`, hex goes through the native `Uint8Array.fromHex` and `toHex`.
+Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, Electrum, SLIP-10 and WIF are public package subpaths; other utilities are internal. Every hash comes from `@agntn/hashes`, hex goes through the native `Uint8Array.fromHex` and `toHex`.
 
 ## STRUCTURE
 
@@ -26,14 +26,15 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, SLI
 
 **Subdirectories** (each has `index.ts`):
 
-| Dir       | Purpose                       | Exports                                                                                                                         |
-| --------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `bip32/`  | HD key derivation (secp256k1) | `getMasterKeyFromSeed`, `deriveHDKey`, `HARDENED_OFFSET`                                                                        |
-| `bip38/`  | Encrypted key headers         | `inspect`: mode, flags, address hash, owner entropy, lot and sequence without the passphrase; no decryption                     |
-| `bip39/`  | Mnemonic phrases              | `generateMnemonic`, `mnemonicToSeed`, `validateMnemonic`, `getMnemonicWordCandidates`, `lookupBIP39Words`, `lookupBIP39Indices` |
-| `bip44/`  | Derivation paths              | `BIP44` enum, `getBIP44Path`, `getBIP32Path`, `getHardenedPath`, `parseBIP44Path`, `getBlockchainPath`                          |
-| `slip10/` | ED25519 HD derivation         | `getMasterKeyFromSeed`, `deriveHDKey`                                                                                           |
-| `wif/`    | Wallet import format          | `encode` and `decode` for Bitcoin, Litecoin, Dash, Decred and Dogecoin, checked against an explicit chain and network           |
+| Dir         | Purpose                       | Exports                                                                                                                                       |
+| ----------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bip32/`    | HD key derivation (secp256k1) | `getMasterKeyFromSeed`, `deriveHDKey`, `HARDENED_OFFSET`                                                                                      |
+| `bip38/`    | Encrypted key headers         | `inspect`: mode, flags, address hash, owner entropy, lot and sequence without the passphrase; no decryption                                   |
+| `bip39/`    | Mnemonic phrases              | `generateMnemonic`, `mnemonicToSeed`, `validateMnemonic`, `getMnemonicWordCandidates`, `lookupBIP39Words`, `lookupBIP39Indices`               |
+| `bip44/`    | Derivation paths              | `BIP44` enum, `getBIP44Path`, `getBIP32Path`, `getHardenedPath`, `parseBIP44Path`, `getBlockchainPath`                                        |
+| `electrum/` | Electrum seeds                | `inspect` names the seed version, `deriveSeed` gives the seed of a standard or SegWit phrase; normalization and the legacy list stay internal |
+| `slip10/`   | ED25519 HD derivation         | `getMasterKeyFromSeed`, `deriveHDKey`                                                                                                         |
+| `wif/`      | Wallet import format          | `encode` and `decode` for Bitcoin, Litecoin, Dash, Decred and Dogecoin, checked against an explicit chain and network                         |
 
 ## DEPENDENCY FLOW
 

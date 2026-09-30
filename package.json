@@ -66,6 +66,10 @@
       "types": "./dist/utils/bip39/index.d.mts",
       "default": "./dist/utils/bip39/index.mjs"
     },
+    "./electrum": {
+      "types": "./dist/utils/electrum/index.d.mts",
+      "default": "./dist/utils/electrum/index.mjs"
+    },
     "./slip10": {
       "types": "./dist/utils/slip10/index.d.mts",
       "default": "./dist/utils/slip10/index.mjs"

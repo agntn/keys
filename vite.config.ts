@@ -71,6 +71,7 @@ export default defineConfig({
       "utils/bip32/index": "src/utils/bip32/index.ts",
       "utils/bip38/index": "src/utils/bip38/index.ts",
       "utils/bip39/index": "src/utils/bip39/index.ts",
+      "utils/electrum/index": "src/utils/electrum/index.ts",
       "utils/slip10/index": "src/utils/slip10/index.ts",
       "utils/wif/index": "src/utils/wif/index.ts",
       "blockchains/*": "src/blockchains/*.ts",

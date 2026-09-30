@@ -98,7 +98,7 @@ const SENSITIVE_SIGN: Tool["annotations"] = {
 
 const tools: readonly ToolDefinition[] = [
   {
-    name: "keys_derive_electrum_wallet",
+    name: "keys_electrum_wallet_derive",
     title: "Derive Electrum Wallet",
     description:
       "Derive a Bitcoin public key and address from a complete Electrum standard or SegWit phrase and an exact path. Rejects legacy and 2FA seeds. Inputs enter the transcript; use only public or disposable material, never real wallet secrets.",
