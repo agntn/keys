@@ -44,13 +44,7 @@ describe("MCP and Pi tool parameters", () => {
   it.each([...piSchemas.keys()])("shares the field contract for %s", (name) => {
     const mcp = mcpSchemas.get(name);
     expect(mcp).toBeDefined();
-    const { oneOf, ...fields } = mcp!;
-    expect(JSON.parse(JSON.stringify(piSchemas.get(name)))).toEqual(fields);
-    if (name === "keys_bip44_path") {
-      expect(oneOf).toBeDefined();
-    } else {
-      expect(oneOf).toBeUndefined();
-    }
+    expect(JSON.parse(JSON.stringify(piSchemas.get(name)))).toEqual(mcp);
   });
 
   it.each([
@@ -83,12 +77,14 @@ describe("MCP and Pi tool parameters", () => {
     expect(Value.Check(schema, { ...valid, unexpected: true })).toBe(false);
   });
 
-  it("keeps BIP44 mode validation out of the Pi schema root", () => {
-    const schema = piSchemas.get("keys_bip44_path")!;
-    expect(schema).not.toHaveProperty("oneOf");
-    expect(schema).not.toHaveProperty("anyOf");
-    expect(Value.Check(schema, { chain: "cardano", change: 5 })).toBe(true);
-    expect(Value.Check(schema, { path: "m/44'/0'/0'/0/0" })).toBe(true);
-    expect(Value.Check(schema, {})).toBe(true);
+  it("gives each BIP44 tool its own arguments", () => {
+    const parse = piSchemas.get("keys_bip44_parse")!;
+    const generate = piSchemas.get("keys_bip44_generate")!;
+    expect(Value.Check(parse, { path: "m/44'/0'/0'/0/0" })).toBe(true);
+    expect(Value.Check(parse, {})).toBe(false);
+    expect(Value.Check(parse, { path: "m/44'/0'/0'/0/0", chain: "bitcoin" })).toBe(false);
+    expect(Value.Check(generate, { chain: "cardano", change: 5 })).toBe(true);
+    expect(Value.Check(generate, {})).toBe(false);
+    expect(Value.Check(generate, { chain: "bitcoin", path: "m/44'/0'/0'/0/0" })).toBe(false);
   });
 });

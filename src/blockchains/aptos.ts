@@ -1,7 +1,7 @@
 import { sha3_256 } from "@agntn/hashes";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { addSchemeByte, createPrefixedAddress, validateAddressHex } from "../utils/address.ts";
-import { BIP44Change, getHardenedPath } from "../utils/bip44/index.ts";
+import { BIP44Change, getHardenedPath } from "../utils/bip44/paths.ts";
 import { generateKeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
 import type { Curve, KeyOptions } from "../types.ts";

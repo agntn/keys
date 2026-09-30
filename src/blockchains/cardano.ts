@@ -1,7 +1,7 @@
 import { blake2b } from "@agntn/hashes";
 import { bech32 } from "@scure/base";
 import { AbstractBlockchain } from "../blockchain.ts";
-import { getBIP32Path } from "../utils/bip44/index.ts";
+import { getBIP32Path } from "../utils/bip44/paths.ts";
 import { generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
 import type { CardanoAddressType, Curve, KeyOptions, Options, Wallet } from "../types.ts";

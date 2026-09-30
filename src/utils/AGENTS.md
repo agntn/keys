@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, Electrum, secp256k1, SLIP-10 and WIF are public package subpaths; other utilities are internal. Every hash comes from `@agntn/hashes`, hex goes through the native `Uint8Array.fromHex` and `toHex`.
+Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, BIP44, Electrum, secp256k1, SLIP-10 and WIF are public package subpaths; other utilities are internal. Every hash comes from `@agntn/hashes`, hex goes through the native `Uint8Array.fromHex` and `toHex`.
 
 ## STRUCTURE
 
@@ -30,7 +30,7 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, Ele
 | `bip32/`     | HD key derivation (secp256k1) | `getMasterKeyFromSeed`, `deriveHDKey`, `HARDENED_OFFSET`                                                                                      |
 | `bip38/`     | Encrypted key headers         | `inspect`: mode, flags, address hash, owner entropy, lot and sequence without the passphrase; no decryption                                   |
 | `bip39/`     | Mnemonic phrases              | `generateMnemonic`, `mnemonicToSeed`, `validateMnemonic`, `getMnemonicWordCandidates`, `lookupWords`, `lookupIndices`                         |
-| `bip44/`     | Derivation paths              | `BIP44` enum, `getBIP44Path`, `getBIP32Path`, `getHardenedPath`, `parseBIP44Path`, `getBlockchainPath`                                        |
+| `bip44/`     | Derivation paths              | `BIP44` coin types, `BIP44Change`, `getPath`, `parse`; `getBIP32Path` and `getHardenedPath` for the chain shapes stay internal in `paths.ts`  |
 | `electrum/`  | Electrum seeds                | `inspect` names the seed version, `deriveSeed` gives the seed of a standard or SegWit phrase; normalization and the legacy list stay internal |
 | `secp256k1/` | SEC1 public keys              | `convertPublicKey` between compressed and uncompressed; key generation and signing for the secp256k1 chains stay internal in `keys.ts`        |
 | `slip10/`    | ED25519 HD derivation         | `getMasterKeyFromSeed`, `deriveHDKey`                                                                                                         |

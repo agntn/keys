@@ -13,7 +13,7 @@ Pi coding agent extension only. Wraps the `@agntn/keys` library as agent tools, 
 
 - **Executor resolution:** `loadToolOperations()` uses `src/tool-operations.ts` in a checkout and `dist/tool-operations.mjs` in the built package. Run `pnpm build` before relying on the dist path.
 - **Type checking:** `pnpm test:ext` (`tsc -p ../../tsconfig.extensions.json --noEmit`). Wired into `pnpm test` after `pnpm build` (the extensions tsconfig maps `@agntn/keys` → `dist/index.d.mts`, so dist must exist first).
-- **Tool params:** import TypeBox schemas from `../../src/tool-schemas.ts`, not local copies. Keep the BIP44 root free of `oneOf`; the shared executor checks its mutually exclusive modes.
+- **Tool params:** import TypeBox schemas from `../../src/tool-schemas.ts`, not local copies. Keep every root a plain object, without `oneOf`.
 - **Concrete class contract:** every lazy-loaded class extends `AbstractBlockchain`, so `validateAddress`, `signMessage`, and `verifyMessage` are required and called directly.
 - **Lazy double-call:** `blockchains.chain({ network })()` — first call passes constructor options, second imports and constructs the concrete class. See `../../src/_blockchains.ts`.
 - **Host loader:** Pi imports extensions through jiti with `moduleCache: false`, so overlapping imports of modules with a shared graph hand one importer a half-built namespace. The lazy registry loads chain modules one at a time for that reason; keep new shared imports serial too. The mocked `ExtensionAPI` cannot see this, so the "Pi host loader" test in `../../test/pi-extension.test.ts` goes through jiti.

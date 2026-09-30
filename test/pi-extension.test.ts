@@ -894,58 +894,50 @@ describe("keys Pi extension", () => {
     ).rejects.toThrow("Invalid BIP39 mnemonic");
   });
 
-  it("keeps the BIP44 path schema portable and enforces one mode", async () => {
-    const tool = registerTools().get("keys_bip44_path");
-    if (!tool) throw new Error("keys_bip44_path was not registered");
-    const path = "m/44'/0'/0'/0/0";
+  it("parses a BIP44 path and refuses anything else", async () => {
+    const tool = registerTools().get("keys_bip44_parse");
+    if (!tool) throw new Error("keys_bip44_parse was not registered");
 
-    expect(tool.parameters).toMatchObject({ type: "object" });
-    expect(tool.parameters).not.toHaveProperty("oneOf");
-    expect(Value.Check(tool.parameters, { chain: "bitcoin" })).toBe(true);
-    expect(Value.Check(tool.parameters, { path })).toBe(true);
-    const parsed = await tool.execute("parse-mode", { path });
-    expect(parsed.content.map((part) => part.text ?? "").join("\n")).toContain("Coin type: 0");
-
-    for (const params of [
-      {},
-      { account: 1 },
-      { change: 1 },
-      { addressIndex: 1 },
-      { path, addressType: "secp256k1" },
-    ]) {
-      expect(Value.Check(tool.parameters, params)).toBe(true);
-      await expect(tool.execute("ambiguous-mode", params)).rejects.toThrow(
-        "Provide path by itself, or chain with optional account, change, addressIndex, and addressType",
-      );
-    }
-
-    for (const [params, message] of [
-      [{ chain: "ethereum", path }, "ethereum uses coin type 60, and the path has 0"],
-      [{ path, account: 1 }, "account 1 contradicts the path, which has 0"],
-      [{ path, change: 1 }, "change 1 contradicts the path, which has 0"],
-      [{ path, addressIndex: 1 }, "addressIndex 1 contradicts the path, which has 0"],
-      [{ chain: "bogus", path: "m/44'/1'/0'/0/0" }, 'Unknown chain "bogus"'],
-      [{ path: "m/not/a/path" }, 'Invalid BIP44 path: "m/not/a/path"'],
-    ] as const) {
-      await expect(tool.execute("contradicting-path", params)).rejects.toThrow(message);
-    }
-
-    const agreeing = await tool.execute("agreeing-path", {
-      chain: "bitcoin",
-      path: "m/44'/0'/2'/1/7",
+    const parsed = await tool.execute("parse", { path: "m/44h/1h/2h/1/7" });
+    expect(parsed.content.map((part) => part.text ?? "").join("\n")).toContain(
+      "Coin type: 1\nAccount: 2\nChange: 1\nAddress index: 7",
+    );
+    expect(parsed.details).toEqual({
+      path: "m/44h/1h/2h/1/7",
+      purpose: 44,
+      coinType: 1,
       account: 2,
       change: 1,
       addressIndex: 7,
     });
-    expect(agreeing.content.map((part) => part.text ?? "").join("\n")).toContain(
-      "Address index: 7",
-    );
 
-    const testnet = await tool.execute("testnet-path", {
+    for (const [params, message] of [
+      [{ path: "m/not/a/path" }, 'Invalid BIP44 path: "m/not/a/path"'],
+      [{ path: "m/84'/0'/0'/0/0" }, "Invalid BIP44 path"],
+      [{}, "BIP44 path must be a string"],
+    ] as const) {
+      await expect(tool.execute("rejected", params)).rejects.toThrow(message);
+    }
+  });
+
+  it("generates a chain's path with the indices defaulting to 0", async () => {
+    const tool = registerTools().get("keys_bip44_generate");
+    if (!tool) throw new Error("keys_bip44_generate was not registered");
+
+    const generated = await tool.execute("generate", { chain: "bitcoin" });
+    expect(generated.details).toEqual({
+      path: "m/44'/0'/0'/0/0",
       chain: "bitcoin",
-      path: "m/44'/1'/0'/0/0",
+      coinType: 0,
+      account: 0,
+      change: 0,
+      addressIndex: 0,
     });
-    expect(testnet.content.map((part) => part.text ?? "").join("\n")).toContain("Coin type: 1");
+    const internal = await tool.execute("internal", { chain: "ethereum", account: 2, change: 1 });
+    expect(internal.content.map((part) => part.text ?? "").join("\n")).toContain(
+      "Path: m/44'/60'/2'/1/0",
+    );
+    await expect(tool.execute("no-chain", {})).rejects.toThrow("Chain must be a string");
   });
 
   it("derives a Sui wallet from an existing private key", async () => {

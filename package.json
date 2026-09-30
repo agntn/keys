@@ -66,6 +66,10 @@
       "types": "./dist/utils/bip39/index.d.mts",
       "default": "./dist/utils/bip39/index.mjs"
     },
+    "./bip44": {
+      "types": "./dist/utils/bip44/index.d.mts",
+      "default": "./dist/utils/bip44/index.mjs"
+    },
     "./electrum": {
       "types": "./dist/utils/electrum/index.d.mts",
       "default": "./dist/utils/electrum/index.mjs"
