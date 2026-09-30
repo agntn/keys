@@ -51,10 +51,10 @@ Base58 decode with the BLAKE-256 checksum, 22 bytes of payload, and both prefix 
 `deriveHDWallet` throws. dcrd's HD derivation strips leading zero bytes from keys where BIP32 keeps them, so a plain BIP32 walk lands on the wrong key for some paths and looks perfectly fine doing it. A driver that's silently wrong is worse than one that refuses, so it refuses. `deriveWallet` with a private key works as usual, and so does WIF:
 
 ```js
-import { encodeWIF, decodeWIF } from "@agntn/keys";
+import { encode, decode } from "@agntn/keys/wif";
 
-encodeWIF(privateKey, { chain: "decred" }); // PmQdGRXNZdAgEqwDZMLAF2XSQRLFeSFKi4HLPbdW3kC66HegjYtxq
-decodeWIF(wif, { chain: "decred" }).privateKey;
+encode(privateKey, { chain: "decred" }); // PmQdGRXNZdAgEqwDZMLAF2XSQRLFeSFKi4HLPbdW3kC66HegjYtxq
+decode(wif, { chain: "decred" }).privateKey;
 ```
 
 Decred WIF has its own layout: two prefix bytes, a scheme byte that's `0x00` for ECDSA, the key, and a single BLAKE-256 checksum. Only the compressed form exists, `compressed: false` throws.

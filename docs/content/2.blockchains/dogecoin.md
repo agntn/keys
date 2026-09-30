@@ -64,9 +64,9 @@ The purpose level doesn't pick a format, there's only one. `m/84'` still gives y
 ## WIF
 
 ```js
-import { decodeWIF } from "@agntn/keys";
+import { decode } from "@agntn/keys/wif";
 
-decodeWIF("QP5rQxpaP8HHPEdCEqxTjiHGWRvsyPvzZJeJ9BCxpfT13FN9VesQ", { chain: "dogecoin" });
+decode("QP5rQxpaP8HHPEdCEqxTjiHGWRvsyPvzZJeJ9BCxpfT13FN9VesQ", { chain: "dogecoin" });
 // { privateKey: '0e01…370a', chain: 'dogecoin', network: 'mainnet', compressed: true }
 ```
 

@@ -72,6 +72,7 @@ export default defineConfig({
       "utils/bip38/index": "src/utils/bip38/index.ts",
       "utils/bip39/index": "src/utils/bip39/index.ts",
       "utils/slip10/index": "src/utils/slip10/index.ts",
+      "utils/wif/index": "src/utils/wif/index.ts",
       "blockchains/*": "src/blockchains/*.ts",
     },
     dts: true,

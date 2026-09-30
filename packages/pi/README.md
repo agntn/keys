@@ -12,8 +12,8 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 | `keys_derive_electrum_wallet` | Derive a Bitcoin address from an explicit Electrum phrase and path |
 | `keys_derive_bip39_seed`      | Derive seed hex from a valid mnemonic and optional passphrase      |
 | `keys_convert_public_key`     | Convert secp256k1 public keys between SEC1 encodings               |
-| `keys_encode_wif`             | Export a disposable private key as native BTC, LTC or DCR WIF      |
-| `keys_decode_wif`             | Read native WIF into a hex key, network and compression flag       |
+| `keys_wif_encode`             | Export a disposable private key as native BTC, LTC or DCR WIF      |
+| `keys_wif_decode`             | Read native WIF into a hex key, network and compression flag       |
 | `keys_bip38_inspect`          | Read a BIP38 key's header and check an address, no passphrase      |
 | `keys_generate_wallet`        | Generate private key + public key + address for a chain            |
 | `keys_derive_wallet`          | Derive public key + address from an existing private key           |

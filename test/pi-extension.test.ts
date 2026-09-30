@@ -309,8 +309,8 @@ describe("keys Pi extension", () => {
 
   it.each(wifTestVectors)("converts $chain $network WIF through Pi", async (vector) => {
     const tools = registerTools();
-    const encode = tools.get("keys_encode_wif");
-    const decode = tools.get("keys_decode_wif");
+    const encode = tools.get("keys_wif_encode");
+    const decode = tools.get("keys_wif_decode");
     if (!encode || !decode) throw new Error("WIF tools not registered");
     const { chain, network, compressed, privateKey, wif } = vector;
     const encodeArgs = { chain, network, compressed, privateKey };
@@ -368,8 +368,8 @@ describe("keys Pi extension", () => {
 
   it("validates WIF inputs even when Pi skips schema validation", async () => {
     const tools = registerTools();
-    const encode = tools.get("keys_encode_wif");
-    const decode = tools.get("keys_decode_wif");
+    const encode = tools.get("keys_wif_encode");
+    const decode = tools.get("keys_wif_decode");
     if (!encode || !decode) throw new Error("WIF tools not registered");
     const privateKey = wifTestVectors[0].privateKey;
     for (const args of [

@@ -124,10 +124,10 @@ try {
 
   for (const chain of ["bitcoin", "litecoin", "decred"]) {
     for (const network of ["mainnet", "testnet"]) {
-      const encoded = await call("keys_encode_wif", { chain, network, privateKey }, /"wif":/);
+      const encoded = await call("keys_wif_encode", { chain, network, privateKey }, /"wif":/);
       const wif = /"wif":"([1-9A-HJ-NP-Za-km-z]+)"/.exec(encoded)?.[1];
-      if (!wif) throw new Error("keys_encode_wif returned no WIF");
-      await call("keys_decode_wif", { chain, network, wif }, new RegExp(privateKey));
+      if (!wif) throw new Error("keys_wif_encode returned no WIF");
+      await call("keys_wif_decode", { chain, network, wif }, new RegExp(privateKey));
     }
   }
 

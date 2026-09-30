@@ -65,7 +65,7 @@ bsvChain.deriveHDWallet(mnemonic, "m/44'/236'/0'/0/0").address;
 
 ElectrumSV is the odd one out. It kept Bitcoin's coin type 0, so a seed from it wants `m/44'/0'/0'/0/0`. Pass that path yourself and you get the same address Bitcoin gives. The purpose level doesn't pick a format either way, there's only one.
 
-WIF is Bitcoin's too, prefix `0x80`. `encodeWIF(privateKey, { chain: "bitcoin" })` gives the string a Bitcoin SV wallet imports.
+WIF is Bitcoin's too, prefix `0x80`. `encode(privateKey, { chain: "bitcoin" })` from `@agntn/keys/wif` gives the string a Bitcoin SV wallet imports.
 
 ## Signing
 

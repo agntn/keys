@@ -69,16 +69,16 @@ Purpose 44 is legacy, 49 is p2sh, 84 segwit, 86 taproot. Anything else with no e
 ## WIF
 
 ```js
-import { encodeWIF, decodeWIF } from "@agntn/keys";
+import { encode, decode } from "@agntn/keys/wif";
 
-encodeWIF(privateKey, { chain: "bitcoin" }); // K... or L..., compressed
-encodeWIF(privateKey, { chain: "bitcoin", compressed: false }); // 5...
-encodeWIF(privateKey, { chain: "bitcoin", network: "testnet" }); // c...
+encode(privateKey, { chain: "bitcoin" }); // K... or L..., compressed
+encode(privateKey, { chain: "bitcoin", compressed: false }); // 5...
+encode(privateKey, { chain: "bitcoin", network: "testnet" }); // c...
 
-decodeWIF("KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgd9M7rFU73sVHnoWn", { chain: "bitcoin" }).compressed; // true
+decode("KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgd9M7rFU73sVHnoWn", { chain: "bitcoin" }).compressed; // true
 ```
 
-Version `0x80` on mainnet, `0xef` on testnet, a trailing `0x01` when the public key is compressed. `decodeWIF` checks the prefix against the chain and network you name, so a testnet WIF on a mainnet call throws instead of handing you a key for the wrong network.
+Version `0x80` on mainnet, `0xef` on testnet, a trailing `0x01` when the public key is compressed. `decode` checks the prefix against the chain and network you name, so a testnet WIF on a mainnet call throws instead of handing you a key for the wrong network.
 
 ## Signing
 

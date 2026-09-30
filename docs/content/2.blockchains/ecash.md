@@ -65,7 +65,7 @@ xecChain.deriveHDWallet(mnemonic, "m/44'/145'/0'/0/0").address;
 // ecash:qqyx49mu0kkn9ftfj6hje6g2wfer34yfnqdxfumtxd, what bip_utils gives on that path
 ```
 
-WIF is Bitcoin's, prefix `0x80`. `encodeWIF(privateKey, { chain: "bitcoin" })` gives the string an eCash wallet imports.
+WIF is Bitcoin's, prefix `0x80`. `encode(privateKey, { chain: "bitcoin" })` from `@agntn/keys/wif` gives the string an eCash wallet imports.
 
 ## Signing
 
