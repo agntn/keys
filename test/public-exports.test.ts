@@ -26,6 +26,7 @@ const EXPORTS = [
   ["@agntn/keys/bip32", "/dist/utils/bip32/index.mjs"],
   ["@agntn/keys/bip38", "/dist/utils/bip38/index.mjs"],
   ["@agntn/keys/bip39", "/dist/utils/bip39/index.mjs"],
+  ["@agntn/keys/bip44", "/dist/utils/bip44/index.mjs"],
   ["@agntn/keys/electrum", "/dist/utils/electrum/index.mjs"],
   ["@agntn/keys/secp256k1", "/dist/utils/secp256k1/index.mjs"],
   ["@agntn/keys/slip10", "/dist/utils/slip10/index.mjs"],
@@ -56,6 +57,33 @@ describe("Public WIF exports", () => {
     const root = await import("@agntn/keys");
     expect(root).not.toHaveProperty("encodeWIF");
     expect(root).not.toHaveProperty("decodeWIF");
+  });
+});
+
+describe("Public BIP44 exports", () => {
+  it("builds and parses a path from the built package", async () => {
+    const { BIP44, BIP44Change, getPath, parse } = await import("@agntn/keys/bip44");
+    const path = getPath(BIP44.LITECOIN, 1, BIP44Change.INTERNAL, 4);
+    expect(path).toBe("m/44'/2'/1'/1/4");
+    expect(parse(path)).toEqual({
+      purpose: 44,
+      coinType: 2,
+      account: 1,
+      change: 1,
+      addressIndex: 4,
+    });
+  });
+
+  it("keeps BIP44 out of the root entry and the other path shapes private", async () => {
+    const root = await import("@agntn/keys");
+    for (const name of ["BIP44", "BIP44Change", "getBIP44Path", "parseBIP44Path"]) {
+      expect(root).not.toHaveProperty(name);
+    }
+    expect(root).toHaveProperty("getBlockchainPath");
+    const bip44 = await import("@agntn/keys/bip44");
+    expect(new Set(Object.keys(bip44))).toEqual(
+      new Set(["BIP44", "BIP44Change", "getPath", "parse"]),
+    );
   });
 });
 

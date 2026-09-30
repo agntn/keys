@@ -29,7 +29,8 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 | `keys_address_validate`             | Check if an address is valid for a chain                           |
 | `keys_message_sign`                 | Sign a message with a private key (secp256k1/ed25519)              |
 | `keys_message_verify`               | Verify a signature against message + public key                    |
-| `keys_bip44_path`                   | Generate or parse a BIP44 derivation path                          |
+| `keys_bip44_parse`                  | Parse a BIP44 path into its levels                                 |
+| `keys_bip44_generate`               | Generate the derivation path a chain's wallets use                 |
 
 ## BIP39 seed
 

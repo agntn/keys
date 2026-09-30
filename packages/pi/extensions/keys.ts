@@ -25,7 +25,8 @@ import {
   VALIDATE_ADDRESS_PARAMETERS,
   SIGN_MESSAGE_PARAMETERS,
   VERIFY_MESSAGE_PARAMETERS,
-  BIP44_PATH_PARAMETERS,
+  BIP44_PARSE_PARAMETERS,
+  BIP44_GENERATE_PARAMETERS,
 } from "../../../src/tool-schemas.ts";
 
 const sourceModuleUrl = new URL("../../../src/tool-operations.ts", import.meta.url);
@@ -490,27 +491,40 @@ export default function keysExtension(pi: ExtensionAPI) {
     },
   });
 
-  // ─── bip44_path ─────────────────────────────────────────────────────────
   pi.registerTool({
-    name: "keys_bip44_path",
-    label: "BIP44 Path",
-    description: "Get or parse a derivation path for a blockchain",
+    name: "keys_bip44_parse",
+    label: "Parse BIP44 Path",
+    description: "Parse a BIP44 derivation path into its levels",
     promptSnippet:
-      "Use to parse BIP44 paths or generate the path a chain's wallets use: BIP44 on secp256k1 chains, every level hardened on ed25519 chains, CIP-1852 with roles on Cardano, the scheme picking the shape on Sui.",
+      "Use to read the purpose, coin type, account, change branch and address index out of a BIP44 path.",
+    promptGuidelines: ["Hardened levels take ' or h, as in m/44'/0'/0'/0/0 or m/44h/0h/0h/0/0"],
+    parameters: BIP44_PARSE_PARAMETERS,
+    renderCall(args, _theme) {
+      return new Text(`🛤️ Parse: ${args.path}`, 0, 0);
+    },
+    async execute(_toolCallId, params) {
+      return (await loadToolOperations()).parseBip44Path(params.path);
+    },
+  });
+
+  pi.registerTool({
+    name: "keys_bip44_generate",
+    label: "Generate BIP44 Path",
+    description: "Generate the derivation path a blockchain's wallets use",
+    promptSnippet:
+      "Use to generate the path a chain's wallets use: BIP44 on secp256k1 chains, every level hardened on ed25519 chains, CIP-1852 with roles on Cardano, the scheme picking the shape on Sui.",
     promptGuidelines: [
-      "Provide a path by itself to parse it, or a chain name to generate a path",
-      "For generation only: account, change, addressIndex (defaults to 0), addressType (Sui scheme, ed25519 by default)",
+      "account, change and addressIndex default to 0; addressType picks the Sui scheme, ed25519 by default",
       "Stellar paths end at the account and Solana paths at the change branch; a deeper index on those chains is an error",
       "Cardano reads change as the CIP-1852 role: 0 external, 1 internal, 2 staking, up to 5",
     ],
-    parameters: BIP44_PATH_PARAMETERS,
+    parameters: BIP44_GENERATE_PARAMETERS,
     renderCall(args, _theme) {
-      return new Text(args.path ? `🛤️ Parse: ${args.path}` : `🛤️ BIP44: ${args.chain}`, 0, 0);
+      return new Text(`🛤️ BIP44: ${args.chain}`, 0, 0);
     },
     async execute(_toolCallId, params) {
-      return (await loadToolOperations()).bip44Path(
+      return (await loadToolOperations()).generateBip44Path(
         params.chain,
-        params.path,
         params.account,
         params.change,
         params.addressIndex,

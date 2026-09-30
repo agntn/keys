@@ -1,20 +1,5 @@
 import type { WIFChain } from "./utils/wif/index.ts";
 
-/** Require either parse mode by itself or generation mode with its optional indices. */
-export const BIP44_PATH_MODE_SCHEMA = {
-  oneOf: [
-    {
-      required: ["path"],
-      not: {
-        anyOf: ["chain", "account", "change", "addressIndex", "addressType"].map((field) => ({
-          required: [field],
-        })),
-      },
-    },
-    { required: ["chain"], not: { required: ["path"] } },
-  ],
-} as const;
-
 /**
  * Every tool `keys mcp` lists, in its order. The docs count them from here, so a new tool
  * changes the number on the landing and in the OG image without an edit there.
@@ -40,7 +25,8 @@ export const TOOL_NAMES = [
   "keys_address_validate",
   "keys_message_sign",
   "keys_message_verify",
-  "keys_bip44_path",
+  "keys_bip44_parse",
+  "keys_bip44_generate",
 ] as const;
 
 export type ToolName = (typeof TOOL_NAMES)[number];

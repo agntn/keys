@@ -391,39 +391,41 @@ export const VERIFY_MESSAGE_PARAMETERS = Type.Object(
   { additionalProperties: false },
 );
 
-/** Plain root for Pi providers; MCP adds BIP44_PATH_MODE_SCHEMA at registration. */
-export const BIP44_PATH_PARAMETERS = Type.Object(
+export const BIP44_PARSE_PARAMETERS = Type.Object(
   {
-    chain: Type.Optional(chainArgument),
-    path: Type.Optional(
-      Type.String({
-        description: "BIP44 path to parse, such as m/44'/0'/0'/0/0",
-        minLength: 1,
-      }),
-    ),
+    path: Type.String({
+      description: "BIP44 path to parse, such as m/44'/0'/0'/0/0",
+      minLength: 1,
+    }),
+  },
+  { additionalProperties: false },
+);
+
+export const BIP44_GENERATE_PARAMETERS = Type.Object(
+  {
+    chain: chainArgument,
     account: Type.Optional(
       Type.Integer({
-        description: "Account index for generation only. Default: 0",
+        description: "Account index. Default: 0",
         minimum: 0,
       }),
     ),
     change: Type.Optional(
       Type.Integer({
         description:
-          "Change branch for generation only: 0 for external, 1 for internal; on Cardano the CIP-1852 role, up to 5. Default: 0",
+          "Change branch: 0 for external, 1 for internal; on Cardano the CIP-1852 role, up to 5. Default: 0",
         minimum: 0,
       }),
     ),
     addressIndex: Type.Optional(
       Type.Integer({
-        description: "Address index for generation only. Default: 0",
+        description: "Address index. Default: 0",
         minimum: 0,
       }),
     ),
     addressType: Type.Optional(
       Type.String({
-        description:
-          "Signature scheme for generation on Sui, ed25519 or secp256k1. Default: ed25519",
+        description: "Signature scheme on Sui, ed25519 or secp256k1. Default: ed25519",
         enum: SUI_ADDRESS_TYPES,
       }),
     ),

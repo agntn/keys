@@ -7,9 +7,8 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
-import { BIP44_PATH_MODE_SCHEMA, type ToolName } from "./tool-parameters.ts";
+import type { ToolName } from "./tool-parameters.ts";
 import {
-  bip44Path,
   convertPublicKey,
   deriveHdWallet,
   deriveBip39Seed,
@@ -19,6 +18,7 @@ import {
   encodeBip39Entropy,
   encodeWif,
   decodeWif,
+  generateBip44Path,
   generateWallet,
   generateBip39Mnemonic,
   getAddress,
@@ -26,6 +26,7 @@ import {
   inspectMnemonic,
   lookupBip39Indices,
   lookupBip39Words,
+  parseBip44Path,
   recoverMnemonicWord,
   sanitizeToolText,
   signMessage,
@@ -55,7 +56,8 @@ import {
   VALIDATE_ADDRESS_PARAMETERS,
   SIGN_MESSAGE_PARAMETERS,
   VERIFY_MESSAGE_PARAMETERS,
-  BIP44_PATH_PARAMETERS,
+  BIP44_PARSE_PARAMETERS,
+  BIP44_GENERATE_PARAMETERS,
 } from "./tool-schemas.ts";
 
 type ReadonlyObjectSchema = Readonly<TSchema> & {
@@ -309,16 +311,24 @@ const tools: readonly ToolDefinition[] = [
       ),
   },
   {
-    name: "keys_bip44_path",
-    title: "BIP44 Path",
+    name: "keys_bip44_parse",
+    title: "Parse BIP44 Path",
     description:
-      "Parse a BIP44 derivation path, or generate the path a blockchain's wallets use for an account: BIP44 on secp256k1 chains, every level hardened on ed25519 chains (Stellar stops at the account, Solana at the change branch), CIP-1852 with roles on Cardano, and on Sui the scheme picks between the two.",
-    inputSchema: { ...BIP44_PATH_PARAMETERS, ...BIP44_PATH_MODE_SCHEMA },
+      "Parse a BIP44 derivation path into its purpose, coin type, account, change branch and address index. Hardened levels take ' or h.",
+    inputSchema: BIP44_PARSE_PARAMETERS,
+    annotations: LOCAL_READ,
+    execute: (args) => parseBip44Path(args["path"]),
+  },
+  {
+    name: "keys_bip44_generate",
+    title: "Generate BIP44 Path",
+    description:
+      "Generate the derivation path a blockchain's wallets use for an account: BIP44 on secp256k1 chains, every level hardened on ed25519 chains (Stellar stops at the account, Solana at the change branch), CIP-1852 with roles on Cardano, and on Sui the scheme picks between the two.",
+    inputSchema: BIP44_GENERATE_PARAMETERS,
     annotations: LOCAL_READ,
     execute: (args) =>
-      bip44Path(
+      generateBip44Path(
         args["chain"],
-        args["path"],
         args["account"],
         args["change"],
         args["addressIndex"],

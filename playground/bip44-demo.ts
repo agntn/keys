@@ -1,4 +1,5 @@
-import { useBlockchain, BIP44Change, getBlockchainPath } from "../src";
+import { useBlockchain, getBlockchainPath } from "../src";
+import { BIP44Change } from "../src/utils/bip44";
 import Bitcoin from "../src/blockchains/bitcoin";
 import Ethereum from "../src/blockchains/ethereum";
 import Solana from "../src/blockchains/solana";

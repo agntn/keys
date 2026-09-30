@@ -12,9 +12,6 @@ import { z } from "zod";
  * the shared TypeBox schema is read back through its JSON Schema and keeps every limit it declares.
  * The SDK gets the whole object, not its shape: a shape comes back as a plain `z.object()`, which
  * strips a key the tool does not take, so a misspelled option would be dropped without a word.
- * A top-level `oneOf` stays out of the Zod schema: the parse and generate modes of `keys_bip44_path`
- * are written with `not`, which Zod cannot read. `callTool()` checks the full TypeBox schema, so the
- * mode rule still holds and answers in the words of `keys mcp`.
  *
  * @param {string} name - The tool's name, such as `keys_address_get`.
  * @returns {McpToolDefinitionListItem} The tool definition for `server/mcp/tools/`.
@@ -24,8 +21,7 @@ export function keysMcpTool(name: string): McpToolDefinitionListItem {
   if (listing === undefined) {
     throw new Error(`Unknown keys tool: ${name}`);
   }
-  const { oneOf: _modes, ...jsonSchema } = listing.inputSchema;
-  const schema = z.fromJSONSchema(jsonSchema as z.core.JSONSchema.JSONSchema);
+  const schema = z.fromJSONSchema(listing.inputSchema as z.core.JSONSchema.JSONSchema);
   /** The toolkit types a raw shape only, while the SDK it hands the schema to takes an object too. */
   const inputSchema = schema as unknown as NonNullable<McpToolDefinition["inputSchema"]>;
   return defineMcpTool({

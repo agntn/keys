@@ -1,15 +1,8 @@
 import { expect, test, describe } from "vite-plus/test";
-import {
-  BIP44,
-  BIP44Change,
-  getBIP32Path,
-  getBIP44Path,
-  getHardenedPath,
-  parseBIP44Path,
-  getBlockchainPath,
-} from "../../src/utils/bip44";
+import { BIP44, BIP44Change, getPath, parse } from "../../src/utils/bip44";
+import { getBIP32Path, getHardenedPath } from "../../src/utils/bip44/paths";
 import { bip39TestVectors, slip10WalletVectors, stellarTestVectors } from "../fixtures";
-import { useBlockchain } from "../../src/blockchain";
+import { getBlockchainPath, useBlockchain } from "../../src/blockchain";
 import { blockchains } from "../../src/_blockchains";
 import Bitcoin from "../../src/blockchains/bitcoin";
 import Ethereum from "../../src/blockchains/ethereum";
@@ -21,43 +14,43 @@ import Cardano from "../../src/blockchains/cardano";
 
 describe("BIP44 Path Generation", () => {
   test("should generate correct BIP44 path for Bitcoin", () => {
-    const path = getBIP44Path(BIP44.BITCOIN);
+    const path = getPath(BIP44.BITCOIN);
     expect(path).toBe("m/44'/0'/0'/0/0");
   });
 
   test("should generate correct BIP44 path for Ethereum", () => {
-    const path = getBIP44Path(BIP44.ETHEREUM);
+    const path = getPath(BIP44.ETHEREUM);
     expect(path).toBe("m/44'/60'/0'/0/0");
   });
 
   test("should generate correct BIP44 path with custom account", () => {
-    const path = getBIP44Path(BIP44.BITCOIN, 5);
+    const path = getPath(BIP44.BITCOIN, 5);
     expect(path).toBe("m/44'/0'/5'/0/0");
   });
 
   test("should generate correct BIP44 path with internal chain", () => {
-    const path = getBIP44Path(BIP44.ETHEREUM, 0, BIP44Change.INTERNAL);
+    const path = getPath(BIP44.ETHEREUM, 0, BIP44Change.INTERNAL);
     expect(path).toBe("m/44'/60'/0'/1/0");
   });
 
   test("should generate correct BIP44 path with custom address index", () => {
-    const path = getBIP44Path(BIP44.SOLANA, 0, BIP44Change.EXTERNAL, 42);
+    const path = getPath(BIP44.SOLANA, 0, BIP44Change.EXTERNAL, 42);
     expect(path).toBe("m/44'/501'/0'/0/42");
   });
 
   test("should generate a path with the largest BIP32 level indices", () => {
-    const path = getBIP44Path(2_147_483_647, 2_147_483_647, BIP44Change.INTERNAL, 2_147_483_647);
+    const path = getPath(2_147_483_647, 2_147_483_647, BIP44Change.INTERNAL, 2_147_483_647);
 
     expect(path).toBe("m/44'/2147483647'/2147483647'/1/2147483647");
   });
 
   test.each([
-    ["a negative coin type", () => getBIP44Path(-1)],
-    ["a coin type above the BIP32 range", () => getBIP44Path(2_147_483_648)],
-    ["a negative account", () => getBIP44Path(BIP44.BITCOIN, -1)],
-    ["a change level other than 0 or 1", () => getBIP44Path(BIP44.BITCOIN, 0, 2)],
-    ["a negative address index", () => getBIP44Path(BIP44.BITCOIN, 0, 0, -1)],
-    ["a fractional address index", () => getBIP44Path(BIP44.BITCOIN, 0, 0, 1.5)],
+    ["a negative coin type", () => getPath(-1)],
+    ["a coin type above the BIP32 range", () => getPath(2_147_483_648)],
+    ["a negative account", () => getPath(BIP44.BITCOIN, -1)],
+    ["a change level other than 0 or 1", () => getPath(BIP44.BITCOIN, 0, 2)],
+    ["a negative address index", () => getPath(BIP44.BITCOIN, 0, 0, -1)],
+    ["a fractional address index", () => getPath(BIP44.BITCOIN, 0, 0, 1.5)],
   ])("should reject %s", (_description, generate) => {
     expect(generate).toThrow(RangeError);
   });
@@ -105,7 +98,7 @@ describe("Purpose and hardened paths", () => {
 
 describe("BIP44 Path Parsing", () => {
   test("should parse valid BIP44 path correctly", () => {
-    const result = parseBIP44Path("m/44'/60'/0'/0/0");
+    const result = parse("m/44'/60'/0'/0/0");
     expect(result).toEqual({
       purpose: 44,
       coinType: 60,
@@ -116,7 +109,7 @@ describe("BIP44 Path Parsing", () => {
   });
 
   test("should parse path with custom values correctly", () => {
-    const result = parseBIP44Path("m/44'/501'/3'/1/7");
+    const result = parse("m/44'/501'/3'/1/7");
     expect(result).toEqual({
       purpose: 44,
       coinType: 501,
@@ -129,29 +122,29 @@ describe("BIP44 Path Parsing", () => {
   test.each(["m/44h/501h/3h/1/7", "m/44'/501h/3'/1/7"])(
     "should read h as the hardened marker in %s, as BIP380 descriptors write it",
     (path) => {
-      expect(parseBIP44Path(path)).toEqual(parseBIP44Path("m/44'/501'/3'/1/7"));
+      expect(parse(path)).toEqual(parse("m/44'/501'/3'/1/7"));
     },
   );
 
   test.each(["m/44H/60H/0H/0/0", "m/44h/60h/0h/0h/0", "m/44hh/60h/0h/0/0", "m/44'h/60h/0h/0/0"])(
     "should return undefined for the hardened markers of %s",
     (path) => {
-      expect(parseBIP44Path(path)).toBeUndefined();
+      expect(parse(path)).toBeUndefined();
     },
   );
 
   test("should return null for invalid BIP44 path with wrong purpose", () => {
-    const result = parseBIP44Path("m/43'/60'/0'/0/0");
+    const result = parse("m/43'/60'/0'/0/0");
     expect(result).toBeUndefined();
   });
 
   test("should return null for path with wrong structure", () => {
-    const result = parseBIP44Path("m/44'/60'/0'/0");
+    const result = parse("m/44'/60'/0'/0");
     expect(result).toBeUndefined();
   });
 
   test("should return null when non-hardened path segments are incorrect", () => {
-    const result = parseBIP44Path("m/44'/60'/0'/0'/0");
+    const result = parse("m/44'/60'/0'/0'/0");
     expect(result).toBeUndefined();
   });
 
@@ -166,16 +159,16 @@ describe("BIP44 Path Parsing", () => {
     ["an empty segment", "m/44'/60'/0'/0/"],
     ["a negative address index", "m/44'/60'/0'/0/-1"],
   ])("should return undefined for %s", (_description, path) => {
-    expect(parseBIP44Path(path)).toBeUndefined();
+    expect(parse(path)).toBeUndefined();
   });
 
   test("should return undefined when a level exceeds the BIP32 index range", () => {
-    const result = parseBIP44Path("m/44'/2147483648'/0'/0/0");
+    const result = parse("m/44'/2147483648'/0'/0/0");
     expect(result).toBeUndefined();
   });
 
   test("should parse the largest level index BIP32 allows", () => {
-    const result = parseBIP44Path("m/44'/2147483647'/0'/0/2147483647");
+    const result = parse("m/44'/2147483647'/0'/0/2147483647");
     expect(result).toEqual({
       purpose: 44,
       coinType: 2_147_483_647,

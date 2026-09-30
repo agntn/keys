@@ -2,7 +2,8 @@ import { base58 } from "@scure/base";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { generateKeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
-import { BIP44, BIP44Change, getHardenedPath } from "../utils/bip44/index.ts";
+import { BIP44 } from "../utils/bip44/index.ts";
+import { BIP44Change, getHardenedPath } from "../utils/bip44/paths.ts";
 import type { Curve, KeyOptions } from "../types.ts";
 
 /** Solana blockchain implementation. */

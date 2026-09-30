@@ -385,7 +385,7 @@ describe("keys MCP server", () => {
       path: electrum.path.replaceAll("'", "h"),
     });
     expect(text(electrumWallet.content)).toContain(electrum.address);
-    const parsed = await call("keys_bip44_path", { path: "m/44h/60h/0h/0/0" });
+    const parsed = await call("keys_bip44_parse", { path: "m/44h/60h/0h/0/0" });
     expect(text(parsed.content)).toContain("Coin type: 60\nAccount: 0\nChange: 0");
 
     const rejected = await call("keys_hd_wallet_derive", {
@@ -543,7 +543,7 @@ describe("keys MCP server", () => {
     expect(text(unprotected.content)).toContain("is not a valid bitcoingold address");
 
     const path = await client.callTool({
-      name: "keys_bip44_path",
+      name: "keys_bip44_generate",
       arguments: { chain: "bitcoingold" },
     });
     expect(text(path.content)).toContain("m/44'/156'/0'/0/0");
@@ -567,7 +567,7 @@ describe("keys MCP server", () => {
     expect(text(rejected.content)).toContain("is not a valid bitcoinsv address");
 
     const path = await client.callTool({
-      name: "keys_bip44_path",
+      name: "keys_bip44_generate",
       arguments: { chain: "bitcoinsv" },
     });
     expect(text(path.content)).toContain("m/44'/236'/0'/0/0");
@@ -598,7 +598,7 @@ describe("keys MCP server", () => {
     expect(text(script.content)).toContain("is a valid dogecoin address");
 
     const path = await client.callTool({
-      name: "keys_bip44_path",
+      name: "keys_bip44_generate",
       arguments: { chain: "dogecoin" },
     });
     expect(text(path.content)).toContain("m/44'/3'/0'/0/0");
@@ -629,7 +629,7 @@ describe("keys MCP server", () => {
     expect(text(script.content)).toContain("is a valid dash address");
 
     const path = await client.callTool({
-      name: "keys_bip44_path",
+      name: "keys_bip44_generate",
       arguments: { chain: "dash" },
     });
     expect(text(path.content)).toContain("m/44'/5'/0'/0/0");
@@ -660,7 +660,7 @@ describe("keys MCP server", () => {
     expect(text(tex.content)).toContain("is a valid zcash address");
 
     const path = await client.callTool({
-      name: "keys_bip44_path",
+      name: "keys_bip44_generate",
       arguments: { chain: "zcash" },
     });
     expect(text(path.content)).toContain("m/44'/133'/0'/0/0");
@@ -692,7 +692,7 @@ describe("keys MCP server", () => {
     expect(text(validation.content)).toContain("is a valid ecash address");
 
     const path = await client.callTool({
-      name: "keys_bip44_path",
+      name: "keys_bip44_generate",
       arguments: { chain: "ecash" },
     });
     expect(text(path.content)).toContain("m/44'/899'/0'/0/0");
@@ -870,7 +870,7 @@ describe("keys MCP server", () => {
       ["sui", "m/44'/784'/0'/0'/0'"],
     ]) {
       const generated = await client.callTool({
-        name: "keys_bip44_path",
+        name: "keys_bip44_generate",
         arguments: { chain },
       });
       expect(generated.isError).not.toBe(true);
@@ -885,13 +885,13 @@ describe("keys MCP server", () => {
     }
 
     const cardano = await client.callTool({
-      name: "keys_bip44_path",
+      name: "keys_bip44_generate",
       arguments: { chain: "cardano", change: 2 },
     });
     expect(text(cardano.content)).toContain("Path: m/1852'/1815'/0'/2/0");
 
     const sui = await client.callTool({
-      name: "keys_bip44_path",
+      name: "keys_bip44_generate",
       arguments: { chain: "sui", addressType: "secp256k1" },
     });
     expect(text(sui.content)).toContain("Path: m/54'/784'/0'/0/0");
@@ -908,7 +908,10 @@ describe("keys MCP server", () => {
       ],
       [{ chain: "bitcoin", addressType: "segwit" }, "Invalid arguments"],
     ] as const) {
-      const rejected = await client.callTool({ name: "keys_bip44_path", arguments: arguments_ });
+      const rejected = await client.callTool({
+        name: "keys_bip44_generate",
+        arguments: arguments_,
+      });
       expect(rejected.isError).toBe(true);
       expect(text(rejected.content)).toContain(message);
     }
@@ -917,39 +920,34 @@ describe("keys MCP server", () => {
   it("fails an unparsable BIP44 path with sanitized text", async () => {
     const client = await connectTestClient();
     const result = await client.callTool({
-      name: "keys_bip44_path",
+      name: "keys_bip44_parse",
       arguments: { path: "m/\u009B31m" },
     });
     expect(result.isError).toBe(true);
-    expect(text(result.content)).toBe('keys_bip44_path failed: Invalid BIP44 path: "m/ 31m"');
+    expect(text(result.content)).toBe('keys_bip44_parse failed: Invalid BIP44 path: "m/ 31m"');
   });
 
-  it("rejects ambiguous BIP44 path modes at the schema", async () => {
+  it("keeps each BIP44 tool to its own arguments at the schema", async () => {
     const client = await connectTestClient();
     const path = "m/44'/0'/0'/0/0";
 
-    for (const arguments_ of [
-      {},
-      { account: 1 },
-      { change: 1 },
-      { addressIndex: 1 },
-      { chain: "bitcoin", path },
-      { path, account: 1 },
-      { path, change: 1 },
-      { path, addressIndex: 1 },
-      { path, addressType: "secp256k1" },
-    ]) {
-      const response = await client.callTool({
-        name: "keys_bip44_path",
-        arguments: arguments_,
-      });
+    for (const [name, arguments_] of [
+      ["keys_bip44_parse", {}],
+      ["keys_bip44_parse", { chain: "bitcoin", path }],
+      ["keys_bip44_parse", { path, account: 1 }],
+      ["keys_bip44_parse", { path, addressType: "secp256k1" }],
+      ["keys_bip44_generate", {}],
+      ["keys_bip44_generate", { account: 1 }],
+      ["keys_bip44_generate", { chain: "bitcoin", path }],
+    ] as const) {
+      const response = await client.callTool({ name, arguments: arguments_ });
 
       expect(response.isError).toBe(true);
       expect(text(response.content)).toContain("Invalid arguments");
     }
 
     const parsed = await client.callTool({
-      name: "keys_bip44_path",
+      name: "keys_bip44_parse",
       arguments: { path },
     });
     expect(parsed.isError).not.toBe(true);

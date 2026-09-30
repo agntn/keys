@@ -215,10 +215,11 @@ try {
     { chain: "ethereum", message: "disposable MCP test", signature, publicKey },
     /Signature is valid/,
   );
-  await call("keys_bip44_path", { chain: "bitcoin", change: 1 }, /m\/44'\/0'\/0'\/1\/0/);
-  await call("keys_bip44_path", { chain: "solana" }, /Path: m\/44'\/501'\/0'\/0'$/m);
+  await call("keys_bip44_parse", { path: "m/44h/60h/0h/0/3" }, /Address index: 3$/m);
+  await call("keys_bip44_generate", { chain: "bitcoin", change: 1 }, /m\/44'\/0'\/0'\/1\/0/);
+  await call("keys_bip44_generate", { chain: "solana" }, /Path: m\/44'\/501'\/0'\/0'$/m);
   await call(
-    "keys_bip44_path",
+    "keys_bip44_generate",
     { chain: "sui", addressType: "secp256k1" },
     /Path: m\/54'\/784'\/0'\/0\/0$/m,
   );

@@ -1,6 +1,6 @@
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { BIP44Change, getBIP44Path } from "./utils/bip44/index.ts";
+import { BIP44Change, getPath } from "./utils/bip44/index.ts";
 import {
   deriveExtendedPublicChild,
   SLIP132_FORMATS,
@@ -142,7 +142,7 @@ export abstract class AbstractBlockchain implements Blockchain {
     addressIndex = 0,
     _options?: KeyOptions,
   ): string {
-    return getBIP44Path(this.bip44, account, change, addressIndex);
+    return getPath(this.bip44, account, change, addressIndex);
   }
 
   deriveHDWallet(
@@ -218,4 +218,39 @@ export abstract class AbstractBlockchain implements Blockchain {
  */
 export function useBlockchain<T extends AbstractBlockchain>(blockchain: T): T {
   return blockchain;
+}
+
+/** The part of a blockchain that decides its derivation paths. */
+export interface PathSource {
+  readonly bip44: number;
+  readonly getDerivationPath?: (
+    account?: number,
+    change?: number,
+    addressIndex?: number,
+    options?: KeyOptions,
+  ) => string;
+}
+
+/**
+ * Get the derivation path a blockchain's wallets use for an account: the chain's own shape when
+ * it declares one, BIP44 from its coin type otherwise.
+ *
+ * @param blockchain - The blockchain implementation interface
+ * @param account - Account index (defaults to 0)
+ * @param change - 0 for external chain (receive addresses), 1 for internal chain (change addresses)
+ * @param addressIndex - Address index (defaults to 0)
+ * @param options - Key options, the scheme on chains with two curves
+ * @returns {string} Derivation path string
+ */
+export function getBlockchainPath(
+  blockchain: PathSource,
+  account = 0,
+  change: number = BIP44Change.EXTERNAL,
+  addressIndex = 0,
+  options?: KeyOptions,
+): string {
+  if (blockchain.getDerivationPath === undefined) {
+    return getPath(blockchain.bip44, account, change, addressIndex);
+  }
+  return blockchain.getDerivationPath(account, change, addressIndex, options);
 }
