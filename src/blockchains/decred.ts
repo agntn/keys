@@ -5,7 +5,7 @@ import { base58check } from "@scure/base";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { encodeCompactSize } from "../utils/bitcoin.ts";
-import { generateKeyPublic } from "../utils/secp256k1.ts";
+import { generateKeyPublic } from "../utils/secp256k1/keys.ts";
 import { assertNoRecoveryByte, hasRecoveryByte } from "../utils/signing.ts";
 import type { Curve, KeyOptions, Options, SigningOptions, Wallet, XpubWallet } from "../types.ts";
 

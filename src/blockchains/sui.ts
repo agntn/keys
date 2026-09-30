@@ -4,7 +4,7 @@ import { AbstractBlockchain } from "../blockchain.ts";
 import { addSchemeByte, createPrefixedAddress, validateAddressHex } from "../utils/address.ts";
 import { BIP44Change, getBIP32Path, getHardenedPath } from "../utils/bip44/index.ts";
 import { generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
-import { generateKeyPublic as getSecp256k1KeyPublic } from "../utils/secp256k1.ts";
+import { generateKeyPublic as getSecp256k1KeyPublic } from "../utils/secp256k1/keys.ts";
 import {
   assertNoRecoveryByte,
   hasRecoveryByte,

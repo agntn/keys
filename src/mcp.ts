@@ -117,7 +117,7 @@ const tools: readonly ToolDefinition[] = [
     execute: (args) => deriveBip39Seed(args["mnemonic"], args["passphrase"], args["language"]),
   },
   {
-    name: "keys_convert_public_key",
+    name: "keys_secp256k1_public_key_convert",
     title: "Convert Public Key",
     description:
       "Convert a secp256k1 public key between compressed and uncompressed SEC1 hex. No private key required. Rejects hybrid and x-only encodings.",

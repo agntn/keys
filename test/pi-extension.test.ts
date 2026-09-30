@@ -164,7 +164,7 @@ describe("keys Pi extension", () => {
   });
 
   it("converts public keys and validates inputs when Pi skips its schema", async () => {
-    const tool = registerTools().get("keys_convert_public_key");
+    const tool = registerTools().get("keys_secp256k1_public_key_convert");
     if (!tool) throw new Error("Missing public key conversion tool");
     const { compressed, uncompressed } = publicKeyEncodingVector;
     expect(await tool.execute("compress", { publicKey: uncompressed })).toMatchObject({

@@ -4,7 +4,7 @@ import { AbstractBlockchain } from "../blockchain.ts";
 import { addSchemeByte } from "../utils/address.ts";
 import { encodeBase58Check, validateBase58Check } from "../utils/encoding.ts";
 import { hashWithPreamble } from "../utils/evm.ts";
-import { generateKeyPublic } from "../utils/secp256k1.ts";
+import { generateKeyPublic } from "../utils/secp256k1/keys.ts";
 import { signMessage, verifyMessage } from "../utils/signing.ts";
 import type { Curve, KeyOptions, RecoverableSigningOptions } from "../types.ts";
 

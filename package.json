@@ -70,6 +70,10 @@
       "types": "./dist/utils/electrum/index.d.mts",
       "default": "./dist/utils/electrum/index.mjs"
     },
+    "./secp256k1": {
+      "types": "./dist/utils/secp256k1/index.d.mts",
+      "default": "./dist/utils/secp256k1/index.mjs"
+    },
     "./slip10": {
       "types": "./dist/utils/slip10/index.d.mts",
       "default": "./dist/utils/slip10/index.mjs"

@@ -1,7 +1,7 @@
 import { keccak256 } from "@agntn/hashes";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { AbstractBlockchain } from "../blockchain.ts";
-import { generateKeyPublic as getSecp256k1KeyPublic } from "./secp256k1.ts";
+import { generateKeyPublic as getSecp256k1KeyPublic } from "./secp256k1/keys.ts";
 import { signMessage, verifyMessage } from "./signing.ts";
 import type { KeyOptions, RecoverableSigningOptions } from "../types.ts";
 

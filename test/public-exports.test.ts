@@ -9,12 +9,14 @@ import type { HDWalletOptions } from "@agntn/keys";
 import type { DecodedWIF, WIFOptions } from "@agntn/keys/wif";
 import type { BIP39MnemonicInspection } from "@agntn/keys/bip39";
 import type { ElectrumSeedType } from "@agntn/keys/electrum";
+import type { PublicKeyEncodingOptions } from "@agntn/keys/secp256k1";
 import {
   electrumVectors,
   wifTestVectors,
   localizedMnemonicVectors,
   invalidChecksumPuzzle,
   bip39TestVectors,
+  publicKeyEncodingVector,
   slip132Vectors,
 } from "./fixtures.ts";
 import { blockchains as sourceChains } from "../src/_blockchains.ts";
@@ -25,6 +27,7 @@ const EXPORTS = [
   ["@agntn/keys/bip38", "/dist/utils/bip38/index.mjs"],
   ["@agntn/keys/bip39", "/dist/utils/bip39/index.mjs"],
   ["@agntn/keys/electrum", "/dist/utils/electrum/index.mjs"],
+  ["@agntn/keys/secp256k1", "/dist/utils/secp256k1/index.mjs"],
   ["@agntn/keys/slip10", "/dist/utils/slip10/index.mjs"],
   ["@agntn/keys/wif", "/dist/utils/wif/index.mjs"],
 ] as const;
@@ -53,6 +56,23 @@ describe("Public WIF exports", () => {
     const root = await import("@agntn/keys");
     expect(root).not.toHaveProperty("encodeWIF");
     expect(root).not.toHaveProperty("decodeWIF");
+  });
+});
+
+describe("Public secp256k1 exports", () => {
+  it("converts a public key from the built package", async () => {
+    const { convertPublicKey } = await import("@agntn/keys/secp256k1");
+    const { compressed, uncompressed } = publicKeyEncodingVector;
+    const options: PublicKeyEncodingOptions = { compressed: false };
+    expect(convertPublicKey(compressed, options)).toBe(uncompressed);
+    expect(convertPublicKey(uncompressed)).toBe(compressed);
+  });
+
+  it("keeps the conversion out of the root entry and key generation private", async () => {
+    const root = await import("@agntn/keys");
+    expect(root).not.toHaveProperty("convertSecp256k1PublicKey");
+    const secp256k1 = await import("@agntn/keys/secp256k1");
+    expect(new Set(Object.keys(secp256k1))).toEqual(new Set(["convertPublicKey"]));
   });
 });
 
@@ -178,7 +198,7 @@ describe("Consumer bundles", () => {
   it.each([
     ["encode", "@agntn/keys/wif"],
     ["decode", "@agntn/keys/wif"],
-    ["convertSecp256k1PublicKey", "@agntn/keys"],
+    ["convertPublicKey", "@agntn/keys/secp256k1"],
   ])(
     "leaves the chain registry and the Electrum list out of an app importing %s from %s",
     async (name, from) => {

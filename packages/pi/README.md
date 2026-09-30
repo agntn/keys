@@ -7,29 +7,29 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 
 ## Tools
 
-| Tool                          | Purpose                                                            |
-| ----------------------------- | ------------------------------------------------------------------ |
-| `keys_electrum_wallet_derive` | Derive a Bitcoin address from an explicit Electrum phrase and path |
-| `keys_derive_bip39_seed`      | Derive seed hex from a valid mnemonic and optional passphrase      |
-| `keys_convert_public_key`     | Convert secp256k1 public keys between SEC1 encodings               |
-| `keys_wif_encode`             | Export a disposable private key as native BTC, LTC or DCR WIF      |
-| `keys_wif_decode`             | Read native WIF into a hex key, network and compression flag       |
-| `keys_bip38_inspect`          | Read a BIP38 key's header and check an address, no passphrase      |
-| `keys_generate_wallet`        | Generate private key + public key + address for a chain            |
-| `keys_derive_wallet`          | Derive public key + address from an existing private key           |
-| `keys_derive_hd_wallet`       | Derive public key + address from a mnemonic and path               |
-| `keys_derive_xpub_wallet`     | Derive public key + address from an xpub, ypub or zpub and a path  |
-| `keys_generate_mnemonic`      | Generate a disposable English BIP39 mnemonic                       |
-| `keys_inspect_mnemonic`       | Validate a BIP39 mnemonic and recover its entropy                  |
-| `keys_encode_bip39_entropy`   | Encode hexadecimal entropy as an English BIP39 mnemonic            |
-| `keys_lookup_bip39_indices`   | Map numeric positions to words in an official BIP39 list           |
-| `keys_lookup_bip39_words`     | Search an official word list and report 0- and 1-based indices     |
-| `keys_recover_mnemonic_word`  | List words allowed by the checksum for one missing position        |
-| `keys_get_address`            | Derive an address from a public key                                |
-| `keys_validate_address`       | Check if an address is valid for a chain                           |
-| `keys_sign_message`           | Sign a message with a private key (secp256k1/ed25519)              |
-| `keys_verify_message`         | Verify a signature against message + public key                    |
-| `keys_bip44_path`             | Generate or parse a BIP44 derivation path                          |
+| Tool                                | Purpose                                                            |
+| ----------------------------------- | ------------------------------------------------------------------ |
+| `keys_electrum_wallet_derive`       | Derive a Bitcoin address from an explicit Electrum phrase and path |
+| `keys_derive_bip39_seed`            | Derive seed hex from a valid mnemonic and optional passphrase      |
+| `keys_secp256k1_public_key_convert` | Convert secp256k1 public keys between SEC1 encodings               |
+| `keys_wif_encode`                   | Export a disposable private key as native BTC, LTC or DCR WIF      |
+| `keys_wif_decode`                   | Read native WIF into a hex key, network and compression flag       |
+| `keys_bip38_inspect`                | Read a BIP38 key's header and check an address, no passphrase      |
+| `keys_generate_wallet`              | Generate private key + public key + address for a chain            |
+| `keys_derive_wallet`                | Derive public key + address from an existing private key           |
+| `keys_derive_hd_wallet`             | Derive public key + address from a mnemonic and path               |
+| `keys_derive_xpub_wallet`           | Derive public key + address from an xpub, ypub or zpub and a path  |
+| `keys_generate_mnemonic`            | Generate a disposable English BIP39 mnemonic                       |
+| `keys_inspect_mnemonic`             | Validate a BIP39 mnemonic and recover its entropy                  |
+| `keys_encode_bip39_entropy`         | Encode hexadecimal entropy as an English BIP39 mnemonic            |
+| `keys_lookup_bip39_indices`         | Map numeric positions to words in an official BIP39 list           |
+| `keys_lookup_bip39_words`           | Search an official word list and report 0- and 1-based indices     |
+| `keys_recover_mnemonic_word`        | List words allowed by the checksum for one missing position        |
+| `keys_get_address`                  | Derive an address from a public key                                |
+| `keys_validate_address`             | Check if an address is valid for a chain                           |
+| `keys_sign_message`                 | Sign a message with a private key (secp256k1/ed25519)              |
+| `keys_verify_message`               | Verify a signature against message + public key                    |
+| `keys_bip44_path`                   | Generate or parse a BIP44 derivation path                          |
 
 ## BIP39 seed
 

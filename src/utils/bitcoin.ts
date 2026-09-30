@@ -13,7 +13,7 @@ import {
 import { decodeCashAddr, encodeCashAddr } from "./cashaddr.ts";
 import { SLIP132_FORMATS, type ExtendedKeyFormats } from "./extended-key.ts";
 import { normalizeHardenedMarkers } from "./hd-index.ts";
-import { generateKeyPublic } from "./secp256k1.ts";
+import { generateKeyPublic } from "./secp256k1/keys.ts";
 import {
   assertNoRecoveryByte,
   hasRecoveryByte,
