@@ -22,6 +22,7 @@ import {
   TOOL_MNEMONIC_WORD_COUNTS,
   MAX_BIP39_SEED_INPUT_LENGTH,
   MAX_BIP38_ADDRESS_LENGTH,
+  MAX_ADDRESS_LENGTH,
   TOOL_WIF_CHAINS,
   PRIVATE_KEY_SCHEMA_PATTERN,
   PUBLIC_KEY_SCHEMA_PATTERN,
@@ -919,6 +920,9 @@ export async function validateAddress(
 ): Promise<ToolResult<AddressValidationDetails>> {
   const { blockchain } = await getBlockchain(chainValue, networkValue);
   const address = requiredString(addressValue, "Address");
+  if (Array.from(address).length > MAX_ADDRESS_LENGTH) {
+    throw new RangeError(`Address must not exceed ${MAX_ADDRESS_LENGTH} characters`);
+  }
   const valid = blockchain.validateAddress(address);
   const renderedAddress = sanitizeToolText(address);
   const otherNetwork = valid
