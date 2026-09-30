@@ -95,7 +95,7 @@ describe("keys OMP extension", () => {
     expect(decoded).toContain(wif.privateKey);
 
     const { mnemonic } = bip39TestVectors;
-    const seed = (passphrase: string) => call("keys_derive_bip39_seed", { mnemonic, passphrase });
+    const seed = (passphrase: string) => call("keys_bip39_seed_derive", { mnemonic, passphrase });
     expect(await seed("")).not.toBe(await seed(" "));
   });
 });

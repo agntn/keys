@@ -1,6 +1,6 @@
 import { getMasterKeyFromSeed as getBIP32MasterKey } from "./bip32/index.ts";
 import {
-  inspectBIP39Mnemonic,
+  inspect as inspectBIP39Mnemonic,
   mnemonicToSeed,
   wordlist as englishWordlist,
   type BIP39MnemonicInspection,

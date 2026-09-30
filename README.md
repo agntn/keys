@@ -130,12 +130,12 @@ There isn't much more to it. Every chain has `generateKeyPrivate`, `getKeyPublic
 A puzzle mnemonic with a broken checksum is not a wrong answer, it's Tuesday. The [claimed Movie Enigma solution](https://github.com/floflo777/open-crypto-puzzles/issues/24) has one:
 
 ```ts
-import { inspectBIP39Mnemonic, getMnemonicWordCandidates } from "@agntn/keys/bip39";
+import { inspect, getMnemonicWordCandidates } from "@agntn/keys/bip39";
 
 const puzzle =
   "path mad alien apology escape spare miss goddess leopard crime visit clock start first blade guard close barrel term screen matrix toy ghost shine";
 
-console.log(inspectBIP39Mnemonic(puzzle));
+console.log(inspect(puzzle));
 const wallet = btc.deriveHDWallet(puzzle, "m/84'/0'/0'/0/0", { allowInvalidChecksum: true });
 console.log(wallet.address);
 console.log(wallet.warnings);
@@ -164,7 +164,7 @@ bc1q94ecsn0qk8lap2gefrycnms3ruepy889z969a6
 
 Without the flag `deriveHDWallet` throws. With it you get the wallet and a warning, the words exactly as given, nothing repaired. Ask the checksum which last words it would accept and you get eight, `shine` is not one of them, and each of the eight opens a different wallet. That is how a "fixed" mnemonic loses a puzzle, so the fixing stays with you, not with the library.
 
-`inspectBIP39Mnemonic` splits the verdict three ways, count, dictionary and checksum, so you see which one failed. The candidate filter and `deriveHDWallet` are English only. The other nine word lists are there for lookups and generation: `lookupBIP39Words(["orologio", "civetta"], "italian")` finds them, orologio at 1178 and civetta at 361 counting from zero, and `loadBIP39Wordlist("japanese")` fed to the `bip39` codec gives you mnemonics with the ideographic spaces the spec asks for. The flag in the docs: [Wallets](https://keys.agntn.dev/guide/wallets).
+`inspect` splits the verdict three ways, count, dictionary and checksum, so you see which one failed. The candidate filter and `deriveHDWallet` are English only. The other nine word lists are there for lookups and generation: `lookupWords(["orologio", "civetta"], "italian")` finds them, orologio at 1178 and civetta at 361 counting from zero, and `loadWordlist("japanese")` fed to the `bip39` codec gives you mnemonics with the ideographic spaces the spec asks for. The flag in the docs: [Wallets](https://keys.agntn.dev/guide/wallets).
 
 ## ⛓️ Chains
 

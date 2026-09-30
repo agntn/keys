@@ -108,7 +108,7 @@ const tools: readonly ToolDefinition[] = [
       deriveElectrumWallet(args["mnemonic"], args["path"], args["passphrase"], args["network"]),
   },
   {
-    name: "keys_derive_bip39_seed",
+    name: "keys_bip39_seed_derive",
     title: "Derive BIP39 Seed",
     description:
       "Derive a 64-byte BIP39 seed from a valid mnemonic and optional passphrase. Not a BIP32 master key. Inputs and seed enter the transcript; use only public or disposable material, never keys controlling real funds.",
@@ -207,7 +207,7 @@ const tools: readonly ToolDefinition[] = [
       ),
   },
   {
-    name: "keys_generate_mnemonic",
+    name: "keys_bip39_generate",
     title: "Generate BIP39 Mnemonic",
     description:
       "Generate a random BIP39 mnemonic for tests or disposable wallets. The result enters the transcript. Never use it for real funds.",
@@ -216,7 +216,7 @@ const tools: readonly ToolDefinition[] = [
     execute: (args) => generateBip39Mnemonic(args["words"], args["language"]),
   },
   {
-    name: "keys_inspect_mnemonic",
+    name: "keys_bip39_inspect",
     title: "Inspect Mnemonic",
     description:
       "Inspect BIP39 word count, dictionary membership and checksum separately. Recover entropy only when valid. A bad checksum does not rule out a puzzle candidate. The phrase enters the MCP transcript, so use only public or disposable candidates.",
@@ -225,7 +225,7 @@ const tools: readonly ToolDefinition[] = [
     execute: (args) => inspectMnemonic(args["mnemonic"], args["language"]),
   },
   {
-    name: "keys_encode_bip39_entropy",
+    name: "keys_bip39_entropy_encode",
     title: "Encode BIP39 Entropy",
     description:
       "Encode 16, 20, 24, 28, or 32 bytes of hexadecimal entropy as a BIP39 mnemonic. Both forms enter the MCP transcript, so use only public or disposable material.",
@@ -234,7 +234,7 @@ const tools: readonly ToolDefinition[] = [
     execute: (args) => encodeBip39Entropy(args["entropy"], args["language"]),
   },
   {
-    name: "keys_lookup_bip39_indices",
+    name: "keys_bip39_indices_lookup",
     title: "Look Up BIP39 Indices",
     description:
       "Read words at numeric positions in an official BIP39 list, preserving the supplied order and index convention.",
@@ -243,7 +243,7 @@ const tools: readonly ToolDefinition[] = [
     execute: (args) => lookupBip39Indices(args["indices"], args["language"], args["indexBase"]),
   },
   {
-    name: "keys_lookup_bip39_words",
+    name: "keys_bip39_words_lookup",
     title: "Look Up BIP39 Words",
     description:
       "Check word membership in an official BIP39 list and return both zero-based and one-based indices.",
@@ -252,7 +252,7 @@ const tools: readonly ToolDefinition[] = [
     execute: (args) => lookupBip39Words(args["words"], args["language"]),
   },
   {
-    name: "keys_recover_mnemonic_word",
+    name: "keys_bip39_word_recover",
     title: "Recover Mnemonic Word",
     description:
       "List English BIP39 words that make the checksum valid for one missing position. Use this filter only when canonical BIP39 generation is established, not for puzzles that may have invalid checksums. Inputs enter the MCP transcript, so use only public or disposable candidates.",

@@ -115,7 +115,7 @@ try {
   const mnemonic =
     "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
   await call(
-    "keys_derive_bip39_seed",
+    "keys_bip39_seed_derive",
     { mnemonic, passphrase: bip39TestVectors.passphrase },
     new RegExp(bip39TestVectors.seedWithPassphrase),
   );
@@ -145,10 +145,10 @@ try {
     { chain: "bitcoin", mnemonic, path: "m/84'/0'/0'/0/0" },
     /bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu/,
   );
-  const generated = await call("keys_generate_mnemonic", { words: 24 }, /Words: 24/);
+  const generated = await call("keys_bip39_generate", { words: 24 }, /Words: 24/);
   const generatedMnemonic = /Mnemonic: ([a-z ]+)/.exec(generated)?.[1];
-  if (!generatedMnemonic) throw new Error("keys_generate_mnemonic returned no mnemonic");
-  await call("keys_inspect_mnemonic", { mnemonic: generatedMnemonic }, /Valid BIP39: yes/);
+  if (!generatedMnemonic) throw new Error("keys_bip39_generate returned no mnemonic");
+  await call("keys_bip39_inspect", { mnemonic: generatedMnemonic }, /Valid BIP39: yes/);
   const puzzleArgs = {
     chain: "bitcoin",
     mnemonic: invalidChecksumPuzzle.mnemonic,
@@ -175,28 +175,28 @@ try {
   if (puzzleWallet.includes(invalidChecksumPuzzle.mnemonic)) {
     throw new Error("Puzzle derivation echoed the mnemonic");
   }
-  await call("keys_inspect_mnemonic", { mnemonic }, /Valid BIP39: yes/);
-  await call("keys_encode_bip39_entropy", { entropy: "00".repeat(16) }, /Words: 12/);
-  for (const name of ["keys_generate_mnemonic", "keys_encode_bip39_entropy"]) {
-    const args = name === "keys_generate_mnemonic" ? { words: 15 } : { entropy: "00".repeat(20) };
+  await call("keys_bip39_inspect", { mnemonic }, /Valid BIP39: yes/);
+  await call("keys_bip39_entropy_encode", { entropy: "00".repeat(16) }, /Words: 12/);
+  for (const name of ["keys_bip39_generate", "keys_bip39_entropy_encode"]) {
+    const args = name === "keys_bip39_generate" ? { words: 15 } : { entropy: "00".repeat(20) };
     const result = await call(name, { ...args, language: "japanese" }, /Words: 15/);
     const localized = /Mnemonic: ([^\n]+)/u.exec(result)?.[1];
     if (!localized || localized.split("\u3000").length !== 15) {
       throw new Error(`${name} did not return 15 Japanese words`);
     }
     await call(
-      "keys_inspect_mnemonic",
+      "keys_bip39_inspect",
       { mnemonic: localized, language: "japanese" },
       /Valid BIP39: yes/,
     );
   }
-  await call("keys_lookup_bip39_indices", { indices: [0, 2047] }, /2047: zoo/);
+  await call("keys_bip39_indices_lookup", { indices: [0, 2047] }, /2047: zoo/);
   await call(
-    "keys_lookup_bip39_words",
+    "keys_bip39_words_lookup",
     { words: ["skill", "zoo"] },
     /^Language: english\nIndices: zero-based, one-based\nskill: 1619, 1620\nzoo: 2047, 2048$/,
   );
-  await call("keys_recover_mnemonic_word", { mnemonic: missing }, /Candidates \(128\):/);
+  await call("keys_bip39_word_recover", { mnemonic: missing }, /Candidates \(128\):/);
   await call("keys_get_address", { chain: "ethereum", publicKey }, /Address: 0x/);
   await call(
     "keys_validate_address",

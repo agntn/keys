@@ -29,7 +29,7 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, Ele
 | ------------ | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `bip32/`     | HD key derivation (secp256k1) | `getMasterKeyFromSeed`, `deriveHDKey`, `HARDENED_OFFSET`                                                                                      |
 | `bip38/`     | Encrypted key headers         | `inspect`: mode, flags, address hash, owner entropy, lot and sequence without the passphrase; no decryption                                   |
-| `bip39/`     | Mnemonic phrases              | `generateMnemonic`, `mnemonicToSeed`, `validateMnemonic`, `getMnemonicWordCandidates`, `lookupBIP39Words`, `lookupBIP39Indices`               |
+| `bip39/`     | Mnemonic phrases              | `generateMnemonic`, `mnemonicToSeed`, `validateMnemonic`, `getMnemonicWordCandidates`, `lookupWords`, `lookupIndices`                         |
 | `bip44/`     | Derivation paths              | `BIP44` enum, `getBIP44Path`, `getBIP32Path`, `getHardenedPath`, `parseBIP44Path`, `getBlockchainPath`                                        |
 | `electrum/`  | Electrum seeds                | `inspect` names the seed version, `deriveSeed` gives the seed of a standard or SegWit phrase; normalization and the legacy list stay internal |
 | `secp256k1/` | SEC1 public keys              | `convertPublicKey` between compressed and uncompressed; key generation and signing for the secp256k1 chains stay internal in `keys.ts`        |

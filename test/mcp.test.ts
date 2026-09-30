@@ -55,7 +55,7 @@ describe("keys MCP server", () => {
     const client = await connectTestClient();
     const words = Array.from({ length: size }, (_, index) => (index % 2 === 0 ? "ZOO" : "eleven"));
     const result = await client.callTool({
-      name: "keys_lookup_bip39_words",
+      name: "keys_bip39_words_lookup",
       arguments: { words },
     });
     expect(result.isError).not.toBe(true);
@@ -94,7 +94,7 @@ describe("keys MCP server", () => {
   it("derives a BIP39 seed through MCP", async () => {
     const client = await connectTestClient();
     const result = await client.callTool({
-      name: "keys_derive_bip39_seed",
+      name: "keys_bip39_seed_derive",
       arguments: { mnemonic: bip39TestVectors.mnemonic },
     });
     expect(result.isError).not.toBe(true);
@@ -110,7 +110,7 @@ describe("keys MCP server", () => {
       { mnemonic: bip39TestVectors.mnemonic, language: "unknown-secret" },
       { mnemonic: bip39TestVectors.mnemonic, extra: "unknown-secret" },
     ]) {
-      const result = await client.callTool({ name: "keys_derive_bip39_seed", arguments: args });
+      const result = await client.callTool({ name: "keys_bip39_seed_derive", arguments: args });
       expect(result.isError).toBe(true);
       expect(text(result.content)).not.toContain("unknown-secret");
     }
@@ -125,7 +125,7 @@ describe("keys MCP server", () => {
         "word 12 is not in the french list",
       ],
     ] as const) {
-      const result = await client.callTool({ name: "keys_derive_bip39_seed", arguments: args });
+      const result = await client.callTool({ name: "keys_bip39_seed_derive", arguments: args });
       expect(result.isError).toBe(true);
       expect(text(result.content)).toContain(`Invalid BIP39 mnemonic: ${reason}`);
       expect(text(result.content)).not.toContain("allowInvalidChecksum");
@@ -163,14 +163,14 @@ describe("keys MCP server", () => {
     const client = await connectTestClient();
     for (const { language, entropy, mnemonic } of localizedMnemonicVectors) {
       const encoded = await client.callTool({
-        name: "keys_encode_bip39_entropy",
+        name: "keys_bip39_entropy_encode",
         arguments: { language, entropy },
       });
       expect(encoded.isError).not.toBe(true);
       expect(text(encoded.content)).toContain(`Language: ${language}`);
       expect(text(encoded.content)).toContain(`Mnemonic: ${mnemonic}`);
       const inspected = await client.callTool({
-        name: "keys_inspect_mnemonic",
+        name: "keys_bip39_inspect",
         arguments: { language, mnemonic },
       });
       expect(inspected.isError).not.toBe(true);
@@ -181,21 +181,21 @@ describe("keys MCP server", () => {
       expect(text(inspected.content)).toContain("Checksum valid: yes");
     }
     const generated = await client.callTool({
-      name: "keys_generate_mnemonic",
+      name: "keys_bip39_generate",
       arguments: { language: "japanese", words: 15 },
     });
     expect(generated.isError).not.toBe(true);
     const mnemonic = /Mnemonic: ([^\n]+)/u.exec(text(generated.content))?.[1];
     expect(mnemonic?.split("\u3000")).toHaveLength(15);
     const inspected = await client.callTool({
-      name: "keys_inspect_mnemonic",
+      name: "keys_bip39_inspect",
       arguments: { language: "japanese", mnemonic },
     });
     expect(text(inspected.content)).toContain("Valid BIP39: yes");
     for (const [name, args] of [
-      ["keys_generate_mnemonic", {}],
-      ["keys_inspect_mnemonic", { mnemonic }],
-      ["keys_encode_bip39_entropy", { entropy: "00".repeat(16) }],
+      ["keys_bip39_generate", {}],
+      ["keys_bip39_inspect", { mnemonic }],
+      ["keys_bip39_entropy_encode", { entropy: "00".repeat(16) }],
     ] as const) {
       const result = await client.callTool({
         name,
@@ -210,14 +210,14 @@ describe("keys MCP server", () => {
     const client = await connectTestClient();
     const mnemonics: string[] = [];
     for (const args of [{}, {}, { words: 24 }]) {
-      const result = await client.callTool({ name: "keys_generate_mnemonic", arguments: args });
+      const result = await client.callTool({ name: "keys_bip39_generate", arguments: args });
       expect(result.isError).not.toBe(true);
       const mnemonic = /Mnemonic: ([a-z ]+)/.exec(text(result.content))?.[1];
       if (!mnemonic) throw new Error("Missing mnemonic");
       expect(mnemonic.split(" ")).toHaveLength(args.words ?? 12);
       expect(text(result.content)).toContain("Never use it for real funds");
       const inspected = await client.callTool({
-        name: "keys_inspect_mnemonic",
+        name: "keys_bip39_inspect",
         arguments: { mnemonic },
       });
       expect(text(inspected.content)).toContain("Valid BIP39: yes");
@@ -226,10 +226,10 @@ describe("keys MCP server", () => {
     expect(new Set(mnemonics).size).toBe(3);
     const listed = await client.listTools();
     expect(
-      listed.tools.find((tool) => tool.name === "keys_generate_mnemonic")?.annotations,
+      listed.tools.find((tool) => tool.name === "keys_bip39_generate")?.annotations,
     ).toMatchObject({ readOnlyHint: false, idempotentHint: false, openWorldHint: false });
     for (const args of [{ words: 13 }, { words: "12" }, { words: null }, { extra: true }]) {
-      const result = await client.callTool({ name: "keys_generate_mnemonic", arguments: args });
+      const result = await client.callTool({ name: "keys_bip39_generate", arguments: args });
       expect(result.isError).toBe(true);
     }
   });
@@ -473,7 +473,7 @@ describe("keys MCP server", () => {
       expect(rejected.isError).toBe(true);
     }
     const inspection = await client.callTool({
-      name: "keys_inspect_mnemonic",
+      name: "keys_bip39_inspect",
       arguments: { mnemonic },
     });
     expect(text(inspection.content)).toContain("Word count valid: yes");
@@ -988,12 +988,12 @@ describe("keys MCP server", () => {
         "Invalid arguments at /chain: must be one of bitcoin, litecoin, dash, decred, dogecoin",
       ],
       [
-        "keys_generate_mnemonic",
+        "keys_bip39_generate",
         { words: 13 },
         "Invalid arguments at /words: must be one of 12, 15, 18, 21, 24",
       ],
       [
-        "keys_lookup_bip39_indices",
+        "keys_bip39_indices_lookup",
         { indices: [1], indexBase: 2 },
         "Invalid arguments at /indexBase: must be one of 0, 1",
       ],
