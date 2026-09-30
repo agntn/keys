@@ -30,6 +30,7 @@ import {
   brainwalletVectors,
 } from "./fixtures.ts";
 import keysExtension from "../packages/pi/extensions/keys.ts";
+import { keysTools } from "../src/tools.ts";
 import { mnemonicToSeed, mnemonicToEntropy, validateMnemonic } from "../src/utils/bip39/index.ts";
 
 interface RegisteredTool {
@@ -46,9 +47,9 @@ interface RegisteredTool {
 
 /**
  * SAFETY: the extension only calls registerTool during registration.
- * @returns {ReadonlyMap<string, RegisteredTool>} The tools captured from the extension
+ * @returns {Promise<ReadonlyMap<string, RegisteredTool>>} The tools captured from the extension
  */
-function registerTools(): ReadonlyMap<string, RegisteredTool> {
+async function registerTools(): Promise<ReadonlyMap<string, RegisteredTool>> {
   const tools = new Map<string, RegisteredTool>();
   const api = {
     registerTool(tool: RegisteredTool) {
@@ -56,13 +57,47 @@ function registerTools(): ReadonlyMap<string, RegisteredTool> {
     },
   } as unknown as ExtensionAPI;
 
-  keysExtension(api);
+  await keysExtension(api);
   return tools;
 }
 
+/**
+ * The tool's executor without the schema check in front of it, to prove its own guards.
+ * @param tool - A registered tool.
+ * @returns {RegisteredTool["execute"]} The executor, called like `execute`.
+ */
+function skipSchema(tool: RegisteredTool): RegisteredTool["execute"] {
+  const definition = keysTools.find((candidate) => candidate.name === tool.name);
+  if (!definition) throw new Error(`${tool.name} has no definition`);
+  return async (_toolCallId, params) => await definition.execute(params as never, {});
+}
+
 describe("keys Pi extension", () => {
+  it("summarizes a call on one clean line", async () => {
+    interface RenderedTool {
+      readonly name: string;
+      readonly renderCall?: (args: unknown) => { render(width: number): string[] };
+    }
+    const pi = new Map<string, RenderedTool>();
+    await keysExtension({
+      registerTool(tool: RenderedTool) {
+        pi.set(tool.name, tool);
+      },
+    } as unknown as ExtensionAPI);
+    const render = (name: string, args: unknown) =>
+      pi.get(name)?.renderCall?.(args).render(200).join("").trim();
+
+    expect(render("keys_address_validate", { address: "1abc\u001B[31m\u2028forged" })).toBe(
+      "Validate Address: 1abc forged",
+    );
+    expect(render("keys_wallet_generate", { chain: "bitcoin" })).toBe("Generate Wallet: bitcoin");
+    expect(render("keys_bip39_seed_derive", { mnemonic: "secret words" })).toBe(
+      "Derive BIP39 Seed",
+    );
+  });
+
   it("derives an Electrum wallet with the shared executor", async () => {
-    const tool = registerTools().get("keys_electrum_wallet_derive");
+    const tool = (await registerTools()).get("keys_electrum_wallet_derive");
     if (!tool) throw new Error("Missing Electrum wallet tool");
     const vector = electrumVectors[0];
     const args = { mnemonic: vector.mnemonic, path: vector.path };
@@ -75,7 +110,7 @@ describe("keys Pi extension", () => {
     await expect(tool.execute("electrum", { ...args, passphrase: false })).rejects.toThrow();
   });
   it("derives a watch-only wallet from an xpub with the shared executor", async () => {
-    const tool = registerTools().get("keys_xpub_wallet_derive");
+    const tool = (await registerTools()).get("keys_xpub_wallet_derive");
     if (!tool) throw new Error("Missing xpub wallet tool");
     const [, ypub] = slip132Vectors;
     const args = { chain: "bitcoin", extendedKey: ypub.extendedKey, path: "m/0/0" };
@@ -84,12 +119,12 @@ describe("keys Pi extension", () => {
     await expect(tool.execute("xpub", args)).resolves.toMatchObject({
       details: { prefix: "ypub", addressType: "p2sh", address: ypub.address },
     });
-    await expect(tool.execute("xpub", { ...args, path: "m/0'/0" })).rejects.toThrow(
+    await expect(skipSchema(tool)("xpub", { ...args, path: "m/0'/0" })).rejects.toThrow(
       "hardened levels need the private key",
     );
   });
   it("derives disposable BIP39 seeds without echoing the input", async () => {
-    const tool = registerTools().get("keys_bip39_seed_derive");
+    const tool = (await registerTools()).get("keys_bip39_seed_derive");
     if (!tool) throw new Error("Missing BIP39 seed tool");
     const { mnemonic, passphrase, seed, seedWithPassphrase } = bip39TestVectors;
     for (const [args, expected] of [
@@ -110,7 +145,7 @@ describe("keys Pi extension", () => {
   });
 
   it("shares the JSON Schema character limit with the seed executor", async () => {
-    const tool = registerTools().get("keys_bip39_seed_derive");
+    const tool = (await registerTools()).get("keys_bip39_seed_derive");
     if (!tool) throw new Error("Missing BIP39 seed tool");
     for (const character of ["x", "😀"]) {
       const args = { mnemonic: bip39TestVectors.mnemonic, passphrase: character.repeat(4096) };
@@ -126,7 +161,7 @@ describe("keys Pi extension", () => {
   it.each(localizedMnemonicVectors)(
     "derives seeds for the $language list",
     async ({ language, mnemonic }) => {
-      const tool = registerTools().get("keys_bip39_seed_derive");
+      const tool = (await registerTools()).get("keys_bip39_seed_derive");
       if (!tool) throw new Error("Missing BIP39 seed tool");
       const result = await tool.execute("seed", { language, mnemonic: mnemonic.normalize("NFC") });
       expect(result).toMatchObject({
@@ -136,7 +171,7 @@ describe("keys Pi extension", () => {
   );
 
   it("rejects malformed seed inputs even when the host skips schemas", async () => {
-    const tool = registerTools().get("keys_bip39_seed_derive");
+    const tool = (await registerTools()).get("keys_bip39_seed_derive");
     if (!tool) throw new Error("Missing BIP39 seed tool");
     for (const args of [
       { mnemonic: null },
@@ -166,7 +201,7 @@ describe("keys Pi extension", () => {
   });
 
   it("converts public keys and validates inputs when Pi skips its schema", async () => {
-    const tool = registerTools().get("keys_secp256k1_public_key_convert");
+    const tool = (await registerTools()).get("keys_secp256k1_public_key_convert");
     if (!tool) throw new Error("Missing public key conversion tool");
     const { compressed, uncompressed } = publicKeyEncodingVector;
     expect(await tool.execute("compress", { publicKey: uncompressed })).toMatchObject({
@@ -180,7 +215,12 @@ describe("keys Pi extension", () => {
     for (const value of [null, "false", 0, {}]) {
       const args = { publicKey: compressed, compressed: value };
       expect(Value.Check(tool.parameters, args)).toBe(false);
-      await expect(tool.execute("invalid", args)).rejects.toThrow("Compressed must be a boolean");
+      await expect(skipSchema(tool)("invalid", args)).rejects.toThrow(
+        "Compressed must be a boolean",
+      );
+      await expect(tool.execute("invalid", args)).rejects.toThrow(
+        "Invalid arguments at /compressed",
+      );
     }
     for (const publicKey of [null, 1, {}, "02" + "ff".repeat(32), "04" + "00".repeat(64)]) {
       await expect(tool.execute("invalid", { publicKey })).rejects.toThrow();
@@ -190,7 +230,7 @@ describe("keys Pi extension", () => {
   it.each(localizedMnemonicVectors)(
     "encodes and inspects $language mnemonics through Pi",
     async ({ language, entropy, mnemonic }) => {
-      const tools = registerTools();
+      const tools = await registerTools();
       const encode = tools.get("keys_bip39_entropy_encode");
       const inspect = tools.get("keys_bip39_inspect");
       if (!encode || !inspect) throw new Error("Missing mnemonic tools");
@@ -227,7 +267,7 @@ describe("keys Pi extension", () => {
   it.each(localizedMnemonicVectors)(
     "generates a $language mnemonic through Pi",
     async ({ language }) => {
-      const tools = registerTools();
+      const tools = await registerTools();
       const generate = tools.get("keys_bip39_generate");
       const inspect = tools.get("keys_bip39_inspect");
       if (!generate || !inspect) throw new Error("Missing mnemonic tools");
@@ -246,7 +286,7 @@ describe("keys Pi extension", () => {
   );
 
   it("rejects unsupported languages even when Pi skips schemas", async () => {
-    const tools = registerTools();
+    const tools = await registerTools();
     for (const [name, args] of [
       ["keys_bip39_generate", {}],
       ["keys_bip39_inspect", { mnemonic: localizedMnemonicVectors[8].mnemonic }],
@@ -256,7 +296,7 @@ describe("keys Pi extension", () => {
       if (!tool) throw new Error(`Missing ${name}`);
       for (const language of ["unknown", "constructor", "__proto__", "", null, 42]) {
         expect(Value.Check(tool.parameters, { ...args, language })).toBe(false);
-        await expect(tool.execute("invalid", { ...args, language })).rejects.toThrow(
+        await expect(skipSchema(tool)("invalid", { ...args, language })).rejects.toThrow(
           /BIP39 language/u,
         );
       }
@@ -264,7 +304,7 @@ describe("keys Pi extension", () => {
   });
 
   it("does not guess a language or repair invalid localized phrases", async () => {
-    const tool = registerTools().get("keys_bip39_inspect");
+    const tool = (await registerTools()).get("keys_bip39_inspect");
     if (!tool) throw new Error("Missing inspection tool");
     const { mnemonic } = localizedMnemonicVectors[8];
     for (const args of [
@@ -284,7 +324,7 @@ describe("keys Pi extension", () => {
   it.each([12, 15, 18, 21, 24])(
     "generates a disposable %i-word mnemonic through Pi",
     async (words) => {
-      const tool = registerTools().get("keys_bip39_generate");
+      const tool = (await registerTools()).get("keys_bip39_generate");
       if (!tool) throw new Error("keys_bip39_generate was not registered");
       expect(Value.Check(tool.parameters, { words })).toBe(true);
       const result = await tool.execute("generate", { words });
@@ -299,18 +339,18 @@ describe("keys Pi extension", () => {
   );
 
   it("rejects invalid mnemonic lengths even when Pi skips schemas", async () => {
-    const tool = registerTools().get("keys_bip39_generate");
+    const tool = (await registerTools()).get("keys_bip39_generate");
     if (!tool) throw new Error("keys_bip39_generate was not registered");
     for (const words of [0, 11, 13, 25, 12.5, "12", null, true, NaN, Infinity]) {
       expect(Value.Check(tool.parameters, { words })).toBe(false);
-      await expect(tool.execute("invalid", { words })).rejects.toThrow(
+      await expect(skipSchema(tool)("invalid", { words })).rejects.toThrow(
         "BIP39 word count must be 12, 15, 18, 21, or 24",
       );
     }
   });
 
   it.each(wifTestVectors)("converts $chain $network WIF through Pi", async (vector) => {
-    const tools = registerTools();
+    const tools = await registerTools();
     const encode = tools.get("keys_wif_encode");
     const decode = tools.get("keys_wif_decode");
     if (!encode || !decode) throw new Error("WIF tools not registered");
@@ -330,7 +370,7 @@ describe("keys Pi extension", () => {
   });
 
   it("derives a brainwallet with the shared executor and keeps its private key out", async () => {
-    const tool = registerTools().get("keys_brainwallet_derive");
+    const tool = (await registerTools()).get("keys_brainwallet_derive");
     if (!tool) throw new Error("Missing brainwallet tool");
     const [vector] = brainwalletVectors;
     const { passphrase, salt } = brainwalletInput;
@@ -348,13 +388,13 @@ describe("keys Pi extension", () => {
       matches: true,
     });
     expect(JSON.stringify(result)).not.toContain(vector.privateKey);
-    await expect(tool.execute("brainwallet", { ...args, N: 1024.5 })).rejects.toThrow(
+    await expect(skipSchema(tool)("brainwallet", { ...args, N: 1024.5 })).rejects.toThrow(
       "N must be an integer from 2 to 1048576",
     );
   });
 
   it("reads a BIP38 header with the shared executor", async () => {
-    const tool = registerTools().get("keys_bip38_inspect");
+    const tool = (await registerTools()).get("keys_bip38_inspect");
     if (!tool) throw new Error("Missing BIP38 tool");
     const { encrypted, address, inspection } = bip38Vectors[2];
     const args = { encrypted, address };
@@ -363,22 +403,22 @@ describe("keys Pi extension", () => {
     await expect(tool.execute("bip38", args)).resolves.toMatchObject({
       details: { ...inspection, addressMatches: true },
     });
-    await expect(tool.execute("bip38", { encrypted, address: "" })).resolves.toEqual({
+    await expect(skipSchema(tool)("bip38", { encrypted, address: "" })).resolves.toEqual({
       content: [{ type: "text", text: JSON.stringify(inspection) }],
       details: inspection,
     });
-    await expect(tool.execute("bip38", { encrypted: 42 })).rejects.toThrow(
+    await expect(skipSchema(tool)("bip38", { encrypted: 42 })).rejects.toThrow(
       "BIP38 key must be a string",
     );
     const longAddress = { encrypted, address: "1".repeat(129) };
     expect(Value.Check(tool.parameters, longAddress)).toBe(false);
-    await expect(tool.execute("bip38", longAddress)).rejects.toThrow(
+    await expect(skipSchema(tool)("bip38", longAddress)).rejects.toThrow(
       "Address must not exceed 128 characters",
     );
   });
 
   it("refuses an overlong address even when Pi skips the schema", async () => {
-    const tool = registerTools().get("keys_address_validate");
+    const tool = (await registerTools()).get("keys_address_validate");
     if (!tool) throw new Error("Missing address validation tool");
     const longest = { chain: "bitcoin", address: "1".repeat(256) };
     const longer = { chain: "bitcoin", address: "1".repeat(257) };
@@ -387,13 +427,13 @@ describe("keys Pi extension", () => {
     await expect(tool.execute("validate", longest)).resolves.toMatchObject({
       details: { valid: false },
     });
-    await expect(tool.execute("validate", longer)).rejects.toThrow(
+    await expect(skipSchema(tool)("validate", longer)).rejects.toThrow(
       "Address must not exceed 256 characters",
     );
   });
 
   it("validates WIF inputs even when Pi skips schema validation", async () => {
-    const tools = registerTools();
+    const tools = await registerTools();
     const encode = tools.get("keys_wif_encode");
     const decode = tools.get("keys_wif_decode");
     if (!encode || !decode) throw new Error("WIF tools not registered");
@@ -405,18 +445,18 @@ describe("keys Pi extension", () => {
       { chain: "bitcoin", privateKey, network: "unknown" },
     ]) {
       expect(Value.Check(encode.parameters, args)).toBe(false);
-      await expect(encode.execute("invalid", args)).rejects.toThrow();
+      await expect(skipSchema(encode)("invalid", args)).rejects.toThrow();
     }
     await expect(
-      encode.execute("invalid", { chain: "decred", privateKey, compressed: false }),
+      skipSchema(encode)("invalid", { chain: "decred", privateKey, compressed: false }),
     ).rejects.toThrow("Decred WIF requires");
     await expect(
-      decode.execute("invalid", { chain: "bitcoin", wif: "private-secret" }),
+      skipSchema(decode)("invalid", { chain: "bitcoin", wif: "private-secret" }),
     ).rejects.toThrow("Invalid WIF encoding or checksum");
   });
 
   it("derives Litecoin through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_wallet_derive");
+    const tool = (await registerTools()).get("keys_wallet_derive");
     if (!tool) throw new Error("keys_wallet_derive was not registered");
     const args = { chain: "litecoin", privateKey: litecoinTestVectors.privateKey };
     expect(Value.Check(tool.parameters, args)).toBe(true);
@@ -430,7 +470,7 @@ describe("keys Pi extension", () => {
   });
 
   it("derives Bitcoin Cash through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_wallet_derive");
+    const tool = (await registerTools()).get("keys_wallet_derive");
     if (!tool) throw new Error("keys_wallet_derive was not registered");
     const { privateKey, address } = bitcoinCashTestVectors.keyOne;
     const args = { chain: "bitcoincash", privateKey };
@@ -445,7 +485,7 @@ describe("keys Pi extension", () => {
   });
 
   it("derives Bitcoin Gold through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_wallet_derive");
+    const tool = (await registerTools()).get("keys_wallet_derive");
     if (!tool) throw new Error("keys_wallet_derive was not registered");
     const { privateKey, publicKey, legacyAddress } = bitcoinGoldTestVectors.signed;
     const args = { chain: "bitcoingold", privateKey };
@@ -460,7 +500,7 @@ describe("keys Pi extension", () => {
   });
 
   it("derives Bitcoin SV through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_wallet_derive");
+    const tool = (await registerTools()).get("keys_wallet_derive");
     if (!tool) throw new Error("keys_wallet_derive was not registered");
     const { privateKey, publicKey, address } = bitcoinSVTestVectors.keyOne;
     const args = { chain: "bitcoinsv", privateKey };
@@ -472,7 +512,7 @@ describe("keys Pi extension", () => {
   });
 
   it("derives Dogecoin through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_wallet_derive");
+    const tool = (await registerTools()).get("keys_wallet_derive");
     if (!tool) throw new Error("keys_wallet_derive was not registered");
     const [key] = dogecoinTestVectors.keys;
     const args = { chain: "dogecoin", privateKey: key.privateKey };
@@ -482,7 +522,7 @@ describe("keys Pi extension", () => {
   });
 
   it("derives Dash through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_wallet_derive");
+    const tool = (await registerTools()).get("keys_wallet_derive");
     if (!tool) throw new Error("keys_wallet_derive was not registered");
     const [key] = dashTestVectors.keys;
     const args = { chain: "dash", privateKey: key.privateKey };
@@ -492,7 +532,7 @@ describe("keys Pi extension", () => {
   });
 
   it("derives Zcash through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_wallet_derive");
+    const tool = (await registerTools()).get("keys_wallet_derive");
     if (!tool) throw new Error("keys_wallet_derive was not registered");
     const [key] = zcashTestVectors.keys;
     const args = { chain: "zcash", privateKey: key.privateKey };
@@ -502,7 +542,7 @@ describe("keys Pi extension", () => {
   });
 
   it("derives eCash through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_hd_wallet_derive");
+    const tool = (await registerTools()).get("keys_hd_wallet_derive");
     if (!tool) throw new Error("keys_hd_wallet_derive was not registered");
     const [path, address] = eCashTestVectors.hd.mainnet;
     const args = { chain: "ecash", mnemonic: bip39TestVectors.mnemonic, path };
@@ -512,7 +552,7 @@ describe("keys Pi extension", () => {
   });
 
   it("derives Decred through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_wallet_derive");
+    const tool = (await registerTools()).get("keys_wallet_derive");
     if (!tool) throw new Error("keys_wallet_derive was not registered");
     const args = { chain: "decred", privateKey: decredTestVectors.privateKey };
     expect(Value.Check(tool.parameters, args)).toBe(true);
@@ -526,7 +566,7 @@ describe("keys Pi extension", () => {
   });
 
   it("derives Stellar through the registered Pi tool", async () => {
-    const tool = registerTools().get("keys_wallet_derive");
+    const tool = (await registerTools()).get("keys_wallet_derive");
     if (!tool) throw new Error("keys_wallet_derive was not registered");
     const args = { chain: "stellar", privateKey: stellarTestVectors.privateKey };
     expect(Value.Check(tool.parameters, args)).toBe(true);
@@ -540,7 +580,7 @@ describe("keys Pi extension", () => {
   });
 
   it("rejects 0x hex in the executor when the host skips the schema", async () => {
-    const tools = registerTools();
+    const tools = await registerTools();
     const [message, , signature] = ethereumTestVectors.messages[1];
     const { privateKey, publicKey } = ethereumTestVectors;
 
@@ -566,14 +606,14 @@ describe("keys Pi extension", () => {
       const tool = tools.get(name);
       if (!tool) throw new Error(`${name} was not registered`);
 
-      const rejection = tool.execute("prefixed-hex", params);
+      const rejection = skipSchema(tool)("prefixed-hex", params);
       await expect(rejection).rejects.toThrow(error);
       await expect(rejection).rejects.not.toThrow(privateKey);
     }
   });
 
   it("rejects unsupported networks and address types on every relevant tool", async () => {
-    const tools = registerTools();
+    const tools = await registerTools();
     const networkCases = [
       ["keys_wallet_generate", { chain: "bitcoin" }],
       ["keys_wallet_derive", { chain: "ethereum", privateKey: secp256k1TestVectors.privateKey }],
@@ -601,7 +641,7 @@ describe("keys Pi extension", () => {
       const invalidParams = { ...params, network: "testnett" };
 
       expect(Value.Check(tool.parameters, invalidParams)).toBe(false);
-      await expect(tool.execute("invalid-network", invalidParams)).rejects.toThrow(
+      await expect(skipSchema(tool)("invalid-network", invalidParams)).rejects.toThrow(
         'Unsupported network "testnett"',
       );
     }
@@ -648,7 +688,7 @@ describe("keys Pi extension", () => {
   });
 
   it("maps BIP39 indices to words with an explicit base", async () => {
-    const tool = registerTools().get("keys_bip39_indices_lookup");
+    const tool = (await registerTools()).get("keys_bip39_indices_lookup");
     if (!tool) throw new Error("keys_bip39_indices_lookup was not registered");
 
     const zeroBasedResult = await tool.execute("call-1", {
@@ -682,7 +722,7 @@ describe("keys Pi extension", () => {
   });
 
   it("looks up English BIP39 word membership and both index conventions", async () => {
-    const tool = registerTools().get("keys_bip39_words_lookup");
+    const tool = (await registerTools()).get("keys_bip39_words_lookup");
     if (!tool) throw new Error("keys_bip39_words_lookup was not registered");
 
     const result = await tool.execute("call-1", {
@@ -711,17 +751,19 @@ describe("keys Pi extension", () => {
     expect(Value.Check(tool.parameters, { words: ["two words"] })).toBe(false);
     const tooManyWords = Array.from({ length: 101 }, () => "zoo");
     expect(Value.Check(tool.parameters, { words: tooManyWords })).toBe(false);
-    await expect(tool.execute("call-2", { words: "skill" })).rejects.toThrow("must be an array");
-    await expect(tool.execute("call-3", { words: tooManyWords })).rejects.toThrow(
+    await expect(skipSchema(tool)("call-2", { words: "skill" })).rejects.toThrow(
+      "must be an array",
+    );
+    await expect(skipSchema(tool)("call-3", { words: tooManyWords })).rejects.toThrow(
       "Provide between 1 and 100 words",
     );
-    await expect(tool.execute("call-4", { words: ["two words"] })).rejects.toThrow(
+    await expect(skipSchema(tool)("call-4", { words: ["two words"] })).rejects.toThrow(
       "must contain letters and combining marks only",
     );
   });
 
   it("looks up words from an explicit BIP39 language", async () => {
-    const tool = registerTools().get("keys_bip39_words_lookup");
+    const tool = (await registerTools()).get("keys_bip39_words_lookup");
     if (!tool) throw new Error("keys_bip39_words_lookup was not registered");
 
     const result = await tool.execute("call-1", {
@@ -746,12 +788,12 @@ describe("keys Pi extension", () => {
     );
     expect(Value.Check(tool.parameters, { words: ["orologio"], language: "unknown" })).toBe(false);
     await expect(
-      tool.execute("call-2", { words: ["orologio"], language: "unknown" }),
+      skipSchema(tool)("call-2", { words: ["orologio"], language: "unknown" }),
     ).rejects.toThrow("Unknown BIP39 language");
   });
 
   it("lists words compatible with the checksum for one missing mnemonic position", async () => {
-    const tool = registerTools().get("keys_bip39_word_recover");
+    const tool = (await registerTools()).get("keys_bip39_word_recover");
     if (!tool) throw new Error("keys_bip39_word_recover was not registered");
 
     const template =
@@ -768,7 +810,7 @@ describe("keys Pi extension", () => {
   });
 
   it("inspects a public BIP39 mnemonic without echoing its words", async () => {
-    const tool = registerTools().get("keys_bip39_inspect");
+    const tool = (await registerTools()).get("keys_bip39_inspect");
     if (!tool) throw new Error("keys_bip39_inspect was not registered");
 
     const mnemonic =
@@ -809,7 +851,7 @@ describe("keys Pi extension", () => {
   });
 
   it("encodes public entropy as an English BIP39 mnemonic", async () => {
-    const tool = registerTools().get("keys_bip39_entropy_encode");
+    const tool = (await registerTools()).get("keys_bip39_entropy_encode");
     if (!tool) throw new Error("keys_bip39_entropy_encode was not registered");
 
     const entropy = "00000000000000000000000000000000";
@@ -827,16 +869,16 @@ describe("keys Pi extension", () => {
     expect(Value.Check(tool.parameters, { entropy: "AA".repeat(16) })).toBe(true);
     expect(Value.Check(tool.parameters, { entropy: "00".repeat(15) })).toBe(false);
     expect(Value.Check(tool.parameters, { entropy: "gg".repeat(16) })).toBe(false);
-    await expect(tool.execute("call-2", { entropy: "00".repeat(15) })).rejects.toThrow(
+    await expect(skipSchema(tool)("call-2", { entropy: "00".repeat(15) })).rejects.toThrow(
       "16, 20, 24, 28, or 32 bytes",
     );
-    await expect(tool.execute("call-3", { entropy: "gg".repeat(16) })).rejects.toThrow(
+    await expect(skipSchema(tool)("call-3", { entropy: "gg".repeat(16) })).rejects.toThrow(
       "must be a hexadecimal string",
     );
   });
 
   it("derives an HD wallet from a public mnemonic and path", async () => {
-    const tool = registerTools().get("keys_hd_wallet_derive");
+    const tool = (await registerTools()).get("keys_hd_wallet_derive");
     if (!tool) throw new Error("keys_hd_wallet_derive was not registered");
     const mnemonic =
       "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
@@ -878,7 +920,7 @@ describe("keys Pi extension", () => {
       false,
     );
     await expect(
-      tool.execute("call-3", { chain: "bitcoin", mnemonic, path: "m/84H/0" }),
+      skipSchema(tool)("call-3", { chain: "bitcoin", mnemonic, path: "m/84H/0" }),
     ).rejects.toThrow("must look like");
     await expect(
       tool.execute("call-4", { chain: "cardano", mnemonic, path: "m/1852'/1815'/0'/0/0" }),
@@ -893,7 +935,7 @@ describe("keys Pi extension", () => {
   });
 
   it("exposes the checksum override and warning in Pi content and details", async () => {
-    const tool = registerTools().get("keys_hd_wallet_derive");
+    const tool = (await registerTools()).get("keys_hd_wallet_derive");
     if (!tool) throw new Error("keys_hd_wallet_derive was not registered");
     const { mnemonic, path, address, publicKey } = invalidChecksumPuzzle;
     const args = { chain: "bitcoin", mnemonic, path, allowInvalidChecksum: true };
@@ -911,9 +953,9 @@ describe("keys Pi extension", () => {
     );
     for (const allowInvalidChecksum of ["true", "false", 1, null]) {
       expect(Value.Check(tool.parameters, { ...args, allowInvalidChecksum })).toBe(false);
-      await expect(tool.execute("invalid-flag", { ...args, allowInvalidChecksum })).rejects.toThrow(
-        "allowInvalidChecksum must be a boolean",
-      );
+      await expect(
+        skipSchema(tool)("invalid-flag", { ...args, allowInvalidChecksum }),
+      ).rejects.toThrow("allowInvalidChecksum must be a boolean");
     }
     await expect(
       tool.execute("invalid-words", { ...args, mnemonic: mnemonic.replace("path", "notaword") }),
@@ -921,7 +963,7 @@ describe("keys Pi extension", () => {
   });
 
   it("parses a BIP44 path and refuses anything else", async () => {
-    const tool = registerTools().get("keys_bip44_parse");
+    const tool = (await registerTools()).get("keys_bip44_parse");
     if (!tool) throw new Error("keys_bip44_parse was not registered");
 
     const parsed = await tool.execute("parse", { path: "m/44h/1h/2h/1/7" });
@@ -942,12 +984,12 @@ describe("keys Pi extension", () => {
       [{ path: "m/84'/0'/0'/0/0" }, "Invalid BIP44 path"],
       [{}, "BIP44 path must be a string"],
     ] as const) {
-      await expect(tool.execute("rejected", params)).rejects.toThrow(message);
+      await expect(skipSchema(tool)("rejected", params)).rejects.toThrow(message);
     }
   });
 
   it("generates a chain's path with the indices defaulting to 0", async () => {
-    const tool = registerTools().get("keys_bip44_generate");
+    const tool = (await registerTools()).get("keys_bip44_generate");
     if (!tool) throw new Error("keys_bip44_generate was not registered");
 
     const generated = await tool.execute("generate", { chain: "bitcoin" });
@@ -963,11 +1005,11 @@ describe("keys Pi extension", () => {
     expect(internal.content.map((part) => part.text ?? "").join("\n")).toContain(
       "Path: m/44'/60'/2'/1/0",
     );
-    await expect(tool.execute("no-chain", {})).rejects.toThrow("Chain must be a string");
+    await expect(skipSchema(tool)("no-chain", {})).rejects.toThrow("Chain must be a string");
   });
 
   it("derives a Sui wallet from an existing private key", async () => {
-    const tool = registerTools().get("keys_wallet_derive");
+    const tool = (await registerTools()).get("keys_wallet_derive");
     if (!tool) throw new Error("keys_wallet_derive was not registered");
 
     const result = await tool.execute("call-1", {
@@ -1000,7 +1042,7 @@ async function registerThroughHostLoader(): Promise<ReadonlyMap<string, Register
     { default: true },
   );
   const tools = new Map<string, RegisteredTool>();
-  extension({
+  await extension({
     registerTool(tool: RegisteredTool) {
       tools.set(tool.name, tool);
     },
@@ -1019,7 +1061,7 @@ describe("Pi host loader", () => {
       ["keys_address_get", { chain: "litecoin", publicKey: litecoinTestVectors.publicKey }],
     ] as const;
     const hosted = await registerThroughHostLoader();
-    const direct = registerTools();
+    const direct = await registerTools();
 
     const answers = await Promise.all(
       calls.map(async ([name, params]) => {

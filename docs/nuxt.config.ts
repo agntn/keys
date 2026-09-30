@@ -7,13 +7,13 @@ const librarySource = resolve(import.meta.dirname, "../src");
 /** Runtime deps under src/index.ts and src/mcp.ts, installed here so they resolve from docs/node_modules. */
 const libraryDependencies = [
   "@agntn/hashes",
-  "@modelcontextprotocol/sdk",
+  "@agntn/tools",
+  "@modelcontextprotocol/server",
   "@noble/curves",
   "@scure/base",
   "@scure/bip32",
   "@scure/bip39",
   "micro-key-producer",
-  "typebox",
 ];
 
 /** Every subpath src/ imports, dynamic ones too, so dev bundles them up front, not on demand. */

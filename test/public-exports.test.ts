@@ -294,12 +294,6 @@ describe("Published dependencies", () => {
     ) as { dependencies: Record<string, string> };
     expect(imported).toEqual(new Set(Object.keys(manifest.dependencies)));
   });
-
-  it("ships the license of the typebox it inlines", () => {
-    expect(
-      readFileSync(new URL("../dist/THIRD-PARTY-LICENSES.md", import.meta.url), "utf8"),
-    ).toMatch(/^## typebox$[\s\S]*?Copyright \(c\) .* Haydn Paterson/mu);
-  });
 });
 
 interface PackedTool {
@@ -309,6 +303,9 @@ interface PackedTool {
     params: Readonly<Record<string, unknown>>,
   ) => Promise<{ readonly content: unknown }>;
 }
+
+/** The OMP package root is TypeScript for Bun; the extension takes only `Text` from it. */
+const ompHost = new URL("fixtures/omp-host.ts", import.meta.url);
 
 describe("Published extensions", () => {
   it.each(["pi", "omp"])(
@@ -326,14 +323,19 @@ describe("Published extensions", () => {
             recursive: true,
           });
         }
-        const jiti = createJiti(import.meta.url, { moduleCache: false, tryNative: false });
-        const extension = await jiti.import<(pi: ExtensionAPI) => void>(
+        const jiti = createJiti(import.meta.url, {
+          moduleCache: false,
+          tryNative: false,
+          alias: { "@oh-my-pi/pi-coding-agent": fileURLToPath(ompHost) },
+        });
+        const extension = await jiti.import<(pi: ExtensionAPI) => Promise<void>>(
           join(copy, "packages", host, "extensions/keys.ts"),
           { default: true },
         );
         const tools = new Map<string, PackedTool>();
-        // SAFETY: the extension only calls registerTool during registration.
-        extension({
+        /** SAFETY: the extension only calls registerTool and reads typebox during registration. */
+        await extension({
+          typebox: { Type: { Unsafe: (schema: unknown) => schema } },
           registerTool(tool: PackedTool) {
             tools.set(tool.name, tool);
           },

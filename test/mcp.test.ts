@@ -1,6 +1,5 @@
 import { readFileSync } from "node:fs";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import {
   bip39TestVectors,
@@ -1001,7 +1000,7 @@ describe("keys MCP server", () => {
       arguments: { path: "m/\u009B31m" },
     });
     expect(result.isError).toBe(true);
-    expect(text(result.content)).toBe('keys_bip44_parse failed: Invalid BIP44 path: "m/ 31m"');
+    expect(text(result.content)).toBe('keys_bip44_parse failed: Invalid BIP44 path: "m/"');
   });
 
   it("keeps each BIP44 tool to its own arguments at the schema", async () => {

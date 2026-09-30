@@ -9,7 +9,7 @@ export default defineCommand({
   async run() {
     const [{ createMcpServer }, { StdioServerTransport }] = await Promise.all([
       import("../mcp.ts"),
-      import("@modelcontextprotocol/sdk/server/stdio.js"),
+      import("@modelcontextprotocol/server/stdio"),
     ]);
     await createMcpServer().connect(new StdioServerTransport());
   },
