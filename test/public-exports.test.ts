@@ -8,6 +8,7 @@ import { describe, expect, it } from "vite-plus/test";
 import type { HDWalletOptions } from "@agntn/keys";
 import type { DecodedWIF, WIFOptions } from "@agntn/keys/wif";
 import type { BIP39MnemonicInspection } from "@agntn/keys/bip39";
+import type { ElectrumSeedType } from "@agntn/keys/electrum";
 import {
   electrumVectors,
   wifTestVectors,
@@ -17,12 +18,13 @@ import {
   slip132Vectors,
 } from "./fixtures.ts";
 import { blockchains as sourceChains } from "../src/_blockchains.ts";
-import { ELECTRUM_LEGACY_WORDS } from "../src/utils/electrum-legacy.ts";
+import { ELECTRUM_LEGACY_WORDS } from "../src/utils/electrum/legacy.ts";
 
 const EXPORTS = [
   ["@agntn/keys/bip32", "/dist/utils/bip32/index.mjs"],
   ["@agntn/keys/bip38", "/dist/utils/bip38/index.mjs"],
   ["@agntn/keys/bip39", "/dist/utils/bip39/index.mjs"],
+  ["@agntn/keys/electrum", "/dist/utils/electrum/index.mjs"],
   ["@agntn/keys/slip10", "/dist/utils/slip10/index.mjs"],
   ["@agntn/keys/wif", "/dist/utils/wif/index.mjs"],
 ] as const;
@@ -56,12 +58,13 @@ describe("Public WIF exports", () => {
 
 describe("Public derivation exports", () => {
   it("exports explicit Electrum derivation from the built package", async () => {
-    const { deriveElectrumSeed, inspectElectrumMnemonic, blockchains } =
-      await import("@agntn/keys");
+    const { deriveSeed, inspect } = await import("@agntn/keys/electrum");
+    const { blockchains } = await import("@agntn/keys");
     const { getMasterKeyFromSeed } = await import("@agntn/keys/bip32");
     const vector = electrumVectors[0];
-    expect(inspectElectrumMnemonic(vector.mnemonic)).toBe("segwit");
-    const { seed } = deriveElectrumSeed(vector.mnemonic);
+    const seedType: ElectrumSeedType = inspect(vector.mnemonic);
+    expect(seedType).toBe("segwit");
+    const { seed } = deriveSeed(vector.mnemonic);
     expect(Buffer.from(seed).toString("hex")).toBe(vector.seed);
     const child = getMasterKeyFromSeed(seed).derive(vector.path);
     if (!child.privateKey) throw new Error("Missing private key");
@@ -74,6 +77,15 @@ describe("Public derivation exports", () => {
       ).address,
     ).toBe(vector.address);
   });
+
+  it("keeps Electrum out of the root entry and its normalizer private", async () => {
+    const root = await import("@agntn/keys");
+    expect(root).not.toHaveProperty("deriveElectrumSeed");
+    expect(root).not.toHaveProperty("inspectElectrumMnemonic");
+    const electrum = await import("@agntn/keys/electrum");
+    expect(new Set(Object.keys(electrum))).toEqual(new Set(["deriveSeed", "inspect"]));
+  });
+
   it("exports checksum diagnostics and the explicit HD override from the built package", async () => {
     const { blockchains } = await import("@agntn/keys");
     const { inspectBIP39Mnemonic } = await import("@agntn/keys/bip39");

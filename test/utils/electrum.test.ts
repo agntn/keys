@@ -1,15 +1,15 @@
 import { hex } from "@scure/base";
 import { describe, expect, it } from "vite-plus/test";
-import { deriveElectrumSeed, inspectElectrumMnemonic } from "../../src/index.ts";
-import { normalizeElectrumText } from "../../src/utils/electrum.ts";
+import { deriveSeed, inspect } from "../../src/utils/electrum/index.ts";
+import { normalizeElectrumText } from "../../src/utils/electrum/normalize.ts";
 import { deriveElectrumWallet } from "../../src/tool-operations.ts";
 import { deriveMnemonicKey } from "../../src/utils/hd.ts";
 import { electrumVectors } from "../fixtures.ts";
 
 describe("Electrum seed derivation", () => {
   it.each(electrumVectors)("matches upstream seed bytes and addresses: $name", async (vector) => {
-    expect(inspectElectrumMnemonic(vector.mnemonic)).toBe(vector.seedType);
-    const result = deriveElectrumSeed(vector.mnemonic, vector.passphrase);
+    expect(inspect(vector.mnemonic)).toBe(vector.seedType);
+    const result = deriveSeed(vector.mnemonic, vector.passphrase);
     expect(hex.encode(result.seed)).toBe(vector.seed);
     expect(result.scheme).toBe("electrum");
     const wallet = await deriveElectrumWallet(vector.mnemonic, vector.path, vector.passphrase);
@@ -26,11 +26,8 @@ describe("Electrum seed derivation", () => {
   it("normalizes case, accents and whitespace in phrases and passphrases", () => {
     const vector = electrumVectors[0];
     expect(
-      deriveElectrumSeed(
-        `  ${vector.mnemonic.toUpperCase().replaceAll(" ", "\n\t")} `,
-        "  CAFÉ\nTEST ",
-      ),
-    ).toEqual(deriveElectrumSeed(vector.mnemonic, "cafe test"));
+      deriveSeed(`  ${vector.mnemonic.toUpperCase().replaceAll(" ", "\n\t")} `, "  CAFÉ\nTEST "),
+    ).toEqual(deriveSeed(vector.mnemonic, "cafe test"));
     expect(normalizeElectrumText("a\u034F\uFE0F é \u0903")).toBe("a\u034F\uFE0F e \u0903");
     expect(normalizeElectrumText("眼 \u{20000} 悲")).toBe("眼\u{20000}悲");
     expect(normalizeElectrumText("a\u0085b\u001Cc")).toBe("a b c");
@@ -45,10 +42,8 @@ describe("Electrum seed derivation", () => {
     ["agree install", "2fa_segwit"],
     ["not a seed", "unknown"],
   ])("rejects unsupported versions without exposing the phrase", (phrase, seedType) => {
-    expect(inspectElectrumMnemonic(phrase)).toBe(seedType);
-    expect(() => deriveElectrumSeed(phrase)).toThrow(
-      "Unsupported or unrecognized Electrum seed version",
-    );
+    expect(inspect(phrase)).toBe(seedType);
+    expect(() => deriveSeed(phrase)).toThrow("Unsupported or unrecognized Electrum seed version");
   });
 
   it.each([12, 13, 19, 20, 21, 24, 25])(
@@ -57,9 +52,7 @@ describe("Electrum seed derivation", () => {
       const phrase = "science dawn member doll dutch real can brick knife deny drive list";
       const candidate = phrase + " \u0301".repeat(count - 12);
       expect(normalizeElectrumText(candidate)).toBe(phrase);
-      expect(inspectElectrumMnemonic(candidate)).toBe(
-        count === 12 || count >= 20 ? "2fa" : "unknown",
-      );
+      expect(inspect(candidate)).toBe(count === 12 || count >= 20 ? "2fa" : "unknown");
     },
   );
 

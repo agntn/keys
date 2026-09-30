@@ -207,7 +207,7 @@ omp install @agntn/keys
 }
 ```
 
-Every tool from `keys_derive_electrum_wallet` through `keys_bip44_path` runs here, and the Pi and OMP extensions in [`packages`](./packages) run the exact same executors, installed from npm or from a checkout. Ask for a mnemonic and this is the whole answer:
+Every tool from `keys_electrum_wallet_derive` through `keys_bip44_path` runs here, and the Pi and OMP extensions in [`packages`](./packages) run the exact same executors, installed from npm or from a checkout. Ask for a mnemonic and this is the whole answer:
 
 ```
 Language: english

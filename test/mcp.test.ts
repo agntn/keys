@@ -72,7 +72,7 @@ describe("keys MCP server", () => {
     const client = await connectTestClient();
     const vector = electrumVectors[0];
     const result = await client.callTool({
-      name: "keys_derive_electrum_wallet",
+      name: "keys_electrum_wallet_derive",
       arguments: { mnemonic: vector.mnemonic, path: vector.path },
     });
     expect(result.isError).not.toBe(true);
@@ -84,7 +84,7 @@ describe("keys MCP server", () => {
       { mnemonic: vector.mnemonic, path: vector.path, passphrase: false },
     ]) {
       const failed = await client.callTool({
-        name: "keys_derive_electrum_wallet",
+        name: "keys_electrum_wallet_derive",
         arguments: args,
       });
       expect(failed.isError).toBe(true);
@@ -377,7 +377,7 @@ describe("keys MCP server", () => {
     expect(text(wallet.content)).toContain(
       "Address type: segwit\nPublic key: 0330d54fd0dd420a6e5f8d3624f5f3482cae350f79d5f0753bf5beef9c2d91af3c",
     );
-    const electrumWallet = await call("keys_derive_electrum_wallet", {
+    const electrumWallet = await call("keys_electrum_wallet_derive", {
       mnemonic: electrum.mnemonic,
       path: electrum.path.replaceAll("'", "h"),
     });

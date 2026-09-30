@@ -60,7 +60,7 @@ function registerTools(): ReadonlyMap<string, RegisteredTool> {
 
 describe("keys Pi extension", () => {
   it("derives an Electrum wallet with the shared executor", async () => {
-    const tool = registerTools().get("keys_derive_electrum_wallet");
+    const tool = registerTools().get("keys_electrum_wallet_derive");
     if (!tool) throw new Error("Missing Electrum wallet tool");
     const vector = electrumVectors[0];
     const args = { mnemonic: vector.mnemonic, path: vector.path };
