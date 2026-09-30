@@ -2,11 +2,11 @@
 
 ## Scope
 
-Pi coding agent extension only. Wraps the `@agntn/keys` library as 20 agent tools. **Do not** add blockchain logic, crypto, or chain implementations here. Those live in `../../src/`. This package is a thin tool surface over shared executors.
+Pi coding agent extension only. Wraps the `@agntn/keys` library as 21 agent tools. **Do not** add blockchain logic, crypto, or chain implementations here. Those live in `../../src/`. This package is a thin tool surface over shared executors.
 
 ## Layout
 
-- `extensions/keys.ts`: the extension. One `export default function(pi: ExtensionAPI)` registering 20 tools via `pi.registerTool`.
+- `extensions/keys.ts`: the extension. One `export default function(pi: ExtensionAPI)` registering 21 tools via `pi.registerTool`.
 - `../omp/extensions/keys.ts`: the OMP copy. Mirror every tool change there; only the executor loader differs.
 
 ## Key facts

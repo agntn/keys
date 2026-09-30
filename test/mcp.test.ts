@@ -24,6 +24,7 @@ import {
   slip132PrivateKey,
   secp256k1TestVectors,
   slip132Vectors,
+  bip38Vectors,
 } from "./fixtures.ts";
 import { callTool, createMcpServer, toolListings } from "../src/mcp.ts";
 
@@ -33,6 +34,7 @@ const TOOL_NAMES = [
   "keys_convert_public_key",
   "keys_encode_wif",
   "keys_decode_wif",
+  "keys_inspect_bip38",
   "keys_generate_wallet",
   "keys_derive_wallet",
   "keys_derive_hd_wallet",
@@ -290,6 +292,34 @@ describe("keys MCP server", () => {
     });
     expect(wrongChain.isError).toBe(true);
     expect(text(wrongChain.content)).not.toContain(vector.wif);
+  });
+
+  it("reads a BIP38 header and checks an address through MCP", async () => {
+    const client = await connectTestClient();
+    const { encrypted, address, inspection } = bip38Vectors[3];
+
+    const response = await client.callTool({
+      name: "keys_inspect_bip38",
+      arguments: { encrypted, address },
+    });
+    expect(response.isError).not.toBe(true);
+    expect(JSON.parse(text(response.content))).toEqual({ ...inspection, addressMatches: true });
+
+    const omitted = await client.callTool({
+      name: "keys_inspect_bip38",
+      arguments: { encrypted: bip38Vectors[0].encrypted },
+    });
+    expect(JSON.parse(text(omitted.content))).toEqual(bip38Vectors[0].inspection);
+
+    for (const [args, message] of [
+      [{ encrypted: encrypted.slice(0, -1) + "1" }, "Invalid BIP38 base58 encoding or checksum"],
+      [{ encrypted: "0OIl" }, "Invalid arguments at /encrypted"],
+      [{ encrypted, extra: true }, "Invalid arguments"],
+    ] as const) {
+      const failed = await client.callTool({ name: "keys_inspect_bip38", arguments: args });
+      expect(failed.isError).toBe(true);
+      expect(text(failed.content)).toContain(message);
+    }
   });
 
   it("advertises every keys tool with explicit safety annotations", async () => {

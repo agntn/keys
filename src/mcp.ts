@@ -22,6 +22,7 @@ import {
   generateWallet,
   generateBip39Mnemonic,
   getAddress,
+  inspectBip38,
   inspectMnemonic,
   lookupBip39Indices,
   lookupBip39Words,
@@ -35,6 +36,7 @@ import {
 import { version } from "./version.ts";
 import {
   CONVERT_PUBLIC_KEY_PARAMETERS,
+  INSPECT_BIP38_PARAMETERS,
   WIF_ENCODE_PARAMETERS,
   WIF_DECODE_PARAMETERS,
   GENERATE_MNEMONIC_PARAMETERS,
@@ -141,6 +143,15 @@ const tools: readonly ToolDefinition[] = [
     inputSchema: WIF_DECODE_PARAMETERS,
     annotations: LOCAL_READ,
     execute: (args) => decodeWif(args["chain"], args["wif"], args["network"]),
+  },
+  {
+    name: "keys_inspect_bip38",
+    title: "Inspect BIP38",
+    description:
+      "Read a BIP38 encrypted private key (6P...) without its passphrase: EC multiply or not, compression, lot and sequence, owner entropy, and the stored address hash. Given an address, reports whether its hash matches. Nothing is decrypted.",
+    inputSchema: INSPECT_BIP38_PARAMETERS,
+    annotations: LOCAL_READ,
+    execute: (args) => inspectBip38(args["encrypted"], args["address"]),
   },
   {
     name: "keys_generate_wallet",

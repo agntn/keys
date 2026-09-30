@@ -10,6 +10,7 @@ import { deriveHDKey, getMasterKeyFromSeed } from "./utils/bip32/index.ts";
 import { convertSecp256k1PublicKey } from "./utils/public-key.ts";
 import { describeInvalidMnemonic } from "./utils/hd.ts";
 import { encodeWIF, decodeWIF, type DecodedWIF, type WIFNetworkOptions } from "./utils/wif.ts";
+import { inspectBIP38, type BIP38Inspection } from "./utils/bip38.ts";
 import type { AbstractBlockchain } from "./blockchain.ts";
 import { BIP44, blockchains, getBlockchainPath, parseBIP44Path, useBlockchain } from "./index.ts";
 import {
@@ -1172,5 +1173,24 @@ export function convertPublicKey(
     compressed,
   });
   const details = { publicKey, compressed };
+  return { content: content(JSON.stringify(details)), details };
+}
+
+/**
+ * Read the public header of a BIP38 key and optionally check an address against it.
+ * No passphrase is taken and nothing is decrypted.
+ * @param encryptedValue - BIP38 key starting with `6P`.
+ * @param addressValue - Optional address to compare with the stored address hash.
+ * @returns {ToolResult<BIP38Inspection>} Mode, flags, address hash and owner entropy.
+ */
+export function inspectBip38(
+  encryptedValue: unknown,
+  addressValue?: unknown,
+): ToolResult<BIP38Inspection> {
+  const address = optionalName(addressValue, "Address");
+  const details = inspectBIP38(
+    requiredString(encryptedValue, "BIP38 key"),
+    address === undefined ? {} : { address },
+  );
   return { content: content(JSON.stringify(details)), details };
 }

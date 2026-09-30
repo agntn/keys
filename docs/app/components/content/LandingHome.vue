@@ -110,7 +110,7 @@ const { hex, decimal, rows, pipeline, hd, ready, paused, tick, changedBytes, ste
     </section>
 
     <LandingFeature
-      title="Twenty tools over MCP"
+      title="Twenty-one tools over MCP"
       to="/guide#agents"
       link="MCP server setup"
       :checks="[

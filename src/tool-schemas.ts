@@ -86,6 +86,26 @@ export const WIF_DECODE_PARAMETERS = Type.Object(
   { additionalProperties: false },
 );
 
+/** Shared MCP and Pi schema for reading a BIP38 key without its passphrase. */
+export const INSPECT_BIP38_PARAMETERS = Type.Object(
+  {
+    encrypted: Type.String({
+      minLength: 1,
+      maxLength: 64,
+      pattern: "^[1-9A-HJ-NP-Za-km-z]+$",
+      description: "BIP38 encrypted private key, 58 characters starting with 6P",
+    }),
+    address: Type.Optional(
+      Type.String({
+        minLength: 1,
+        maxLength: 128,
+        description: "Address to compare with the address hash stored in the key",
+      }),
+    ),
+  },
+  { additionalProperties: false },
+);
+
 /** Shared MCP and Pi schema for SEC1 public key conversion. */
 export const CONVERT_PUBLIC_KEY_PARAMETERS = Type.Object(
   {

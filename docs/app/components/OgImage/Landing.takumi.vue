@@ -15,7 +15,7 @@ const TAGLINE =
 /** The same three readouts as the hero; the tool count is pinned by test/mcp.test.ts through LandingHero. */
 const METRICS = [
   { label: "Chains", value: String(CHAINS.length), unit: "", note: "two curves", accent: false },
-  { label: "Tools", value: "20", unit: "", note: "MCP · Pi · OMP", accent: false },
+  { label: "Tools", value: "21", unit: "", note: "MCP · Pi · OMP", accent: false },
   { label: "Network", value: "0", unit: "calls", note: "in process", accent: true },
 ];
 

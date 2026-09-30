@@ -154,7 +154,7 @@ describe("Consumer bundles", () => {
     );
   };
 
-  it.each(["encodeWIF", "decodeWIF", "convertSecp256k1PublicKey"])(
+  it.each(["encodeWIF", "decodeWIF", "convertSecp256k1PublicKey", "inspectBIP38"])(
     "leaves the chain registry and the Electrum list out of an app importing %s",
     async (name) => {
       const chunks = await bundle(name);

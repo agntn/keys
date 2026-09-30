@@ -41,7 +41,7 @@ describe("keys OMP extension", () => {
     const pi = registerTools(piExtension);
 
     expect([...omp.keys()]).toEqual([...pi.keys()]);
-    expect(omp.size).toBe(20);
+    expect(omp.size).toBe(21);
     for (const [name, tool] of omp) {
       const expected = pi.get(name);
       expect(tool.label, name).toBe(expected?.label);

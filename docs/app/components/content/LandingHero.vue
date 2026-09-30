@@ -16,7 +16,7 @@ const emit = defineEmits<{ pause: [paused: boolean]; step: [delta: bigint]; rand
 
 const INSTALL = "pnpm add @agntn/keys";
 /** The tools `keys mcp` lists; test/mcp.test.ts fails when the server's count changes. */
-const MCP_TOOLS = 20;
+const MCP_TOOLS = 21;
 const { copied, copy } = useCopied();
 </script>
 
