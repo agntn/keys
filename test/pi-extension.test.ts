@@ -351,6 +351,21 @@ describe("keys Pi extension", () => {
     );
   });
 
+  it("refuses an overlong address even when Pi skips the schema", async () => {
+    const tool = registerTools().get("keys_validate_address");
+    if (!tool) throw new Error("Missing address validation tool");
+    const longest = { chain: "bitcoin", address: "1".repeat(256) };
+    const longer = { chain: "bitcoin", address: "1".repeat(257) };
+    expect(Value.Check(tool.parameters, longest)).toBe(true);
+    expect(Value.Check(tool.parameters, longer)).toBe(false);
+    await expect(tool.execute("validate", longest)).resolves.toMatchObject({
+      details: { valid: false },
+    });
+    await expect(tool.execute("validate", longer)).rejects.toThrow(
+      "Address must not exceed 256 characters",
+    );
+  });
+
   it("validates WIF inputs even when Pi skips schema validation", async () => {
     const tools = registerTools();
     const encode = tools.get("keys_encode_wif");

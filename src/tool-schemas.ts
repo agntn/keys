@@ -16,6 +16,7 @@ import {
   TOOL_MNEMONIC_WORD_COUNTS,
   MAX_BIP39_SEED_INPUT_LENGTH,
   MAX_BIP38_ADDRESS_LENGTH,
+  MAX_ADDRESS_LENGTH,
 } from "./tool-parameters.ts";
 import { BIP39_LANGUAGES } from "./utils/bip39/languages.ts";
 
@@ -343,7 +344,11 @@ export const GET_ADDRESS_PARAMETERS = Type.Object(
 export const VALIDATE_ADDRESS_PARAMETERS = Type.Object(
   {
     chain: chainArgument,
-    address: Type.String({ description: "Address to validate", minLength: 1, maxLength: 256 }),
+    address: Type.String({
+      description: "Address to validate",
+      minLength: 1,
+      maxLength: MAX_ADDRESS_LENGTH,
+    }),
     network: networkArgument,
   },
   { additionalProperties: false },
