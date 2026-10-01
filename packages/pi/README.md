@@ -18,7 +18,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 | `keys_bip38_inspect`                | Read a BIP38 key's header and check an address, no passphrase      |
 | `keys_wallet_generate`              | Generate private key + public key + address for a chain            |
 | `keys_wallet_derive`                | Derive public key + address from an existing private key           |
-| `keys_hd_wallet_derive`             | Derive public key + address from a mnemonic and path               |
+| `keys_hd_wallet_derive`             | Derive public key + address from a mnemonic or entropy and path    |
 | `keys_xpub_wallet_derive`           | Derive public key + address from an xpub, ypub or zpub and a path  |
 | `keys_bip39_generate`               | Generate a disposable English BIP39 mnemonic                       |
 | `keys_bip39_inspect`                | Validate a BIP39 mnemonic and recover its entropy                  |
@@ -53,6 +53,8 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 ## Puzzle checksum override
 
 `keys_hd_wallet_derive` rejects invalid checksums by default. For public puzzle candidates, set `allowInvalidChecksum: true` explicitly. The tool derives from the supplied words without repairing them and includes a warning in both text and details when the checksum is invalid. Words from the selected list and BIP39 word counts are still required. The list comes from optional `language`, English by default, as in the other BIP39 tools. Whitespace collapsing, NFKD normalization and chain/path restrictions are unchanged.
+
+Got the entropy instead of the words? Pass `entropy` as hex, 16 to 32 bytes, in place of `mnemonic`. The tool spells it with the `language` list and derives from those words, so a puzzle that goes hash, entropy, wallet takes one call, not a detour through `keys_bip39_entropy_encode`. One of the two, never both.
 
 `keys_bip39_inspect` reports `wordCountValid`, `wordlistValid` and `checksumValid`. The checksum verdict is `null` when word count or dictionary membership prevents checking it. A bad checksum alone is not proof that a puzzle answer is wrong. `keys_bip39_word_recover` remains a checksum filter, so it is unsuitable when the target may use an invalid checksum. See the [Movie Enigma example](../../README.md#puzzle-phrases-with-an-invalid-checksum).
 

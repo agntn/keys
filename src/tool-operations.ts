@@ -211,6 +211,22 @@ export interface BIP44PathDetails {
 
 const BIP39_ENTROPY_PATTERN = /^[0-9a-f]+$/i;
 
+/**
+ * Decodes BIP39 entropy from hex, refusing lengths the standard has no word count for.
+ * @param value - Entropy as the caller passed it
+ * @returns {Uint8Array} Entropy bytes
+ */
+function parseBip39Entropy(value: unknown): Uint8Array {
+  const entropyText = requiredString(value, "BIP39 entropy");
+  if (!BIP39_ENTROPY_PATTERN.test(entropyText)) {
+    throw new TypeError("BIP39 entropy must be a hexadecimal string");
+  }
+  if (!BIP39_ENTROPY_BYTE_LENGTHS.includes(entropyText.length / 2)) {
+    throw new RangeError("BIP39 entropy must be 16, 20, 24, 28, or 32 bytes");
+  }
+  return Uint8Array.fromHex(entropyText);
+}
+
 function parseIndexBase(value: unknown): 0 | 1 {
   if (value === undefined || value === 0) return 0;
   if (value === 1) return 1;
@@ -485,15 +501,38 @@ export async function deriveWallet(
 }
 
 /**
- * Derive public wallet material from a BIP39 mnemonic and path.
+ * Takes the mnemonic as given, or spells the entropy with the word list; exactly one of them.
+ * @param mnemonicValue - Mnemonic as the caller passed it
+ * @param entropyValue - Entropy hex as the caller passed it
+ * @param wordlist - Word list that spells the entropy
+ * @returns {string} Mnemonic to derive from
+ */
+function mnemonicOrEntropy(
+  mnemonicValue: unknown,
+  entropyValue: unknown,
+  wordlist: readonly string[],
+): string {
+  if (mnemonicValue !== undefined && entropyValue !== undefined) {
+    throw new TypeError("Pass either a BIP39 mnemonic or its entropy, not both");
+  }
+  if (entropyValue === undefined) {
+    if (mnemonicValue === undefined) throw new TypeError("Pass a BIP39 mnemonic or its entropy");
+    return requiredString(mnemonicValue, "BIP39 mnemonic");
+  }
+  return bip39.entropyToMnemonic(parseBip39Entropy(entropyValue), [...wordlist]);
+}
+
+/**
+ * Derive public wallet material from a BIP39 mnemonic or its entropy and a path.
  * @param chainValue - Blockchain name.
- * @param mnemonicValue - BIP39 mnemonic in the selected language.
+ * @param mnemonicValue - BIP39 mnemonic in the selected language, or undefined when entropy is given.
  * @param pathValue - Absolute derivation path.
  * @param passphraseValue - Optional BIP39 passphrase.
  * @param addressTypeValue - Optional chain-specific address type.
  * @param networkValue - Optional network name.
  * @param allowInvalidChecksumValue - Accept a checksum failure for a public puzzle, default false.
  * @param languageValue - Optional official BIP39 language key.
+ * @param entropyValue - BIP39 entropy as hex, encoded with the selected list in place of a mnemonic.
  * @returns {Promise<ToolResult<DerivedWalletDetails>>} Derived public wallet material.
  */
 export async function deriveHdWallet(
@@ -505,6 +544,7 @@ export async function deriveHdWallet(
   networkValue?: unknown,
   allowInvalidChecksumValue?: unknown,
   languageValue?: unknown,
+  entropyValue?: unknown,
 ): Promise<ToolResult<DerivedWalletDetails>> {
   if (allowInvalidChecksumValue !== undefined && typeof allowInvalidChecksumValue !== "boolean") {
     throw new TypeError("allowInvalidChecksum must be a boolean");
@@ -519,10 +559,10 @@ export async function deriveHdWallet(
     networkValue,
     addressTypeValue,
   );
-  const mnemonic = requiredString(mnemonicValue, "BIP39 mnemonic");
   const passphrase = optionalString(passphraseValue, "BIP39 passphrase");
   const language = parseBIP39Language(languageValue);
   const wordlist = await loadBIP39Wordlist(language);
+  const mnemonic = mnemonicOrEntropy(mnemonicValue, entropyValue, wordlist);
   const words = normalizeMnemonic(mnemonic);
   const inspection = inspectBIP39Mnemonic(words, wordlist);
   if (inspection.checksumValid === null) {
@@ -935,16 +975,10 @@ export async function encodeBip39Entropy(
   entropyValue: unknown,
   languageValue?: unknown,
 ): Promise<ToolResult<EncodedEntropyDetails>> {
-  const entropyText = requiredString(entropyValue, "BIP39 entropy");
-  if (!BIP39_ENTROPY_PATTERN.test(entropyText)) {
-    throw new TypeError("BIP39 entropy must be a hexadecimal string");
-  }
-  if (!BIP39_ENTROPY_BYTE_LENGTHS.includes(entropyText.length / 2)) {
-    throw new RangeError("BIP39 entropy must be 16, 20, 24, 28, or 32 bytes");
-  }
+  const entropy = parseBip39Entropy(entropyValue);
   const language = parseBIP39Language(languageValue);
   const wordlist = await loadBIP39Wordlist(language);
-  const mnemonic = bip39.entropyToMnemonic(Buffer.from(entropyText, "hex"), wordlist);
+  const mnemonic = bip39.entropyToMnemonic(entropy, wordlist);
   const words = mnemonic.split(/\s+/u).length;
   return {
     content: content(`Language: ${language}\nWords: ${words}\nMnemonic: ${mnemonic}`),

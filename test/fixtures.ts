@@ -1136,6 +1136,14 @@ export const localizedMnemonicVectors = [
   },
 ] as const;
 
+/** Quizchain block 74 in agntn/puzzles: entropy from the thread, public key from its claim. */
+export const bip39EntropyWalletVector = {
+  entropy: "0a7c902815f9dc9d26057280592b2553",
+  path: "m/44'/0'/0'/0/0",
+  publicKey: "0312b422a56647895f549b81db0f36a964479696ec86b374be8b353167257825dd",
+  address: "1HbUcHKfpkUSssNtcfS3vKzdTMue3EByMQ",
+} as const;
+
 /** SEC 2 v2 section 2.4.1: secp256k1 generator G, in SEC1 encodings. */
 export const publicKeyEncodingVector = {
   compressed: "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",

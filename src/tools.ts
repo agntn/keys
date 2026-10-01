@@ -193,10 +193,11 @@ export const hdWalletDeriveTool = defineTool({
   name: "keys_hd_wallet_derive",
   title: "Derive HD Wallet",
   description:
-    "Derive a public key and address from BIP39 words and a path. Use allowInvalidChecksum for public puzzle candidates that fail only the checksum. Words are not repaired. Inputs enter the transcript, so use only public or disposable material.",
+    "Derive a public key and address from BIP39 words or their entropy and a path. Use allowInvalidChecksum for public puzzle candidates that fail only the checksum. Words are not repaired. Inputs enter the transcript, so use only public or disposable material.",
   snippet: "Use to see which address a public puzzle mnemonic reaches on a given derivation path.",
   guidelines: [
-    "Provide a chain, a BIP39 mnemonic, and a full derivation path",
+    "Provide a chain, a BIP39 mnemonic or its hex entropy, and a full derivation path",
+    "Pass entropy directly instead of calling keys_bip39_entropy_encode first",
     "keys_hd_wallet_derive accepts an explicit BIP39 language; omission means english, not automatic detection",
     "Common paths: Bitcoin m/44'/0'/0'/0/0 (legacy), m/49'/0'/0'/0/0 (p2sh), m/84'/0'/0'/0/0 (segwit), m/86'/0'/0'/0/0 (taproot); Bitcoin Cash m/44'/145'/0'/0/0; Bitcoin Gold m/44'/156'/0'/0/0 or m/84'/156'/0'/0/0 (segwit); Bitcoin SV m/44'/236'/0'/0/0, or m/44'/0'/0'/0/0 for ElectrumSV; Dash m/44'/5'/0'/0/0; Dogecoin m/44'/3'/0'/0/0; Zcash m/44'/133'/0'/0/0; eCash m/44'/899'/0'/0/0, or m/44'/1899'/0'/0/0 for Cashtab and m/44'/145'/0'/0/0 for wallets from before the split; Ethereum m/44'/60'/0'/0/0; Solana m/44'/501'/0'/0'; Stellar m/44'/148'/0'; Aptos m/44'/637'/0'/0'/0'; Sui m/44'/784'/0'/0'/0'",
     "Bitcoin, Bitcoin Gold and Litecoin pick the address type from the path purpose unless addressType is set",
@@ -221,6 +222,7 @@ export const hdWalletDeriveTool = defineTool({
       params.network,
       params.allowInvalidChecksum,
       params.language,
+      params.entropy,
     ),
 });
 
