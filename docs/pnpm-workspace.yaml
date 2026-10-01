@@ -11,5 +11,4 @@ allowBuilds:
   core-js-pure: false
 
 minimumReleaseAgeExclude:
-  - "@agntn/hashes"
-  - "@agntn/tools"
+  - "@agntn/*"
