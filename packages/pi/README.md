@@ -50,6 +50,8 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 
 `keys_wallet_generate`, `keys_wallet_derive`, `keys_hd_wallet_derive`, `keys_xpub_wallet_derive` and `keys_address_get` print an `Address type:` line on chains with more than one format: Bitcoin, Bitcoin Gold, Litecoin, Sui and Cardano. It's the type you passed, the one the path purpose or key prefix picked, or the chain's default, so nobody has to guess it from the first characters of the address.
 
+`keys_wallet_derive` takes an optional `compressed`, `true` by default. Old wallets and brainwallets wrote the uncompressed key, and on the Bitcoin family that's another legacy address from the same private key, so pass `compressed: false` for them. Ethereum, Base and TRON hash the uncompressed key anyway and refuse `true`. Sui on secp256k1 refuses `false`, and the ed25519 chains take no flag at all.
+
 ## Puzzle checksum override
 
 `keys_hd_wallet_derive` rejects invalid checksums by default. For public puzzle candidates, set `allowInvalidChecksum: true` explicitly. The tool derives from the supplied words without repairing them and includes a warning in both text and details when the checksum is invalid. Words from the selected list and BIP39 word counts are still required. The list comes from optional `language`, English by default, as in the other BIP39 tools. Whitespace collapsing, NFKD normalization and chain/path restrictions are unchanged.

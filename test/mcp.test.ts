@@ -754,6 +754,55 @@ describe("keys MCP server", () => {
     expect(text(response.content)).not.toContain(litecoinTestVectors.privateKey);
   });
 
+  it("derives the uncompressed Bitcoin and Ethereum wallets through MCP", async () => {
+    const client = await connectTestClient();
+    const [rushwallet] = plainBrainwalletVectors;
+    const bitcoin = await client.callTool({
+      name: "keys_wallet_derive",
+      arguments: { chain: "bitcoin", privateKey: rushwallet.privateKey, compressed: false },
+    });
+    expect(bitcoin.isError).not.toBe(true);
+    expect(text(bitcoin.content).split("\n")).toEqual([
+      "Address type: legacy",
+      `Public key: ${rushwallet.publicKey}`,
+      `Address: ${rushwallet.address}`,
+    ]);
+
+    const ethereum = await client.callTool({
+      name: "keys_wallet_derive",
+      arguments: {
+        chain: "ethereum",
+        privateKey: ethereumTestVectors.privateKey,
+        compressed: false,
+      },
+    });
+    expect(text(ethereum.content).split("\n")).toEqual([
+      `Public key: ${ethereumTestVectors.publicKeyUncompressed}`,
+      `Address: ${ethereumTestVectors.address}`,
+    ]);
+  });
+
+  it("refuses a compressed flag the chain's address would ignore", async () => {
+    const client = await connectTestClient();
+    const privateKey = secp256k1TestVectors.privateKey;
+    for (const [args, message] of [
+      [{ chain: "ethereum", compressed: true }, "ethereum addresses hash the uncompressed key"],
+      [{ chain: "tron", compressed: true }, "tron addresses hash the uncompressed key"],
+      [{ chain: "sui", addressType: "secp256k1", compressed: false }, "sui secp256k1 addresses"],
+      [{ chain: "sui", compressed: true }, "sui ed25519 keys take no compressed"],
+      [{ chain: "solana", compressed: false }, "solana ed25519 keys take no compressed"],
+      [{ chain: "bitcoin", addressType: "segwit", compressed: false }, "take a compressed"],
+    ] as const) {
+      const failed = await client.callTool({
+        name: "keys_wallet_derive",
+        arguments: { ...args, privateKey },
+      });
+      expect(failed.isError, message).toBe(true);
+      expect(text(failed.content)).toContain(message);
+      expect(text(failed.content)).not.toContain(privateKey);
+    }
+  });
+
   it("derives and validates Bitcoin Cash through the MCP schema and executor", async () => {
     const client = await connectTestClient();
     const { privateKey, address } = bitcoinCashTestVectors.prize;
