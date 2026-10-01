@@ -10,7 +10,8 @@ import {
   XPUB_PATH_SCHEMA_PATTERN,
   PRIVATE_KEY_SCHEMA_PATTERN,
   PUBLIC_KEY_SCHEMA_PATTERN,
-  SIGNATURE_SCHEMA_PATTERN,
+  CORE_SIGNATURE_SCHEMA_PATTERN,
+  MESSAGE_SIGNATURE_SCHEMA_PATTERN,
   TOOL_WIF_CHAINS,
   TOOL_NETWORKS,
   TOOL_MNEMONIC_WORD_COUNTS,
@@ -453,7 +454,7 @@ export const SIGN_MESSAGE_PARAMETERS = Type.Object(
     recovered: Type.Optional(
       Type.Boolean({
         description:
-          "Append the recovery byte as v, giving 65-byte r||s||v. Ethereum, base and tron only; that is the form ethers, viem and TronWeb read. Default: false",
+          "Return the recoverable form: 65-byte r||s||v hex on ethereum, base and tron, the form ethers, viem and TronWeb read; base64 of a header byte, r and s on the Bitcoin family and decred, the form signmessage prints. Default: false",
       }),
     ),
   },
@@ -465,14 +466,36 @@ export const VERIFY_MESSAGE_PARAMETERS = Type.Object(
     chain: chainArgument,
     message: Type.String({ description: "Original message" }),
     signature: Type.String({
-      pattern: SIGNATURE_SCHEMA_PATTERN,
-      description: "Signature as hex without 0x: 64 bytes, or 65 with the recovery byte",
+      pattern: MESSAGE_SIGNATURE_SCHEMA_PATTERN,
+      description:
+        "Signature as hex without 0x: 64 bytes, or 65 with the recovery byte. The Bitcoin family and decred also take signmessage's base64",
     }),
     publicKey: Type.String({
       pattern: PUBLIC_KEY_SCHEMA_PATTERN,
       description:
         "Public key as hex without 0x: 32-byte ed25519, or compressed or uncompressed SEC1 secp256k1",
     }),
+    network: networkArgument,
+  },
+  { additionalProperties: false },
+);
+
+export const RECOVER_MESSAGE_PARAMETERS = Type.Object(
+  {
+    chain: chainArgument,
+    message: Type.String({ description: "Message that was signed" }),
+    signature: Type.String({
+      pattern: CORE_SIGNATURE_SCHEMA_PATTERN,
+      description:
+        "Base64 signature as bitcoin-cli signmessage, Electrum and Sparrow print it: a header byte, then r and s",
+    }),
+    address: Type.Optional(
+      Type.String({
+        description: "Address the signer should hold, compared with the recovered key",
+        minLength: 1,
+        maxLength: MAX_ADDRESS_LENGTH,
+      }),
+    ),
     network: networkArgument,
   },
   { additionalProperties: false },

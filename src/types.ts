@@ -58,6 +58,16 @@ export interface XpubWallet {
 }
 
 /**
+ * Signer recovered from a message signature: its key and the address type the signature names.
+ */
+export interface MessageSigner {
+  /** SEC1 public key as hex, compressed or not as the signature header says */
+  publicKey: string;
+  /** `legacy` for Core's P2PKH headers, `p2sh` or `segwit` for the BIP137 ones */
+  addressType: AddressType;
+}
+
+/**
  * Bitcoin address types
  */
 export type BitcoinAddressType = "legacy" | "p2sh" | "segwit" | "p2wsh" | "taproot";
@@ -198,6 +208,14 @@ export interface BlockchainImplementation {
     keyPublic: string,
     options?: SigningOptions,
   ) => boolean;
+
+  /**
+   * Recovers the signer of a base64 signature, which the Bitcoin family and Decred write
+   * @param message - The signed message (string or Uint8Array)
+   * @param signature - Base64 of the header byte, then `r` and `s`
+   * @returns The recovered public key and the address type the header names
+   */
+  recoverMessageSigner?: (message: string | Uint8Array, signature: string) => MessageSigner;
 }
 
 /**

@@ -41,6 +41,7 @@ keys/
 | CashAddr P2PKH     | `src/utils/bitcoin.ts` → `AbstractCashAddrBlockchain`                             | A prefix per network and the hash lengths each type pays to, as BCH and eCash use   |
 | Add EVM chain      | `src/utils/evm.ts` → `AbstractEVMBlockchain`                                      | Minimal subclass with `name` and `bip44`                                            |
 | Fix signing        | `src/utils/signing.ts` (generic) or `evm.ts`/`ed25519-chains.ts` (chain-specific) | EVM uses preamble hash, ed25519 signs raw                                           |
+| Core signature     | `src/utils/secp256k1/compact-signature.ts`                                        | Base64 `header                                                                      |     | r   |     | s`for the Bitcoin family and Decred;`recoverMessageSigner` reads it |
 | Change public API  | `src/index.ts`                                                                    | Re-exports only, never add logic here                                               |
 | Change agent tools | `src/tools.ts`, `src/tool-schemas.ts`, `src/tool-operations.ts`                   | One definition per tool; a new tool also gets its file in `docs/server/mcp/tools/`  |
 | Add BIP/derivation | `src/utils/bip32/`, `bip39/`, `bip44/`, `slip10/`                                 | Subdirs with index.ts                                                               |

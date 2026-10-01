@@ -76,7 +76,7 @@ WIF works without a Zcash entry. Zcash kept Bitcoin's `0x80` and `0xef`, so `dec
 
 ## Signing
 
-zcashd signs under `"\x16Zcash Signed Message:\n"`, then does what Bitcoin does: compact size lengths, double SHA-256, secp256k1. Only the preamble differs, and that's enough for a Bitcoin signature to fail here. The tests take the signature from Zallet's `verifymessage` test, recover its key, get Zallet's `t1` address back and verify it. `{ recovered: true }` throws, same as on Bitcoin.
+zcashd signs under `"\x16Zcash Signed Message:\n"`, then does what Bitcoin does: compact size lengths, double SHA-256, secp256k1. Only the preamble differs, and that's enough for a Bitcoin signature to fail here. The tests take the signature from Zallet's `verifymessage` test, recover its key, check that `recoverMessageSigner` finds the same one, get Zallet's `t1` address back and verify it. `{ recovered: true }` writes that same base64 form.
 
 ## Where it lives
 

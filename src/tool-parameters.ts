@@ -26,6 +26,7 @@ export const TOOL_NAMES = [
   "keys_address_validate",
   "keys_message_sign",
   "keys_message_verify",
+  "keys_message_recover",
   "keys_bip44_parse",
   "keys_bip44_generate",
 ] as const;
@@ -160,3 +161,10 @@ export const PUBLIC_KEY_SCHEMA_PATTERN =
 
 /** JSON Schema pattern for a 64-byte `r||s` or ed25519 signature, or 65 bytes with the recovery byte. */
 export const SIGNATURE_SCHEMA_PATTERN = "^[0-9A-Fa-f]{128}(?:[0-9A-Fa-f]{2})?$";
+
+/** JSON Schema pattern for Core's base64 signature: 65 bytes are 87 characters and one `=`. */
+export const CORE_SIGNATURE_SCHEMA_PATTERN = "^[A-Za-z0-9+/]{87}=$";
+
+/** JSON Schema pattern for a signature the verify tool reads: hex as above, or Core's base64. */
+export const MESSAGE_SIGNATURE_SCHEMA_PATTERN =
+  "^(?:[0-9A-Fa-f]{128}(?:[0-9A-Fa-f]{2})?|[A-Za-z0-9+/]{87}=)$";

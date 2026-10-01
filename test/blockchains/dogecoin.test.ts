@@ -77,6 +77,17 @@ describe("Dogecoin", () => {
     }
     expect(chain.verifyMessage(message, signed, publicKey)).toBe(true);
     expect(chain.verifyMessage(`${message}!`, signed, publicKey)).toBe(false);
+    const [uncompressed, compressed] = signatures;
+    expect(chain.signMessage(message, privateKey, { recovered: true, compressed: false })).toBe(
+      uncompressed,
+    );
+    expect(chain.signMessage(message, privateKey, { recovered: true })).toBe(compressed);
+    expect(chain.recoverMessageSigner(message, compressed)).toEqual({
+      publicKey,
+      addressType: "legacy",
+    });
+    const signer = chain.recoverMessageSigner(message, uncompressed);
+    expect(signer.publicKey).toBe(chain.getKeyPublic(privateKey, { compressed: false }));
   });
 
   it("uses its own preamble, so a Bitcoin signature does not carry over", () => {
@@ -88,7 +99,8 @@ describe("Dogecoin", () => {
       expect(chain.signMessage(message, privateKey)).not.toBe(signature);
       expect(chain.verifyMessage(message, signature, publicKeyCompressed)).toBe(false);
     }
-    expect(() => chain.signMessage("hello", privateKey, { recovered: true })).toThrow();
+    const core = new Bitcoin().signMessage("hello", privateKey, { recovered: true });
+    expect(chain.verifyMessage("hello", core, publicKeyCompressed)).toBe(false);
   });
 
   it("derives the receive address Ledger Live gives for the public test mnemonic", () => {

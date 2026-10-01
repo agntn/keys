@@ -122,6 +122,11 @@ describe("eCash", () => {
     const publicKey = chain.getKeyPublic(privateKey);
     expect(chain.verifyMessage(message, rs, publicKey)).toBe(true);
     expect(chain.verifyMessage(`${message}!`, rs, publicKey)).toBe(false);
+    expect(chain.verifyMessage(message, signature, publicKey)).toBe(true);
+    expect(chain.recoverMessageSigner(message, signature)).toEqual({
+      publicKey,
+      addressType: "legacy",
+    });
   });
 
   it("signs the digest Bitcoin ABC signs and round trips", () => {
@@ -144,7 +149,8 @@ describe("eCash", () => {
       expect(chain.signMessage(message, privateKey)).not.toBe(signature);
       expect(chain.verifyMessage(message, signature, publicKeyCompressed)).toBe(false);
     }
-    expect(() => chain.signMessage("hello", privateKey, { recovered: true })).toThrow();
+    const core = bitcoinCash.signMessage("hello", privateKey, { recovered: true });
+    expect(chain.verifyMessage("hello", core, publicKeyCompressed)).toBe(false);
   });
 
   it("derives bip_utils' first receive address on each network", () => {

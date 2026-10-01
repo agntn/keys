@@ -14,6 +14,7 @@ import type {
   HDWalletOptions,
   KeyOptions,
   Keys,
+  MessageSigner,
   Options,
   SigningOptions,
   Wallet,
@@ -209,6 +210,18 @@ export abstract class AbstractBlockchain implements Blockchain {
       prefix: child.prefix,
       ...(type === undefined ? {} : { addressType: type }),
     };
+  }
+
+  /**
+   * Recover the signer of a base64 signature, which only the Bitcoin family and Decred write.
+   * @param _message - The signed message
+   * @param _signature - Base64 of the header byte, then `r` and `s`
+   * @returns {MessageSigner} The recovered public key and the address type the header names
+   */
+  recoverMessageSigner(_message: string | Uint8Array, _signature: string): MessageSigner {
+    throw new Error(
+      `${this.name} does not write Core style base64 signatures, so it has no signer to recover`,
+    );
   }
 }
 

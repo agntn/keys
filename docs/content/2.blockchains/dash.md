@@ -74,7 +74,7 @@ Version `0xcc` on mainnet, so compressed keys start with `X` and uncompressed on
 
 ## Signing
 
-Dash was DarkCoin until 2015, and the message preamble never got the rename. Dash Core signs under `"\x19DarkCoin Signed Message:\n"` to this day, then does what Bitcoin does: compact size lengths, double SHA-256, secp256k1. So a Bitcoin signature doesn't verify here, and the other way round. The `message_sign` case in Dash Core's `util_tests.cpp` matches byte for byte once you drop its header byte. `{ recovered: true }` throws, same as on Bitcoin.
+Dash was DarkCoin until 2015, and the message preamble never got the rename. Dash Core signs under `"\x19DarkCoin Signed Message:\n"` to this day, then does what Bitcoin does: compact size lengths, double SHA-256, secp256k1. So a Bitcoin signature doesn't verify here, and the other way round. The `message_sign` case in Dash Core's `util_tests.cpp` matches byte for byte once you drop its header byte. Ask for `{ recovered: true }` and the header stays, so you get Dash Core's base64 exactly.
 
 ## Where it lives
 

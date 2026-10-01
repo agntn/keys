@@ -91,6 +91,9 @@ export const bitcoinMessageVectors = {
   message: "This is just a test message",
   signature:
     "d6d59d6e1ee8f7919acbf6420bbc36ea29beb56391cc686feb17f0e7191b44802e15b26d48f330b3dd02c5c8e3a61919bd0a4134628bec16210cd1a46fd4f92d",
+  /** `expected_signature` from the same test, whole: the header byte, then r and s, in base64. */
+  compactSignature:
+    "INbVnW4e6PeRmsv2Qgu8NuopvrVjkcxob+sX8OcZG0SALhWybUjzMLPdAsXI46YZGb0KQTRii+wWIQzRpG/U+S0=",
   messageHashes: [
     ["", "80e795d4a4caadd7047af389d9f7f220562feb6196032e2131e10563352c4bcc"],
     ["hello", "cf0447ec85f0ce7150a257db32ebfcb7523dae17c36dbd1be598779fec0484f4"],
@@ -99,6 +102,34 @@ export const bitcoinMessageVectors = {
     ["a".repeat(253), "df167ad249ff5837e6acada677118b2ecc6757ab4cdade39caead99ef0220230"],
     ["a".repeat(65535), "fade4e6ebe191b9dcf869e37c4ab6a2d5f9ffc1160fbfb84370afb579af7de8d"],
     ["a".repeat(65536), "d5db7ae9446693355e5674d5d17e7b0a29f13fc174055077d9613e9ab2b462fe"],
+  ],
+} as const;
+
+/**
+ * Trezor `test_signmessage.py` signatures in hex, under the BIP137 header, then Electrum's.
+ * @see https://github.com/trezor/trezor-firmware/blob/c33f81554a51b8b182082535ccedd3dde8f07005/tests/device_tests/bitcoin/test_signmessage.py
+ */
+export const bip137MessageVectors = {
+  message: "This is an example of a signed message.",
+  signatures: [
+    [
+      "legacy",
+      "1JAd7XCBzGudGpJQSDSfpmJhiygtLQWaGL",
+      "20fd8f2f7db5238fcdd077d5204c3e6949c261d700269cefc1d9d2dcef6b95023630ee617f6c8acf9eb40c8edd704c9ca74ea4afc393f43f35b4e8958324cbdd1c",
+      "20fd8f2f7db5238fcdd077d5204c3e6949c261d700269cefc1d9d2dcef6b95023630ee617f6c8acf9eb40c8edd704c9ca74ea4afc393f43f35b4e8958324cbdd1c",
+    ],
+    [
+      "p2sh",
+      "3L6TyTisPBmrDAj6RoKmDzNnj4eQi54gD2",
+      "23744de4516fac5c140808015664516a32fead94de89775cec7e24dbc24fe133075ac09301c4cc8e197bea4b6481661d5b8e9bf19d8b7b8a382ecdb53c2ee0750d",
+      "1f744de4516fac5c140808015664516a32fead94de89775cec7e24dbc24fe133075ac09301c4cc8e197bea4b6481661d5b8e9bf19d8b7b8a382ecdb53c2ee0750d",
+    ],
+    [
+      "segwit",
+      "bc1qannfxke2tfd4l7vhepehpvt05y83v3qsf6nfkk",
+      "28b55d7600d9e9a7e2a49155ddf3cfdb8e796c207faab833010fa41fb7828889bc47cf62348a7aaa0923c0832a589fab541e8f12eb54fb711c90e2307f0f66b194",
+      "20b55d7600d9e9a7e2a49155ddf3cfdb8e796c207faab833010fa41fb7828889bc47cf62348a7aaa0923c0832a589fab541e8f12eb54fb711c90e2307f0f66b194",
+    ],
   ],
 } as const;
 
@@ -192,6 +223,17 @@ export const litecoinTestVectors = {
     ["hello", "51bd869e89676860cf1d778b8735f5e6768da32023d3dcd951711bd21c669d4c"],
     ["é".repeat(127), "08bebd99b9d1fbd73231de22e544e9b0b75c0c54ab6e3128f53665cdf944477f"],
   ],
+  /**
+   * Litecoin Core's `signmessagewithprivkey` case, on Bitcoin Core's key and testnet address.
+   * @see https://github.com/litecoin-project/litecoin/blob/ec1b6489a900d09cf5991e220dce089c77a232a2/test/functional/rpc_signmessage.py
+   */
+  signed: {
+    privateKey: "d2b8a0116d641fe7d3036f8464628fb595b480414c13a301b3d4038c811c28b0",
+    address: "mpLQjfK79b7CCV4VMJWEWAj5Mpx8Up5zxB",
+    message: "This is just a test message",
+    signature:
+      "IGve8AOjIcu+a/nYW1PABSfmp2oQlEqLIOwPgNW5/Y5teggr8S0vy4SMdjL2Viv3iuBZjJbhvyBo0tv5m3H63b8=",
+  },
   /**
    * ethers 6.17.0 `HDNodeWallet.fromPhrase` with the TREZOR passphrase at
    * `m/<purpose>'/2'/0'/1/2`: purpose, its address type, private key, public key.
@@ -366,6 +408,19 @@ export const decredTestVectors = {
   },
   signature:
     "4e590293bb394c5d2a5d21fc2c166fb372c706068dc120e3fe71aaccad831006586d0eb88c6c92b6eb04432fec4550d6ccf9351e02112efa3833f5c0b00e9b36",
+  /**
+   * dcrd's `verifymessage` cases for key 1: one signature under each header, then one over "test".
+   * @see https://github.com/decred/dcrd/blob/6f6cf21bd26d523ade261a683e7617a8e3f0ab56/internal/rpcserver/rpcserverhandlers_test.go
+   */
+  signed: {
+    message: "test message",
+    compressed:
+      "H18ier4CIfSBOk0FKPjO4mggno0ES1w2P+41GpJnnyiSRWdE2n02YwE29Sw0n2ALT3M1Q1+GQW7moKqsem1COF8=",
+    uncompressed:
+      "G18ier4CIfSBOk0FKPjO4mggno0ES1w2P+41GpJnnyiSRWdE2n02YwE29Sw0n2ALT3M1Q1+GQW7moKqsem1COF8=",
+    otherMessage:
+      "II57fsP8WEHAwfrSlx3u3wu4PHqTnP1fk/r0LM9dzm0lYr6GAD+HAFIHWUTAN623ONsG+yq6onSbZvu5vW8YI/0=",
+  },
   messageHashes: [
     ["", "edec5d11d20ee5ea952da86dba18b453f520d778d40b1004908ed93ea22f93ce"],
     ["hello", "776fea952d41c5269b91e9710afcd91103ad41a06e814f8ecba72f49044fdfe6"],

@@ -1,8 +1,12 @@
 import { webcrypto } from "node:crypto";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { hex } from "@scure/base";
+import { base64, hex } from "@scure/base";
 import { describe, expect, it, vi } from "vite-plus/test";
-import { bip39TestVectors, bitcoinMessageVectors as messageVectors } from "../fixtures";
+import {
+  bip137MessageVectors,
+  bip39TestVectors,
+  bitcoinMessageVectors as messageVectors,
+} from "../fixtures";
 import { useBlockchain } from "../../src";
 import { generateBip44Path, getAddress } from "../../src/tool-operations.ts";
 import Bitcoin from "../../src/blockchains/bitcoin";
@@ -335,15 +339,60 @@ describe("Bitcoin blockchain", () => {
       ).toBe(true);
     });
 
-    it("refuses the Ethereum recovery byte instead of returning a non-Core format", () => {
+    it("writes Core's base64 for recovered and recovers its signer", () => {
+      const testnet = useBlockchain(new Bitcoin({ network: "testnet" }));
+      const { message, privateKey, compactSignature } = messageVectors;
+      const publicKey = testnet.getKeyPublic(privateKey);
+
+      expect(testnet.signMessage(message, privateKey, { recovered: true })).toBe(compactSignature);
+      expect(testnet.verifyMessage(message, compactSignature, publicKey)).toBe(true);
+      expect(testnet.verifyMessage(`${message}!`, compactSignature, publicKey)).toBe(false);
+      const signer = testnet.recoverMessageSigner(message, compactSignature);
+      expect(signer).toEqual({ publicKey, addressType: "legacy" });
+      expect(testnet.getAddress(signer.publicKey, signer.addressType)).toBe(messageVectors.address);
+    });
+
+    it.each(bip137MessageVectors.signatures)(
+      "reads Trezor's %s signature under its BIP137 and Electrum headers",
+      (addressType, address, bip137, electrum) => {
+        const { message } = bip137MessageVectors;
+        const signer = blockchain.recoverMessageSigner(message, base64.encode(hex.decode(bip137)));
+        expect(signer.addressType).toBe(addressType);
+        expect(blockchain.getAddress(signer.publicKey, addressType)).toBe(address);
+        const legacy = blockchain.recoverMessageSigner(
+          message,
+          base64.encode(hex.decode(electrum)),
+        );
+        expect(legacy).toEqual({ publicKey: signer.publicKey, addressType: "legacy" });
+      },
+    );
+
+    it("refuses a Core signature it cannot read", () => {
+      const { message, compactSignature } = messageVectors;
+      const bytes = base64.decode(compactSignature);
+      const withHeader = (header: number): string =>
+        base64.encode(Uint8Array.of(header, ...bytes.subarray(1)));
+      expect(() => blockchain.recoverMessageSigner(message, withHeader(26))).toThrow(/27 to 42/);
+      expect(() => blockchain.recoverMessageSigner(message, withHeader(43))).toThrow(/27 to 42/);
+      expect(() => blockchain.recoverMessageSigner(message, compactSignature.slice(4))).toThrow(
+        /65 bytes of base64/,
+      );
+      expect(() => blockchain.recoverMessageSigner(message, "not base64!")).toThrow(
+        /65 bytes of base64/,
+      );
+      const zero = base64.encode(Uint8Array.of(31, ...new Uint8Array(64)));
+      expect(() => blockchain.recoverMessageSigner(message, zero)).toThrow(
+        /recovers no public key/,
+      );
+      const publicKey = blockchain.getKeyPublic(messageVectors.privateKey);
+      expect(blockchain.verifyMessage(message, withHeader(26), publicKey)).toBe(false);
+      expect(blockchain.verifyMessage(message, zero, publicKey)).toBe(false);
+    });
+
+    it("rejects Ethereum's r||s||v", () => {
       const signature = blockchain.signMessage(messageVectors.message, messageVectors.privateKey);
       const publicKey = blockchain.getKeyPublic(messageVectors.privateKey);
 
-      expect(() =>
-        blockchain.signMessage(messageVectors.message, messageVectors.privateKey, {
-          recovered: true,
-        }),
-      ).toThrow(/base64 of header/);
       expect(blockchain.verifyMessage(messageVectors.message, signature, publicKey)).toBe(true);
       expect(blockchain.verifyMessage(messageVectors.message, signature + "1b", publicKey)).toBe(
         false,

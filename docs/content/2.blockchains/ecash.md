@@ -71,7 +71,7 @@ WIF is Bitcoin's, prefix `0x80`. `encode(privateKey, { chain: "bitcoin" })` from
 
 This is where eCash and Bitcoin Cash part ways. Bitcoin ABC signs under `"\x16eCash Signed Message:\n"`, not Bitcoin's preamble. The digest is built the usual way, compact size lengths and double SHA-256, but with a different preamble the hash is different. A Bitcoin Cash signature doesn't verify here and the other way around.
 
-The signature is 64 bytes of `r||s` hex. A signature from ecash-lib verifies, but don't expect the same bytes from the same key, because ecash-lib picks a different nonce. `{ recovered: true }` throws, like on Bitcoin, since the node's recoverable form is base64 with a header byte.
+The signature is 64 bytes of `r||s` hex. A signature from ecash-lib verifies, but don't expect the same bytes from the same key, because ecash-lib picks a different nonce. `{ recovered: true }` gives the node's base64 with a header byte, and `recoverMessageSigner` gets ecash-lib's key back out of its signature.
 
 ## Where it lives
 

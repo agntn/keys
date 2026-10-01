@@ -74,7 +74,7 @@ WIF is Bitcoin's, prefix `0x80` on mainnet and `0xef` on testnet. `encode(privat
 
 ## Signing
 
-The node signs with `"\x1dBitcoin Gold Signed Message:\n"`, so a Bitcoin signature doesn't verify here and the other way round. The rest is Core's recipe: compact size lengths, double SHA-256, secp256k1. What comes back is 64 bytes of `r||s` hex. The node's own `rpc_signmessage.py` vector matches byte for byte once you drop the header byte from its base64. `{ recovered: true }` throws, like on Bitcoin.
+The node signs with `"\x1dBitcoin Gold Signed Message:\n"`, so a Bitcoin signature doesn't verify here and the other way round. The rest is Core's recipe: compact size lengths, double SHA-256, secp256k1. What comes back is 64 bytes of `r||s` hex. The node's own `rpc_signmessage.py` vector matches byte for byte once you drop the header byte from its base64. Or keep it. `{ recovered: true }` gives the whole base64, header and all, exactly what the node prints.
 
 The replay protection Bitcoin Gold added at the fork, `SIGHASH_FORKID`, is about transactions. Signed messages never had it, and this library doesn't sign transactions anyway.
 

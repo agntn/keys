@@ -76,7 +76,7 @@ Version `0xb0` on mainnet, so compressed keys start with `T` and uncompressed on
 
 ## Signing
 
-Same construction as Bitcoin with `"\x19Litecoin Signed Message:\n"` in front: double SHA-256, secp256k1, 64 bytes of `r||s` in hex. A Bitcoin signature over the same key and message is a different string because the preamble differs, so verify with the chain that signed.
+Same construction as Bitcoin with `"\x19Litecoin Signed Message:\n"` in front: double SHA-256, secp256k1, 64 bytes of `r||s` in hex. A Bitcoin signature over the same key and message is a different string because the preamble differs, so verify with the chain that signed. `{ recovered: true }` gives Litecoin Core's base64, byte for byte its `signmessagewithprivkey` vector.
 
 ## Where it lives
 
