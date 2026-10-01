@@ -330,6 +330,12 @@ export const DERIVE_WALLET_PARAMETERS = Type.Object(
     }),
     addressType: addressTypeArgument,
     network: networkArgument,
+    compressed: Type.Optional(
+      Type.Boolean({
+        description:
+          "secp256k1 only: SEC1 form of the public key, which a legacy address hashes. Old wallets and brainwallets wrote uncompressed. ethereum, base and tron hash the uncompressed key and refuse true, sui refuses false. Default: true",
+      }),
+    ),
   },
   { additionalProperties: false },
 );

@@ -177,6 +177,7 @@ export const walletDeriveTool = defineTool({
     "Bitcoin and Litecoin address types: legacy, p2sh, segwit, p2wsh, taproot",
     "Bitcoin Gold address types: legacy, p2sh, segwit, p2wsh",
     "For Sui, use ed25519 or secp256k1 as the address type",
+    "Pass compressed: false for an old key on the Bitcoin family, whose legacy address hashes the uncompressed public key",
   ],
   effect: "read",
   input: DERIVE_WALLET_PARAMETERS,
@@ -186,6 +187,7 @@ export const walletDeriveTool = defineTool({
       params.privateKey,
       params.addressType,
       params.network,
+      params.compressed,
     ),
 });
 

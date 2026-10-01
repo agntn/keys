@@ -99,6 +99,8 @@ export interface DerivedWalletDetails {
   network: string;
   publicKey: string;
   addressType?: string;
+  /** The public key form the caller asked for; absent when it was left to the default. */
+  compressed?: boolean;
   address: string;
   path?: string;
   warnings?: readonly string[];
@@ -456,12 +458,47 @@ export async function generateWallet(
   };
 }
 
+/** Chains whose address hashes the uncompressed secp256k1 key whatever form it is given in. */
+const UNCOMPRESSED_ADDRESS_CHAINS: ReadonlySet<string> = new Set(["ethereum", "base", "tron"]);
+
+/**
+ * Reads the public key form, refusing one the chain's address would ignore.
+ * @param blockchain - Chain the wallet is for
+ * @param addressType - Parsed address type, which picks the curve on Sui
+ * @param value - Raw argument
+ * @returns {boolean | undefined} The form to derive, undefined when omitted
+ */
+function walletCompressed(
+  blockchain: Readonly<AbstractBlockchain>,
+  addressType: string | undefined,
+  value: unknown,
+): boolean | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "boolean") throw new TypeError("compressed must be a boolean");
+  const { name, curve } = blockchain;
+  if (curve !== "secp256k1" && addressType !== "secp256k1") {
+    throw new RangeError(`${name} ed25519 keys take no compressed`);
+  }
+  if (value && UNCOMPRESSED_ADDRESS_CHAINS.has(name)) {
+    throw new RangeError(
+      `${name} addresses hash the uncompressed key, so compressed: true does not apply`,
+    );
+  }
+  if (!value && name === "sui") {
+    throw new RangeError(
+      "sui secp256k1 addresses hash the compressed key, so compressed: false does not apply",
+    );
+  }
+  return value;
+}
+
 /**
  * Derive public wallet material from a private key without echoing the secret.
  * @param chainValue - Blockchain name.
  * @param privateKeyValue - Private key as hexadecimal text.
  * @param addressTypeValue - Optional chain-specific address type.
  * @param networkValue - Optional network name.
+ * @param compressedValue - Optional secp256k1 public key form, compressed by default.
  * @returns {Promise<ToolResult<DerivedWalletDetails>>} Derived public wallet material.
  */
 export async function deriveWallet(
@@ -469,23 +506,30 @@ export async function deriveWallet(
   privateKeyValue: unknown,
   addressTypeValue?: unknown,
   networkValue?: unknown,
+  compressedValue?: unknown,
 ): Promise<ToolResult<DerivedWalletDetails>> {
   const { blockchain, addressType } = await getBlockchain(
     chainValue,
     networkValue,
     addressTypeValue,
   );
+  const compressed = walletCompressed(blockchain, addressType, compressedValue);
   const privateKey = hexArgument(
     privateKeyValue,
     "Private key",
     PRIVATE_KEY_HEX,
     "64 hex characters",
   );
-  const wallet = blockchain.deriveWallet(privateKey, {}, addressType);
+  const wallet = blockchain.deriveWallet(
+    privateKey,
+    compressed === undefined ? {} : { compressed },
+    addressType,
+  );
   const details = {
     chain: blockchain.name,
     network: blockchain.network,
     ...(wallet.addressType === undefined ? {} : { addressType: wallet.addressType }),
+    ...(compressed === undefined ? {} : { compressed }),
     publicKey: wallet.keys.public,
     address: wallet.address,
   };
