@@ -481,6 +481,34 @@ describe("keys MCP server", () => {
     }
   });
 
+  it("recovers a missing word from the BIP39 list the language names", async () => {
+    const client = await connectTestClient();
+    const italian = localizedMnemonicVectors.find((vector) => vector.language === "italian");
+    const template = italian?.mnemonic.replace(/abete$/u, "?");
+
+    const response = await client.callTool({
+      name: "keys_bip39_word_recover",
+      arguments: { mnemonic: template, language: "italian" },
+    });
+    expect(response.isError).not.toBe(true);
+    expect(text(response.content)).toMatch(
+      /^Language: italian\nPosition: 12\nCandidates \(128\): abete, /u,
+    );
+
+    for (const [args, reason] of [
+      [{ mnemonic: template }, "None of the mnemonic template words is in the english list"],
+      [
+        { mnemonic: bip39TestVectors.mnemonic.replace(/^abandon/u, "?"), language: "italian" },
+        "is in the italian list",
+      ],
+      [{ mnemonic: template, language: "latin" }, "Invalid arguments at /language"],
+    ] as const) {
+      const rejected = await client.callTool({ name: "keys_bip39_word_recover", arguments: args });
+      expect(rejected.isError).toBe(true);
+      expect(text(rejected.content)).toContain(reason);
+    }
+  });
+
   it("takes the h hardened marker of BIP380 descriptors in every path argument", async () => {
     const client = await connectTestClient();
     const call = async (name: string, args: Readonly<Record<string, string>>) =>

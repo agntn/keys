@@ -158,6 +158,43 @@ describe("BIP39 Utils", () => {
     );
   });
 
+  it.each(localizedMnemonicVectors)(
+    "finds the missing $language word in the selected list",
+    async ({ language, mnemonic }) => {
+      const wordlist = await loadWordlist(language);
+      const words = mnemonic.normalize("NFKD").split(/\s+/u);
+      const missing = words.at(-1);
+      const template = [...words.slice(0, -1), "?"].join(" ");
+
+      const candidates = getMnemonicWordCandidates(template, wordlist);
+
+      expect(candidates).toHaveLength(128);
+      expect(candidates).toContain(missing);
+      for (const candidate of candidates) {
+        expect(inspect(template.replace("?", candidate), wordlist).valid).toBe(true);
+      }
+    },
+  );
+
+  it("refuses template words outside the selected list by position", async () => {
+    const italian = await loadWordlist("italian");
+    const template =
+      "abandon abandn abandon abandon abandon abandon abandon abandon zoo abandon abandon ?";
+
+    expect(() => getMnemonicWordCandidates(template)).toThrow(
+      "Mnemonic template word 2 is not in the English list",
+    );
+    expect(() => getMnemonicWordCandidates(template.replace("zoo", "zo"))).toThrow(
+      "Mnemonic template words 2, 9 are not in the English list",
+    );
+    expect(() => getMnemonicWordCandidates(template, italian, "italian")).toThrow(
+      "None of the mnemonic template words is in the italian list",
+    );
+    expect(() => getMnemonicWordCandidates(template, italian.slice(1))).toThrow(
+      "BIP39 word list of 2048 words",
+    );
+  });
+
   it("reports a checksum failure independently from word count and dictionary membership", () => {
     const { mnemonic } = invalidChecksumPuzzle;
     expect(inspect(mnemonic)).toEqual({

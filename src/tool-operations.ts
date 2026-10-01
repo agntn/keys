@@ -139,6 +139,7 @@ export interface BIP39WordLookupDetails {
 
 /** Candidate words for one missing mnemonic position. */
 export interface MnemonicRecoveryDetails {
+  language: string;
   position: number;
   candidates: readonly string[];
 }
@@ -998,19 +999,25 @@ export async function lookupBip39Words(
 }
 
 /**
- * List English BIP39 words that satisfy one missing checksum position.
+ * List the words of one BIP39 list that satisfy one missing checksum position.
  * @param mnemonicValue - Mnemonic template containing one question mark.
- * @returns {ToolResult<MnemonicRecoveryDetails>} Position and candidate words.
+ * @param languageValue - Optional official BIP39 language key.
+ * @returns {Promise<ToolResult<MnemonicRecoveryDetails>>} Language, position and candidate words.
  */
-export function recoverMnemonicWord(mnemonicValue: unknown): ToolResult<MnemonicRecoveryDetails> {
+export async function recoverMnemonicWord(
+  mnemonicValue: unknown,
+  languageValue?: unknown,
+): Promise<ToolResult<MnemonicRecoveryDetails>> {
   const mnemonic = normalizedMnemonic(mnemonicValue);
-  const position = mnemonic.split(" ").indexOf("?") + 1;
-  const candidates = getMnemonicWordCandidates(mnemonic);
+  const language = parseBIP39Language(languageValue);
+  const wordlist = await loadBIP39Wordlist(language);
+  const position = mnemonic.normalize("NFKD").split(" ").indexOf("?") + 1;
+  const candidates = getMnemonicWordCandidates(mnemonic, wordlist, language);
   return {
     content: content(
-      `Position: ${position}\nCandidates (${candidates.length}): ${candidates.length === 0 ? "none" : candidates.join(", ")}`,
+      `Language: ${language}\nPosition: ${position}\nCandidates (${candidates.length}): ${candidates.length === 0 ? "none" : candidates.join(", ")}`,
     ),
-    details: { position, candidates },
+    details: { language, position, candidates },
   };
 }
 

@@ -405,10 +405,11 @@ export const LOOKUP_BIP39_WORDS_PARAMETERS = Type.Object(
 export const RECOVER_MNEMONIC_WORD_PARAMETERS = Type.Object(
   {
     mnemonic: Type.String({
-      description: "English BIP39 mnemonic template containing one ? placeholder",
+      description: "BIP39 mnemonic template in the selected language containing one ? placeholder",
       minLength: 1,
       pattern: "\\?",
     }),
+    language: BIP39_LANGUAGE_PARAMETER,
   },
   { additionalProperties: false },
 );
