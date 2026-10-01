@@ -79,6 +79,10 @@
       "types": "./dist/utils/secp256k1/index.d.mts",
       "default": "./dist/utils/secp256k1/index.mjs"
     },
+    "./store": {
+      "types": "./dist/utils/store/index.d.mts",
+      "default": "./dist/utils/store/index.mjs"
+    },
     "./slip10": {
       "types": "./dist/utils/slip10/index.d.mts",
       "default": "./dist/utils/slip10/index.mjs"
@@ -117,6 +121,7 @@
     "docs:build": "pnpm --dir docs build"
   },
   "dependencies": {
+    "@agntn/ciphers": "0.5.0",
     "@agntn/hashes": "0.4.0",
     "@agntn/tools": "0.0.0",
     "@modelcontextprotocol/server": "2.2.0",
