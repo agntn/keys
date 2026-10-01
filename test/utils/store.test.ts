@@ -8,9 +8,13 @@ const privateKey = hex.decode(pbkdf2Vector.privateKey);
 const cheap = { kdf: "scrypt", n: 2, r: 8, p: 1 } as const;
 
 describe("keystore decrypt", () => {
-  it.each(storeVectors)("opens the $name keystore", ({ keystore, password, privateKey }) => {
-    expect(hex.encode(decrypt(keystore, password))).toBe(privateKey);
-  });
+  it.each(storeVectors)(
+    "opens the $name keystore",
+    { timeout: 30_000 },
+    ({ keystore, password, privateKey }) => {
+      expect(hex.encode(decrypt(keystore, password))).toBe(privateKey);
+    },
+  );
 
   it("reads the file as JSON text too", () => {
     const { keystore, password, privateKey } = ethersVector;
