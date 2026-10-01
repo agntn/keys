@@ -17,10 +17,12 @@ import {
   TOOL_MNEMONIC_WORD_COUNTS,
   MAX_BIP39_SEED_INPUT_LENGTH,
   MAX_BIP38_ADDRESS_LENGTH,
+  MAX_KEYSTORE_LENGTH,
+  MAX_KEYSTORE_PASSWORD_LENGTH,
   MAX_ADDRESS_LENGTH,
   MAX_BRAINWALLET_INPUT_LENGTH,
-  MAX_BRAINWALLET_SCRYPT_BLOCKS,
-  BRAINWALLET_COST_LIMITS,
+  MAX_SCRYPT_BLOCKS,
+  KDF_COST_LIMITS,
 } from "./tool-parameters.ts";
 import { BIP39_LANGUAGES } from "./utils/bip39/languages.ts";
 
@@ -112,6 +114,23 @@ export const INSPECT_BIP38_PARAMETERS = Type.Object(
   { additionalProperties: false },
 );
 
+/** Shared MCP and Pi schema for opening a Web3 Secret Storage keystore. */
+export const DECRYPT_STORE_PARAMETERS = Type.Object(
+  {
+    keystore: Type.String({
+      minLength: 2,
+      maxLength: MAX_KEYSTORE_LENGTH,
+      description:
+        "Version 3 keystore JSON (UTC--... file) from geth, ethers, Foundry or MyEtherWallet, as text",
+    }),
+    password: Type.String({
+      maxLength: MAX_KEYSTORE_PASSWORD_LENGTH,
+      description: "Public or disposable password, hashed as UTF-8 without normalization",
+    }),
+  },
+  { additionalProperties: false },
+);
+
 /** Shared MCP and Pi schema for SEC1 public key conversion. */
 export const CONVERT_PUBLIC_KEY_PARAMETERS = Type.Object(
   {
@@ -198,28 +217,28 @@ export const DERIVE_BRAINWALLET_PARAMETERS = Type.Object(
     N: Type.Optional(
       Type.Integer({
         minimum: 2,
-        maximum: BRAINWALLET_COST_LIMITS.N,
-        description: `scrypt only, required there: CPU and memory cost, a power of 2. N * r at most ${MAX_BRAINWALLET_SCRYPT_BLOCKS}`,
+        maximum: KDF_COST_LIMITS.N,
+        description: `scrypt only, required there: CPU and memory cost, a power of 2. N * r at most ${MAX_SCRYPT_BLOCKS}`,
       }),
     ),
     r: Type.Optional(
       Type.Integer({
         minimum: 1,
-        maximum: BRAINWALLET_COST_LIMITS.r,
+        maximum: KDF_COST_LIMITS.r,
         description: "scrypt only, required there: block size",
       }),
     ),
     p: Type.Optional(
       Type.Integer({
         minimum: 1,
-        maximum: BRAINWALLET_COST_LIMITS.p,
+        maximum: KDF_COST_LIMITS.p,
         description: "scrypt only, required there: parallelization",
       }),
     ),
     iterations: Type.Optional(
       Type.Integer({
         minimum: 1,
-        maximum: BRAINWALLET_COST_LIMITS.iterations,
+        maximum: KDF_COST_LIMITS.iterations,
         description: "pbkdf2 only, required there: iteration count",
       }),
     ),
@@ -232,7 +251,7 @@ export const DERIVE_BRAINWALLET_PARAMETERS = Type.Object(
     keyLength: Type.Optional(
       Type.Integer({
         minimum: 1,
-        maximum: BRAINWALLET_COST_LIMITS.keyLength,
+        maximum: KDF_COST_LIMITS.keyLength,
         description: "KDF output length in bytes. Default: 32",
       }),
     ),

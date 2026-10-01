@@ -28,6 +28,7 @@ import {
   bip38Vectors,
   brainwalletInput,
   brainwalletVectors,
+  storeVectors,
 } from "./fixtures.ts";
 import keysExtension from "../packages/pi/extensions/keys.ts";
 import { keysTools } from "../src/tools.ts";
@@ -390,6 +391,28 @@ describe("keys Pi extension", () => {
     expect(JSON.stringify(result)).not.toContain(vector.privateKey);
     await expect(skipSchema(tool)("brainwallet", { ...args, N: 1024.5 })).rejects.toThrow(
       "N must be an integer from 2 to 1048576",
+    );
+  });
+
+  it("opens a keystore with the shared executor and keeps its private key out", async () => {
+    const tool = (await registerTools()).get("keys_store_decrypt");
+    if (!tool) throw new Error("Missing keystore tool");
+    const { keystore, password, privateKey, publicKey, address } = storeVectors[2];
+    const args = { keystore: JSON.stringify(keystore), password };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    const result = await tool.execute("store", args);
+    expect(result.details).toEqual({
+      version: 3,
+      id: keystore.id,
+      kdf: { kdf: "scrypt", n: 2, r: 8, p: 1, dklen: 32 },
+      unlocked: true,
+      chain: "ethereum",
+      publicKey,
+      address,
+    });
+    expect(JSON.stringify(result)).not.toContain(privateKey.slice(4));
+    await expect(skipSchema(tool)("store", { ...args, password: 42 })).rejects.toThrow(
+      "Password must be a string",
     );
   });
 

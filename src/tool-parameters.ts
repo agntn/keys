@@ -12,6 +12,7 @@ export const TOOL_NAMES = [
   "keys_wif_encode",
   "keys_wif_decode",
   "keys_bip38_inspect",
+  "keys_store_decrypt",
   "keys_wallet_generate",
   "keys_wallet_derive",
   "keys_hd_wallet_derive",
@@ -39,8 +40,8 @@ export const MAX_BIP39_SEED_INPUT_LENGTH = 4096;
 /** Maximum passphrase and salt length the brainwallet tool takes, in characters. */
 export const MAX_BRAINWALLET_INPUT_LENGTH = 4096;
 
-/** Cost ceilings of the brainwallet tool, the ones `@agntn/hashes` sets on its own tools. */
-export const BRAINWALLET_COST_LIMITS = {
+/** Cost ceilings of the brainwallet and keystore tools, the ones `@agntn/hashes` sets on its own tools. */
+export const KDF_COST_LIMITS = {
   N: 2 ** 20,
   r: 32,
   p: 16,
@@ -48,8 +49,14 @@ export const BRAINWALLET_COST_LIMITS = {
   keyLength: 1024,
 } as const;
 
-/** Largest scrypt `N * r` per call, 256 MiB of blocks, enough for brainwallet.io. */
-export const MAX_BRAINWALLET_SCRYPT_BLOCKS = 2 ** 21;
+/** Largest scrypt `N * r` per call, 256 MiB of blocks, enough for brainwallet.io and a geth keystore. */
+export const MAX_SCRYPT_BLOCKS = 2 ** 21;
+
+/** Maximum keystore JSON length the keystore tool reads, room for the extra fields ethers writes. */
+export const MAX_KEYSTORE_LENGTH = 16_384;
+
+/** Maximum keystore password length, in characters. */
+export const MAX_KEYSTORE_PASSWORD_LENGTH = 4096;
 
 /** Maximum address length the BIP38 tool hashes against a key. */
 export const MAX_BIP38_ADDRESS_LENGTH = 128;

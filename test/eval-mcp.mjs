@@ -12,6 +12,7 @@ import {
   bip38Vectors,
   brainwalletInput,
   brainwalletVectors,
+  storeVectors,
 } from "./fixtures.ts";
 import { TOOL_NAMES } from "../src/tool-parameters.ts";
 
@@ -104,6 +105,12 @@ try {
     "keys_bip38_inspect",
     { encrypted: bip38Vectors[3].encrypted, address: bip38Vectors[3].address },
     /"lot":263183,"sequence":1,"addressMatches":true/,
+  );
+
+  await call(
+    "keys_store_decrypt",
+    { keystore: JSON.stringify(storeVectors[1].keystore), password: storeVectors[1].password },
+    new RegExp(`Password: correct\nPublic key: \\w+\nAddress: ${storeVectors[1].address}`),
   );
 
   await call(

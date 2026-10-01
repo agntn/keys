@@ -5,6 +5,7 @@ import {
   BIP44_GENERATE_PARAMETERS,
   BIP44_PARSE_PARAMETERS,
   CONVERT_PUBLIC_KEY_PARAMETERS,
+  DECRYPT_STORE_PARAMETERS,
   DERIVE_BIP39_SEED_PARAMETERS,
   DERIVE_BRAINWALLET_PARAMETERS,
   DERIVE_ELECTRUM_WALLET_PARAMETERS,
@@ -124,6 +125,17 @@ export const bip38InspectTool = defineTool({
   input: INSPECT_BIP38_PARAMETERS,
   execute: async (params) =>
     (await loadOperations()).inspectBip38(params.encrypted, params.address),
+});
+
+export const storeDecryptTool = defineTool({
+  name: "keys_store_decrypt",
+  title: "Decrypt Keystore",
+  description:
+    "Open a version 3 Web3 Secret Storage keystore (geth UTC--... JSON, ethers, Foundry, MyEtherWallet) with a password: scrypt or PBKDF2, MAC check, AES-128-CTR. Reports the KDF and its costs, the stored address, whether the password is right and, when it is, the Ethereum public key and address. The private key is never returned; the password enters the transcript, so use only public or disposable material.",
+  effect: "read",
+  input: DECRYPT_STORE_PARAMETERS,
+  execute: async (params) =>
+    (await loadOperations()).decryptStore(params.keystore, params.password),
 });
 
 export const walletGenerateTool = defineTool({
@@ -503,6 +515,7 @@ export const keysTools: readonly ToolDefinition[] = [
   wifEncodeTool,
   wifDecodeTool,
   bip38InspectTool,
+  storeDecryptTool,
   walletGenerateTool,
   walletDeriveTool,
   hdWalletDeriveTool,

@@ -168,6 +168,8 @@ Without the flag `deriveHDWallet` throws. With it you get the wallet and a warni
 
 Brainwallets are a puzzle favorite too, and the salted kind hides a trap. brainwallet.io runs scrypt, then SHA-256 over the hex of the result, not its bytes. Miss that and you get a valid key to the wrong address. `derive` from `@agntn/keys/brainwallet` takes the whole recipe: KDF, costs, salt and what SHA-256 reads. Agents get `keys_brainwallet_derive`. It answers with the public key, the address and a match against your target. Never the private key. Recipes: [Wallets](https://keys.agntn.dev/guide/wallets).
 
+Got an old `UTC--...` file from MyEtherWallet or geth? That's a keystore, and `@agntn/keys/store` opens it. `decrypt(file, password)` gives the key back, `encrypt` writes a new file, `inspect` reads the KDF without a password. Agents get `keys_store_decrypt`. It says whether the password fits and gives the address, never the key. More: [Keys](https://keys.agntn.dev/guide/keys).
+
 And a signed message is a clue. Somebody proves they hold an address with `signmessage`? That base64 gives away the public key behind it. `btc.recoverMessageSigner(message, signature)` reads it back, `keys_message_recover` does the same for agents. Any well formed signature recovers some key for any message, though. So check the address match, not just that a key came out.
 
 ## ⛓️ Chains
