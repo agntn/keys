@@ -61,10 +61,10 @@ export interface XpubWallet {
  * Signer recovered from a message signature: its key and the address type the signature names.
  */
 export interface MessageSigner {
-  /** SEC1 public key as hex, compressed or not as the signature header says */
+  /** SEC1 public key as hex: as the Core header says, uncompressed from an `r||s||v` signature */
   publicKey: string;
-  /** `legacy` for Core's P2PKH headers, `p2sh` or `segwit` for the BIP137 ones */
-  addressType: AddressType;
+  /** `legacy`, `p2sh` or `segwit` as the Core or BIP137 header says; absent on EVM and TRON */
+  addressType?: AddressType;
 }
 
 /**
@@ -210,12 +210,21 @@ export interface BlockchainImplementation {
   ) => boolean;
 
   /**
-   * Recovers the signer of a base64 signature, which the Bitcoin family and Decred write
+   * Recovers the signer of a message signature: Core's base64 on the Bitcoin family and Decred,
+   * `r||s||v` hex over the chain's message preamble on EVM chains and TRON
    * @param message - The signed message (string or Uint8Array)
-   * @param signature - Base64 of the header byte, then `r` and `s`
-   * @returns The recovered public key and the address type the header names
+   * @param signature - The signature in the chain's recoverable form
+   * @returns The recovered public key and, on the Core family, the address type the header names
    */
   recoverMessageSigner?: (message: string | Uint8Array, signature: string) => MessageSigner;
+
+  /**
+   * Recovers the signer of an `r||s||v` signature over a 32-byte digest, as `ecrecover` does
+   * @param digest - The signed digest, such as the output of `hashTypedData`
+   * @param signature - 65 bytes of `r||s||v` as hex
+   * @returns The recovered public key
+   */
+  recoverDigestSigner?: (digest: Uint8Array, signature: string) => MessageSigner;
 }
 
 /**

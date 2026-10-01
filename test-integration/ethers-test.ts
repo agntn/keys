@@ -2,6 +2,7 @@ import {
   HDNodeWallet,
   Signature,
   SigningKey,
+  TypedDataEncoder,
   Wallet,
   hashMessage,
   pbkdf2,
@@ -19,6 +20,7 @@ import { Litecoin } from "../src/blockchains/litecoin";
 import {
   bip39TestVectors,
   ethereumTestVectors,
+  evmRecoverTestVectors,
   invalidChecksumPuzzle,
   litecoinTestVectors,
 } from "../test/fixtures";
@@ -76,6 +78,30 @@ async function main(): Promise<void> {
       wallet.address,
     );
   }
+
+  console.log("\n===== EIP-712 typed data =====");
+  const { hunt } = evmRecoverTestVectors;
+  const { domain, types, message } = hunt.typedData;
+  const huntTypes = JSON.parse(JSON.stringify(types));
+  const huntMessage = JSON.parse(JSON.stringify(message));
+  check("hunt digest", hunt.digest, TypedDataEncoder.hash(domain, huntTypes, huntMessage).slice(2));
+  check(
+    "hunt keys digest",
+    keys.hashTypedData(hunt.typedData).toHex(),
+    TypedDataEncoder.hash(domain, huntTypes, huntMessage).slice(2),
+  );
+  check(
+    "hunt signature",
+    hunt.signature,
+    (await wallet.signTypedData(domain, huntTypes, huntMessage)).slice(2),
+  );
+  check(
+    "hunt keys recovers the signer",
+    ethereum.getAddress(
+      ethereum.recoverDigestSigner(keys.hashTypedData(hunt.typedData), hunt.signature).publicKey,
+    ),
+    wallet.address,
+  );
 
   console.log("\n===== Litecoin BIP32 with the TREZOR passphrase =====");
   const litecoin = keys.useBlockchain(new Litecoin());

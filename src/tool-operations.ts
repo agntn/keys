@@ -45,6 +45,7 @@ import { getBlockchainPath, useBlockchain, type AbstractBlockchain } from "./blo
 import { blockchains } from "./_blockchains.ts";
 import { parse as parseBIP44Path } from "./utils/bip44/index.ts";
 import type { MessageSigner } from "./types.ts";
+import { hashTypedData, type TypedData } from "./utils/eip712.ts";
 import {
   MAX_BIP39_LOOKUP_ITEMS,
   BIP39_ENTROPY_BYTE_LENGTHS,
@@ -65,6 +66,9 @@ import {
   PRIVATE_KEY_SCHEMA_PATTERN,
   PUBLIC_KEY_SCHEMA_PATTERN,
   CORE_SIGNATURE_SCHEMA_PATTERN,
+  RECOVERABLE_SIGNATURE_SCHEMA_PATTERN,
+  DIGEST_SCHEMA_PATTERN,
+  MAX_TYPED_DATA_LENGTH,
   SIGNATURE_SCHEMA_PATTERN,
   type ToolChain,
   type ToolNetwork,
@@ -200,13 +204,17 @@ export interface SignatureVerificationDetails {
   valid: boolean;
 }
 
-/** Signer recovered from a Core style signature, compared with an address when one was given. */
+/** Recovered signer, compared with an address when one was given. */
 export interface MessageSignerDetails {
   chain: string;
   network: string;
+  /** What the signature covers. */
+  signed: "message" | "typedData" | "digest";
+  /** EIP-712 digest the typed data hashed to; only for `typedData`. */
+  digest?: string;
   publicKey: string;
-  /** Address type the signature header names. */
-  addressType: string;
+  /** Address type the Core signature header names; absent on EVM chains and TRON. */
+  addressType?: string;
   /** Address of that type for the recovered key. */
   address: string;
   /** Whether the given address belongs to the recovered key; absent without an address. */
@@ -287,6 +295,8 @@ const PRIVATE_KEY_HEX = new RegExp(PRIVATE_KEY_SCHEMA_PATTERN, "u");
 const PUBLIC_KEY_HEX = new RegExp(PUBLIC_KEY_SCHEMA_PATTERN, "u");
 const SIGNATURE_HEX = new RegExp(SIGNATURE_SCHEMA_PATTERN, "u");
 const CORE_SIGNATURE = new RegExp(CORE_SIGNATURE_SCHEMA_PATTERN, "u");
+const RECOVERABLE_SIGNATURE = new RegExp(RECOVERABLE_SIGNATURE_SCHEMA_PATTERN, "u");
+const DIGEST_HEX = new RegExp(DIGEST_SCHEMA_PATTERN, "u");
 
 /**
  * Applies a schema's hex pattern for hosts that skip the schema, so a `0x` prefix fails as input
@@ -1547,6 +1557,7 @@ export async function verifyMessage(
  */
 function sameAddress(written: string, given: string): boolean {
   if (written === given) return true;
+  if (written.startsWith("0x")) return written.toLowerCase() === given.toLowerCase();
   if (!written.includes(":") && !/^[a-z]+1[02-9ac-hj-np-z]+$/u.test(written)) return false;
   const lower = given.toLowerCase();
   return lower === written || lower === written.slice(written.indexOf(":") + 1);
@@ -1568,9 +1579,9 @@ function expectedAddress(value: unknown): string | undefined {
 /**
  * Address types a signer may hold, as Electrum checks them for the header.
  * @param signer - Key and header type from the signature.
- * @returns {string[]} Types to compare, the header's first.
+ * @returns {(string | undefined)[]} Types to compare, `[undefined]` on EVM and TRON.
  */
-function signerAddressTypes(signer: Readonly<MessageSigner>): string[] {
+function signerAddressTypes(signer: Readonly<MessageSigner>): (string | undefined)[] {
   if (signer.addressType !== "legacy" || signer.publicKey.length !== 66)
     return [signer.addressType];
   return ["legacy", "p2sh", "segwit"];
@@ -1579,23 +1590,143 @@ function signerAddressTypes(signer: Readonly<MessageSigner>): string[] {
 /**
  * Line that reports the comparison, empty when no address was given.
  * @param expected - Address the caller passed.
- * @param matchedType - Address type it matched, if any.
+ * @param matches - Whether it belongs to the recovered key.
+ * @param matchedType - Address type it matched, if the chain has types.
  * @returns {string[]} Zero or one line.
  */
-function comparisonLines(expected: string | undefined, matchedType: string | undefined): string[] {
+function comparisonLines(
+  expected: string | undefined,
+  matches: boolean,
+  matchedType: string | undefined,
+): string[] {
   if (expected === undefined) return [];
+  if (!matches) return ["Given address: no match"];
   return [
-    matchedType === undefined ? "Given address: no match" : `Given address: match (${matchedType})`,
+    matchedType === undefined ? "Given address: match" : `Given address: match (${matchedType})`,
+  ];
+}
+
+/** What a recover call checks the signature against: the message, or a digest it hashed to. */
+type SignedInput =
+  | { signed: "message"; message: string }
+  | { signed: "typedData" | "digest"; digest: Uint8Array };
+
+/**
+ * Tell typed data from any other JSON before hashing, so `hashTypedData` gets its own shape.
+ * @param value - Parsed JSON.
+ * @returns {boolean} True for an object with types, primaryType, domain and message.
+ */
+function isTypedData(value: unknown): value is TypedData {
+  if (typeof value !== "object" || value === null) return false;
+  const shape = (key: string): unknown =>
+    Object.hasOwn(value, key) ? Reflect.get(value, key) : undefined;
+  const isObject = (field: unknown): boolean =>
+    typeof field === "object" && field !== null && !Array.isArray(field);
+  return (
+    isObject(shape("types")) &&
+    typeof shape("primaryType") === "string" &&
+    isObject(shape("domain")) &&
+    isObject(shape("message"))
+  );
+}
+
+/**
+ * Take exactly one of the message, the typed data and the digest.
+ * @param messageValue - Message as the caller passed it.
+ * @param typedDataValue - EIP-712 JSON as the caller passed it.
+ * @param digestValue - Digest hex as the caller passed it.
+ * @returns {SignedInput} The message, or the digest to recover against.
+ */
+function signedInput(
+  messageValue: unknown,
+  typedDataValue: unknown,
+  digestValue: unknown,
+): SignedInput {
+  const given = [messageValue, typedDataValue, digestValue].filter((value) => value !== undefined);
+  if (given.length !== 1) {
+    throw new TypeError("Pass exactly one of message, typedData and digest");
+  }
+  if (messageValue !== undefined) {
+    return { signed: "message", message: requiredString(messageValue, "Message") };
+  }
+  if (digestValue !== undefined) {
+    const digest = hexArgument(digestValue, "Digest", DIGEST_HEX, "32 bytes of hex");
+    return { signed: "digest", digest: Uint8Array.fromHex(digest) };
+  }
+  const text = requiredString(typedDataValue, "Typed data");
+  if (text.length > MAX_TYPED_DATA_LENGTH) {
+    throw new RangeError(`Typed data must not exceed ${MAX_TYPED_DATA_LENGTH} characters`);
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new TypeError("Typed data must be JSON");
+  }
+  if (!isTypedData(parsed)) {
+    throw new TypeError(
+      "Typed data must be a JSON object with types, primaryType, domain and message",
+    );
+  }
+  return { signed: "typedData", digest: hashTypedData(parsed) };
+}
+
+/**
+ * Find the address type of the recovered key that the given address names.
+ * @param blockchain - Chain the signature was recovered on.
+ * @param signer - The recovered key and header type.
+ * @param expected - Address the caller passed.
+ * @returns {{ matches: boolean; matchedType?: string }} The verdict and the matched type.
+ */
+function matchSigner(
+  blockchain: Readonly<AbstractBlockchain>,
+  signer: Readonly<MessageSigner>,
+  expected: string,
+): { matches: boolean; matchedType?: string } {
+  const types = signerAddressTypes(signer);
+  const index = types.findIndex((type) => {
+    try {
+      return sameAddress(blockchain.getAddress(signer.publicKey, type), expected);
+    } catch {
+      return false;
+    }
+  });
+  if (index === -1) return { matches: false };
+  const matchedType = types[index];
+  return matchedType === undefined ? { matches: true } : { matches: true, matchedType };
+}
+
+/**
+ * Text lines of a recovered signer.
+ * @param details - The signer and the comparison.
+ * @param expected - Address the caller passed, if any.
+ * @returns {string[]} One line per fact.
+ */
+function signerLines(
+  details: Readonly<MessageSignerDetails>,
+  expected: string | undefined,
+): string[] {
+  return [
+    `Chain: ${details.chain} (${details.network})`,
+    ...(details.digest === undefined ? [] : [`EIP-712 digest: ${details.digest}`]),
+    `Public key: ${details.publicKey}`,
+    details.addressType === undefined
+      ? `Address: ${details.address}`
+      : `Address: ${details.address} (${details.addressType})`,
+    ...comparisonLines(expected, details.matches === true, details.matchedType),
   ];
 }
 
 /**
- * Recover the signer of a Core style base64 signature and say whether it holds a given address.
+ * Recover the signer of a message, EIP-712 typed data or a digest, and say whether it holds a
+ * given address. The Bitcoin family and Decred read Core's base64, EVM chains and TRON `r||s||v`.
  * @param chainValue - Blockchain name.
- * @param messageValue - Message that was signed.
- * @param signatureValue - Base64 of the header byte, then `r` and `s`.
+ * @param messageValue - Message that was signed, or undefined beside typed data or a digest.
+ * @param signatureValue - Base64 of the header byte, then `r` and `s`, or `r||s||v` hex.
  * @param addressValue - Optional address to compare with.
  * @param networkValue - Optional network name.
+ * @param typedDataValue - EIP-712 typed data as JSON, in place of the message.
+ * @param digestValue - 32-byte digest as hex, in place of the message.
  * @returns {Promise<ToolResult<MessageSignerDetails>>} The signer and the comparison.
  */
 export async function recoverMessageSigner(
@@ -1604,49 +1735,36 @@ export async function recoverMessageSigner(
   signatureValue: unknown,
   addressValue?: unknown,
   networkValue?: unknown,
+  typedDataValue?: unknown,
+  digestValue?: unknown,
 ): Promise<ToolResult<MessageSignerDetails>> {
   const { blockchain } = await getBlockchain(chainValue, networkValue);
-  const message = requiredString(messageValue, "Message");
+  const input = signedInput(messageValue, typedDataValue, digestValue);
   const signature = requiredString(signatureValue, "Signature");
-  if (!CORE_SIGNATURE.test(signature)) {
-    throw new TypeError("Signature must be base64 of 65 bytes: 87 characters and one =");
+  if (!RECOVERABLE_SIGNATURE.test(signature)) {
+    throw new TypeError(
+      "Signature must be 65 bytes: r||s||v as 130 hex characters without 0x, or signmessage's base64",
+    );
   }
   const expected = expectedAddress(addressValue);
   if (expected !== undefined && !blockchain.validateAddress(expected)) {
     throw new TypeError(`Address is not a valid ${blockchain.name} ${blockchain.network} address`);
   }
-  const signer = blockchain.recoverMessageSigner(message, signature);
-  const address = blockchain.getAddress(signer.publicKey, signer.addressType);
-  const matchedType =
-    expected === undefined
-      ? undefined
-      : signerAddressTypes(signer).find((type) => {
-          try {
-            return sameAddress(blockchain.getAddress(signer.publicKey, type), expected);
-          } catch {
-            return false;
-          }
-        });
+  const signer =
+    input.signed === "message"
+      ? blockchain.recoverMessageSigner(input.message, signature)
+      : blockchain.recoverDigestSigner(input.digest, signature);
   const details: MessageSignerDetails = {
     chain: blockchain.name,
     network: blockchain.network,
+    signed: input.signed,
+    ...(input.signed === "typedData" ? { digest: input.digest.toHex() } : {}),
     publicKey: signer.publicKey,
-    addressType: signer.addressType,
-    address,
-    ...(expected === undefined ? {} : { matches: matchedType !== undefined }),
-    ...(matchedType === undefined ? {} : { matchedType }),
+    ...(signer.addressType === undefined ? {} : { addressType: signer.addressType }),
+    address: blockchain.getAddress(signer.publicKey, signer.addressType),
+    ...(expected === undefined ? {} : matchSigner(blockchain, signer, expected)),
   };
-  return {
-    content: content(
-      [
-        `Chain: ${details.chain} (${details.network})`,
-        `Public key: ${details.publicKey}`,
-        `Address: ${details.address} (${details.addressType})`,
-        ...comparisonLines(expected, matchedType),
-      ].join("\n"),
-    ),
-    details,
-  };
+  return { content: content(signerLines(details, expected).join("\n")), details };
 }
 
 /**

@@ -1,7 +1,7 @@
 ---
 title: Ethereum
 icon: i-token-eth
-description: secp256k1 with EIP-55 checksummed addresses and personal_sign message signatures.
+description: secp256k1 with EIP-55 checksummed addresses. Signs personal_sign messages and recovers personal_sign and EIP-712 signers.
 ---
 
 ::chain-facts{driver="ethereum" curve="secp256k1" formats="EIP-55 hex" coin="60"}
@@ -56,6 +56,17 @@ ethereumChain.verifyMessage("hello", recoverable, publicKey); // true, and the v
 ```
 
 `verifyMessage` takes either length. On 65 bytes it also recovers from the `v`, so a signature carrying the other one fails instead of passing on `r||s` alone. The 64-byte form is what you want inside this package, the 65-byte form is what you send out. See the [EVM guide](/guide/evm) for what ethers does with the short one, it's not an error and that's the problem.
+
+## Who signed this?
+
+The 65-byte form also works backwards. `recoverMessageSigner` takes the message and the signature and gives you the key:
+
+```js
+const signer = ethereumChain.recoverMessageSigner("hello", recoverable);
+ethereumChain.getAddress(signer.publicKey); // 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf
+```
+
+Typed data and raw `ecrecover` digests go through `hashTypedData` and `recoverDigestSigner`. The [EVM guide](/guide/evm#who-signed-this) has both. Same rule as always: check the address.
 
 ## One driver, every EVM chain
 

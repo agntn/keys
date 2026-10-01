@@ -14,6 +14,7 @@ import {
   brainwalletInput,
   brainwalletVectors,
   storeVectors,
+  evmRecoverTestVectors,
 } from "./fixtures.ts";
 import { TOOL_NAMES } from "../src/tool-parameters.ts";
 
@@ -279,6 +280,16 @@ try {
       address: "1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH",
     },
     /Given address: match \(legacy\)/,
+  );
+  await call(
+    "keys_message_recover",
+    {
+      chain: "ethereum",
+      typedData: JSON.stringify(evmRecoverTestVectors.mail.typedData),
+      signature: evmRecoverTestVectors.mail.signature,
+      address: evmRecoverTestVectors.mail.address,
+    },
+    /EIP-712 digest: be609aee[\s\S]*Given address: match$/,
   );
   await call("keys_bip44_parse", { path: "m/44h/60h/0h/0/3" }, /Address index: 3$/m);
   await call("keys_bip44_generate", { chain: "bitcoin", change: 1 }, /m\/44'\/0'\/0'\/1\/0/);

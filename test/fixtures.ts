@@ -266,6 +266,109 @@ export const litecoinTestVectors = {
   ],
 } as const;
 
+/**
+ * Signer recovery vectors: `personalSign` from viem as issue #195 gives it, `mail` from the EIP's
+ * own `Example.js` (key: keccak256 of `cow`, `secp256k1TestVectors.privateKey`), and `hunt`
+ * signed with that key through ethers 6.17.0 `TypedDataEncoder.hash` and `Wallet.signTypedData`.
+ */
+export const evmRecoverTestVectors = {
+  personalSign: {
+    message: "hello",
+    signature:
+      "f16ea9a3478698f695fd1401bfe27e9e4a7e8e3da94aa72b021125e31fa899cc573c48ea3fe1d4ab61a9db10c19032026e3ed2dbccba5a178235ac27f94504311c",
+    address: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  },
+  mail: {
+    typedData: {
+      types: {
+        EIP712Domain: [
+          { name: "name", type: "string" },
+          { name: "version", type: "string" },
+          { name: "chainId", type: "uint256" },
+          { name: "verifyingContract", type: "address" },
+        ],
+        Person: [
+          { name: "name", type: "string" },
+          { name: "wallet", type: "address" },
+        ],
+        Mail: [
+          { name: "from", type: "Person" },
+          { name: "to", type: "Person" },
+          { name: "contents", type: "string" },
+        ],
+      },
+      primaryType: "Mail",
+      domain: {
+        name: "Ether Mail",
+        version: "1",
+        chainId: 1,
+        verifyingContract: "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
+      },
+      message: {
+        from: { name: "Cow", wallet: "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826" },
+        to: { name: "Bob", wallet: "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB" },
+        contents: "Hello, Bob!",
+      },
+    },
+    digest: "be609aee343fb3c4b28e1df9e632fca64fcfaede20f02e86244efddf30957bd2",
+    signature:
+      "4355c47d63924e8a72e509b65029052eb6c299d53a04e167c5775fd466751c9d07299936d304c153f6443dfa05f40ff007d72911b6f72307f996231605b915621c",
+    address: "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826",
+  },
+  hunt: {
+    typedData: {
+      types: {
+        Clue: [
+          { name: "index", type: "uint8" },
+          { name: "offset", type: "int64" },
+          { name: "solved", type: "bool" },
+          { name: "tag", type: "bytes4" },
+          { name: "blob", type: "bytes" },
+        ],
+        Hunt: [
+          { name: "title", type: "string" },
+          { name: "owner", type: "address" },
+          { name: "clues", type: "Clue[]" },
+          { name: "grid", type: "uint256[2][]" },
+          { name: "words", type: "string[]" },
+        ],
+      },
+      primaryType: "Hunt",
+      domain: {
+        name: "Puzzle",
+        chainId: 8453,
+        salt: "0xabababababababababababababababababababababababababababababababab",
+      },
+      message: {
+        title: "żółw",
+        owner: "0x000000000000000000000000000000000000dEaD",
+        clues: [
+          { index: 7, offset: -42, solved: true, tag: "0xdeadbeef", blob: "0x" },
+          {
+            index: 255,
+            offset: "-9223372036854775808",
+            solved: false,
+            tag: "0x00000001",
+            blob: "0x0102030405",
+          },
+        ],
+        grid: [
+          [1, 2],
+          [
+            "0xff",
+            "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+          ],
+        ],
+        words: ["abandon", ""],
+      },
+    },
+    digest: "5479f477cc907f5435100a6974f3e8b7dba026c9a0be9994524fb40d4d603f69",
+    signature:
+      "cbe874b5da1385b53a1aba0e88531d1df82db0fba5dcfe38cf3988a34ad7cf16107221f67b4a3b2b41afbb365ebec1be625878b318d85eddd2de2998958cb7291c",
+    address: "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826",
+  },
+} as const;
+
 /** Disposable key 1 through TronWeb 6.5.1: `hashMessage` digests and `signMessageV2` signatures. */
 export const tronTestVectors = {
   privateKey: "0000000000000000000000000000000000000000000000000000000000000001",

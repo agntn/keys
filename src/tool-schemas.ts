@@ -10,7 +10,8 @@ import {
   XPUB_PATH_SCHEMA_PATTERN,
   PRIVATE_KEY_SCHEMA_PATTERN,
   PUBLIC_KEY_SCHEMA_PATTERN,
-  CORE_SIGNATURE_SCHEMA_PATTERN,
+  RECOVERABLE_SIGNATURE_SCHEMA_PATTERN,
+  DIGEST_SCHEMA_PATTERN,
   MESSAGE_SIGNATURE_SCHEMA_PATTERN,
   TOOL_WIF_CHAINS,
   TOOL_NETWORKS,
@@ -21,6 +22,7 @@ import {
   MAX_KEYSTORE_LENGTH,
   MAX_KEYSTORE_PASSWORD_LENGTH,
   MAX_ADDRESS_LENGTH,
+  MAX_TYPED_DATA_LENGTH,
   MAX_BRAINWALLET_INPUT_LENGTH,
   MAX_SCRYPT_BLOCKS,
   KDF_COST_LIMITS,
@@ -579,11 +581,31 @@ export const VERIFY_MESSAGE_PARAMETERS = Type.Object(
 export const RECOVER_MESSAGE_PARAMETERS = Type.Object(
   {
     chain: chainArgument,
-    message: Type.String({ description: "Message that was signed" }),
+    message: Type.Optional(
+      Type.String({
+        description:
+          "Message that was signed: personal_sign on ethereum and base, TIP-191 on tron, signmessage on the Bitcoin family and decred. Pass exactly one of message, typedData and digest",
+      }),
+    ),
+    typedData: Type.Optional(
+      Type.String({
+        minLength: 2,
+        maxLength: MAX_TYPED_DATA_LENGTH,
+        description:
+          "EIP-712 typed data as JSON, the eth_signTypedData_v4 shape: types, primaryType, domain and message, addresses as 0x hex. Ethereum, base and tron",
+      }),
+    ),
+    digest: Type.Optional(
+      Type.String({
+        pattern: DIGEST_SCHEMA_PATTERN,
+        description:
+          "32-byte digest as hex without 0x, the hash ecrecover takes, for a contract that recovers the signer itself. Ethereum, base and tron",
+      }),
+    ),
     signature: Type.String({
-      pattern: CORE_SIGNATURE_SCHEMA_PATTERN,
+      pattern: RECOVERABLE_SIGNATURE_SCHEMA_PATTERN,
       description:
-        "Base64 signature as bitcoin-cli signmessage, Electrum and Sparrow print it: a header byte, then r and s",
+        "On ethereum, base and tron 65 bytes of r||s||v as hex without 0x, v as 27, 28, 0 or 1. On the Bitcoin family and decred base64 as bitcoin-cli signmessage, Electrum and Sparrow print it",
     }),
     address: Type.Optional(
       Type.String({

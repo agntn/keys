@@ -42,6 +42,7 @@ keys/
 | Add EVM chain      | `src/utils/evm.ts` → `AbstractEVMBlockchain`                                      | Minimal subclass with `name` and `bip44`                                            |
 | Fix signing        | `src/utils/signing.ts` (generic) or `evm.ts`/`ed25519-chains.ts` (chain-specific) | EVM uses preamble hash, ed25519 signs raw                                           |
 | Core signature     | `src/utils/secp256k1/compact-signature.ts`                                        | Base64 `header                                                                      |     | r   |     | s`for the Bitcoin family and Decred;`recoverMessageSigner` reads it |
+| EVM signer         | `src/utils/eip712.ts` + `recoverSecp256k1Signer` in `signing.ts`                  | `hashTypedData`; `recoverMessageSigner`/`recoverDigestSigner` on EVM and TRON       |
 | Change public API  | `src/index.ts`                                                                    | Re-exports only, never add logic here                                               |
 | Change agent tools | `src/tools.ts`, `src/tool-schemas.ts`, `src/tool-operations.ts`                   | One definition per tool; a new tool also gets its file in `docs/server/mcp/tools/`  |
 | Keystore files     | `src/utils/store/`                                                                | Web3 Secret Storage v3: scrypt/PBKDF2, AES-128-CTR from `@agntn/ciphers/aes`        |

@@ -12,6 +12,8 @@ import {
   electrumOldVectors,
   electrumVectors,
   ethereumTestVectors,
+  evmRecoverTestVectors,
+  tronTestVectors,
   publicKeyEncodingVector,
   litecoinTestVectors,
   bitcoinCashTestVectors,
@@ -1341,9 +1343,11 @@ describe("keys MCP server", () => {
         },
         "Address is not a valid bitcoin mainnet address",
       ],
-      [{ chain: "ethereum", message, signature: compactSignature }, "ethereum does not write"],
+      [{ chain: "ethereum", message, signature: compactSignature }, "65 bytes of r||s||v"],
+      [{ chain: "solana", message, signature: compactSignature }, "solana does not write"],
+      [{ chain: "bitcoin", message, signature: "00".repeat(65) }, "65 bytes of base64"],
       [
-        { chain: "bitcoin", message, signature: "00".repeat(65) },
+        { chain: "bitcoin", message, signature: "00".repeat(64) },
         "Invalid arguments at /signature",
       ],
     ] as const) {
@@ -1365,7 +1369,114 @@ describe("keys MCP server", () => {
       },
     });
     expect(verified.isError).toBe(true);
-    expect(text(verified.content)).toContain("ethereum does not write");
+    expect(text(verified.content)).toContain("65 bytes of r||s||v");
+  });
+
+  it("recovers personal_sign, EIP-712 and digest signers on EVM chains and TRON", async () => {
+    const client = await connectTestClient();
+    const { personalSign, mail, hunt } = evmRecoverTestVectors;
+    const recover = async (arguments_: Readonly<Record<string, unknown>>): Promise<string> => {
+      const response = await client.callTool({
+        name: "keys_message_recover",
+        arguments: arguments_,
+      });
+      expect(response.isError).not.toBe(true);
+      return text(response.content);
+    };
+
+    expect(
+      await recover({
+        chain: "ethereum",
+        message: personalSign.message,
+        signature: personalSign.signature,
+        address: personalSign.address.toLowerCase(),
+      }),
+    ).toMatch(/^Address: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\nGiven address: match$/mu);
+
+    expect(
+      await recover({
+        chain: "ethereum",
+        typedData: JSON.stringify(mail.typedData),
+        signature: mail.signature,
+        address: mail.address,
+      }),
+    ).toBe(
+      [
+        "Chain: ethereum (mainnet)",
+        `EIP-712 digest: ${mail.digest}`,
+        `Public key: ${ethereumTestVectors.publicKeyUncompressed}`,
+        `Address: ${mail.address}`,
+        "Given address: match",
+      ].join("\n"),
+    );
+
+    expect(
+      await recover({
+        chain: "base",
+        typedData: JSON.stringify(hunt.typedData),
+        signature: hunt.signature,
+        address: personalSign.address,
+      }),
+    ).toContain("Given address: no match");
+
+    expect(
+      await recover({ chain: "ethereum", digest: mail.digest, signature: mail.signature }),
+    ).toContain(`Address: ${mail.address}`);
+
+    const [message, , signature] = tronTestVectors.messages[1];
+    expect(
+      await recover({ chain: "tron", message, signature, address: tronTestVectors.address }),
+    ).toContain("Given address: match");
+  });
+
+  it("refuses recover input it cannot read on EVM chains", async () => {
+    const client = await connectTestClient();
+    const { mail } = evmRecoverTestVectors;
+    for (const [arguments_, error] of [
+      [
+        { chain: "ethereum", signature: mail.signature },
+        "exactly one of message, typedData and digest",
+      ],
+      [
+        { chain: "ethereum", message: "x", digest: mail.digest, signature: mail.signature },
+        "exactly one of message, typedData and digest",
+      ],
+      [
+        { chain: "ethereum", typedData: "{nope", signature: mail.signature },
+        "Typed data must be JSON",
+      ],
+      [
+        { chain: "ethereum", typedData: "[1,2]", signature: mail.signature },
+        "types, primaryType, domain and message",
+      ],
+      [
+        {
+          chain: "ethereum",
+          typedData: JSON.stringify({ ...mail.typedData, primaryType: "Letter" }),
+          signature: mail.signature,
+        },
+        'Primary type "Letter" is not one of types',
+      ],
+      [
+        { chain: "ethereum", digest: `0x${mail.digest}`, signature: mail.signature },
+        "Invalid arguments at /digest",
+      ],
+      [
+        { chain: "bitcoin", digest: mail.digest, signature: mail.signature },
+        "bitcoin does not sign digests",
+      ],
+      [
+        { chain: "ethereum", digest: mail.digest, signature: `${mail.signature.slice(0, 128)}1d` },
+        "v must be 27, 28, 0 or 1",
+      ],
+    ] as const) {
+      const response = await client.callTool({
+        name: "keys_message_recover",
+        arguments: arguments_,
+      });
+      expect(response.isError).toBe(true);
+      expect(text(response.content)).toContain(error);
+    }
   });
 
   it("calls a well formed base64 signature that recovers no key invalid, as Core does", async () => {

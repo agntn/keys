@@ -446,7 +446,7 @@ export const messageVerifyTool = defineTool({
   name: "keys_message_verify",
   title: "Verify Message",
   description:
-    "Verify a message signature against a blockchain public key. To check a signmessage signature against an address instead, use keys_message_recover.",
+    "Verify a message signature against a blockchain public key. To check a signature against an address instead, use keys_message_recover.",
   snippet: "Use to verify that a signature is valid for a given message and public key.",
   guidelines: [
     "Provide chain, original message, signature (hex, or signmessage's base64 on the Bitcoin family and decred), and public key (hex)",
@@ -468,11 +468,12 @@ export const messageRecoverTool = defineTool({
   name: "keys_message_recover",
   title: "Recover Message Signer",
   description:
-    "Recover the public key and address behind a base64 message signature, as bitcoin-cli signmessage, Electrum and Sparrow print it, on the Bitcoin family and decred. Any well formed signature recovers some key for any message, so pass the address the signer should hold and read the match.",
+    "Recover the public key and address behind a message signature: signmessage's base64 on the Bitcoin family and decred, 65-byte r||s||v hex on ethereum, base and tron over a personal_sign message, EIP-712 typed data or a raw digest. Any well formed signature recovers some key for any input, so pass the address the signer should hold and read the match.",
   snippet:
-    "Use to check a signmessage signature against an address, or to learn the public key behind it.",
+    "Use to check a signmessage, personal_sign or EIP-712 signature against an address, or to learn the public key behind it.",
   guidelines: [
-    "Provide chain, the exact signed message, the base64 signature, and the address it claims",
+    "Provide chain, the base64 or r||s||v signature, the address it claims, and exactly one of message, typedData and digest",
+    "typedData is the eth_signTypedData_v4 JSON; digest is the 32-byte hash a contract passes to ecrecover",
     "Under a P2PKH header a compressed key matches its legacy, p2sh and segwit addresses, since Electrum signs SegWit that way; a BIP137 header names one type",
   ],
   effect: "read",
@@ -484,6 +485,8 @@ export const messageRecoverTool = defineTool({
       params.signature,
       params.address,
       params.network,
+      params.typedData,
+      params.digest,
     ),
 });
 
@@ -579,7 +582,10 @@ export const callSummaries: Readonly<
   keys_address_validate: (args) => String(args.address),
   keys_message_sign: (args) => preview(args.message),
   keys_message_verify: (args) => preview(args.message),
-  keys_message_recover: (args) => preview(args.message),
+  keys_message_recover: (args) =>
+    args.message === undefined
+      ? `${String(args.chain)} ${args.typedData === undefined ? "digest" : "typed data"}`
+      : preview(args.message),
   keys_bip44_parse: (args) => String(args.path),
   keys_bip44_generate: (args) => String(args.chain),
 };

@@ -60,3 +60,13 @@ tronChain.signMessage("hello", privateKey, { recovered: true });
 ```
 
 Ethereum uses the same framing under its own preamble, which is why a TRON signature and an Ethereum signature of the same message from the same key differ, and each driver rejects the other's.
+
+Want the signer instead? `recoverMessageSigner` reads the key out of those 65 bytes:
+
+```js
+const recoverable = tronChain.signMessage("hello", privateKey, { recovered: true });
+const signer = tronChain.recoverMessageSigner("hello", recoverable);
+tronChain.getAddress(signer.publicKey); // TJCnKsPa7y5okkXvQAidZBzqx3QyQ6sxMW, same as above
+```
+
+It takes TronWeb's `signMessageV2` output as is. Hand it an Ethereum signature and you get some key back, just not the right one. Compare the address.

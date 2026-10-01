@@ -155,5 +155,24 @@ describe("TRON Blockchain", () => {
       expect(blockchain.verifyMessage(message, ethereumSignature, vector.publicKey)).toBe(false);
       expect(ethereum.verifyMessage(message, signature, vector.publicKey)).toBe(false);
     });
+
+    it.each(vector.messages)(
+      "recovers the signer of TronWeb signature %# under TIP-191",
+      (message, digest, signatureWithV) => {
+        expect(
+          blockchain.getAddress(blockchain.recoverMessageSigner(message, signatureWithV).publicKey),
+        ).toBe(vector.address);
+        expect(
+          blockchain.getAddress(
+            blockchain.recoverDigestSigner(hex.decode(digest), signatureWithV).publicKey,
+          ),
+        ).toBe(vector.address);
+        expect(
+          blockchain.getAddress(
+            new Ethereum().recoverMessageSigner(message, signatureWithV).publicKey,
+          ),
+        ).not.toBe(new Ethereum().getAddress(vector.publicKey));
+      },
+    );
   });
 });
