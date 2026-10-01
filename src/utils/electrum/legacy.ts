@@ -25,7 +25,7 @@
  */
 
 /**
- * Electrum legacy dictionary, used only to reject unsupported seeds. Both calls are marked pure, so a
+ * Electrum legacy dictionary, in the order old seeds index it. Both calls are marked pure, so a
  * bundle that never checks an Electrum seed drops the list.
  */
 export const ELECTRUM_LEGACY_WORDS = /* @__PURE__ */ new Set(
@@ -33,3 +33,30 @@ export const ELECTRUM_LEGACY_WORDS = /* @__PURE__ */ new Set(
     " ",
   ),
 );
+
+const LEGACY_WORD_COUNT = 1626;
+
+/**
+ * Turns old seed words into the hex seed Electrum stretches, three words to eight hex digits.
+ * @param words - Normalized words, all of them on the legacy list, a multiple of three
+ * @returns {string} The hex seed, as `old_mnemonic.mn_decode` writes it
+ */
+export function decodeLegacyWords(words: readonly string[]): string {
+  const list = [...ELECTRUM_LEGACY_WORDS];
+  const indices = words.map((word) => list.indexOf(word));
+  if (indices.length % 3 !== 0 || indices.includes(-1)) {
+    throw new Error("Not an old Electrum seed");
+  }
+  let hexSeed = "";
+  for (let i = 0; i < indices.length; i += 3) {
+    const [w1 = 0, w2 = 0, w3 = 0] = indices.slice(i, i + 3);
+    const value =
+      w1 +
+      LEGACY_WORD_COUNT *
+        ((((w2 - w1) % LEGACY_WORD_COUNT) + LEGACY_WORD_COUNT) % LEGACY_WORD_COUNT) +
+      LEGACY_WORD_COUNT ** 2 *
+        ((((w3 - w2) % LEGACY_WORD_COUNT) + LEGACY_WORD_COUNT) % LEGACY_WORD_COUNT);
+    hexSeed += value.toString(16).padStart(8, "0");
+  }
+  return hexSeed;
+}

@@ -181,7 +181,9 @@ describe("Public derivation exports", () => {
     expect(root).not.toHaveProperty("deriveElectrumSeed");
     expect(root).not.toHaveProperty("inspectElectrumMnemonic");
     const electrum = await import("@agntn/keys/electrum");
-    expect(new Set(Object.keys(electrum))).toEqual(new Set(["deriveSeed", "inspect"]));
+    expect(new Set(Object.keys(electrum))).toEqual(
+      new Set(["deriveOldMasterPublicKey", "deriveOldPublicKey", "deriveSeed", "inspect"]),
+    );
   });
 
   it("exports checksum diagnostics and the explicit HD override from the built package", async () => {

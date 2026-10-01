@@ -9,7 +9,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 
 | Tool                                | Purpose                                                            |
 | ----------------------------------- | ------------------------------------------------------------------ |
-| `keys_electrum_wallet_derive`       | Derive a Bitcoin address from an explicit Electrum phrase and path |
+| `keys_electrum_wallet_derive`       | Derive a Bitcoin address from an Electrum phrase and path or index |
 | `keys_brainwallet_derive`           | Derive a Bitcoin or Ethereum address from a brainwallet recipe     |
 | `keys_bip39_seed_derive`            | Derive seed hex from a valid mnemonic and optional passphrase      |
 | `keys_secp256k1_public_key_convert` | Convert secp256k1 public keys between SEC1 encodings               |
@@ -42,7 +42,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 
 ## Electrum wallets
 
-`keys_electrum_wallet_derive` is separate from BIP39. Supply the complete Electrum phrase and exact BIP32 `path`, with an optional `passphrase` and Bitcoin `network`. Standard seeds produce P2PKH addresses, SegWit seeds P2WPKH. The result includes `scheme: "electrum"` and `seedType`, but no seed or private key. Legacy, 2FA and unrecognized versions are rejected. Both phrase and passphrase use Electrum normalization. Inputs are saved in the transcript, so never submit real wallet secrets.
+`keys_electrum_wallet_derive` is separate from BIP39. Supply the complete Electrum phrase and exact BIP32 `path`, with an optional `passphrase` and Bitcoin `network`. Standard seeds produce P2PKH addresses, SegWit seeds P2WPKH. An old seed from before Electrum 2.0 has no path: pass `change` (0 or 1) and `index` instead, both 0 by default. It gives uncompressed P2PKH addresses and also returns the master public key. The result includes `scheme: "electrum"` and `seedType`, but no seed or private key. 2FA and unrecognized versions are rejected. Both phrase and passphrase use Electrum normalization. Inputs are saved in the transcript, so never submit real wallet secrets.
 
 ## Salted brainwallets
 

@@ -1,10 +1,16 @@
 import { hex } from "@scure/base";
 import { describe, expect, it } from "vite-plus/test";
-import { deriveSeed, inspect } from "../../src/utils/electrum/index.ts";
+import {
+  deriveOldMasterPublicKey,
+  deriveOldPublicKey,
+  deriveSeed,
+  inspect,
+} from "../../src/utils/electrum/index.ts";
+import { decodeLegacyWords } from "../../src/utils/electrum/legacy.ts";
 import { normalizeElectrumText } from "../../src/utils/electrum/normalize.ts";
 import { deriveElectrumWallet } from "../../src/tool-operations.ts";
 import { deriveMnemonicKey } from "../../src/utils/hd.ts";
-import { electrumVectors } from "../fixtures.ts";
+import { electrumOldVectors, electrumVectors } from "../fixtures.ts";
 
 describe("Electrum seed derivation", () => {
   it.each(electrumVectors)("matches upstream seed bytes and addresses: $name", async (vector) => {
@@ -81,6 +87,96 @@ describe("Electrum seed derivation", () => {
       [vector.mnemonic, vector.path, "x".repeat(4097)],
     ]) {
       await expect(deriveElectrumWallet(args[0], args[1], args[2], args[3])).rejects.toThrow();
+    }
+  });
+});
+
+describe("Old Electrum seeds", () => {
+  it.each(electrumOldVectors)("matches Electrum's keys and addresses: $name", async (vector) => {
+    expect(inspect(vector.mnemonic)).toBe("old");
+    const masterPublicKey = deriveOldMasterPublicKey(vector.mnemonic);
+    expect(hex.encode(masterPublicKey)).toBe(vector.masterPublicKey);
+    for (const child of vector.children) {
+      expect(hex.encode(deriveOldPublicKey(masterPublicKey, child.change, child.index))).toBe(
+        child.publicKey,
+      );
+      const wallet = await deriveElectrumWallet(
+        vector.mnemonic,
+        undefined,
+        undefined,
+        undefined,
+        child.change,
+        child.index,
+      );
+      expect(wallet.details).toEqual({
+        chain: "bitcoin",
+        network: "mainnet",
+        scheme: "electrum",
+        seedType: "old",
+        masterPublicKey: vector.masterPublicKey,
+        change: child.change,
+        index: child.index,
+        publicKey: child.publicKey,
+        address: child.address,
+      });
+    }
+  });
+
+  it("decodes words to the hex seed Electrum stores, and opens both forms", () => {
+    const [vector] = electrumOldVectors;
+    expect(decodeLegacyWords(vector.mnemonic.split(" "))).toBe(vector.hexSeed);
+    expect(hex.encode(deriveOldMasterPublicKey(vector.hexSeed))).toBe(vector.masterPublicKey);
+    expect(hex.encode(deriveOldMasterPublicKey(` ${vector.mnemonic.toUpperCase()}\n`))).toBe(
+      vector.masterPublicKey,
+    );
+    expect(hex.encode(deriveOldMasterPublicKey(vector.hexSeed.toUpperCase()))).toBe(
+      vector.masterPublicKey,
+    );
+  });
+
+  it("defaults to the first receiving address and takes a blank path as none", async () => {
+    const [vector] = electrumOldVectors;
+    const [first] = vector.children;
+    for (const path of [undefined, "", "  "]) {
+      const wallet = await deriveElectrumWallet(vector.mnemonic, path);
+      expect(wallet.details.address).toBe(first.address);
+    }
+    const testnet = await deriveElectrumWallet(vector.mnemonic, undefined, "", "testnet");
+    expect(testnet.details).toMatchObject({ network: "testnet", publicKey: first.publicKey });
+    expect(testnet.details.address).toMatch(/^[mn]/u);
+  });
+
+  it("refuses what Electrum cannot open", () => {
+    const masterPublicKey = hex.decode(electrumOldVectors[0].masterPublicKey);
+    expect(() => deriveOldMasterPublicKey(electrumVectors[0].mnemonic)).toThrow(
+      "Not an old Electrum seed",
+    );
+    expect(() =>
+      deriveOldMasterPublicKey("00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff"),
+    ).toThrow("Electrum cannot open spaced hex seeds");
+    expect(() => deriveOldPublicKey(masterPublicKey.subarray(1), 0, 0)).toThrow("64 bytes");
+    expect(() => deriveOldPublicKey(masterPublicKey, 2, 0)).toThrow("Change must be 0 or 1");
+    expect(() => deriveOldPublicKey(masterPublicKey, 0, -1)).toThrow("non-negative integer");
+    expect(() => deriveOldPublicKey(masterPublicKey, 0, 1.5)).toThrow("non-negative integer");
+  });
+
+  it("keeps paths, passphrases, change and index to the seeds that use them", async () => {
+    const old = electrumOldVectors[0].mnemonic;
+    const segwit = electrumVectors[0];
+    for (const [args, message] of [
+      [[old, "m/0/0"], "Old Electrum seeds have no BIP32 path"],
+      [[old, undefined, "extension"], "Old Electrum seeds take no passphrase"],
+      [[old, undefined, "", "", 2], "Change must be an integer between 0 and 1"],
+      [[old, undefined, "", "", 0, 2 ** 31], "Index must be an integer between 0 and 2147483647"],
+      [
+        [segwit.mnemonic, segwit.path, "", "", 0],
+        "Change and index apply to old Electrum seeds only",
+      ],
+      [[segwit.mnemonic, segwit.path, "", "", undefined, 0], "Change and index apply"],
+      [[segwit.mnemonic, undefined], "Standard and SegWit Electrum seeds need a BIP32 path"],
+      [[segwit.mnemonic, " "], "need a BIP32 path"],
+    ] as const) {
+      await expect(deriveElectrumWallet(...args)).rejects.toThrow(message);
     }
   });
 });
