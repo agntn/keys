@@ -318,11 +318,20 @@ export const DERIVE_WALLET_PARAMETERS = Type.Object(
 export const DERIVE_HD_WALLET_PARAMETERS = Type.Object(
   {
     chain: chainArgument,
-    mnemonic: Type.String({
-      description: "BIP39 mnemonic in the selected language",
-      minLength: 1,
-      pattern: "\\S",
-    }),
+    mnemonic: Type.Optional(
+      Type.String({
+        description: "BIP39 mnemonic in the selected language. Pass this or entropy, not both",
+        minLength: 1,
+        pattern: "\\S",
+      }),
+    ),
+    entropy: Type.Optional(
+      Type.String({
+        description:
+          "BIP39 entropy as 32, 40, 48, 56, or 64 hexadecimal characters, encoded into words of the selected language. Pass this or mnemonic, not both",
+        pattern: BIP39_ENTROPY_SCHEMA_PATTERN,
+      }),
+    ),
     language: BIP39_LANGUAGE_PARAMETER,
     path: Type.String({
       description: "Derivation path such as m/84'/0'/0'/0/0",

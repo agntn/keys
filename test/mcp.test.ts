@@ -24,6 +24,7 @@ import {
   stellarTestVectors,
   wifTestVectors,
   localizedMnemonicVectors,
+  bip39EntropyWalletVector,
   invalidChecksumPuzzle,
   slip132PrivateKey,
   secp256k1TestVectors,
@@ -521,6 +522,44 @@ describe("keys MCP server", () => {
       ],
       [{ mnemonic: bip39TestVectors.mnemonic, language: "italian" }, "is in the italian list"],
       [{ mnemonic: italian?.mnemonic, language: "latin" }, "Invalid arguments at /language"],
+    ] as const) {
+      const rejected = await client.callTool({
+        name: "keys_hd_wallet_derive",
+        arguments: { chain: "bitcoin", path, ...args },
+      });
+      expect(rejected.isError).toBe(true);
+      expect(text(rejected.content)).toContain(reason);
+    }
+  });
+
+  it("derives an HD wallet from BIP39 entropy without the words", async () => {
+    const client = await connectTestClient();
+    const { entropy, path, publicKey, address } = bip39EntropyWalletVector;
+    const response = await client.callTool({
+      name: "keys_hd_wallet_derive",
+      arguments: { chain: "bitcoin", entropy, path },
+    });
+    expect(response.isError).not.toBe(true);
+    expect(text(response.content)).toContain(`Public key: ${publicKey}\nAddress: ${address}`);
+    expect(text(response.content)).not.toContain(entropy);
+
+    for (const vector of localizedMnemonicVectors.filter((item) =>
+      ["italian", "japanese"].includes(item.language),
+    )) {
+      const expected = HDKey.fromMasterSeed(mnemonicToSeedSync(vector.mnemonic)).derive(path);
+      const localized = await client.callTool({
+        name: "keys_hd_wallet_derive",
+        arguments: { chain: "bitcoin", entropy: vector.entropy, path, language: vector.language },
+      });
+      expect(text(localized.content)).toContain(
+        `Public key: ${hex.encode(expected.publicKey ?? new Uint8Array())}`,
+      );
+    }
+
+    for (const [args, reason] of [
+      [{ entropy, mnemonic: bip39TestVectors.mnemonic }, "not both"],
+      [{}, "Pass a BIP39 mnemonic or its entropy"],
+      [{ entropy: "00".repeat(15) }, "Invalid arguments at /entropy"],
     ] as const) {
       const rejected = await client.callTool({
         name: "keys_hd_wallet_derive",
