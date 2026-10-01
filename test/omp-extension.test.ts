@@ -7,6 +7,7 @@ import {
   brainwalletInput,
   brainwalletVectors,
   plainBrainwalletVectors,
+  warpWalletVectors,
   ethereumTestVectors,
   wifTestVectors,
 } from "./fixtures.ts";
@@ -189,4 +190,34 @@ describe("keys OMP extension", () => {
     });
     expect(plain).toContain(keccak.address);
   });
+
+  /** WarpWallet fixes its own costs, so the zeros and blanks OMP sends for them must not count. */
+  it("takes blank costs as omitted for a WarpWallet", async () => {
+    const tool = keysTools.find(({ name }) => name === "keys_brainwallet_derive");
+    const [warp] = warpWalletVectors;
+    const warpwallet = JSON.stringify(
+      (
+        await tool?.execute(
+          {
+            passphrase: warp.passphrase,
+            salt: warp.salt,
+            saltEncoding: "utf8",
+            kdf: "warpwallet",
+            hashed: "",
+            N: 0,
+            r: 0,
+            p: 0,
+            iterations: 0,
+            digest: "",
+            keyLength: 0,
+            compressed: false,
+            network: "",
+            target: "",
+          } as never,
+          {},
+        )
+      )?.content,
+    );
+    expect(warpwallet).toContain(warp.address);
+  }, 30_000);
 });

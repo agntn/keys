@@ -7,6 +7,7 @@ import {
   sha256,
   type ScryptOptions,
 } from "@agntn/hashes";
+import { concatBytes } from "../bytes.ts";
 
 /** Key derivation a salted brainwallet runs the passphrase through, with its cost parameters. */
 export type BrainwalletKDF =
@@ -31,10 +32,23 @@ export interface PlainBrainwalletOptions {
   readonly iterations?: number;
 }
 
-/** Any recipe `derive` takes, salted or plain. */
-export type BrainwalletRecipe = BrainwalletOptions | PlainBrainwalletOptions;
+/** Recipe of a WarpWallet: scrypt and PBKDF2 at the costs WarpWallet fixed, XORed into the key. */
+export interface WarpWalletOptions {
+  readonly kdf: "warpwallet";
+  /** Salt as bytes, or text read as UTF-8. WarpWallet asks for an email; empty for none. */
+  readonly salt: Uint8Array | string;
+}
+
+/** Any recipe `derive` takes, salted, plain or WarpWallet. */
+export type BrainwalletRecipe = BrainwalletOptions | PlainBrainwalletOptions | WarpWalletOptions;
 
 const encoder = new TextEncoder();
+
+/** scrypt cost WarpWallet runs, 256 MiB of memory. */
+const WARP_SCRYPT = { N: 2 ** 18, r: 8, p: 1 } as const;
+
+/** PBKDF2-HMAC-SHA256 rounds WarpWallet runs. */
+const WARP_PBKDF2_ITERATIONS = 2 ** 16;
 
 /**
  * Hashes the passphrase bytes into a key, round after round.
@@ -66,11 +80,47 @@ function stretch(password: Uint8Array, salt: Uint8Array, options: BrainwalletOpt
     const hasher = options.digest === "sha512" ? Sha512Hasher : Sha256Hasher;
     return pbkdf2(() => new hasher(), password, salt, options.iterations, keyLength);
   }
-  const { N, r, p } = options;
-  const scrypt: ScryptOptions = { salt, N, r, p, keyLength, encoding: "binary" };
-  const { digest } = create("scrypt").hash(password, scrypt);
+  return scrypt(password, salt, options, keyLength);
+}
+
+/**
+ * Runs scrypt over the passphrase bytes.
+ * @param password - Passphrase bytes
+ * @param salt - Salt bytes
+ * @param cost - N, r and p
+ * @param keyLength - Output length in bytes
+ * @returns {Uint8Array} The scrypt output
+ */
+function scrypt(
+  password: Uint8Array,
+  salt: Uint8Array,
+  cost: { readonly N: number; readonly r: number; readonly p: number },
+  keyLength: number,
+): Uint8Array {
+  const { N, r, p } = cost;
+  const options: ScryptOptions = { salt, N, r, p, keyLength, encoding: "binary" };
+  const { digest } = create("scrypt").hash(password, options);
   if (!(digest instanceof Uint8Array)) throw new TypeError("scrypt returned text, not bytes");
   return digest;
+}
+
+/**
+ * WarpWallet key: scrypt over the inputs suffixed 0x01, XOR PBKDF2 over them suffixed 0x02.
+ * @param password - Passphrase as UTF-8 bytes
+ * @param salt - Salt bytes
+ * @returns {Uint8Array} 32-byte secp256k1 private key
+ */
+function warp(password: Uint8Array, salt: Uint8Array): Uint8Array {
+  const tagged = (bytes: Uint8Array, tag: number) => concatBytes(bytes, Uint8Array.of(tag));
+  const s1 = scrypt(tagged(password, 1), tagged(salt, 1), WARP_SCRYPT, 32);
+  const s2 = pbkdf2(
+    () => new Sha256Hasher(),
+    tagged(password, 2),
+    tagged(salt, 2),
+    WARP_PBKDF2_ITERATIONS,
+    32,
+  );
+  return s1.map((byte, index) => byte ^ (s2[index] ?? 0));
 }
 
 /**
@@ -83,9 +133,9 @@ function isPlain(options: BrainwalletRecipe): options is PlainBrainwalletOptions
 }
 
 /**
- * Derives a brainwallet key: SHA-256 of the KDF output, or the plain passphrase digest.
+ * Derives a brainwallet key: SHA-256 of the KDF output, the plain passphrase digest or WarpWallet.
  * @param passphrase - Passphrase, hashed as UTF-8 without trimming or normalization
- * @param options - Salted recipe, or the digest and rounds of a plain one
+ * @param options - Salted recipe, the digest and rounds of a plain one, or WarpWallet with its salt
  * @returns {Uint8Array} 32-byte secp256k1 private key
  */
 export function derive(passphrase: string, options: BrainwalletRecipe): Uint8Array {
@@ -93,6 +143,7 @@ export function derive(passphrase: string, options: BrainwalletRecipe): Uint8Arr
     return digestRounds(encoder.encode(passphrase), options);
   }
   const salt = typeof options.salt === "string" ? encoder.encode(options.salt) : options.salt;
+  if (options.kdf === "warpwallet") return warp(encoder.encode(passphrase), salt);
   const stretched = stretch(encoder.encode(passphrase), salt, options);
   return sha256(options.hashed === "hex" ? encoder.encode(stretched.toHex()) : stretched);
 }

@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vite-plus/test";
 import { hex } from "@scure/base";
 import { derive } from "../../src/utils/brainwallet/index.ts";
-import { brainwalletInput, brainwalletVectors, plainBrainwalletVectors } from "../fixtures.ts";
+import {
+  brainwalletInput,
+  brainwalletVectors,
+  plainBrainwalletVectors,
+  warpWalletVectors,
+} from "../fixtures.ts";
 
 const { passphrase, salt, saltHex } = brainwalletInput;
 const [scryptHex, scryptBytes] = brainwalletVectors;
@@ -51,4 +56,12 @@ describe("brainwallet derive", () => {
   it.each([0, 1.5, -1])("refuses %s rounds", (iterations) => {
     expect(() => derive(passphrase, { kdf: "sha256", iterations })).toThrow(/iterations/);
   });
+
+  it.each(warpWalletVectors)(
+    "derives the WarpWallet key $privateKey with the salt '$salt'",
+    ({ passphrase: warp, salt: warpSalt, privateKey }) => {
+      expect(hex.encode(derive(warp, { kdf: "warpwallet", salt: warpSalt }))).toBe(privateKey);
+    },
+    30_000,
+  );
 });

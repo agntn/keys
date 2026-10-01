@@ -33,6 +33,7 @@ import {
   type BrainwalletKDF,
   type BrainwalletRecipe,
   type PlainBrainwalletOptions,
+  type WarpWalletOptions,
 } from "./utils/brainwallet/index.ts";
 import {
   decrypt as decryptStoreKey,
@@ -995,6 +996,39 @@ function plainBrainwalletRecipe(
 }
 
 /**
+ * Reads the salt a salted recipe or WarpWallet requires, empty for none.
+ * @param kdf - KDF name for the error
+ * @param args - Tool arguments
+ * @returns {Uint8Array | string} Decoded hex bytes, or the text to read as UTF-8
+ */
+function brainwalletSalt(
+  kdf: string,
+  args: Readonly<Record<string, unknown>>,
+): Uint8Array | string {
+  if (args["salt"] === undefined) throw new TypeError(`${kdf} needs a salt, empty for none`);
+  const saltText = brainwalletText(args["salt"], "Salt");
+  const saltEncoding = oneOf(args["saltEncoding"], "saltEncoding", ["utf8", "hex"]);
+  if (saltEncoding === "hex" && !EVEN_HEX.test(saltText)) {
+    throw new TypeError("Salt must be hex digit pairs without 0x when saltEncoding is hex");
+  }
+  return saltEncoding === "hex" ? Uint8Array.fromHex(saltText) : saltText;
+}
+
+/** Arguments WarpWallet fixes for itself. OMP sends 0 or an empty string for each. */
+const WARP_FIXED_ARGUMENTS = ["hashed", "N", "r", "p", "iterations", "digest", "keyLength"];
+
+/**
+ * Reads the salt of a WarpWallet, refusing every cost it fixes for itself.
+ * @param args - Tool arguments
+ * @returns {WarpWalletOptions} WarpWallet with its salt
+ */
+function warpWalletRecipe(args: Readonly<Record<string, unknown>>): WarpWalletOptions {
+  const foreign = WARP_FIXED_ARGUMENTS.filter((name) => !isUnsetCost(args[name]));
+  if (foreign.length > 0) throw new RangeError(`warpwallet does not take ${foreign.join(", ")}`);
+  return { kdf: "warpwallet", salt: brainwalletSalt("warpwallet", args) };
+}
+
+/**
  * Reads the passphrase and the full recipe, refusing anything the KDF would not run as given.
  * @param args - Tool arguments
  * @returns {{ passphrase: string; options: BrainwalletRecipe }} Passphrase and recipe
@@ -1004,19 +1038,14 @@ function brainwalletRecipe(args: Readonly<Record<string, unknown>>): {
   options: BrainwalletRecipe;
 } {
   const passphrase = brainwalletText(args["passphrase"], "Passphrase");
-  const kdf = oneOf(args["kdf"], "kdf", ["scrypt", "pbkdf2", "sha256", "keccak256"]);
+  const kdf = oneOf(args["kdf"], "kdf", ["scrypt", "pbkdf2", "sha256", "keccak256", "warpwallet"]);
   if (kdf === "sha256" || kdf === "keccak256") {
     return { passphrase, options: plainBrainwalletRecipe(kdf, args) };
   }
-  if (args["salt"] === undefined) throw new TypeError(`${kdf} needs a salt, empty for none`);
-  const saltText = brainwalletText(args["salt"], "Salt");
-  const saltEncoding = oneOf(args["saltEncoding"], "saltEncoding", ["utf8", "hex"]);
-  if (saltEncoding === "hex" && !EVEN_HEX.test(saltText)) {
-    throw new TypeError("Salt must be hex digit pairs without 0x when saltEncoding is hex");
-  }
+  if (kdf === "warpwallet") return { passphrase, options: warpWalletRecipe(args) };
+  const salt = brainwalletSalt(kdf, args);
   const stretch = brainwalletKDF(kdf, args);
   const hashed = oneOf(args["hashed"], "hashed", ["bytes", "hex"]);
-  const salt = saltEncoding === "hex" ? Uint8Array.fromHex(saltText) : saltText;
   const options = { ...stretch, salt, hashed };
   if (isUnsetCost(args["keyLength"])) return { passphrase, options };
   return {

@@ -1424,6 +1424,26 @@ export const plainBrainwalletVectors = [
   },
 ] as const;
 
+/**
+ * WarpWallet keys of `Je`, checked with `node:crypto`. The first is WarpWallet challenge 1
+ * (`warp/challenge-1` in `agntn/puzzles`), its public key from the claim transaction.
+ */
+export const warpWalletVectors = [
+  {
+    passphrase: "Je",
+    salt: "",
+    privateKey: "20f5df9cba8251e90a66d3aa1ca2849b12eaca135abb837671ac4a2bc2014e2b",
+    publicKey:
+      "045f751d820a69524eb71d48ddc6a231ba019b1461f58b0266cbbec617f9e80c6e573582b37014ce7ba7eaf9031265c5f022d8cb286f2194344f207eaa44bb51af",
+    address: "1JKb1617p68H5MPkoNaMtaJCqKDU3h8qSn",
+  },
+  {
+    passphrase: "Je",
+    salt: "a@b.c",
+    privateKey: "ec0ab56e294ad0ca880f4fd6ec0968ee7d084762288d0842a8f15bd44903b15a",
+  },
+] as const;
+
 /** Passphrase and salt of `brainwalletVectors`, the salt also as the hex the tool takes. */
 export const brainwalletInput = {
   passphrase: "example passphrase",
