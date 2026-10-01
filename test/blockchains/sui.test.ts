@@ -39,6 +39,26 @@ describe("Sui", () => {
         expect(blockchain.getAddress(keyPublicSecp256k1, "secp256k1")).toBe(addressSecp256k1);
       });
 
+      it.each([33, 65])("rejects an ed25519 public key with %i bytes", (bytes) => {
+        expect(() => blockchain.getAddress("02".repeat(bytes), "ed25519")).toThrow(
+          "Sui public key must be 32 bytes",
+        );
+      });
+
+      it("writes the address of the compressed key for an uncompressed secp256k1 key", () => {
+        const uncompressed = secp256k1.Point.fromHex(keyPublicSecp256k1).toHex(false);
+        expect(blockchain.getAddress(uncompressed, "secp256k1")).toBe(addressSecp256k1);
+      });
+
+      it.each([keyPublicEd25519, `02${"00".repeat(32)}`])(
+        "rejects %s as a secp256k1 public key",
+        (keyPublic) => {
+          expect(() => blockchain.getAddress(keyPublic, "secp256k1")).toThrow(
+            "Invalid SEC1 secp256k1 public key",
+          );
+        },
+      );
+
       it("should default to Ed25519 when no scheme is specified", () => {
         expect(blockchain.getKeyPublic(keyPrivate)).toBe(keyPublicEd25519);
         expect(blockchain.getAddress(keyPublicEd25519)).toBe(addressEd25519);
@@ -77,7 +97,9 @@ describe("Sui", () => {
       const wallet = blockchain.generateWallet({ scheme: "secp256k1" });
 
       expect(wallet.address).toBe(blockchain.getAddress(wallet.keys.public, "secp256k1"));
-      expect(wallet.address).not.toBe(blockchain.getAddress(wallet.keys.public, "ed25519"));
+      expect(() => blockchain.getAddress(wallet.keys.public, "ed25519")).toThrow(
+        "Sui public key must be 32 bytes",
+      );
     });
 
     it("uses the key scheme when deriving a wallet address", () => {

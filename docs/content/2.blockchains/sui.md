@@ -44,7 +44,7 @@ const secpKey = suiChain.getKeyPublic(privateKey, { scheme: "secp256k1" });
 const secpAddress = suiChain.getAddress(secpKey, "secp256k1");
 ```
 
-Forget the second one and you hash a secp256k1 key with the ed25519 flag. The result validates, looks fine, and no key can ever spend from it. This is the single easiest way to lose funds with this package, which is why the wallet methods take the scheme once.
+Forget the second one and `getAddress` throws. The default flag is ed25519, and a 33 byte secp256k1 key isn't 32 bytes. Good thing, too. Hashed under the wrong flag, that key gives an address that validates, looks fine, and no key can ever spend from. The same check catches an ed25519 key passed as `secp256k1`. An uncompressed secp256k1 key is fine, it gets compressed first, because the compressed form is the only one Sui hashes.
 
 ## Validation
 

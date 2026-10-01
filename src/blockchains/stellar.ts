@@ -4,7 +4,7 @@ import { base32nopad } from "@scure/base";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { getHardenedPath } from "../utils/bip44/paths.ts";
-import { generateKeyPublic } from "../utils/ed25519.ts";
+import { decodeKeyPublic, generateKeyPublic } from "../utils/ed25519.ts";
 import { signMessage, verifyMessage } from "../utils/signing.ts";
 import type { Curve, KeyOptions } from "../types.ts";
 
@@ -89,11 +89,7 @@ export class Stellar extends AbstractBlockchain {
    * @returns {string} The 56-character StrKey
    */
   override getAddress(keyPublic: string): string {
-    const keyPublicBytes = Uint8Array.fromHex(keyPublic);
-    if (keyPublicBytes.length !== 32) {
-      throw new RangeError("Stellar public key must be 32 bytes");
-    }
-    return encodeStrKey(ACCOUNT_VERSION, keyPublicBytes);
+    return encodeStrKey(ACCOUNT_VERSION, decodeKeyPublic(keyPublic, "Stellar"));
   }
 
   /**

@@ -2,7 +2,7 @@ import { blake2b } from "@agntn/hashes";
 import { bech32 } from "@scure/base";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { getBIP32Path } from "../utils/bip44/paths.ts";
-import { generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
+import { decodeKeyPublic, generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
 import type { CardanoAddressType, Curve, KeyOptions, Options, Wallet } from "../types.ts";
 
@@ -79,7 +79,7 @@ export class Cardano extends AbstractBlockchain {
   }
 
   private getKeyHash(keyPublic: string): Uint8Array {
-    return blake2b(Uint8Array.fromHex(keyPublic), 28);
+    return blake2b(decodeKeyPublic(keyPublic, "Cardano"), 28);
   }
 
   private encodeAddress(hrp: string, header: number, payload: Uint8Array): string {
