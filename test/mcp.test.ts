@@ -34,6 +34,7 @@ import {
   brainwalletInput,
   brainwalletVectors,
   plainBrainwalletVectors,
+  warpWalletVectors,
   storeVectors,
 } from "./fixtures.ts";
 import Bitcoin from "../src/blockchains/bitcoin.ts";
@@ -515,6 +516,31 @@ describe("keys MCP server", () => {
     },
   );
 
+  it("derives WarpWallet challenge 1 through MCP without its private key", async () => {
+    const client = await connectTestClient();
+    const [{ passphrase, salt, publicKey, address, privateKey }] = warpWalletVectors;
+    const response = await client.callTool({
+      name: "keys_brainwallet_derive",
+      arguments: {
+        passphrase,
+        salt,
+        saltEncoding: "utf8",
+        kdf: "warpwallet",
+        compressed: false,
+        target: address,
+      },
+    });
+    expect(response.isError).not.toBe(true);
+    expect(text(response.content).split("\n")).toEqual([
+      "Chain: bitcoin (mainnet)",
+      "Address type: legacy, uncompressed",
+      `Public key: ${publicKey}`,
+      `Address: ${address}`,
+      "Target: match",
+    ]);
+    expect(text(response.content)).not.toContain(privateKey);
+  }, 30_000);
+
   it("refuses a brainwallet recipe it cannot run exactly, echoing no secret", async () => {
     const client = await connectTestClient();
     const { passphrase, salt } = brainwalletInput;
@@ -536,6 +562,8 @@ describe("keys MCP server", () => {
       [{ passphrase, kdf: "scrypt", N: 1024, r: 8, p: 1, compressed: false }, "needs a salt"],
       [{ ...base, kdf: "sha256" }, "sha256 does not take salt, saltEncoding, hashed"],
       [{ passphrase, kdf: "keccak256", N: 1024, compressed: false }, "keccak256 does not take N"],
+      [{ ...base, kdf: "warpwallet", N: 1024 }, "warpwallet does not take hashed, N"],
+      [{ passphrase, kdf: "warpwallet", compressed: false }, "warpwallet needs a salt"],
       [{ passphrase, kdf: "sha256", chain: "ethereum", compressed: true }, "ethereum does not"],
       [{ passphrase, kdf: "sha256", chain: "solana" }, "Invalid arguments at /chain"],
     ] as const) {

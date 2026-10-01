@@ -249,20 +249,20 @@ export const DERIVE_BRAINWALLET_PARAMETERS = Type.Object(
       Type.String({
         maxLength: MAX_BRAINWALLET_INPUT_LENGTH,
         description:
-          "scrypt and pbkdf2 only, required there: salt, read as saltEncoding says. Empty for none",
+          "scrypt, pbkdf2 and warpwallet only, required there: salt, read as saltEncoding says. Empty for none",
       }),
     ),
     saltEncoding: Type.Optional(
       Type.String({
         enum: ["utf8", "hex"],
         description:
-          "scrypt and pbkdf2 only, required there: utf8 hashes the salt text, hex decodes it to bytes first",
+          "scrypt, pbkdf2 and warpwallet only, required there: utf8 hashes the salt text, hex decodes it to bytes first",
       }),
     ),
     kdf: Type.String({
-      enum: ["scrypt", "pbkdf2", "sha256", "keccak256"],
+      enum: ["scrypt", "pbkdf2", "sha256", "keccak256", "warpwallet"],
       description:
-        "scrypt takes N, r and p; pbkdf2 takes iterations and digest. sha256 (brainwallet.org) and keccak256 hash the passphrase straight into the key, with no salt",
+        "scrypt takes N, r and p; pbkdf2 takes iterations and digest. sha256 (brainwallet.org) and keccak256 hash the passphrase straight into the key, with no salt. warpwallet takes only the salt and fixes its own costs",
     }),
     N: Type.Optional(
       Type.Integer({

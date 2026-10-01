@@ -1,14 +1,14 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vite-plus/test";
-import { brainwalletVectors } from "./fixtures.ts";
+import { brainwalletVectors, warpWalletVectors } from "./fixtures.ts";
 
 const guide = readFileSync(
   new URL("../docs/content/1.guide/4.wallets.md", import.meta.url),
   "utf8",
 );
 const section = guide.split("## Salted brainwallets")[1]?.split("\n## ")[0] ?? "";
-const [example, plainExample] = Array.from(
+const [example, plainExample, warpExample] = Array.from(
   section.matchAll(/```js\n([\s\S]*?)```/gu),
   (match) => match[1],
 );
@@ -42,4 +42,11 @@ describe("Brainwallet documentation", () => {
     expect(address).toBe("1JwSSubhmg6iPtRjtyqhUYYH7bZg3Lfy1T");
     expect(section).toContain(`\`${address}\``);
   });
+
+  it("derives the WarpWallet address the page names", () => {
+    if (!warpExample) throw new Error("Missing WarpWallet example");
+    const [{ address }] = warpWalletVectors;
+    expect(snippetAddress(warpExample)).toBe(address);
+    expect(section).toContain(`\`${address}\``);
+  }, 30_000);
 });

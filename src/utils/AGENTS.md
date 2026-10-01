@@ -32,7 +32,7 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, BIP
 | `bip38/`       | Encrypted keys                | `inspect` reads the header without the passphrase; `decrypt` opens both modes, `BIP38PassphraseError` when the address hash misses            |
 | `bip39/`       | Mnemonic phrases              | `generateMnemonic`, `mnemonicToSeed`, `validateMnemonic`, `getMnemonicWordCandidates`, `lookupWords`, `lookupIndices`                         |
 | `bip44/`       | Derivation paths              | `BIP44` coin types, `BIP44Change`, `getPath`, `parse`; `getBIP32Path` and `getHardenedPath` for the chain shapes stay internal in `paths.ts`  |
-| `brainwallet/` | Brainwallet keys              | `derive`: scrypt or PBKDF2 over the passphrase and salt, then SHA-256 of the output bytes or their hex; or plain SHA-256 or keccak256 rounds  |
+| `brainwallet/` | Brainwallet keys              | `derive`: scrypt or PBKDF2, then SHA-256 of the output bytes or their hex; plain SHA-256 or keccak256; WarpWallet                             |
 | `electrum/`    | Electrum seeds                | `inspect` names the version, `deriveSeed` seeds standard and SegWit, `deriveOld*` walk an old one; the normalizer and word list stay internal |
 | `secp256k1/`   | SEC1 public keys              | `convertPublicKey` between compressed and uncompressed; key generation, signing, Core's base64 signatures and key errors stay internal        |
 | `slip10/`      | ED25519 HD derivation         | `getMasterKeyFromSeed`, `deriveHDKey`                                                                                                         |
