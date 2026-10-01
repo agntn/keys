@@ -195,24 +195,31 @@ export const DERIVE_ELECTRUM_WALLET_PARAMETERS = Type.Object(
   { additionalProperties: false },
 );
 
-/** Shared MCP and Pi parameters for a salted brainwallet with an explicit recipe. */
+/** Shared MCP and Pi parameters for a salted or plain brainwallet with an explicit recipe. */
 export const DERIVE_BRAINWALLET_PARAMETERS = Type.Object(
   {
     passphrase: Type.String({
       maxLength: MAX_BRAINWALLET_INPUT_LENGTH,
       description: "Public or disposable passphrase, hashed as UTF-8, never trimmed or normalized",
     }),
-    salt: Type.String({
-      maxLength: MAX_BRAINWALLET_INPUT_LENGTH,
-      description: "Salt, read as saltEncoding says. Empty for none",
-    }),
-    saltEncoding: Type.String({
-      enum: ["utf8", "hex"],
-      description: "utf8 hashes the salt text, hex decodes it to bytes first",
-    }),
+    salt: Type.Optional(
+      Type.String({
+        maxLength: MAX_BRAINWALLET_INPUT_LENGTH,
+        description:
+          "scrypt and pbkdf2 only, required there: salt, read as saltEncoding says. Empty for none",
+      }),
+    ),
+    saltEncoding: Type.Optional(
+      Type.String({
+        enum: ["utf8", "hex"],
+        description:
+          "scrypt and pbkdf2 only, required there: utf8 hashes the salt text, hex decodes it to bytes first",
+      }),
+    ),
     kdf: Type.String({
-      enum: ["scrypt", "pbkdf2"],
-      description: "scrypt takes N, r and p; pbkdf2 takes iterations and digest",
+      enum: ["scrypt", "pbkdf2", "sha256", "keccak256"],
+      description:
+        "scrypt takes N, r and p; pbkdf2 takes iterations and digest. sha256 (brainwallet.org) and keccak256 hash the passphrase straight into the key, with no salt",
     }),
     N: Type.Optional(
       Type.Integer({
@@ -239,7 +246,8 @@ export const DERIVE_BRAINWALLET_PARAMETERS = Type.Object(
       Type.Integer({
         minimum: 1,
         maximum: KDF_COST_LIMITS.iterations,
-        description: "pbkdf2 only, required there: iteration count",
+        description:
+          "pbkdf2: required iteration count. sha256 and keccak256: how many times the digest runs, default 1",
       }),
     ),
     digest: Type.Optional(
@@ -255,16 +263,27 @@ export const DERIVE_BRAINWALLET_PARAMETERS = Type.Object(
         description: "KDF output length in bytes. Default: 32",
       }),
     ),
-    hashed: Type.String({
-      enum: ["bytes", "hex"],
-      description:
-        "What SHA-256 reads after the KDF to make the key: its raw bytes, or their lowercase hex as text (brainwallet.io)",
-    }),
-    compressed: Type.Boolean({
-      description: "Compressed SEC1 public key for the address. brainwallet.io writes uncompressed",
-    }),
+    hashed: Type.Optional(
+      Type.String({
+        enum: ["bytes", "hex"],
+        description:
+          "scrypt and pbkdf2 only, required there: what SHA-256 reads after the KDF to make the key, its raw bytes or their lowercase hex as text (brainwallet.io)",
+      }),
+    ),
+    chain: Type.Optional(
+      Type.String({
+        enum: ["bitcoin", "ethereum"],
+        description: "Chain of the address: bitcoin writes P2PKH. Default: bitcoin",
+      }),
+    ),
+    compressed: Type.Optional(
+      Type.Boolean({
+        description:
+          "bitcoin only, required there: compressed SEC1 public key for the address. Old brainwallets write uncompressed",
+      }),
+    ),
     network: Type.Optional(
-      Type.String({ enum: TOOL_NETWORKS, description: "Bitcoin network. Default: mainnet" }),
+      Type.String({ enum: TOOL_NETWORKS, description: "Network. Default: mainnet" }),
     ),
     target: Type.Optional(
       Type.String({

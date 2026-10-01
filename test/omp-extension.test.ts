@@ -6,6 +6,7 @@ import {
   bitcoinSVTestVectors,
   brainwalletInput,
   brainwalletVectors,
+  plainBrainwalletVectors,
   ethereumTestVectors,
   wifTestVectors,
 } from "./fixtures.ts";
@@ -168,5 +169,24 @@ describe("keys OMP extension", () => {
       });
     expect(await brainwallet(scrypt, { iterations: 0, digest: "" })).toContain(scrypt.address);
     expect(await brainwallet(pbkdf2, { N: 0, r: 0, p: 0 })).toContain(pbkdf2.address);
+    const [, , keccak] = plainBrainwalletVectors;
+    const plain = await call("keys_brainwallet_derive", {
+      passphrase: keccak.passphrase,
+      salt: "",
+      saltEncoding: "",
+      hashed: "",
+      N: 0,
+      r: 0,
+      p: 0,
+      iterations: 0,
+      digest: "",
+      keyLength: 0,
+      compressed: false,
+      network: "",
+      target: "",
+      ...keccak.recipe,
+      chain: keccak.chain,
+    });
+    expect(plain).toContain(keccak.address);
   });
 });
