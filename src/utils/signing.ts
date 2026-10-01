@@ -92,6 +92,50 @@ function signSecp256k1(
 }
 
 /**
+ * Read `v` as Ethereum's 27 or 28 or the bare 0 or 1 some libraries emit.
+ * @param recoveryByte - Last byte of an `r||s||v` signature
+ * @returns {number | undefined} The recovery bit, or undefined for any other value
+ */
+function recoveryBit(recoveryByte: number | undefined): number | undefined {
+  if (recoveryByte === undefined) return undefined;
+  const recovery =
+    recoveryByte >= RECOVERY_BYTE_OFFSET ? recoveryByte - RECOVERY_BYTE_OFFSET : recoveryByte;
+  return recovery === 0 || recovery === 1 ? recovery : undefined;
+}
+
+/**
+ * Recover the key behind `r||s||v` over a digest, as `ecrecover` does. Any input gives some key.
+ * @param messageHash - The 32-byte digest that was signed
+ * @param signature - 65 bytes of `r||s||v` as hex, `v` as 27, 28, 0 or 1
+ * @returns {string} The uncompressed SEC1 public key as hex
+ * @throws {TypeError} When the digest or signature has the wrong length or `v` is out of range
+ * @throws {RangeError} When `r` and `s` recover no key
+ */
+export function recoverSecp256k1Signer(messageHash: Uint8Array, signature: string): string {
+  if (messageHash.length !== 32) throw new TypeError("Digest must be 32 bytes");
+  let bytes: Uint8Array;
+  try {
+    bytes = Uint8Array.fromHex(signature);
+  } catch {
+    bytes = new Uint8Array();
+  }
+  if (bytes.length !== COMPACT_SIGNATURE_LENGTH + 1) {
+    throw new TypeError("Signature must be 65 bytes of r||s||v as hex without 0x");
+  }
+  const recovery = recoveryBit(bytes[COMPACT_SIGNATURE_LENGTH]);
+  if (recovery === undefined) throw new TypeError("Signature v must be 27, 28, 0 or 1");
+  try {
+    return secp256k1.Signature.fromBytes(bytes.subarray(0, COMPACT_SIGNATURE_LENGTH), "compact")
+      .addRecoveryBit(recovery)
+      .recoverPublicKey(messageHash)
+      .toBytes(false)
+      .toHex();
+  } catch {
+    throw new RangeError("Signature recovers no public key");
+  }
+}
+
+/**
  * Check an `r||s||v` signature by recovering the signer from `v` and comparing keys,
  * so a signature carrying the wrong `v` fails instead of passing on `r||s` alone.
  * @param signatureBytes - 65 signature bytes
@@ -104,14 +148,8 @@ function verifyRecoveredSignature(
   messageHash: Uint8Array,
   keyPublicBytes: Uint8Array,
 ): boolean {
-  const recoveryByte = signatureBytes[COMPACT_SIGNATURE_LENGTH];
-  if (recoveryByte === undefined) {
-    return false;
-  }
-  /** Accept Ethereum's 27/28 and the bare 0/1 some libraries emit. */
-  const recovery =
-    recoveryByte >= RECOVERY_BYTE_OFFSET ? recoveryByte - RECOVERY_BYTE_OFFSET : recoveryByte;
-  if (recovery !== 0 && recovery !== 1) {
+  const recovery = recoveryBit(signatureBytes[COMPACT_SIGNATURE_LENGTH]);
+  if (recovery === undefined) {
     return false;
   }
   const compact = signatureBytes.subarray(0, COMPACT_SIGNATURE_LENGTH);

@@ -68,6 +68,9 @@ export const MAX_BIP38_PASSPHRASE_LENGTH = 4096;
 /** Maximum address length the address validation tool checks. */
 export const MAX_ADDRESS_LENGTH = 256;
 
+/** Maximum EIP-712 typed data JSON length the recover tool hashes, in characters. */
+export const MAX_TYPED_DATA_LENGTH = 16_384;
+
 /** Supported BIP39 mnemonic lengths for generation tools. */
 export const TOOL_MNEMONIC_WORD_COUNTS: readonly number[] = [12, 15, 18, 21, 24];
 
@@ -175,6 +178,12 @@ export const SIGNATURE_SCHEMA_PATTERN = "^[0-9A-Fa-f]{128}(?:[0-9A-Fa-f]{2})?$";
 
 /** JSON Schema pattern for Core's base64 signature: 65 bytes are 87 characters and one `=`. */
 export const CORE_SIGNATURE_SCHEMA_PATTERN = "^[A-Za-z0-9+/]{87}=$";
+
+/** JSON Schema pattern for what the recover tool reads: `r||s||v` hex or Core's base64. */
+export const RECOVERABLE_SIGNATURE_SCHEMA_PATTERN = "^(?:[0-9A-Fa-f]{130}|[A-Za-z0-9+/]{87}=)$";
+
+/** JSON Schema pattern for a 32-byte digest as hex without 0x. */
+export const DIGEST_SCHEMA_PATTERN = "^[0-9A-Fa-f]{64}$";
 
 /** JSON Schema pattern for a signature the verify tool reads: hex as above, or Core's base64. */
 export const MESSAGE_SIGNATURE_SCHEMA_PATTERN =

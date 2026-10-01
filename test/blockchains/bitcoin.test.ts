@@ -387,6 +387,9 @@ describe("Bitcoin blockchain", () => {
       const publicKey = blockchain.getKeyPublic(messageVectors.privateKey);
       expect(blockchain.verifyMessage(message, withHeader(26), publicKey)).toBe(false);
       expect(blockchain.verifyMessage(message, zero, publicKey)).toBe(false);
+      expect(() => blockchain.recoverDigestSigner(new Uint8Array(32), "00".repeat(65))).toThrow(
+        "bitcoin does not sign digests as r||s||v",
+      );
     });
 
     it("rejects Ethereum's r||s||v", () => {

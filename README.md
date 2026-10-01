@@ -172,7 +172,7 @@ Got an old `UTC--...` file from MyEtherWallet or geth? That's a keystore, and `@
 
 A `6P...` key is the same story with BIP38. `decrypt(key, passphrase)` from `@agntn/keys/bip38` gives the WIF and the address, both modes. A wrong passphrase throws, `inspect` reads the header without one. Agents get `keys_bip38_decrypt`. Address only, unless they ask for the WIF with `revealKey: true`. More: [Keys](https://keys.agntn.dev/guide/keys).
 
-And a signed message is a clue. Somebody proves they hold an address with `signmessage`? That base64 gives away the public key behind it. `btc.recoverMessageSigner(message, signature)` reads it back, `keys_message_recover` does the same for agents. Any well formed signature recovers some key for any message, though. So check the address match, not just that a key came out.
+And a signed message is a clue. Somebody proves they hold an address with `signmessage`? That base64 gives away the public key behind it. `btc.recoverMessageSigner(message, signature)` reads it back. Ethereum, Base and TRON do the same with 65 bytes of `r||s||v`. EIP-712? `hashTypedData` builds the digest and `recoverDigestSigner` takes it from there. `keys_message_recover` does all of that for agents. Any well formed signature recovers some key for any message, though. So check the address match, not just that a key came out.
 
 ## ⛓️ Chains
 

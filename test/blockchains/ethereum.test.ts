@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { hex } from "@scure/base";
-import { bip39TestVectors, ethereumTestVectors } from "../fixtures";
-import { useBlockchain } from "../../src";
+import { bip39TestVectors, ethereumTestVectors, evmRecoverTestVectors } from "../fixtures";
+import { hashTypedData, useBlockchain } from "../../src";
 import Ethereum from "../../src/blockchains/ethereum";
 import type { Options } from "../../src/types";
 
@@ -260,6 +260,61 @@ describe("Ethereum blockchain", () => {
       const flipped = signatureWithV.slice(0, 128) + (signatureWithV.endsWith("1c") ? "1b" : "1c");
       expect(blockchain.verifyMessage(message, signatureWithV, vector.publicKey)).toBe(true);
       expect(blockchain.verifyMessage(message, flipped, vector.publicKey)).toBe(false);
+    });
+
+    it.each(vector.messages)(
+      "recovers the signer of ethers signature %# from personal_sign",
+      (message, _digest, signatureWithV) => {
+        const signer = blockchain.recoverMessageSigner(message, signatureWithV);
+        expect(signer).toEqual({ publicKey: vector.publicKeyUncompressed });
+        expect(blockchain.getAddress(signer.publicKey)).toBe(vector.address);
+        expect(
+          blockchain.getAddress(
+            blockchain.recoverMessageSigner(`${message}!`, signatureWithV).publicKey,
+          ),
+        ).not.toBe(vector.address);
+      },
+    );
+
+    it("recovers the viem personal_sign signer from issue 195", () => {
+      const { message, signature, address } = evmRecoverTestVectors.personalSign;
+      expect(
+        blockchain.getAddress(blockchain.recoverMessageSigner(message, signature).publicKey),
+      ).toBe(address);
+    });
+
+    it.each([evmRecoverTestVectors.mail, evmRecoverTestVectors.hunt])(
+      "recovers the EIP-712 signer of vector %#, v as 27/28 or 0/1",
+      ({ typedData, digest, signature, address }) => {
+        const hash = hashTypedData(typedData);
+        expect(hex.encode(hash)).toBe(digest);
+        const bare = signature.slice(0, 128) + (signature.endsWith("1c") ? "01" : "00");
+        for (const form of [signature, bare]) {
+          expect(blockchain.getAddress(blockchain.recoverDigestSigner(hash, form).publicKey)).toBe(
+            address,
+          );
+        }
+      },
+    );
+
+    it("refuses a signature it cannot read instead of recovering some key", () => {
+      const { mail } = evmRecoverTestVectors;
+      const hash = hex.decode(mail.digest);
+      expect(() => blockchain.recoverDigestSigner(hash, mail.signature.slice(0, 128))).toThrow(
+        "65 bytes of r||s||v",
+      );
+      expect(() => blockchain.recoverDigestSigner(hash, `0x${mail.signature}`)).toThrow(
+        "65 bytes of r||s||v",
+      );
+      expect(() =>
+        blockchain.recoverDigestSigner(hash, mail.signature.slice(0, 128) + "1d"),
+      ).toThrow("v must be 27, 28, 0 or 1");
+      expect(() => blockchain.recoverDigestSigner(hash.subarray(1), mail.signature)).toThrow(
+        "Digest must be 32 bytes",
+      );
+      expect(() => blockchain.recoverDigestSigner(hash, "00".repeat(64) + "1b")).toThrow(
+        RangeError,
+      );
     });
   });
 });

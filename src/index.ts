@@ -6,6 +6,8 @@ export { blockchains } from "./_blockchains.ts";
 
 // Export Signing utilities
 export { signMessage, verifyMessage } from "./utils/signing.ts";
+export { hashTypedData } from "./utils/eip712.ts";
+export type { TypedData, TypedDataField } from "./utils/eip712.ts";
 
 export type {
   Blockchain,

@@ -213,14 +213,27 @@ export abstract class AbstractBlockchain implements Blockchain {
   }
 
   /**
-   * Recover the signer of a base64 signature, which only the Bitcoin family and Decred write.
+   * Recover the signer of a message signature, which the Bitcoin family, Decred, EVM chains and
+   * TRON write in a recoverable form.
    * @param _message - The signed message
-   * @param _signature - Base64 of the header byte, then `r` and `s`
+   * @param _signature - The signature in the chain's recoverable form
    * @returns {MessageSigner} The recovered public key and the address type the header names
    */
   recoverMessageSigner(_message: string | Uint8Array, _signature: string): MessageSigner {
     throw new Error(
-      `${this.name} does not write Core style base64 signatures, so it has no signer to recover`,
+      `${this.name} does not write recoverable message signatures, so it has no signer to recover`,
+    );
+  }
+
+  /**
+   * Recover the signer of an `r||s||v` signature over a digest, which EVM chains and TRON write.
+   * @param _digest - The signed 32-byte digest
+   * @param _signature - 65 bytes of `r||s||v` as hex
+   * @returns {MessageSigner} The recovered public key
+   */
+  recoverDigestSigner(_digest: Uint8Array, _signature: string): MessageSigner {
+    throw new Error(
+      `${this.name} does not sign digests as r||s||v, so it has no digest signer to recover`,
     );
   }
 }

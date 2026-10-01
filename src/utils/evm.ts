@@ -2,8 +2,8 @@ import { keccak256 } from "@agntn/hashes";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { generateAddress, validateAddress } from "./evm-address.ts";
 import { generateKeyPublic as getSecp256k1KeyPublic } from "./secp256k1/keys.ts";
-import { signMessage, verifyMessage } from "./signing.ts";
-import type { KeyOptions, RecoverableSigningOptions } from "../types.ts";
+import { recoverSecp256k1Signer, signMessage, verifyMessage } from "./signing.ts";
+import type { KeyOptions, MessageSigner, RecoverableSigningOptions } from "../types.ts";
 
 export { generateAddress, toChecksumAddress, validateAddress } from "./evm-address.ts";
 
@@ -113,5 +113,25 @@ export abstract class AbstractEVMBlockchain extends AbstractBlockchain {
     options?: RecoverableSigningOptions,
   ): boolean {
     return evmVerifyMessage(message, signature, keyPublic, options);
+  }
+
+  /**
+   * Recover the signer of a `personal_sign` signature, as viem's `recoverMessageAddress` does.
+   * @param message - The signed message
+   * @param signature - 65 bytes of `r||s||v` as hex without 0x
+   * @returns {MessageSigner} The uncompressed public key
+   */
+  override recoverMessageSigner(message: string | Uint8Array, signature: string): MessageSigner {
+    return { publicKey: recoverSecp256k1Signer(hashWithPreamble(message), signature) };
+  }
+
+  /**
+   * Recover the signer of a digest signature: EIP-712 typed data or a raw `ecrecover` input.
+   * @param digest - The signed 32-byte digest
+   * @param signature - 65 bytes of `r||s||v` as hex without 0x
+   * @returns {MessageSigner} The uncompressed public key
+   */
+  override recoverDigestSigner(digest: Uint8Array, signature: string): MessageSigner {
+    return { publicKey: recoverSecp256k1Signer(digest, signature) };
   }
 }

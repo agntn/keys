@@ -5,8 +5,8 @@ import { encodeBase58Check, validateBase58Check } from "../utils/encoding.ts";
 import { hashWithPreamble } from "../utils/evm.ts";
 import { decodePublicPoint } from "../utils/secp256k1/decode.ts";
 import { generateKeyPublic } from "../utils/secp256k1/keys.ts";
-import { signMessage, verifyMessage } from "../utils/signing.ts";
-import type { Curve, KeyOptions, RecoverableSigningOptions } from "../types.ts";
+import { recoverSecp256k1Signer, signMessage, verifyMessage } from "../utils/signing.ts";
+import type { Curve, KeyOptions, MessageSigner, RecoverableSigningOptions } from "../types.ts";
 
 const ADDRESS_PREFIX_BYTE = 0x41;
 const ADDRESS_PREFIX_CHAR = "T";
@@ -57,6 +57,28 @@ export class Tron extends AbstractBlockchain {
       curve: "secp256k1",
       hash: false,
     });
+  }
+
+  /**
+   * Recover the signer of a TIP-191 message signature.
+   * @param message - The signed message
+   * @param signature - 65 bytes of `r||s||v` as hex without 0x
+   * @returns {MessageSigner} The uncompressed public key
+   */
+  override recoverMessageSigner(message: string | Uint8Array, signature: string): MessageSigner {
+    return {
+      publicKey: recoverSecp256k1Signer(hashWithPreamble(message, MESSAGE_PREAMBLE), signature),
+    };
+  }
+
+  /**
+   * Recover the signer of an `r||s||v` signature over a 32-byte digest.
+   * @param digest - The signed digest
+   * @param signature - 65 bytes of `r||s||v` as hex without 0x
+   * @returns {MessageSigner} The uncompressed public key
+   */
+  override recoverDigestSigner(digest: Uint8Array, signature: string): MessageSigner {
+    return { publicKey: recoverSecp256k1Signer(digest, signature) };
   }
 }
 
