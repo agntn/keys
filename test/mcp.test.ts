@@ -1195,6 +1195,35 @@ describe("keys MCP server", () => {
     expect(text(response.content)).not.toContain(privateKey);
   });
 
+  it("names the secp256k1 key a tool cannot use", async () => {
+    const { curveOrder } = secp256k1TestVectors;
+    const privateKeyError =
+      "secp256k1 private key must be 32 bytes of hex, above zero and below the curve order";
+    for (const [name, arguments_, error] of [
+      [
+        "keys_address_get",
+        { chain: "bitcoin", publicKey: `02${"00".repeat(32)}` },
+        "Invalid SEC1 secp256k1 public key",
+      ],
+      [
+        "keys_address_get",
+        { chain: "tron", publicKey: `04${"00".repeat(64)}` },
+        "Invalid SEC1 secp256k1 public key",
+      ],
+      ["keys_wallet_derive", { chain: "ethereum", privateKey: curveOrder }, privateKeyError],
+      ["keys_wallet_derive", { chain: "bitcoin", privateKey: "00".repeat(32) }, privateKeyError],
+      [
+        "keys_message_sign",
+        { chain: "decred", privateKey: curveOrder, message: "hi" },
+        privateKeyError,
+      ],
+    ] as const) {
+      const response = await callTool(name, arguments_);
+      expect(response.isError).toBe(true);
+      expect(text(response.content)).toBe(`${name} failed: ${error}`);
+    }
+  });
+
   it("exports the listings and calls the server answers with", async () => {
     const client = await connectTestClient();
     const { privateKey, publicKeyCompressed } = secp256k1TestVectors;

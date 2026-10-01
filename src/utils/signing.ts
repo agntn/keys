@@ -3,6 +3,7 @@ import { ed25519 } from "@noble/curves/ed25519.js";
 import { equalBytes } from "@noble/curves/utils.js";
 import { sha256 } from "@agntn/hashes";
 import { concatBytes } from "./bytes.ts";
+import { decodeKeyPrivate } from "./secp256k1/decode.ts";
 import type { SigningOptions } from "../types.ts";
 
 export type { SigningOptions } from "../types.ts";
@@ -147,9 +148,6 @@ export function signMessage(
   // Convert message to Uint8Array if it's a string
   let messageBytes = typeof message === "string" ? new TextEncoder().encode(message) : message;
 
-  // Convert private key from hex string to Uint8Array
-  const keyPrivateBytes = Uint8Array.fromHex(keyPrivate);
-
   // Different handling based on curve type
   if (curve === "secp256k1") {
     // For secp256k1, we typically hash the message first with SHA-256
@@ -158,14 +156,14 @@ export function signMessage(
       messageBytes = sha256(messageBytes);
     }
 
-    return signSecp256k1(messageBytes, keyPrivateBytes, recovered);
+    return signSecp256k1(messageBytes, decodeKeyPrivate(keyPrivate), recovered);
   } else if (curve === "ed25519") {
     if (recovered) {
       throw new Error("Recovered signatures are secp256k1 only");
     }
 
     // Ed25519 doesn't typically prehash the message
-    const signature = ed25519.sign(messageBytes, keyPrivateBytes);
+    const signature = ed25519.sign(messageBytes, Uint8Array.fromHex(keyPrivate));
     return signature.toHex();
   }
 
