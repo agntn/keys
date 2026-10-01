@@ -2,7 +2,7 @@ import { sha3_256 } from "@agntn/hashes";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { addSchemeByte, createPrefixedAddress, validateAddressHex } from "../utils/address.ts";
 import { BIP44Change, getHardenedPath } from "../utils/bip44/paths.ts";
-import { generateKeyPublic } from "../utils/ed25519.ts";
+import { decodeKeyPublic, generateKeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
 import type { Curve, KeyOptions } from "../types.ts";
 
@@ -33,8 +33,7 @@ export class Aptos extends AbstractBlockchain {
   }
 
   override getAddress(keyPublic: string): string {
-    const keyPublicBytes = Uint8Array.fromHex(keyPublic);
-    const dataToHash = addSchemeByte(keyPublicBytes, 0x00, false);
+    const dataToHash = addSchemeByte(decodeKeyPublic(keyPublic, "Aptos"), 0x00, false);
     return createPrefixedAddress(sha3_256(dataToHash));
   }
 

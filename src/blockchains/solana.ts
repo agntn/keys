@@ -1,6 +1,6 @@
 import { base58 } from "@scure/base";
 import { AbstractBlockchain } from "../blockchain.ts";
-import { generateKeyPublic } from "../utils/ed25519.ts";
+import { decodeKeyPublic, generateKeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { BIP44Change, getHardenedPath } from "../utils/bip44/paths.ts";
@@ -36,11 +36,7 @@ export class Solana extends AbstractBlockchain {
   }
 
   override getAddress(keyPublic: string): string {
-    const keyPublicBytes = Uint8Array.fromHex(keyPublic);
-    if (keyPublicBytes.length !== 32) {
-      throw new RangeError("Solana public key must be 32 bytes");
-    }
-    return base58.encode(keyPublicBytes);
+    return base58.encode(decodeKeyPublic(keyPublic, "Solana"));
   }
 
   override validateAddress(address: string): boolean {

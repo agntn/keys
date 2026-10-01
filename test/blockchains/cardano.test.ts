@@ -63,6 +63,12 @@ describe("Cardano blockchain", () => {
         expect(validateAddress(address)).toBe(true);
       });
 
+      it.each([31, 33, 65])("rejects a public key with %i bytes", (bytes) => {
+        expect(() => blockchain.getAddress("02".repeat(bytes))).toThrow(
+          "Cardano public key must be 32 bytes",
+        );
+      });
+
       it("rejects an address type it does not write instead of a base address", () => {
         const publicKey = blockchain.getKeyPublic(blockchain.generateKeyPrivate());
 

@@ -3,7 +3,8 @@ import { concatBytes } from "../utils/bytes.ts";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { addSchemeByte, createPrefixedAddress, validateAddressHex } from "../utils/address.ts";
 import { BIP44Change, getBIP32Path, getHardenedPath } from "../utils/bip44/paths.ts";
-import { generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
+import { decodeKeyPublic, generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
+import { convertPublicKey } from "../utils/secp256k1/index.ts";
 import { generateKeyPublic as getSecp256k1KeyPublic } from "../utils/secp256k1/keys.ts";
 import {
   assertNoRecoveryByte,
@@ -143,7 +144,10 @@ export class Sui extends AbstractBlockchain {
         `Address type ${JSON.stringify(type)} is not supported for sui. Supported: ed25519, secp256k1`,
       );
     }
-    const keyPublicBytes = Uint8Array.fromHex(keyPublic);
+    const keyPublicBytes =
+      scheme === "secp256k1"
+        ? Uint8Array.fromHex(convertPublicKey(keyPublic))
+        : decodeKeyPublic(keyPublic, "Sui");
     const flagByte =
       scheme === "secp256k1" ? SIGNATURE_SCHEME_FLAGS.SECP256K1 : SIGNATURE_SCHEME_FLAGS.ED25519;
     const input = addSchemeByte(keyPublicBytes, flagByte, true);
