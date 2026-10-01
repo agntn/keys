@@ -89,8 +89,10 @@ export interface KeyOptions {
  */
 export interface HDWalletOptions extends KeyOptions {
   readonly passphrase?: string;
-  /** Accept an invalid checksum, but still require English BIP39 words and length. Default: false. */
+  /** Skip only the checksum. Words from the list and a BIP39 length stay required. Default: false. */
   readonly allowInvalidChecksum?: boolean;
+  /** Word list of the mnemonic, from `loadWordlist` in `@agntn/keys/bip39`. Default: English. */
+  readonly wordlist?: readonly string[];
 }
 
 /**

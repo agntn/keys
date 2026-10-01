@@ -157,6 +157,16 @@ try {
     { chain: "bitcoin", mnemonic, path: "m/84'/0'/0'/0/0" },
     /bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu/,
   );
+  await call(
+    "keys_hd_wallet_derive",
+    {
+      chain: "bitcoin",
+      mnemonic: "abaco abaco abaco abaco abaco abaco abaco abaco abaco abaco abaco abete",
+      path: "m/44'/0'/0'/0/0",
+      language: "italian",
+    },
+    /16sisK5QAu6e1GHBLLEmZAHGQ9uj9He8SY/,
+  );
   const generated = await call("keys_bip39_generate", { words: 24 }, /Words: 24/);
   const generatedMnemonic = /Mnemonic: ([a-z ]+)/.exec(generated)?.[1];
   if (!generatedMnemonic) throw new Error("keys_bip39_generate returned no mnemonic");

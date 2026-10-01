@@ -8,7 +8,7 @@
 import { deriveSeed as deriveElectrumSeed } from "./utils/electrum/index.ts";
 import { deriveHDKey, getMasterKeyFromSeed } from "./utils/bip32/index.ts";
 import { convertPublicKey as convertSecp256k1PublicKey } from "./utils/secp256k1/index.ts";
-import { describeInvalidMnemonic } from "./utils/hd.ts";
+import { describeInvalidMnemonic, normalizeMnemonic } from "./utils/hd.ts";
 import {
   encode as encodeWIF,
   decode as decodeWIF,
@@ -460,12 +460,13 @@ export async function deriveWallet(
 /**
  * Derive public wallet material from a BIP39 mnemonic and path.
  * @param chainValue - Blockchain name.
- * @param mnemonicValue - English BIP39 mnemonic.
+ * @param mnemonicValue - BIP39 mnemonic in the selected language.
  * @param pathValue - Absolute derivation path.
  * @param passphraseValue - Optional BIP39 passphrase.
  * @param addressTypeValue - Optional chain-specific address type.
  * @param networkValue - Optional network name.
  * @param allowInvalidChecksumValue - Accept a checksum failure for a public puzzle, default false.
+ * @param languageValue - Optional official BIP39 language key.
  * @returns {Promise<ToolResult<DerivedWalletDetails>>} Derived public wallet material.
  */
 export async function deriveHdWallet(
@@ -476,6 +477,7 @@ export async function deriveHdWallet(
   addressTypeValue?: unknown,
   networkValue?: unknown,
   allowInvalidChecksumValue?: unknown,
+  languageValue?: unknown,
 ): Promise<ToolResult<DerivedWalletDetails>> {
   if (allowInvalidChecksumValue !== undefined && typeof allowInvalidChecksumValue !== "boolean") {
     throw new TypeError("allowInvalidChecksum must be a boolean");
@@ -492,10 +494,17 @@ export async function deriveHdWallet(
   );
   const mnemonic = requiredString(mnemonicValue, "BIP39 mnemonic");
   const passphrase = optionalString(passphraseValue, "BIP39 passphrase");
+  const language = parseBIP39Language(languageValue);
+  const wordlist = await loadBIP39Wordlist(language);
+  const words = normalizeMnemonic(mnemonic);
+  const inspection = inspectBIP39Mnemonic(words, wordlist);
+  if (inspection.checksumValid === null) {
+    throw new TypeError(describeInvalidMnemonic(words, inspection, wordlist, language));
+  }
   const wallet = blockchain.deriveHDWallet(
     mnemonic,
     path,
-    { passphrase, allowInvalidChecksum },
+    { passphrase, allowInvalidChecksum, wordlist },
     addressType,
   );
   const details = {

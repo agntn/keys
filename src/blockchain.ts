@@ -151,13 +151,14 @@ export abstract class AbstractBlockchain implements Blockchain {
     options?: HDWalletOptions,
     addressType?: AddressType,
   ): Wallet {
-    const { passphrase, allowInvalidChecksum, ...keyOptions } = options ?? {};
+    const { passphrase, allowInvalidChecksum, wordlist, ...keyOptions } = options ?? {};
     const { privateKey, checksumValid } = deriveMnemonicKey(
       mnemonic,
       path,
       this.resolveCurve(keyOptions),
       passphrase,
       allowInvalidChecksum,
+      wordlist,
     );
 
     const wallet = this.deriveWallet(privateKey, keyOptions, addressType);
