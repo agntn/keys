@@ -9,6 +9,7 @@ import {
   bip39TestVectors,
   bitcoinMessageVectors,
   bitcoinTestVectors,
+  electrumOldVectors,
   electrumVectors,
   ethereumTestVectors,
   publicKeyEncodingVector,
@@ -102,6 +103,41 @@ describe("keys MCP server", () => {
       expect(text(failed.content)).not.toContain("secret-phrase");
     }
   });
+  it("derives an old Electrum seed by change and index through MCP", async () => {
+    const client = await connectTestClient();
+    const [vector] = electrumOldVectors;
+    const child = vector.children[1];
+    const result = await client.callTool({
+      name: "keys_electrum_wallet_derive",
+      arguments: { mnemonic: vector.mnemonic, change: child.change, index: child.index },
+    });
+    expect(result.isError).not.toBe(true);
+    expect(text(result.content)).toBe(
+      [
+        "Scheme: electrum",
+        "Seed type: old",
+        "Chain: bitcoin (mainnet)",
+        `Master public key: ${vector.masterPublicKey}`,
+        `Change: ${child.change}`,
+        `Index: ${child.index}`,
+        `Public key: ${child.publicKey}`,
+        `Address: ${child.address}`,
+      ].join("\n"),
+    );
+    for (const [args, message] of [
+      [{ mnemonic: vector.mnemonic, change: 2 }, "change"],
+      [{ mnemonic: vector.mnemonic, path: "m/0/0" }, "Old Electrum seeds have no BIP32 path"],
+    ] as const) {
+      const failed = await client.callTool({
+        name: "keys_electrum_wallet_derive",
+        arguments: args,
+      });
+      expect(failed.isError).toBe(true);
+      expect(text(failed.content)).toContain(message);
+      expect(text(failed.content)).not.toContain(vector.mnemonic);
+    }
+  });
+
   it("derives a BIP39 seed through MCP", async () => {
     const client = await connectTestClient();
     const result = await client.callTool({

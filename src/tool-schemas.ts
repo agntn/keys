@@ -198,18 +198,37 @@ export const DERIVE_ELECTRUM_WALLET_PARAMETERS = Type.Object(
       minLength: 1,
       maxLength: 4096,
       pattern: "\\S+",
-      description: "Complete public or disposable Electrum standard or SegWit phrase",
+      description:
+        "Complete public or disposable Electrum phrase: standard, SegWit, or an old (pre-2.0) seed as words or 32 or 64 hex digits",
     }),
-    path: Type.String({
-      minLength: 1,
-      maxLength: 256,
-      pattern: DERIVATION_PATH_SCHEMA_PATTERN,
-      description: "Exact BIP32 path; no path search or inference",
-    }),
+    path: Type.Optional(
+      Type.String({
+        minLength: 1,
+        maxLength: 256,
+        pattern: DERIVATION_PATH_SCHEMA_PATTERN,
+        description:
+          "Exact BIP32 path, required for standard and SegWit seeds; no path search or inference. Old seeds take change and index instead",
+      }),
+    ),
     passphrase: Type.Optional(
       Type.String({
         maxLength: 4096,
-        description: "Electrum seed extension. Normalized like the phrase; default empty",
+        description:
+          "Electrum seed extension. Normalized like the phrase; default empty. Old seeds take none",
+      }),
+    ),
+    change: Type.Optional(
+      Type.Integer({
+        minimum: 0,
+        maximum: 1,
+        description: "Old seeds only: 0 for receiving, 1 for change. Default: 0",
+      }),
+    ),
+    index: Type.Optional(
+      Type.Integer({
+        minimum: 0,
+        maximum: 2147483647,
+        description: "Old seeds only: address index on that chain. Default: 0",
       }),
     ),
     network: Type.Optional(

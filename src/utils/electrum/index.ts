@@ -27,6 +27,7 @@
 import { Sha512Hasher, hmac, pbkdf2 } from "@agntn/hashes";
 import { ELECTRUM_LEGACY_WORDS } from "./legacy.ts";
 import { ELECTRUM_WHITESPACE, normalizeElectrumText } from "./normalize.ts";
+import { oldChildPublicKey, oldHexSeed, oldMasterPublicKey } from "./old.ts";
 
 /**
  * Starts the SHA-512 state that Electrum's HMAC and PBKDF2 run on.
@@ -105,4 +106,34 @@ export function deriveSeed(
       64,
     ),
   };
+}
+
+/**
+ * Derives the master public key of an old (pre-2.0) seed: 100000 SHA-256 rounds, no BIP32.
+ * @param mnemonic - Old seed words or the 32 or 64 digit hex seed Electrum also takes
+ * @returns {Uint8Array} 64 bytes, x then y, as Electrum shows the MPK
+ */
+export function deriveOldMasterPublicKey(mnemonic: string): Uint8Array {
+  if (inspect(mnemonic) !== "old") throw new Error("Not an old Electrum seed");
+  return oldMasterPublicKey(oldHexSeed(normalizeElectrumText(mnemonic)));
+}
+
+/**
+ * Derives the uncompressed public key of one old seed address from its master public key.
+ * @param masterPublicKey - 64 byte MPK from `deriveOldMasterPublicKey` or a watching wallet
+ * @param change - 0 for receiving addresses, 1 for change
+ * @param index - Address index on that chain
+ * @returns {Uint8Array} Uncompressed SEC1 public key, the one its P2PKH address hashes
+ */
+export function deriveOldPublicKey(
+  masterPublicKey: Uint8Array,
+  change: number,
+  index: number,
+): Uint8Array {
+  if (masterPublicKey.length !== 64) throw new RangeError("Master public key must be 64 bytes");
+  if (change !== 0 && change !== 1) throw new RangeError("Change must be 0 or 1");
+  if (!Number.isSafeInteger(index) || index < 0) {
+    throw new RangeError("Index must be a non-negative integer");
+  }
+  return oldChildPublicKey(masterPublicKey, change, index);
 }

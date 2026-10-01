@@ -46,7 +46,7 @@ export const electrumWalletDeriveTool = defineTool({
   name: "keys_electrum_wallet_derive",
   title: "Derive Electrum Wallet",
   description:
-    "Derive a Bitcoin public key and address from a complete Electrum standard or SegWit phrase and an exact path. Rejects legacy and 2FA seeds. Inputs enter the transcript; use only public or disposable material, never real wallet secrets.",
+    "Derive a Bitcoin public key and address from a complete Electrum phrase. Standard and SegWit seeds take an exact path; old (pre-2.0) seeds take change and index and also return the master public key, with uncompressed P2PKH addresses. Rejects 2FA seeds. Inputs enter the transcript; use only public or disposable material, never real wallet secrets.",
   effect: "read",
   input: DERIVE_ELECTRUM_WALLET_PARAMETERS,
   execute: async (params) =>
@@ -55,6 +55,8 @@ export const electrumWalletDeriveTool = defineTool({
       params.path,
       params.passphrase,
       params.network,
+      params.change,
+      params.index,
     ),
 });
 

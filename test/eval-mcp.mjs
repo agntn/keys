@@ -4,6 +4,7 @@ import { Client } from "@modelcontextprotocol/client";
 import { getDefaultEnvironment, StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import path from "node:path";
 import {
+  electrumOldVectors,
   electrumVectors,
   invalidChecksumPuzzle,
   publicKeyEncodingVector,
@@ -134,6 +135,12 @@ try {
       path: electrumVectors[0].path,
     },
     new RegExp(electrumVectors[0].address),
+  );
+
+  await call(
+    "keys_electrum_wallet_derive",
+    { mnemonic: electrumOldVectors[0].mnemonic, change: 1 },
+    new RegExp(`Seed type: old\\n[\\s\\S]*Address: ${electrumOldVectors[0].children[1].address}`),
   );
 
   const privateKey = "0000000000000000000000000000000000000000000000000000000000000001";

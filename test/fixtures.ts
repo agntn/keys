@@ -1539,3 +1539,129 @@ export const storeVectors = [
     address: "0x008AeEda4D805471dF9b2A5B0f38A0C3bCBA786b",
   },
 ] as const;
+
+/**
+ * Old seeds: Electrum 94a400fa `test_electrum_seed_old`, then hex and 24 words of our own.
+ * Every key and address checked with Electrum 4.8.1 `keystore.from_seed`.
+ */
+export const electrumOldVectors = [
+  {
+    name: "vector",
+    mnemonic:
+      "powerful random nobody notice nothing important anyway look away hidden message over",
+    hexSeed: "acb740e454c3134901d7c8f16497cc1c",
+    masterPublicKey:
+      "e9d4b7866dd1e91c862aebf62a49548c7dbf7bcc6e4b7b8c9da820c7737968df9c09d5a3e271dc814a29981f81b3faaf2737b551ef5dcc6189cf0f8252c442b3",
+    children: [
+      {
+        change: 0,
+        index: 0,
+        publicKey:
+          "045f7ba332df2a7b4f5d13f246e307c9174cfa9b8b05f3b83410a3c23ef8958d610be285963d67c7bc1feb082f168fa9877c25999963ff8b56b242a852b23e25ed",
+        address: "1FJEEB8ihPMbzs2SkLmr37dHyRFzakqUmo",
+      },
+      {
+        change: 1,
+        index: 0,
+        publicKey:
+          "04c291245c2ee3babb2a35c39389df56540867f93794215f743b9aa97f5ba114c4cdee8d49d877966728b76bc649bb349efd73adef1d77452a9aac26f8c51ae1dd",
+        address: "1KRW8pH6HFHZh889VDq6fEKvmrsmApwNfe",
+      },
+      {
+        change: 0,
+        index: 5,
+        publicKey:
+          "04935970bd7c9e51bfe8e1135bb89a8ce09f8876d60d81ba4432f5e6fa394e6d09c9ba78f8d87aa7c519892a6adb5e7b39702379411dd7ba49f324f8c7e4e51f17",
+        address: "19iKVhJM5LYQWgecruHP3CjvhK2jmL1cHg",
+      },
+    ],
+  },
+  {
+    name: "hex32",
+    mnemonic: "00112233445566778899aabbccddeeff",
+    masterPublicKey:
+      "8209d4eb034ca5f7ec2783b52f1905f81a2a0e6aaace9277833d868e4531989a5abe1162beaf6e86e97f97618ef79f1e2ce3beef1cfd65243c35e4199a3b7c81",
+    children: [
+      {
+        change: 0,
+        index: 0,
+        publicKey:
+          "0443f5a3a03ee20f4cdb7ed7d12521db4a0fe09324d7f8363ae50bd17e509e7f5740de821f35c7cd45e7a74bd5e32e28d7e33b26dfe35a0d5ae5eab04073a0c167",
+        address: "1JWcDJsfwi2oFYdWYq3qMQPW52mu2XPUyY",
+      },
+      {
+        change: 1,
+        index: 0,
+        publicKey:
+          "042d9b00840b01934c8d28bcc59e8643e54ba3e48d15d5d13c1296ba0bb935d8ae18b58e4c43a7adfac5a6604c08a627052f72d18a70c20210827cad1e4bfde5c0",
+        address: "1FRP6p5MoagpJABos6y95KhoKshYjTcbLB",
+      },
+      {
+        change: 0,
+        index: 5,
+        publicKey:
+          "04534078d0fb75f8773633e2eafe6acd731ca8da0fd4aa0a4ed789abd281433a8a740cf31a7823f04649e7e4c610b46969c4ebf66126f5c7509d0390caf566fdf8",
+        address: "12AxrizFd89sXtkgcqEokzLGC8hLdhUSgg",
+      },
+    ],
+  },
+  {
+    name: "hex64",
+    mnemonic: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+    masterPublicKey:
+      "419b285b5750889fe303ed2aef2e5d554ecbf3d7816a9b56b9efd048c58d7018ca82eea9e60782c72ef2d90f93fb7e75cdab7f1a8d873d3ef31e3c7880814e05",
+    children: [
+      {
+        change: 0,
+        index: 0,
+        publicKey:
+          "04be24f1058514d73c34bdf92777a1008cf20803bb635568875cd19ab8dc598655eac680230c723d1c95088f3bdcbb81a7d9d23f134c932d523ef8c3e0f2143fb8",
+        address: "14UzaxxhBMk3Ardn2GKthzAnHTifMCLMzg",
+      },
+      {
+        change: 1,
+        index: 0,
+        publicKey:
+          "0453b81c6389e4cce576bf3af3bfd621dd5c28cbea6d4dc15d0a665d1550ffa47024ebda1f55119716cc94f0f4cfccf529dc94d2aeede973a4c05dd6adb4550049",
+        address: "14B5L6G39ybSK7TcBCZ2Kii4wrVK6C5Uim",
+      },
+      {
+        change: 0,
+        index: 5,
+        publicKey:
+          "0476d7fbad6344a30d6adc86e4509f0ed0b12a5774ff8328f8bafd984e611516ff9a4fa7ffb1488106dbf949b3ae99296eff829a551f6975021c918ae8f523c2c4",
+        address: "1M3HM6nzkYL783CPx9coFtAnxFBWrgsJLp",
+      },
+    ],
+  },
+  {
+    name: "words24",
+    mnemonic:
+      "like like like like like like like like like like like like like like like like like like like like like like like like",
+    masterPublicKey:
+      "60cd6d0d5d7f32b92c9ee7b37ff37c2327eaf22a6df66613b6f11fca22145465fd8a576a9ba858dd2426dd149714f0d0ad66cecd186e810b6148bf9f84d34a15",
+    children: [
+      {
+        change: 0,
+        index: 0,
+        publicKey:
+          "0417a4667a00a6395a5c99e06c24f8f5dc8a545a72559a0bcdec2ce67fa1b962359a2506f44fdab6aca989e662a92ac4d107f6078d6d6144933fdfdc76df72e937",
+        address: "13advkyrVrsYnnURbdtsDa4p8CaG7tLFc7",
+      },
+      {
+        change: 1,
+        index: 0,
+        publicKey:
+          "04459a0c87fb8bbc6d3330c3c3837f3cb187a10a21242da5de6494aa7db161d3735d2b8937fa287a0c442e9c2bff034ffdae2091aa7e5e16847e8d118e46fcb6e2",
+        address: "16WPFmLPcqKwnLui1g5bXUDKmKqBq4LUM5",
+      },
+      {
+        change: 0,
+        index: 5,
+        publicKey:
+          "041d07c359f567f28548646bb28814680f7052b88f0160e8b6014dff2f299263bc4ec2eefdd4627c8c66f1208262febc0cbff7ae6bda0633d69fa70577d94d2f32",
+        address: "13PFwGsbfpbsPC3oGJjNRv2G3Nbzf9Ef6Y",
+      },
+    ],
+  },
+] as const;
