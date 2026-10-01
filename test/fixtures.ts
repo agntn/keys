@@ -1383,6 +1383,38 @@ export const brainwalletVectors = [
   },
 ] as const;
 
+/** Plain brainwallets, `rushwallet/1` first. Keys by `@agntn/hashes`, addresses by `keys mcp`. */
+export const plainBrainwalletVectors = [
+  {
+    passphrase: "5784623964023 578462396402",
+    recipe: { kdf: "sha256" },
+    chain: "bitcoin",
+    compressed: false,
+    privateKey: "af9a17713338d255ca023b7014c2c9dfcbef656d61a3370156bb804269b74a0d",
+    publicKey:
+      "040f5492295b3374ac3d746beb5b1e3629f19e4b7caa228e7d02a1862430e237a7c406b11d339dea846001feb79410a4bd61212f2022538c13cb24b5ad0cb44d52",
+    address: "1NKUXbr2URfQyzREPUzoj4MR4ytF5mEm8u",
+  },
+  {
+    passphrase: "example passphrase",
+    recipe: { kdf: "sha256", iterations: 3 },
+    chain: "bitcoin",
+    compressed: true,
+    privateKey: "bddfabd33719c10fa1701f6da9ea7a9caa829b906d860a2d21ca1c39aa5d0eda",
+    publicKey: "030c892dea4afc3ff5c22ed654b2082a4abe1ebb5bc5fb52e0d951db15c66fab10",
+    address: "1BUUmQB5bjarzbQRb23czCexTmrWPdv8u8",
+  },
+  {
+    passphrase: "example passphrase",
+    recipe: { kdf: "keccak256" },
+    chain: "ethereum",
+    compressed: undefined,
+    privateKey: "80c6781db380d4b92b845801b889b1f04ea93433fac5b19c9d0be7edb0b6e5e7",
+    publicKey: "0248877131c564fe7001a1e8c3abc13a2cc30144b4bfc9527e38a09fab0577bac2",
+    address: "0x98f5895db6EA91E06A60A875662ea0a626944866",
+  },
+] as const;
+
 /** Passphrase and salt of `brainwalletVectors`, the salt also as the hex the tool takes. */
 export const brainwalletInput = {
   passphrase: "example passphrase",

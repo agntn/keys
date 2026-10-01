@@ -19,7 +19,8 @@ import { inspect as inspectBIP38, type BIP38Inspection } from "./utils/bip38/ind
 import {
   derive as deriveBrainwalletKey,
   type BrainwalletKDF,
-  type BrainwalletOptions,
+  type BrainwalletRecipe,
+  type PlainBrainwalletOptions,
 } from "./utils/brainwallet/index.ts";
 import {
   decrypt as decryptStoreKey,
@@ -705,12 +706,14 @@ export async function deriveElectrumWallet(
   };
 }
 
-/** Public Bitcoin wallet of a salted brainwallet, with the target verdict when one was given. */
+/** Public wallet of a brainwallet, with the target verdict when one was given. */
 export interface DerivedBrainwalletDetails {
-  chain: "bitcoin";
+  chain: BrainwalletChain;
   network: string;
-  addressType: "legacy";
-  compressed: boolean;
+  /** Bitcoin only: always P2PKH. */
+  addressType?: "legacy";
+  /** Bitcoin only: whether the address hashes the compressed key. */
+  compressed?: boolean;
   publicKey: string;
   address: string;
   matches?: boolean;
@@ -761,11 +764,14 @@ function isUnsetCost(value: unknown): boolean {
 
 /**
  * Reads the KDF and its costs, refusing the other KDF's so no option drops silently.
+ * @param kdf - scrypt or pbkdf2
  * @param args - Tool arguments
  * @returns {BrainwalletKDF} The KDF with its parameters
  */
-function brainwalletKDF(args: Readonly<Record<string, unknown>>): BrainwalletKDF {
-  const kdf = oneOf(args["kdf"], "kdf", ["scrypt", "pbkdf2"]);
+function brainwalletKDF(
+  kdf: BrainwalletKDF["kdf"],
+  args: Readonly<Record<string, unknown>>,
+): BrainwalletKDF {
   const foreign = (kdf === "scrypt" ? ["iterations", "digest"] : ["N", "r", "p"]).filter(
     (name) => !isUnsetCost(args[name]),
   );
@@ -797,25 +803,60 @@ function brainwalletText(value: unknown, name: string): string {
   return text;
 }
 
+/** Arguments a plain brainwallet has no use for. OMP sends 0 or an empty string for each. */
+const SALTED_ONLY_ARGUMENTS = [
+  "salt",
+  "saltEncoding",
+  "hashed",
+  "N",
+  "r",
+  "p",
+  "digest",
+  "keyLength",
+];
+
+/**
+ * Reads the rounds of a plain brainwallet, refusing every salted recipe argument.
+ * @param kdf - Digest the passphrase goes through
+ * @param args - Tool arguments
+ * @returns {PlainBrainwalletOptions} The digest with its rounds
+ */
+function plainBrainwalletRecipe(
+  kdf: PlainBrainwalletOptions["kdf"],
+  args: Readonly<Record<string, unknown>>,
+): PlainBrainwalletOptions {
+  const foreign = SALTED_ONLY_ARGUMENTS.filter(
+    (name) => args[name] !== undefined && args[name] !== "" && args[name] !== 0,
+  );
+  if (foreign.length > 0) throw new RangeError(`${kdf} does not take ${foreign.join(", ")}`);
+  if (isUnsetCost(args["iterations"])) return { kdf };
+  return { kdf, iterations: costArgument(args["iterations"], "iterations") };
+}
+
 /**
  * Reads the passphrase and the full recipe, refusing anything the KDF would not run as given.
  * @param args - Tool arguments
- * @returns {{ passphrase: string; options: BrainwalletOptions }} Passphrase and recipe
+ * @returns {{ passphrase: string; options: BrainwalletRecipe }} Passphrase and recipe
  */
 function brainwalletRecipe(args: Readonly<Record<string, unknown>>): {
   passphrase: string;
-  options: BrainwalletOptions;
+  options: BrainwalletRecipe;
 } {
   const passphrase = brainwalletText(args["passphrase"], "Passphrase");
+  const kdf = oneOf(args["kdf"], "kdf", ["scrypt", "pbkdf2", "sha256", "keccak256"]);
+  if (kdf === "sha256" || kdf === "keccak256") {
+    return { passphrase, options: plainBrainwalletRecipe(kdf, args) };
+  }
+  if (args["salt"] === undefined) throw new TypeError(`${kdf} needs a salt, empty for none`);
   const saltText = brainwalletText(args["salt"], "Salt");
   const saltEncoding = oneOf(args["saltEncoding"], "saltEncoding", ["utf8", "hex"]);
   if (saltEncoding === "hex" && !EVEN_HEX.test(saltText)) {
     throw new TypeError("Salt must be hex digit pairs without 0x when saltEncoding is hex");
   }
-  const kdf = brainwalletKDF(args);
+  const stretch = brainwalletKDF(kdf, args);
   const hashed = oneOf(args["hashed"], "hashed", ["bytes", "hex"]);
   const salt = saltEncoding === "hex" ? Uint8Array.fromHex(saltText) : saltText;
-  const options = { ...kdf, salt, hashed };
+  const options = { ...stretch, salt, hashed };
   if (isUnsetCost(args["keyLength"])) return { passphrase, options };
   return {
     passphrase,
@@ -823,47 +864,92 @@ function brainwalletRecipe(args: Readonly<Record<string, unknown>>): {
   };
 }
 
+/** Chains the brainwallet tool writes an address for. */
+type BrainwalletChain = "bitcoin" | "ethereum";
+
 /**
- * Derives the public Bitcoin wallet of a salted brainwallet, never echoing its key or passphrase.
+ * Reads the Bitcoin key form. Ethereum hashes the uncompressed key, so it refuses only true.
+ * @param chain - Chain the address is for
+ * @param value - Raw argument
+ * @returns {boolean | undefined} The Bitcoin key form, undefined on Ethereum
+ */
+function brainwalletCompressed(chain: BrainwalletChain, value: unknown): boolean | undefined {
+  if (chain === "ethereum") {
+    if (value === true) throw new RangeError("ethereum does not take compressed");
+    if (value !== undefined && value !== false) throw new TypeError("compressed must be a boolean");
+    return undefined;
+  }
+  if (typeof value !== "boolean") throw new TypeError("compressed must be a boolean");
+  return value;
+}
+
+/**
+ * Reads where the address goes: chain, Bitcoin key form and the optional target.
+ * @param args - Tool arguments
+ * @returns {{ chain: BrainwalletChain; compressed?: boolean; target?: string }} Address settings
+ */
+function brainwalletAddressing(args: Readonly<Record<string, unknown>>): {
+  chain: BrainwalletChain;
+  compressed: boolean | undefined;
+  target: string | undefined;
+} {
+  const chain = isUnset(args["chain"])
+    ? "bitcoin"
+    : oneOf(args["chain"], "chain", ["bitcoin", "ethereum"]);
+  const target = optionalName(args["target"], "Target");
+  if (target !== undefined && Array.from(target).length > MAX_ADDRESS_LENGTH) {
+    throw new RangeError(`Target must not exceed ${MAX_ADDRESS_LENGTH} characters`);
+  }
+  return { chain, compressed: brainwalletCompressed(chain, args["compressed"]), target };
+}
+
+/**
+ * Writes the brainwallet answer, one fact per line.
+ * @param details - Public wallet and verdict
+ * @returns {string} The text the tool returns
+ */
+function brainwalletAnswer(details: Readonly<DerivedBrainwalletDetails>): string {
+  const { compressed, matches } = details;
+  return [
+    `Chain: ${details.chain} (${details.network})`,
+    ...(compressed === undefined
+      ? []
+      : [`Address type: legacy, ${compressed ? "compressed" : "uncompressed"}`]),
+    `Public key: ${details.publicKey}`,
+    `Address: ${details.address}`,
+    ...(matches === undefined ? [] : [`Target: ${matches ? "match" : "no match"}`]),
+  ].join("\n");
+}
+
+/**
+ * Derives the public wallet of a brainwallet, never echoing its key or passphrase.
  * @param args - Tool arguments, as `DERIVE_BRAINWALLET_PARAMETERS` names them
- * @returns {Promise<ToolResult<DerivedBrainwalletDetails>>} Public key, P2PKH address and verdict
+ * @returns {Promise<ToolResult<DerivedBrainwalletDetails>>} Public key, address and verdict
  */
 export async function deriveBrainwallet(
   args: Readonly<Record<string, unknown>>,
 ): Promise<ToolResult<DerivedBrainwalletDetails>> {
   const { passphrase, options } = brainwalletRecipe(args);
-  const compressed = args["compressed"];
-  if (typeof compressed !== "boolean") throw new TypeError("compressed must be a boolean");
-  const target = optionalName(args["target"], "Target");
-  if (target !== undefined && Array.from(target).length > MAX_ADDRESS_LENGTH) {
-    throw new RangeError(`Target must not exceed ${MAX_ADDRESS_LENGTH} characters`);
-  }
-  const { blockchain } = await getBlockchain("bitcoin", args["network"]);
-  const privateKey = deriveBrainwalletKey(passphrase, options);
-  const wallet = blockchain.deriveWallet(privateKey.toHex(), { compressed }, "legacy");
+  const { chain, compressed, target } = brainwalletAddressing(args);
+  const { blockchain } = await getBlockchain(chain, args["network"]);
+  const privateKey = deriveBrainwalletKey(passphrase, options).toHex();
+  const wallet =
+    compressed === undefined
+      ? blockchain.deriveWallet(privateKey)
+      : blockchain.deriveWallet(privateKey, { compressed }, "legacy");
+  const matches =
+    chain === "ethereum"
+      ? wallet.address.toLowerCase() === target?.toLowerCase()
+      : wallet.address === target;
   const details: DerivedBrainwalletDetails = {
-    chain: "bitcoin",
+    chain,
     network: blockchain.network,
-    addressType: "legacy",
-    compressed,
+    ...(compressed === undefined ? {} : { addressType: "legacy", compressed }),
     publicKey: wallet.keys.public,
     address: wallet.address,
-    ...(target === undefined ? {} : { matches: wallet.address === target }),
+    ...(target === undefined ? {} : { matches }),
   };
-  return {
-    content: content(
-      [
-        `Chain: bitcoin (${details.network})`,
-        `Address type: legacy, ${compressed ? "compressed" : "uncompressed"}`,
-        `Public key: ${details.publicKey}`,
-        `Address: ${details.address}`,
-        ...(details.matches === undefined
-          ? []
-          : [`Target: ${details.matches ? "match" : "no match"}`]),
-      ].join("\n"),
-    ),
-    details,
-  };
+  return { content: content(brainwalletAnswer(details)), details };
 }
 
 /**

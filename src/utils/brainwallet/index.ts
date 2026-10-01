@@ -2,6 +2,7 @@ import {
   Sha256Hasher,
   Sha512Hasher,
   create,
+  keccak256,
   pbkdf2,
   sha256,
   type ScryptOptions,
@@ -22,7 +23,35 @@ export type BrainwalletOptions = BrainwalletKDF & {
   readonly keyLength?: number;
 };
 
+/** Recipe of a plain brainwallet: the passphrase hashed straight into the key, no salt or KDF. */
+export interface PlainBrainwalletOptions {
+  /** sha256 for the brainwallet.org scheme, keccak256 for Ethereum brainwallets. */
+  readonly kdf: "sha256" | "keccak256";
+  /** How many times the digest runs, each round over the previous 32 bytes. Default: 1. */
+  readonly iterations?: number;
+}
+
+/** Any recipe `derive` takes, salted or plain. */
+export type BrainwalletRecipe = BrainwalletOptions | PlainBrainwalletOptions;
+
 const encoder = new TextEncoder();
+
+/**
+ * Hashes the passphrase bytes into a key, round after round.
+ * @param password - Passphrase as UTF-8 bytes
+ * @param options - Digest and round count
+ * @returns {Uint8Array} 32-byte digest of the last round
+ */
+function digestRounds(password: Uint8Array, options: PlainBrainwalletOptions): Uint8Array {
+  const iterations = options.iterations ?? 1;
+  if (!Number.isSafeInteger(iterations) || iterations < 1) {
+    throw new RangeError("iterations must be a positive integer");
+  }
+  const digest = options.kdf === "keccak256" ? keccak256 : sha256;
+  let key = password;
+  for (let round = 0; round < iterations; round++) key = digest(key);
+  return key;
+}
 
 /**
  * Runs the KDF the recipe names over the passphrase bytes.
@@ -45,12 +74,24 @@ function stretch(password: Uint8Array, salt: Uint8Array, options: BrainwalletOpt
 }
 
 /**
- * Derives the private key of a salted brainwallet, SHA-256 over the KDF output.
+ * Tells a plain recipe from a salted one by its digest.
+ * @param options - Any recipe `derive` takes
+ * @returns {boolean} True for sha256 and keccak256
+ */
+function isPlain(options: BrainwalletRecipe): options is PlainBrainwalletOptions {
+  return options.kdf === "sha256" || options.kdf === "keccak256";
+}
+
+/**
+ * Derives a brainwallet key: SHA-256 of the KDF output, or the plain passphrase digest.
  * @param passphrase - Passphrase, hashed as UTF-8 without trimming or normalization
- * @param options - KDF, cost parameters, salt and the form SHA-256 reads
+ * @param options - Salted recipe, or the digest and rounds of a plain one
  * @returns {Uint8Array} 32-byte secp256k1 private key
  */
-export function derive(passphrase: string, options: BrainwalletOptions): Uint8Array {
+export function derive(passphrase: string, options: BrainwalletRecipe): Uint8Array {
+  if (isPlain(options)) {
+    return digestRounds(encoder.encode(passphrase), options);
+  }
   const salt = typeof options.salt === "string" ? encoder.encode(options.salt) : options.salt;
   const stretched = stretch(encoder.encode(passphrase), salt, options);
   return sha256(options.hashed === "hex" ? encoder.encode(stretched.toHex()) : stretched);

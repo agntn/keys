@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import { hex } from "@scure/base";
 import { derive } from "../../src/utils/brainwallet/index.ts";
-import { brainwalletInput, brainwalletVectors } from "../fixtures.ts";
+import { brainwalletInput, brainwalletVectors, plainBrainwalletVectors } from "../fixtures.ts";
 
 const { passphrase, salt, saltHex } = brainwalletInput;
 const [scryptHex, scryptBytes] = brainwalletVectors;
@@ -30,5 +30,25 @@ describe("brainwallet derive", () => {
 
   it("refuses an N that is not a power of 2", () => {
     expect(() => derive(passphrase, { ...scryptHex.recipe, N: 1000, salt })).toThrow(/N/);
+  });
+
+  it.each(plainBrainwalletVectors)(
+    "derives $privateKey straight from $recipe.kdf of the passphrase",
+    ({ passphrase: plain, recipe, privateKey }) => {
+      expect(hex.encode(derive(plain, recipe))).toBe(privateKey);
+    },
+  );
+
+  it("runs one round of the digest unless told otherwise", () => {
+    const [, rounds] = plainBrainwalletVectors;
+    const once = derive(rounds.passphrase, { kdf: "sha256" });
+    expect(hex.encode(derive(rounds.passphrase, { kdf: "sha256", iterations: 1 }))).toBe(
+      hex.encode(once),
+    );
+    expect(hex.encode(once)).not.toBe(rounds.privateKey);
+  });
+
+  it.each([0, 1.5, -1])("refuses %s rounds", (iterations) => {
+    expect(() => derive(passphrase, { kdf: "sha256", iterations })).toThrow(/iterations/);
   });
 });

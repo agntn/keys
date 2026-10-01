@@ -32,7 +32,7 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, BIP
 | `bip38/`       | Encrypted key headers         | `inspect`: mode, flags, address hash, owner entropy, lot and sequence without the passphrase; no decryption                                   |
 | `bip39/`       | Mnemonic phrases              | `generateMnemonic`, `mnemonicToSeed`, `validateMnemonic`, `getMnemonicWordCandidates`, `lookupWords`, `lookupIndices`                         |
 | `bip44/`       | Derivation paths              | `BIP44` coin types, `BIP44Change`, `getPath`, `parse`; `getBIP32Path` and `getHardenedPath` for the chain shapes stay internal in `paths.ts`  |
-| `brainwallet/` | Salted brainwallet keys       | `derive`: scrypt or PBKDF2 over the passphrase and salt, then SHA-256 of the output bytes or their hex                                        |
+| `brainwallet/` | Brainwallet keys              | `derive`: scrypt or PBKDF2 over the passphrase and salt, then SHA-256 of the output bytes or their hex; or plain SHA-256 or keccak256 rounds  |
 | `electrum/`    | Electrum seeds                | `inspect` names the seed version, `deriveSeed` gives the seed of a standard or SegWit phrase; normalization and the legacy list stay internal |
 | `secp256k1/`   | SEC1 public keys              | `convertPublicKey` between compressed and uncompressed; key generation, signing, Core's base64 signatures and key errors stay internal        |
 | `slip10/`      | ED25519 HD derivation         | `getMasterKeyFromSeed`, `deriveHDKey`                                                                                                         |

@@ -32,6 +32,7 @@ import {
   bip38Vectors,
   brainwalletInput,
   brainwalletVectors,
+  plainBrainwalletVectors,
   storeVectors,
 } from "./fixtures.ts";
 import Bitcoin from "../src/blockchains/bitcoin.ts";
@@ -406,6 +407,29 @@ describe("keys MCP server", () => {
     expect(text(response.content)).toContain("Target: no match");
   });
 
+  it.each(plainBrainwalletVectors)(
+    "derives the plain $recipe.kdf brainwallet at $address through MCP without its private key",
+    async ({ passphrase, recipe, chain, compressed, publicKey, address, privateKey }) => {
+      const client = await connectTestClient();
+      const response = await client.callTool({
+        name: "keys_brainwallet_derive",
+        arguments: { passphrase, ...recipe, chain, compressed, target: address.toLowerCase() },
+      });
+      expect(response.isError).not.toBe(true);
+      expect(text(response.content).split("\n")).toEqual([
+        `Chain: ${chain} (mainnet)`,
+        ...(compressed === undefined
+          ? []
+          : [`Address type: legacy, ${compressed ? "compressed" : "uncompressed"}`]),
+        `Public key: ${publicKey}`,
+        `Address: ${address}`,
+        `Target: ${chain === "ethereum" ? "match" : "no match"}`,
+      ]);
+      expect(text(response.content)).not.toContain(privateKey);
+      expect(text(response.content)).not.toContain(passphrase);
+    },
+  );
+
   it("refuses a brainwallet recipe it cannot run exactly, echoing no secret", async () => {
     const client = await connectTestClient();
     const { passphrase, salt } = brainwalletInput;
@@ -423,7 +447,12 @@ describe("keys MCP server", () => {
       [{ ...base, kdf: "pbkdf2", iterations: 1000 }, "digest must be one of sha256, sha512"],
       [{ ...base, ...scrypt, salt: "abc", saltEncoding: "hex" }, "Salt must be hex digit pairs"],
       [{ ...base, ...scrypt, N: 2 ** 21 }, "Invalid arguments at /N"],
-      [{ ...base, ...scrypt, compressed: undefined }, "Invalid arguments"],
+      [{ ...base, ...scrypt, compressed: undefined }, "compressed must be a boolean"],
+      [{ passphrase, kdf: "scrypt", N: 1024, r: 8, p: 1, compressed: false }, "needs a salt"],
+      [{ ...base, kdf: "sha256" }, "sha256 does not take salt, saltEncoding, hashed"],
+      [{ passphrase, kdf: "keccak256", N: 1024, compressed: false }, "keccak256 does not take N"],
+      [{ passphrase, kdf: "sha256", chain: "ethereum", compressed: true }, "ethereum does not"],
+      [{ passphrase, kdf: "sha256", chain: "solana" }, "Invalid arguments at /chain"],
     ] as const) {
       const failed = await client.callTool({ name: "keys_brainwallet_derive", arguments: args });
       expect(failed.isError, message).toBe(true);
