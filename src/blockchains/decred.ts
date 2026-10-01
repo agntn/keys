@@ -5,6 +5,7 @@ import { base58check } from "@scure/base";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { encodeCompactSize } from "../utils/bitcoin.ts";
+import { decodeKeyPrivate, decodePublicPoint } from "../utils/secp256k1/decode.ts";
 import { generateKeyPublic } from "../utils/secp256k1/keys.ts";
 import { assertNoRecoveryByte, hasRecoveryByte } from "../utils/signing.ts";
 import type { Curve, KeyOptions, Options, SigningOptions, Wallet, XpubWallet } from "../types.ts";
@@ -63,7 +64,7 @@ export class Decred extends AbstractBlockchain {
 
   override getAddress(keyPublic: string, type = "legacy"): string {
     if (type !== "legacy") throw new RangeError("Decred supports legacy ECDSA P2PKH only");
-    secp256k1.Point.fromHex(keyPublic);
+    decodePublicPoint(keyPublic);
     return codec.encode(
       concatBytes(this.prefix, ripemd160(blake256(Uint8Array.fromHex(keyPublic)))),
     );
@@ -91,7 +92,7 @@ export class Decred extends AbstractBlockchain {
       "dcrd encodes its recoverable signature as base64 of header||r||s, not r||s||v",
     );
     return secp256k1
-      .sign(hashMessage(message), Uint8Array.fromHex(keyPrivate), { prehash: false })
+      .sign(hashMessage(message), decodeKeyPrivate(keyPrivate), { prehash: false })
       .toHex();
   }
 

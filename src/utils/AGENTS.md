@@ -33,7 +33,7 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, BIP
 | `bip44/`       | Derivation paths              | `BIP44` coin types, `BIP44Change`, `getPath`, `parse`; `getBIP32Path` and `getHardenedPath` for the chain shapes stay internal in `paths.ts`  |
 | `brainwallet/` | Salted brainwallet keys       | `derive`: scrypt or PBKDF2 over the passphrase and salt, then SHA-256 of the output bytes or their hex                                        |
 | `electrum/`    | Electrum seeds                | `inspect` names the seed version, `deriveSeed` gives the seed of a standard or SegWit phrase; normalization and the legacy list stay internal |
-| `secp256k1/`   | SEC1 public keys              | `convertPublicKey` between compressed and uncompressed; key generation and signing for the secp256k1 chains stay internal in `keys.ts`        |
+| `secp256k1/`   | SEC1 public keys              | `convertPublicKey` between compressed and uncompressed; key generation, signing and key errors stay internal                                  |
 | `slip10/`      | ED25519 HD derivation         | `getMasterKeyFromSeed`, `deriveHDKey`                                                                                                         |
 | `wif/`         | Wallet import format          | `encode` and `decode` for Bitcoin, Litecoin, Dash, Decred and Dogecoin, checked against an explicit chain and network                         |
 
@@ -41,7 +41,7 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, BIP
 
 ```
 blockchains/*.ts
-  ├── secp256k1 chains → secp256k1/keys.ts + evm.ts (signing) + address.ts
+  ├── secp256k1 chains → secp256k1/keys.ts + secp256k1/decode.ts + evm.ts (signing) + address.ts
   └── ed25519 chains   → ed25519.ts + ed25519-chains.ts (signing)
 
 evm.ts

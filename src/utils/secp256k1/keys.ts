@@ -1,5 +1,6 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { sha256 } from "@agntn/hashes";
+import { decodeKeyPrivate } from "./decode.ts";
 
 type KeyPublicOptions = {
   readonly compressed?: boolean;
@@ -16,8 +17,7 @@ type KeyPublicOptions = {
 export function generateKeyPublic(keyPrivate: string, options: KeyPublicOptions = {}): string {
   const { compressed = true } = options;
 
-  // Convert hex string to Uint8Array
-  const keyPrivateBytes = Uint8Array.fromHex(keyPrivate);
+  const keyPrivateBytes = decodeKeyPrivate(keyPrivate);
 
   // Get public key point from private key
   const keyPublic = secp256k1.getPublicKey(keyPrivateBytes, compressed);
@@ -42,8 +42,7 @@ export function signMessage(
 ): string {
   const { hash = true } = options;
 
-  // Convert private key from hex string to Uint8Array
-  const keyPrivateBytes = Uint8Array.fromHex(keyPrivate);
+  const keyPrivateBytes = decodeKeyPrivate(keyPrivate);
 
   // Convert message to Uint8Array if it's a string
   let messageBytes = typeof message === "string" ? new TextEncoder().encode(message) : message;

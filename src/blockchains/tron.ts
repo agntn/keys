@@ -1,9 +1,9 @@
-import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { keccak256 } from "@agntn/hashes";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { addSchemeByte } from "../utils/address.ts";
 import { encodeBase58Check, validateBase58Check } from "../utils/encoding.ts";
 import { hashWithPreamble } from "../utils/evm.ts";
+import { decodePublicPoint } from "../utils/secp256k1/decode.ts";
 import { generateKeyPublic } from "../utils/secp256k1/keys.ts";
 import { signMessage, verifyMessage } from "../utils/signing.ts";
 import type { Curve, KeyOptions, RecoverableSigningOptions } from "../types.ts";
@@ -24,8 +24,7 @@ export class Tron extends AbstractBlockchain {
   }
 
   override getAddress(keyPublic: string): string {
-    const keyPublicBytes = Uint8Array.fromHex(keyPublic);
-    const keyBytesForHashing = secp256k1.Point.fromBytes(keyPublicBytes).toBytes(false).slice(1);
+    const keyBytesForHashing = decodePublicPoint(keyPublic).toBytes(false).slice(1);
 
     const addressBytes = keccak256(keyBytesForHashing).slice(-20);
     return encodeBase58Check(addSchemeByte(addressBytes, ADDRESS_PREFIX_BYTE, true));

@@ -9,6 +9,8 @@ export const secp256k1TestVectors = {
   privateKey: "c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4",
   /** The compressed key of `privateKey`, the same bytes ethers derives in `ethereumTestVectors`. */
   publicKeyCompressed: "030947751e3022ecf3016be03ec77ab0ce3c2662b4843898cb068d74f698ccc8ad",
+  /** The group order n, one above the largest valid private key. */
+  curveOrder: "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141",
 };
 
 // Ed25519 keys - used for Solana, Cardano, etc.

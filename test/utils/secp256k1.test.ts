@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import { generateKeyPublic } from "../../src/utils/secp256k1/keys.ts";
+import { blockchains } from "../../src/_blockchains.ts";
+import { secp256k1TestVectors } from "../fixtures.ts";
 
 describe("secp256k1 utilities", () => {
   const validPrivateKey = "1111111111111111111111111111111111111111111111111111111111111111";
@@ -39,5 +41,35 @@ describe("secp256k1 utilities", () => {
       // Private key with invalid characters
       expect(() => generateKeyPublic("Z".padEnd(64, "0"))).toThrow();
     });
+  });
+});
+
+describe("secp256k1 key errors on every chain", () => {
+  const { curveOrder } = secp256k1TestVectors;
+  const privateKeyError =
+    "secp256k1 private key must be 32 bytes of hex, above zero and below the curve order";
+  const publicKeyError = "Invalid SEC1 secp256k1 public key";
+
+  it.each(Object.entries(blockchains).map(([name, load]) => [name, load] as const))(
+    "%s names the key it cannot use",
+    async (_name, load) => {
+      const chain = await load()();
+      if (chain.curve !== "secp256k1") return;
+      for (const keyPrivate of ["00".repeat(32), curveOrder, "abcdef"]) {
+        expect(() => chain.getKeyPublic(keyPrivate)).toThrow(privateKeyError);
+        expect(() => chain.signMessage("hello", keyPrivate)).toThrow(privateKeyError);
+      }
+      for (const keyPublic of [`02${"00".repeat(32)}`, `04${"00".repeat(64)}`, "zz"]) {
+        expect(() => chain.getAddress(keyPublic)).toThrow(publicKeyError);
+      }
+    },
+  );
+
+  it("names the key on Sui's secp256k1 scheme", async () => {
+    const chain = await blockchains.sui()();
+    expect(() => chain.getKeyPublic(curveOrder, { scheme: "secp256k1" })).toThrow(privateKeyError);
+    expect(() => chain.signMessage("hello", curveOrder, { scheme: "secp256k1" })).toThrow(
+      privateKeyError,
+    );
   });
 });

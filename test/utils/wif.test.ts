@@ -5,10 +5,10 @@ import { concatBytes } from "../../src/utils/bytes.ts";
 import { base58 } from "@scure/base";
 import { decode as decodeWIF, encode as encodeWIF } from "../../src/utils/wif/index.ts";
 import { encodeBase58Check } from "../../src/utils/encoding.ts";
-import { wifTestVectors } from "../fixtures.ts";
+import { secp256k1TestVectors, wifTestVectors } from "../fixtures.ts";
 
 const keyOne = "00".repeat(31) + "01";
-const order = "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141";
+const { curveOrder: order } = secp256k1TestVectors;
 const bitcoin = { chain: "bitcoin" } as const;
 const decred = { chain: "decred" } as const;
 

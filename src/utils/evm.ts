@@ -1,6 +1,6 @@
 import { keccak256 } from "@agntn/hashes";
-import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { AbstractBlockchain } from "../blockchain.ts";
+import { decodePublicPoint } from "./secp256k1/decode.ts";
 import { generateKeyPublic as getSecp256k1KeyPublic } from "./secp256k1/keys.ts";
 import { signMessage, verifyMessage } from "./signing.ts";
 import type { KeyOptions, RecoverableSigningOptions } from "../types.ts";
@@ -13,10 +13,7 @@ import type { KeyOptions, RecoverableSigningOptions } from "../types.ts";
  * @returns {string} The EVM address (0x-prefixed with EIP-55 checksum)
  */
 export function generateAddress(keyPublic: string): string {
-  // Convert public key to bytes
-  const keyPublicBytes = Uint8Array.fromHex(keyPublic);
-
-  const publicKeyForHashing = secp256k1.Point.fromBytes(keyPublicBytes).toBytes(false).slice(1);
+  const publicKeyForHashing = decodePublicPoint(keyPublic).toBytes(false).slice(1);
 
   // Apply Keccak-256 hash to the public key
   const keccakHash = keccak256(publicKeyForHashing);

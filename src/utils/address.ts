@@ -1,6 +1,7 @@
 import { ripemd160, sha256 } from "@agntn/hashes";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { encodeBase58Check, validateBase58Check } from "./encoding.ts";
+import { decodePublicPoint } from "./secp256k1/decode.ts";
 import { bech32, bech32m } from "@scure/base";
 
 /**
@@ -54,8 +55,8 @@ function generateTaprootProgram(keyPublicBytes: Uint8Array): Uint8Array {
  * @returns {Uint8Array} The public key bytes as given
  */
 function publicKeyBytes(keyPublic: string, compressedOnly = false): Uint8Array {
+  decodePublicPoint(keyPublic);
   const bytesKeyPublic = Uint8Array.fromHex(keyPublic);
-  secp256k1.Point.fromBytes(bytesKeyPublic);
   if (compressedOnly && bytesKeyPublic.length !== 33) {
     throw new RangeError("SegWit v0 addresses take a compressed public key");
   }
