@@ -299,10 +299,11 @@ export const DERIVE_HD_WALLET_PARAMETERS = Type.Object(
   {
     chain: chainArgument,
     mnemonic: Type.String({
-      description: "English BIP39 mnemonic",
+      description: "BIP39 mnemonic in the selected language",
       minLength: 1,
       pattern: "\\S",
     }),
+    language: BIP39_LANGUAGE_PARAMETER,
     path: Type.String({
       description: "Derivation path such as m/84'/0'/0'/0/0",
       pattern: DERIVATION_PATH_SCHEMA_PATTERN,
@@ -311,7 +312,7 @@ export const DERIVE_HD_WALLET_PARAMETERS = Type.Object(
     allowInvalidChecksum: Type.Optional(
       Type.Boolean({
         description:
-          "Accept an invalid checksum with a warning. English words and BIP39 word counts are still required. Default: false",
+          "Accept an invalid checksum with a warning. Words from the selected list and BIP39 word counts are still required. Default: false",
       }),
     ),
     addressType: addressTypeArgument,

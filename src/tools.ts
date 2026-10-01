@@ -180,14 +180,15 @@ export const hdWalletDeriveTool = defineTool({
   name: "keys_hd_wallet_derive",
   title: "Derive HD Wallet",
   description:
-    "Derive a public key and address from English BIP39 words and a path. Use allowInvalidChecksum for public puzzle candidates that fail only the checksum. Words are not repaired. Inputs enter the transcript, so use only public or disposable material.",
+    "Derive a public key and address from BIP39 words and a path. Use allowInvalidChecksum for public puzzle candidates that fail only the checksum. Words are not repaired. Inputs enter the transcript, so use only public or disposable material.",
   snippet: "Use to see which address a public puzzle mnemonic reaches on a given derivation path.",
   guidelines: [
-    "Provide a chain, an English BIP39 mnemonic, and a full derivation path",
+    "Provide a chain, a BIP39 mnemonic, and a full derivation path",
+    "keys_hd_wallet_derive accepts an explicit BIP39 language; omission means english, not automatic detection",
     "Common paths: Bitcoin m/44'/0'/0'/0/0 (legacy), m/49'/0'/0'/0/0 (p2sh), m/84'/0'/0'/0/0 (segwit), m/86'/0'/0'/0/0 (taproot); Bitcoin Cash m/44'/145'/0'/0/0; Bitcoin Gold m/44'/156'/0'/0/0 or m/84'/156'/0'/0/0 (segwit); Bitcoin SV m/44'/236'/0'/0/0, or m/44'/0'/0'/0/0 for ElectrumSV; Dash m/44'/5'/0'/0/0; Dogecoin m/44'/3'/0'/0/0; Zcash m/44'/133'/0'/0/0; eCash m/44'/899'/0'/0/0, or m/44'/1899'/0'/0/0 for Cashtab and m/44'/145'/0'/0/0 for wallets from before the split; Ethereum m/44'/60'/0'/0/0; Solana m/44'/501'/0'/0'; Stellar m/44'/148'/0'; Aptos m/44'/637'/0'/0'/0'; Sui m/44'/784'/0'/0'/0'",
     "Bitcoin, Bitcoin Gold and Litecoin pick the address type from the path purpose unless addressType is set",
     "Optionally pass a BIP39 passphrase, a network, or an address type",
-    "For public puzzles, allowInvalidChecksum=true accepts a checksum failure with a warning, but still requires English BIP39 words and word counts",
+    "For public puzzles, allowInvalidChecksum=true accepts a checksum failure with a warning, but still requires words from the selected list and BIP39 word counts",
     "Never repair words just to satisfy the checksum. A bad checksum does not rule out a puzzle candidate",
     "Whitespace is collapsed and BIP39 NFKD normalization still applies, not raw text hashing",
     "Decred HD derivation is not supported because it differs from standard BIP32",
@@ -206,6 +207,7 @@ export const hdWalletDeriveTool = defineTool({
       params.addressType,
       params.network,
       params.allowInvalidChecksum,
+      params.language,
     ),
 });
 

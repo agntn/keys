@@ -51,7 +51,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 
 ## Puzzle checksum override
 
-`keys_hd_wallet_derive` rejects invalid checksums by default. For public puzzle candidates, set `allowInvalidChecksum: true` explicitly. The tool derives from the supplied words without repairing them and includes a warning in both text and details when the checksum is invalid. English dictionary membership and BIP39 word counts are still required. Whitespace collapsing, NFKD normalization and chain/path restrictions are unchanged.
+`keys_hd_wallet_derive` rejects invalid checksums by default. For public puzzle candidates, set `allowInvalidChecksum: true` explicitly. The tool derives from the supplied words without repairing them and includes a warning in both text and details when the checksum is invalid. Words from the selected list and BIP39 word counts are still required. The list comes from optional `language`, English by default, as in the other BIP39 tools. Whitespace collapsing, NFKD normalization and chain/path restrictions are unchanged.
 
 `keys_bip39_inspect` reports `wordCountValid`, `wordlistValid` and `checksumValid`. The checksum verdict is `null` when word count or dictionary membership prevents checking it. A bad checksum alone is not proof that a puzzle answer is wrong. `keys_bip39_word_recover` remains a checksum filter, so it is unsuitable when the target may use an invalid checksum. See the [Movie Enigma example](../../README.md#puzzle-phrases-with-an-invalid-checksum).
 

@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
 import { hex } from "@scure/base";
+import { HDKey } from "@scure/bip32";
+import { mnemonicToSeedSync } from "@scure/bip39";
 import { blockchains } from "../../src/index.ts";
-import { mnemonicToSeed } from "../../src/utils/bip39/index.ts";
+import { loadWordlist, mnemonicToSeed } from "../../src/utils/bip39/index.ts";
 import { getMasterKeyFromSeed } from "../../src/utils/slip10/index.ts";
-import { bip39TestVectors, invalidChecksumPuzzle } from "../fixtures.ts";
+import { bip39TestVectors, invalidChecksumPuzzle, localizedMnemonicVectors } from "../fixtures.ts";
 
 describe("HD checksum policy", () => {
   const { mnemonic, path, address, publicKey, withPassphrase } = invalidChecksumPuzzle;
@@ -121,4 +123,71 @@ describe("HD checksum policy", () => {
       chain.deriveHDWallet(mnemonic, "m/44'/501'/0'/0", { allowInvalidChecksum: true }),
     ).toThrow("Non-hardened");
   });
+});
+
+describe("HD word lists", () => {
+  const path = "m/44'/0'/0'/0/0";
+  const italian = localizedMnemonicVectors.find((vector) => vector.language === "italian");
+  if (!italian) throw new Error("Missing the Italian vector");
+
+  it.each(localizedMnemonicVectors)(
+    "derives a $language mnemonic from its own list",
+    async ({ language, mnemonic }) => {
+      const chain = await blockchains.bitcoin()();
+      const expected = HDKey.fromMasterSeed(mnemonicToSeedSync(mnemonic)).derive(path).publicKey;
+      const wallet = chain.deriveHDWallet(mnemonic, path, {
+        wordlist: await loadWordlist(language),
+      });
+      expect(expected).not.toBeNull();
+      expect(wallet.keys.public).toBe(hex.encode(expected ?? new Uint8Array()));
+      expect(wallet).not.toHaveProperty("warnings");
+    },
+  );
+
+  it("keeps English as the default list", async () => {
+    const chain = await blockchains.bitcoin()();
+    expect(() => chain.deriveHDWallet(italian.mnemonic, path)).toThrow(
+      "Invalid BIP39 mnemonic: none of the words is in the English list",
+    );
+    const wordlist = await loadWordlist("italian");
+    expect(() => chain.deriveHDWallet(bip39TestVectors.mnemonic, path, { wordlist })).toThrow(
+      "Invalid BIP39 mnemonic: none of the words is in the selected list",
+    );
+  });
+
+  it("lets allowInvalidChecksum skip only the checksum of the selected list", async () => {
+    const chain = await blockchains.bitcoin()();
+    const wordlist = await loadWordlist("italian");
+    const badChecksum = italian.mnemonic.replace(/abete$/u, "abaco");
+    expect(() => chain.deriveHDWallet(badChecksum, path, { wordlist })).toThrow(
+      "the checksum does not match",
+    );
+    const wallet = chain.deriveHDWallet(badChecksum, path, {
+      wordlist,
+      allowInvalidChecksum: true,
+    });
+    const expected = HDKey.fromMasterSeed(mnemonicToSeedSync(badChecksum)).derive(path).publicKey;
+    expect(wallet.keys.public).toBe(hex.encode(expected ?? new Uint8Array()));
+    expect(wallet.warnings).toHaveLength(1);
+    expect(() =>
+      chain.deriveHDWallet(italian.mnemonic.replace(/abete$/u, "about"), path, {
+        wordlist,
+        allowInvalidChecksum: true,
+      }),
+    ).toThrow("Invalid BIP39 mnemonic: word 12 is not in the selected list");
+  });
+
+  it.each([[[]], [["abaco", "abete"]], ["abaco abete"]])(
+    "refuses a word list that is not 2048 words: %j",
+    async (wordlist) => {
+      const chain = await blockchains.bitcoin()();
+      expect(() => {
+        Reflect.apply(chain.deriveHDWallet.bind(chain), undefined, [
+          italian.mnemonic,
+          path,
+          { wordlist, allowInvalidChecksum: true },
+        ]);
+      }).toThrow("wordlist must be a BIP39 word list of 2048 words");
+    },
+  );
 });

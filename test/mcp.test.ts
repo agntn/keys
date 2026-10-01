@@ -1,6 +1,9 @@
 import { readFileSync } from "node:fs";
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import { afterEach, describe, expect, it } from "vite-plus/test";
+import { hex } from "@scure/base";
+import { HDKey } from "@scure/bip32";
+import { mnemonicToSeedSync } from "@scure/bip39";
 import {
   bip39TestVectors,
   bitcoinTestVectors,
@@ -440,6 +443,42 @@ describe("keys MCP server", () => {
       "Address type: segwit\nPublic key: 0330d54fd0dd420a6e5f8d3624f5f3482cae350f79d5f0753bf5beef9c2d91af3c\nAddress: bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu",
     );
     expect(text(response.content)).not.toContain(mnemonic);
+  });
+
+  it("derives an HD wallet from the BIP39 list the language names", async () => {
+    const client = await connectTestClient();
+    const path = "m/44'/0'/0'/0/0";
+    for (const { language, mnemonic } of localizedMnemonicVectors.filter((vector) =>
+      ["italian", "japanese"].includes(vector.language),
+    )) {
+      const expected = HDKey.fromMasterSeed(mnemonicToSeedSync(mnemonic)).derive(path).publicKey;
+      const response = await client.callTool({
+        name: "keys_hd_wallet_derive",
+        arguments: { chain: "bitcoin", mnemonic, path, language },
+      });
+      expect(response.isError).not.toBe(true);
+      expect(text(response.content)).toContain(
+        `Public key: ${hex.encode(expected ?? new Uint8Array())}`,
+      );
+    }
+
+    const italian = localizedMnemonicVectors.find((vector) => vector.language === "italian");
+    for (const [args, reason] of [
+      [{ mnemonic: italian?.mnemonic }, "none of the words is in the english list"],
+      [
+        { mnemonic: italian?.mnemonic, allowInvalidChecksum: true },
+        "none of the words is in the english list",
+      ],
+      [{ mnemonic: bip39TestVectors.mnemonic, language: "italian" }, "is in the italian list"],
+      [{ mnemonic: italian?.mnemonic, language: "latin" }, "Invalid arguments at /language"],
+    ] as const) {
+      const rejected = await client.callTool({
+        name: "keys_hd_wallet_derive",
+        arguments: { chain: "bitcoin", path, ...args },
+      });
+      expect(rejected.isError).toBe(true);
+      expect(text(rejected.content)).toContain(reason);
+    }
   });
 
   it("takes the h hardened marker of BIP380 descriptors in every path argument", async () => {
