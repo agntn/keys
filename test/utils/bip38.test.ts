@@ -1,6 +1,12 @@
+import { hex } from "@scure/base";
 import { describe, expect, it } from "vite-plus/test";
-import { inspect as inspectBIP38 } from "../../src/utils/bip38/index.ts";
+import {
+  BIP38PassphraseError,
+  decrypt as decryptBIP38,
+  inspect as inspectBIP38,
+} from "../../src/utils/bip38/index.ts";
 import { decodeBase58Check, encodeBase58Check } from "../../src/utils/encoding.ts";
+import { decode as decodeWIF } from "../../src/utils/wif/index.ts";
 import { bip38Vectors } from "../fixtures.ts";
 
 const [nonEc, , ecMultiply, lotSequence] = bip38Vectors;
@@ -84,5 +90,53 @@ describe("bip38 inspect", () => {
     expect(() => inspectBIP38(nonEc.encrypted, { address: "" })).toThrow(
       "BIP38 address must be a non-empty string",
     );
+  });
+});
+
+describe("bip38 decrypt", () => {
+  it.each(bip38Vectors)(
+    "opens $encrypted with the spec passphrase",
+    ({ encrypted, passphrase, wif, address, inspection }) => {
+      const decrypted = decryptBIP38(encrypted, passphrase);
+      expect(decrypted.wif).toBe(wif);
+      expect(hex.encode(decrypted.privateKey)).toBe(
+        decodeWIF(wif, { chain: "bitcoin" }).privateKey,
+      );
+      expect(decrypted.compressed).toBe(inspection.compressed);
+      if (address !== undefined) expect(decrypted.address).toBe(address);
+      expect(inspectBIP38(encrypted, { address: decrypted.address }).addressMatches).toBe(true);
+    },
+    20_000,
+  );
+
+  it("normalizes the passphrase to NFC", () => {
+    expect(decryptBIP38(nonEc.encrypted, nonEc.passphrase.normalize("NFC")).wif).toBe(nonEc.wif);
+  }, 20_000);
+
+  it.each([nonEc, ecMultiply, lotSequence])(
+    "refuses a wrong passphrase for $encrypted without echoing it",
+    ({ encrypted }) => {
+      const passphrase = "not the passphrase";
+      expect(() => decryptBIP38(encrypted, passphrase)).toThrow(BIP38PassphraseError);
+      try {
+        decryptBIP38(encrypted, passphrase);
+      } catch (error) {
+        expect(String(error)).not.toContain(passphrase);
+        expect(String(error)).not.toContain(encrypted);
+      }
+    },
+    20_000,
+  );
+
+  it("rejects a malformed key before any scrypt run", () => {
+    expect(() => decryptBIP38(nonEc.encrypted.slice(0, -1) + "m", "x")).toThrow(
+      "Invalid BIP38 base58 encoding or checksum",
+    );
+    expect(() => decryptBIP38(withByte(nonEc.encrypted, 2, 0xc8), "x")).toThrow("BIP38");
+  });
+
+  it("rejects a passphrase that is not a string", () => {
+    // @ts-expect-error passphrase must be a string
+    expect(() => decryptBIP38(nonEc.encrypted, 42)).toThrow("BIP38 passphrase must be a string");
   });
 });

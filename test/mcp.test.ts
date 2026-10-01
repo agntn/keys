@@ -38,6 +38,7 @@ import {
 import Bitcoin from "../src/blockchains/bitcoin.ts";
 import { callTool, createMcpServer, toolListings } from "../src/mcp.ts";
 import { TOOL_NAMES } from "../src/tool-parameters.ts";
+import { decode as decodeWIF } from "../src/utils/wif/index.ts";
 
 const openConnections: Array<{ close(): Promise<void> }> = [];
 
@@ -311,6 +312,54 @@ describe("keys MCP server", () => {
       expect(text(failed.content)).toContain(message);
     }
   });
+
+  it("opens a BIP38 key through MCP, with its WIF only on request", async () => {
+    const client = await connectTestClient();
+    const { encrypted, passphrase, wif, address } = bip38Vectors[3];
+    const privateKey = decodeWIF(wif, { chain: "bitcoin" }).privateKey;
+
+    const opened = await client.callTool({
+      name: "keys_bip38_decrypt",
+      arguments: { encrypted, passphrase },
+    });
+    expect(opened.isError).not.toBe(true);
+    expect(text(opened.content)).toMatch(
+      new RegExp(
+        `^BIP38: ec-multiply, uncompressed, lot 263183, sequence 1\nPassphrase: correct\nPublic key: 04[0-9a-f]{128}\nAddress: ${address}$`,
+      ),
+    );
+    for (const secret of [wif, privateKey]) {
+      expect(text(opened.content)).not.toContain(secret);
+      expect(JSON.stringify(opened.structuredContent ?? {})).not.toContain(secret);
+    }
+
+    const revealed = await client.callTool({
+      name: "keys_bip38_decrypt",
+      arguments: { encrypted, passphrase, revealKey: true },
+    });
+    expect(text(revealed.content)).toBe(`${text(opened.content)}\nWIF: ${wif}`);
+
+    const wrong = await client.callTool({
+      name: "keys_bip38_decrypt",
+      arguments: { encrypted, passphrase: "wrong", revealKey: true },
+    });
+    expect(wrong.isError).not.toBe(true);
+    expect(text(wrong.content)).toBe(
+      "BIP38: ec-multiply, uncompressed, lot 263183, sequence 1\nPassphrase: wrong, the address hash does not match",
+    );
+
+    for (const [args, message] of [
+      [{ encrypted: encrypted.slice(0, -1) + "1", passphrase }, "Invalid BIP38 base58 encoding"],
+      [{ encrypted, passphrase: 42 }, "Invalid arguments at /passphrase"],
+      [{ encrypted, passphrase, revealKey: "yes" }, "Invalid arguments at /revealKey"],
+      [{ encrypted, passphrase, extra: true }, "Invalid arguments"],
+    ] as const) {
+      const failed = await client.callTool({ name: "keys_bip38_decrypt", arguments: args });
+      expect(failed.isError).toBe(true);
+      expect(text(failed.content)).toContain(message);
+      expect(text(failed.content)).not.toContain(passphrase);
+    }
+  }, 30_000);
 
   it("opens a keystore through MCP without its private key, and reports a wrong password", async () => {
     const client = await connectTestClient();

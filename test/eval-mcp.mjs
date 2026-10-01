@@ -108,6 +108,12 @@ try {
   );
 
   await call(
+    "keys_bip38_decrypt",
+    { encrypted: bip38Vectors[3].encrypted, passphrase: bip38Vectors[3].passphrase },
+    new RegExp(`Passphrase: correct\nPublic key: \\w+\nAddress: ${bip38Vectors[3].address}$`),
+  );
+
+  await call(
     "keys_store_decrypt",
     { keystore: JSON.stringify(storeVectors[1].keystore), password: storeVectors[1].password },
     new RegExp(`Password: correct\nPublic key: \\w+\nAddress: ${storeVectors[1].address}`),

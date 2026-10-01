@@ -12,6 +12,7 @@ export const TOOL_NAMES = [
   "keys_wif_encode",
   "keys_wif_decode",
   "keys_bip38_inspect",
+  "keys_bip38_decrypt",
   "keys_store_decrypt",
   "keys_wallet_generate",
   "keys_wallet_derive",
@@ -60,6 +61,9 @@ export const MAX_KEYSTORE_PASSWORD_LENGTH = 4096;
 
 /** Maximum address length the BIP38 tool hashes against a key. */
 export const MAX_BIP38_ADDRESS_LENGTH = 128;
+
+/** Maximum BIP38 passphrase length, in characters. */
+export const MAX_BIP38_PASSPHRASE_LENGTH = 4096;
 
 /** Maximum address length the address validation tool checks. */
 export const MAX_ADDRESS_LENGTH = 256;

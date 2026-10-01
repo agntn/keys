@@ -17,6 +17,7 @@ import {
   TOOL_MNEMONIC_WORD_COUNTS,
   MAX_BIP39_SEED_INPUT_LENGTH,
   MAX_BIP38_ADDRESS_LENGTH,
+  MAX_BIP38_PASSPHRASE_LENGTH,
   MAX_KEYSTORE_LENGTH,
   MAX_KEYSTORE_PASSWORD_LENGTH,
   MAX_ADDRESS_LENGTH,
@@ -108,6 +109,29 @@ export const INSPECT_BIP38_PARAMETERS = Type.Object(
         minLength: 1,
         maxLength: MAX_BIP38_ADDRESS_LENGTH,
         description: "Address to compare with the address hash stored in the key",
+      }),
+    ),
+  },
+  { additionalProperties: false },
+);
+
+/** Shared MCP and Pi schema for opening a BIP38 key with its passphrase. */
+export const DECRYPT_BIP38_PARAMETERS = Type.Object(
+  {
+    encrypted: Type.String({
+      minLength: 1,
+      maxLength: 64,
+      pattern: "^[1-9A-HJ-NP-Za-km-z]+$",
+      description: "BIP38 encrypted private key, 58 characters starting with 6P",
+    }),
+    passphrase: Type.String({
+      maxLength: MAX_BIP38_PASSPHRASE_LENGTH,
+      description: "Public or disposable passphrase, NFC normalized and hashed as UTF-8",
+    }),
+    revealKey: Type.Optional(
+      Type.Boolean({
+        description:
+          "Also return the mainnet WIF when the passphrase is right, so it enters the transcript. Default: false",
       }),
     ),
   },
