@@ -25,6 +25,7 @@ export default defineBuildConfig({
         "./src/utils/electrum/index.ts",
         "./src/utils/secp256k1/index.ts",
         "./src/utils/slip10/index.ts",
+        "./src/utils/store/index.ts",
         "./src/utils/wif/index.ts",
         ...blockchainInputs,
       ],

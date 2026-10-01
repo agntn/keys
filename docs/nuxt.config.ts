@@ -6,6 +6,7 @@ const librarySource = resolve(import.meta.dirname, "../src");
 
 /** Runtime deps under src/index.ts and src/mcp.ts, installed here so they resolve from docs/node_modules. */
 const libraryDependencies = [
+  "@agntn/ciphers",
   "@agntn/hashes",
   "@agntn/tools",
   "@modelcontextprotocol/server",

@@ -31,6 +31,7 @@ import {
   bip38Vectors,
   brainwalletInput,
   brainwalletVectors,
+  storeVectors,
 } from "./fixtures.ts";
 import Bitcoin from "../src/blockchains/bitcoin.ts";
 import { callTool, createMcpServer, toolListings } from "../src/mcp.ts";
@@ -306,6 +307,52 @@ describe("keys MCP server", () => {
       const failed = await client.callTool({ name: "keys_bip38_inspect", arguments: args });
       expect(failed.isError).toBe(true);
       expect(text(failed.content)).toContain(message);
+    }
+  });
+
+  it("opens a keystore through MCP without its private key, and reports a wrong password", async () => {
+    const client = await connectTestClient();
+    const { keystore, password, privateKey, publicKey, address } = storeVectors[3];
+    const json = JSON.stringify(keystore);
+
+    const opened = await client.callTool({
+      name: "keys_store_decrypt",
+      arguments: { keystore: json, password },
+    });
+    expect(opened.isError).not.toBe(true);
+    expect(text(opened.content)).toBe(
+      [
+        "Keystore: version 3, scrypt (n 1024, r 8, p 1), aes-128-ctr",
+        `Stored address: ${address}`,
+        "Password: correct",
+        `Public key: ${publicKey}`,
+        `Address: ${address}`,
+      ].join("\n"),
+    );
+    expect(text(opened.content)).not.toContain(privateKey);
+    expect(JSON.stringify(opened.structuredContent ?? {})).not.toContain(privateKey);
+
+    const wrong = await client.callTool({
+      name: "keys_store_decrypt",
+      arguments: { keystore: json, password: "wrong" },
+    });
+    expect(wrong.isError).not.toBe(true);
+    expect(text(wrong.content)).toContain("Password: wrong, the MAC does not match");
+    expect(text(wrong.content)).not.toContain("Public key");
+
+    const costly = {
+      ...keystore,
+      Crypto: { ...keystore.Crypto, kdfparams: { ...keystore.Crypto.kdfparams, n: 2 ** 21 } },
+    };
+    for (const [args, message] of [
+      [{ keystore: JSON.stringify(costly), password }, "N must be an integer from 2 to 1048576"],
+      [{ keystore: "{]", password }, "Keystore must be valid JSON"],
+      [{ keystore: json, password: 42 }, "Invalid arguments at /password"],
+    ] as const) {
+      const failed = await client.callTool({ name: "keys_store_decrypt", arguments: args });
+      expect(failed.isError).toBe(true);
+      expect(text(failed.content)).toContain(message);
+      expect(text(failed.content)).not.toContain(password);
     }
   });
 

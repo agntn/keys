@@ -1381,3 +1381,112 @@ export const brainwalletInput = {
   salt: "example salt",
   saltHex: "6578616d706c652073616c74",
 } as const;
+
+/**
+ * Version 3 keystores. The first three are geth's `accounts/keystore/testdata/v3_test_vector.json`,
+ * the two short keys from early geth that dropped leading zeros. The last one comes from ethers v6
+ * `encryptKeystoreJsonSync` with fixed salt, IV and UUID, and writes `Crypto` capitalized.
+ * Addresses and public keys from ethers.
+ */
+export const storeVectors = [
+  {
+    name: "geth pbkdf2",
+    keystore: {
+      crypto: {
+        cipher: "aes-128-ctr",
+        cipherparams: { iv: "6087dab2f9fdbbfaddc31a909735c1e6" },
+        ciphertext: "5318b4d5bcd28de64ee5559e671353e16f075ecae9f99c7a79a38af5f869aa46",
+        kdf: "pbkdf2",
+        kdfparams: {
+          c: 262144,
+          dklen: 32,
+          prf: "hmac-sha256",
+          salt: "ae3cd4e7013836a3df6bd7241b12db061dbe2c6785853cce422d148a624ce0bd",
+        },
+        mac: "517ead924a9d0dc3124507e3393d175ce3ff7c1e96529c6c555ce9e51205e9b2",
+      },
+      id: "3198bc9c-6672-5ab3-d995-4942343ae5b6",
+      version: 3,
+    },
+    password: "testpassword",
+    privateKey: "7a28b5ba57c53603b0b07b56bba752f7784bf506fa95edc395f5cf6c7514fe9d",
+    publicKey: "0332d87c5cd4b31d81c5b010af42a2e413af253dc3a91bd3d53c6b2c45291c3de7",
+    address: "0x008AeEda4D805471dF9b2A5B0f38A0C3bCBA786b",
+  },
+  {
+    name: "geth 31 byte key",
+    keystore: {
+      crypto: {
+        cipher: "aes-128-ctr",
+        cipherparams: { iv: "e0c41130a323adc1446fc82f724bca2f" },
+        ciphertext: "9517cd5bdbe69076f9bf5057248c6c050141e970efa36ce53692d5d59a3984",
+        kdf: "scrypt",
+        kdfparams: {
+          dklen: 32,
+          n: 2,
+          r: 8,
+          p: 1,
+          salt: "711f816911c92d649fb4c84b047915679933555030b3552c1212609b38208c63",
+        },
+        mac: "d5e116151c6aa71470e67a7d42c9620c75c4d23229847dcc127794f0732b0db5",
+      },
+      id: "fecfc4ce-e956-48fd-953b-30f8b52ed66c",
+      version: 3,
+    },
+    password: "foo",
+    privateKey: "00fa7b3db73dc7dfdf8c5fbdb796d741e4488628c41fc4febd9160a866ba0f35",
+    publicKey: "0380eabc89985bd5928ce8ae28daceec6491d8f0d9891b5fe439f4b420138e818a",
+    address: "0xd1E64E5480bFaf733Ba7D48712DEcb8227797a4e",
+  },
+  {
+    name: "geth 30 byte key",
+    keystore: {
+      crypto: {
+        cipher: "aes-128-ctr",
+        cipherparams: { iv: "3ca92af36ad7c2cd92454c59cea5ef00" },
+        ciphertext: "108b7d34f3442fc26ab1ab90ca91476ba6bfa8c00975a49ef9051dc675aa",
+        kdf: "scrypt",
+        kdfparams: {
+          dklen: 32,
+          n: 2,
+          r: 8,
+          p: 1,
+          salt: "d0769e608fb86cda848065642a9c6fa046845c928175662b8e356c77f914cd3b",
+        },
+        mac: "75d0e6759f7b3cefa319c3be41680ab6beea7d8328653474bd06706d4cc67420",
+      },
+      id: "a37e1559-5955-450d-8075-7b8931b392b2",
+      version: 3,
+    },
+    password: "foo",
+    privateKey: "000081c29e8142bb6a81bef5a92bda7a8328a5c85bb2f9542e76f9b0f94fc018",
+    publicKey: "0210e472f71385288eba6e66a8d63beb83fc663d962e8546bc61e1035d59ed634a",
+    address: "0x31e9D1e6D844bd3a536800Ef8d8Be6A9975Db509",
+  },
+  {
+    name: "ethers scrypt",
+    keystore: {
+      address: "008aeeda4d805471df9b2a5b0f38a0c3bcba786b",
+      id: "33333333-3333-4333-b333-333333333333",
+      version: 3,
+      Crypto: {
+        cipher: "aes-128-ctr",
+        cipherparams: { iv: "22222222222222222222222222222222" },
+        ciphertext: "8bf4b5ca6bdf32b5ac036bb2cffa775045e38cffa364c4e9e3916899cac0e952",
+        kdf: "scrypt",
+        kdfparams: {
+          salt: "1111111111111111111111111111111111111111111111111111111111111111",
+          n: 1024,
+          dklen: 32,
+          p: 1,
+          r: 8,
+        },
+        mac: "25c8e4853b36ed31a5068ebcc98429b4d486e4e62b5eae1c989acbc769d26061",
+      },
+    },
+    password: "zażółć gęślą jaźń",
+    privateKey: "7a28b5ba57c53603b0b07b56bba752f7784bf506fa95edc395f5cf6c7514fe9d",
+    publicKey: "0332d87c5cd4b31d81c5b010af42a2e413af253dc3a91bd3d53c6b2c45291c3de7",
+    address: "0x008AeEda4D805471dF9b2A5B0f38A0C3bCBA786b",
+  },
+] as const;

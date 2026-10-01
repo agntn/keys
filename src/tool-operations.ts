@@ -21,6 +21,12 @@ import {
   type BrainwalletKDF,
   type BrainwalletOptions,
 } from "./utils/brainwallet/index.ts";
+import {
+  decrypt as decryptStoreKey,
+  inspect as inspectStore,
+  KeystorePasswordError,
+  type KeystoreKDF,
+} from "./utils/store/index.ts";
 import { getBlockchainPath, useBlockchain, type AbstractBlockchain } from "./blockchain.ts";
 import { blockchains } from "./_blockchains.ts";
 import { parse as parseBIP44Path } from "./utils/bip44/index.ts";
@@ -34,10 +40,12 @@ import {
   TOOL_MNEMONIC_WORD_COUNTS,
   MAX_BIP39_SEED_INPUT_LENGTH,
   MAX_BIP38_ADDRESS_LENGTH,
+  MAX_KEYSTORE_LENGTH,
+  MAX_KEYSTORE_PASSWORD_LENGTH,
   MAX_ADDRESS_LENGTH,
   MAX_BRAINWALLET_INPUT_LENGTH,
-  MAX_BRAINWALLET_SCRYPT_BLOCKS,
-  BRAINWALLET_COST_LIMITS,
+  MAX_SCRYPT_BLOCKS,
+  KDF_COST_LIMITS,
   TOOL_WIF_CHAINS,
   PRIVATE_KEY_SCHEMA_PATTERN,
   PUBLIC_KEY_SCHEMA_PATTERN,
@@ -688,18 +696,14 @@ function oneOf<const Value extends string>(
 }
 
 /**
- * Reads one cost parameter against the ceiling the brainwallet tool sets.
+ * Reads one cost parameter against the ceiling the KDF tools set.
  * @param value - Raw argument
- * @param name - Parameter name, a key of `BRAINWALLET_COST_LIMITS`
+ * @param name - Parameter name, a key of `KDF_COST_LIMITS`
  * @param minimum - Smallest value the KDF takes
  * @returns {number} The parameter
  */
-function costArgument(
-  value: unknown,
-  name: keyof typeof BRAINWALLET_COST_LIMITS,
-  minimum = 1,
-): number {
-  const maximum = BRAINWALLET_COST_LIMITS[name];
+function costArgument(value: unknown, name: keyof typeof KDF_COST_LIMITS, minimum = 1): number {
+  const maximum = KDF_COST_LIMITS[name];
   if (typeof value !== "number" || !Number.isInteger(value) || value < minimum || value > maximum) {
     throw new RangeError(`${name} must be an integer from ${minimum} to ${maximum}`);
   }
@@ -733,8 +737,8 @@ function brainwalletKDF(args: Readonly<Record<string, unknown>>): BrainwalletKDF
   const N = costArgument(args["N"], "N", 2);
   if ((N & (N - 1)) !== 0) throw new RangeError("N must be a power of 2");
   const r = costArgument(args["r"], "r");
-  if (N * r > MAX_BRAINWALLET_SCRYPT_BLOCKS) {
-    throw new RangeError(`N * r must not exceed ${MAX_BRAINWALLET_SCRYPT_BLOCKS}`);
+  if (N * r > MAX_SCRYPT_BLOCKS) {
+    throw new RangeError(`N * r must not exceed ${MAX_SCRYPT_BLOCKS}`);
   }
   return { kdf, N, r, p: costArgument(args["p"], "p") };
 }
@@ -1501,4 +1505,115 @@ export function inspectBip38(
     address === undefined ? {} : { address },
   );
   return { content: content(JSON.stringify(details)), details };
+}
+
+/** Keystore parameters, and the public wallet when the password opens it. */
+export interface DecryptedStoreDetails {
+  version: 3;
+  id?: string;
+  kdf: KeystoreKDF & { dklen: number };
+  /** The address the file stores, EIP-55, when it stores one. */
+  storedAddress?: string;
+  /** Whether the password gives the stored MAC. */
+  unlocked: boolean;
+  chain?: "ethereum";
+  publicKey?: string;
+  address?: string;
+}
+
+/**
+ * Refuses keystore costs above the ceilings the KDF tools set, before the KDF runs.
+ * @param kdf - KDF, costs and derived key length the file names
+ */
+function checkStoreCost(kdf: Readonly<KeystoreKDF & { dklen: number }>): void {
+  costArgument(kdf.dklen, "keyLength");
+  if (kdf.kdf === "pbkdf2") {
+    costArgument(kdf.c, "iterations");
+    return;
+  }
+  costArgument(kdf.n, "N", 2);
+  costArgument(kdf.r, "r");
+  costArgument(kdf.p, "p");
+  if (kdf.n * kdf.r > MAX_SCRYPT_BLOCKS) {
+    throw new RangeError(`N * r must not exceed ${MAX_SCRYPT_BLOCKS}`);
+  }
+}
+
+/**
+ * Reads a keystore's parameters under the cost ceilings, as text lines and details.
+ * @param keystore - Keystore JSON text
+ * @returns {{ header: string[]; base: Omit<DecryptedStoreDetails, "unlocked"> }} What the file shows
+ */
+function storeSummary(keystore: string): {
+  header: string[];
+  base: Omit<DecryptedStoreDetails, "unlocked">;
+} {
+  const file = inspectStore(keystore);
+  const kdf: KeystoreKDF & { dklen: number } =
+    file.kdf === "scrypt"
+      ? { kdf: "scrypt", n: file.n, r: file.r, p: file.p, dklen: file.dklen }
+      : { kdf: "pbkdf2", c: file.c, dklen: file.dklen };
+  checkStoreCost(kdf);
+  const costs =
+    kdf.kdf === "scrypt" ? `n ${kdf.n}, r ${kdf.r}, p ${kdf.p}` : `c ${kdf.c}, hmac-sha256`;
+  const stored = file.address === undefined ? {} : { storedAddress: file.address };
+  return {
+    header: [
+      `Keystore: version 3, ${kdf.kdf} (${costs}), aes-128-ctr`,
+      ...(file.address === undefined ? [] : [`Stored address: ${file.address}`]),
+    ],
+    base: { version: 3, ...(file.id === undefined ? {} : { id: file.id }), kdf, ...stored },
+  };
+}
+
+/**
+ * Opens a version 3 keystore and gives its public Ethereum wallet, never its private key. A wrong
+ * password is a result, not an error.
+ * @param keystoreValue - Keystore JSON text
+ * @param passwordValue - Password
+ * @returns {Promise<ToolResult<DecryptedStoreDetails>>} Parameters, verdict, public key and address
+ */
+export async function decryptStore(
+  keystoreValue: unknown,
+  passwordValue: unknown,
+): Promise<ToolResult<DecryptedStoreDetails>> {
+  const keystore = requiredString(keystoreValue, "Keystore");
+  if (keystore.length > MAX_KEYSTORE_LENGTH) {
+    throw new RangeError(`Keystore must not exceed ${MAX_KEYSTORE_LENGTH} characters`);
+  }
+  const password = requiredString(passwordValue, "Password");
+  if (Array.from(password).length > MAX_KEYSTORE_PASSWORD_LENGTH) {
+    throw new RangeError(`Password must not exceed ${MAX_KEYSTORE_PASSWORD_LENGTH} characters`);
+  }
+  const { header, base } = storeSummary(keystore);
+  let privateKey: Uint8Array;
+  try {
+    privateKey = decryptStoreKey(keystore, password);
+  } catch (error) {
+    if (!(error instanceof KeystorePasswordError)) throw error;
+    return {
+      content: content([...header, "Password: wrong, the MAC does not match"].join("\n")),
+      details: { ...base, unlocked: false },
+    };
+  }
+  const { blockchain } = await getBlockchain("ethereum");
+  const wallet = blockchain.deriveWallet(privateKey.toHex());
+  const details: DecryptedStoreDetails = {
+    ...base,
+    unlocked: true,
+    chain: "ethereum",
+    publicKey: wallet.keys.public,
+    address: wallet.address,
+  };
+  return {
+    content: content(
+      [
+        ...header,
+        "Password: correct",
+        `Public key: ${wallet.keys.public}`,
+        `Address: ${wallet.address}`,
+      ].join("\n"),
+    ),
+    details,
+  };
 }

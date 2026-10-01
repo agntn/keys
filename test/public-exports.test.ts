@@ -14,6 +14,7 @@ import type { PublicKeyEncodingOptions } from "@agntn/keys/secp256k1";
 import {
   brainwalletInput,
   brainwalletVectors,
+  storeVectors,
   electrumVectors,
   wifTestVectors,
   localizedMnemonicVectors,
@@ -34,6 +35,7 @@ const EXPORTS = [
   ["@agntn/keys/electrum", "/dist/utils/electrum/index.mjs"],
   ["@agntn/keys/secp256k1", "/dist/utils/secp256k1/index.mjs"],
   ["@agntn/keys/slip10", "/dist/utils/slip10/index.mjs"],
+  ["@agntn/keys/store", "/dist/utils/store/index.mjs"],
   ["@agntn/keys/wif", "/dist/utils/wif/index.mjs"],
 ] as const;
 
@@ -118,6 +120,23 @@ describe("Public brainwallet exports", () => {
     );
     expect(Object.keys(brainwallet)).toEqual(["derive"]);
     expect(await import("@agntn/keys")).not.toHaveProperty("derive");
+  });
+});
+
+describe("Public keystore exports", () => {
+  it("opens and writes a keystore from the built package, and nothing else from there", async () => {
+    const store = await import("@agntn/keys/store");
+    const { keystore, password, privateKey } = storeVectors[1];
+    expect(hex.encode(store.decrypt(keystore, password))).toBe(privateKey);
+    const file = store.encrypt(hex.decode(privateKey), password, {
+      kdf: { kdf: "pbkdf2", c: 16 },
+    });
+    expect(hex.encode(store.decrypt(file, password))).toBe(privateKey);
+    expect(() => store.decrypt(keystore, "wrong")).toThrow(store.KeystorePasswordError);
+    expect(new Set(Object.keys(store))).toEqual(
+      new Set(["KeystorePasswordError", "decrypt", "encrypt", "inspect"]),
+    );
+    expect(await import("@agntn/keys")).not.toHaveProperty("encrypt");
   });
 });
 
@@ -258,6 +277,7 @@ describe("Consumer bundles", () => {
     ["decode", "@agntn/keys/wif"],
     ["convertPublicKey", "@agntn/keys/secp256k1"],
     ["derive", "@agntn/keys/brainwallet"],
+    ["decrypt", "@agntn/keys/store"],
   ])(
     "leaves the chain registry and the Electrum list out of an app importing %s from %s",
     async (name, from) => {
