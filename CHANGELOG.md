@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.5.1
+
+[compare changes](https://github.com/agntn/keys/compare/v0.5.0...v0.5.1)
+
+### 🚀 Enhancements
+
+- **signing:** Recover signmessage signers ([#180](https://github.com/agntn/keys/pull/180))
+- **store:** Open and write keystore files ([#182](https://github.com/agntn/keys/pull/182))
+
+### 🩹 Fixes
+
+- **release:** Skip CHANGELOG.md in vp fmt ([#179](https://github.com/agntn/keys/pull/179))
+
+### ❤️ Contributors
+
+- Aeitwoen ([@aeitwoen](https://github.com/aeitwoen))
+- Ori ([@oritwoen](https://github.com/oritwoen))
+
 ## v0.5.0
 
 [compare changes](https://github.com/agntn/keys/compare/v0.4.0...v0.5.0)
