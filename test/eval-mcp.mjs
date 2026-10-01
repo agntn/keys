@@ -219,6 +219,14 @@ try {
     /^Language: english\nIndices: zero-based, one-based\nskill: 1619, 1620\nzoo: 2047, 2048$/,
   );
   await call("keys_bip39_word_recover", { mnemonic: missing }, /Candidates \(128\):/);
+  await call(
+    "keys_bip39_word_recover",
+    {
+      mnemonic: "abaco abaco abaco abaco abaco abaco abaco abaco abaco abaco abaco ?",
+      language: "italian",
+    },
+    /Candidates \(128\): abete,/,
+  );
   await call("keys_address_get", { chain: "ethereum", publicKey }, /Address: 0x/);
   await call(
     "keys_address_validate",

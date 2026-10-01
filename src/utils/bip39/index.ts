@@ -140,12 +140,46 @@ export function inspect(
 }
 
 /**
- * Lists English BIP39 words that make the checksum valid for a mnemonic with one placeholder.
- * @param mnemonic - Mnemonic template containing exactly one `?`
- * @returns {ReadonlyArray<string>} Candidate words in BIP39 list order
+ * Refuses template words outside the list by position, never echoing the words.
+ * @param words - Template words after NFKD normalization, the placeholder included
+ * @param selectedWordlist - BIP39 word list the words should come from
+ * @param listName - Word list name for the error
  */
-export function getMnemonicWordCandidates(mnemonic: string): readonly string[] {
-  const words = mnemonic.trim().split(/\s+/u);
+function assertTemplateWords(
+  words: readonly string[],
+  selectedWordlist: readonly string[],
+  listName: string,
+): void {
+  const unknown = words.flatMap((word, index) =>
+    word === "?" || selectedWordlist.includes(word) ? [] : [index + 1],
+  );
+  if (unknown.length === 0) return;
+  if (unknown.length === words.length - 1) {
+    throw new RangeError(`None of the mnemonic template words is in the ${listName} list`);
+  }
+  throw new RangeError(
+    unknown.length === 1
+      ? `Mnemonic template word ${unknown[0]} is not in the ${listName} list`
+      : `Mnemonic template words ${unknown.join(", ")} are not in the ${listName} list`,
+  );
+}
+
+/**
+ * Lists the words of one BIP39 list that pass the checksum in the one `?` slot of a template.
+ * @param mnemonic - Mnemonic template containing exactly one `?`
+ * @param selectedWordlist - BIP39 word list the other words come from, defaulting to English
+ * @param listName - Word list name for the error on a word outside the list
+ * @returns {ReadonlyArray<string>} Candidate words in the list's order
+ */
+export function getMnemonicWordCandidates(
+  mnemonic: string,
+  selectedWordlist: readonly string[] = wordlist,
+  listName = selectedWordlist === wordlist ? "English" : "selected",
+): readonly string[] {
+  if (selectedWordlist.length !== 2048) {
+    throw new TypeError("wordlist must be a BIP39 word list of 2048 words");
+  }
+  const words = mnemonic.normalize("NFKD").trim().split(/\s+/u);
   if (!MNEMONIC_WORD_COUNTS.includes(words.length)) {
     throw new RangeError("Mnemonic template must contain 12, 15, 18, 21, or 24 words");
   }
@@ -155,11 +189,14 @@ export function getMnemonicWordCandidates(mnemonic: string): readonly string[] {
     throw new RangeError("Mnemonic template must contain exactly one ? placeholder");
   }
 
+  assertTemplateWords(words, selectedWordlist, listName);
+
   const placeholderIndex = words.indexOf("?");
+  const list = [...selectedWordlist];
   const candidates: string[] = [];
-  for (const candidate of wordlist) {
+  for (const candidate of list) {
     words[placeholderIndex] = candidate;
-    if (validateMnemonic(words.join(" "))) {
+    if (bip39.validateMnemonic(words.join(" "), list)) {
       candidates.push(candidate);
     }
   }

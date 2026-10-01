@@ -332,17 +332,20 @@ export const bip39WordRecoverTool = defineTool({
   name: "keys_bip39_word_recover",
   title: "Recover Mnemonic Word",
   description:
-    "List English BIP39 words that make the checksum valid for one missing position. Use this filter only when canonical BIP39 generation is established, not for puzzles that may have invalid checksums. Inputs enter the transcript, so use only public or disposable candidates.",
+    "List the BIP39 words that make the checksum valid for one missing position. Use this filter only when canonical BIP39 generation is established, not for puzzles that may have invalid checksums. Inputs enter the transcript, so use only public or disposable candidates.",
   snippet: "Use to narrow one missing word in a public BIP39 puzzle candidate.",
   guidelines: [
     "Replace exactly one word with ? in a mnemonic containing 12, 15, 18, 21, or 24 words",
+    "keys_bip39_word_recover accepts an explicit BIP39 language; omission means english, not automatic detection",
+    "Every other word must be in the selected list, so a typo is refused by position instead of returning no candidates",
     "Use checksum candidates only when the puzzle proves canonical BIP39 generation",
     "Use only public or disposable candidates because tool arguments are saved in the transcript",
     "Returns candidate words, not wallets or target matches",
   ],
   effect: "read",
   input: RECOVER_MNEMONIC_WORD_PARAMETERS,
-  execute: async (params) => (await loadOperations()).recoverMnemonicWord(params.mnemonic),
+  execute: async (params) =>
+    (await loadOperations()).recoverMnemonicWord(params.mnemonic, params.language),
 });
 
 export const addressGetTool = defineTool({
