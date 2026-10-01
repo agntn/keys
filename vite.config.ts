@@ -31,7 +31,7 @@ export default defineConfig({
   oxc: { ...transformOverride },
   fmt: {
     ...oxfmt,
-    ignorePatterns: ["dist", "coverage", "docs"],
+    ignorePatterns: ["dist", "coverage", "docs", "CHANGELOG.md"],
   },
   lint: {
     ...oxlint,
