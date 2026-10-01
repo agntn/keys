@@ -1,5 +1,38 @@
 # Changelog
 
+## v0.5.0
+
+[compare changes](https://github.com/agntn/keys/compare/v0.4.0...v0.5.0)
+
+### 🚀 Enhancements
+
+- **hd:** Derive from every BIP39 word list ([#173](https://github.com/agntn/keys/pull/173))
+- **bip39:** ⚠️  Recover words in any language ([#174](https://github.com/agntn/keys/pull/174))
+
+### 🩹 Fixes
+
+- **chains:** Hash only keys the curve can hold ([#175](https://github.com/agntn/keys/pull/175))
+- **chains:** Name the secp256k1 key in errors ([#177](https://github.com/agntn/keys/pull/177))
+- **deps:** Exempt agntn packages from cooldown ([#178](https://github.com/agntn/keys/pull/178))
+
+### 💅 Refactors
+
+- **tools:** ⚠️  Move to @agntn/tools ([#171](https://github.com/agntn/keys/pull/171))
+
+### 🏡 Chore
+
+- Apply automated updates ([c0b6e28](https://github.com/agntn/keys/commit/c0b6e28))
+
+#### ⚠️ Breaking Changes
+
+- **bip39:** ⚠️  Recover words in any language ([#174](https://github.com/agntn/keys/pull/174))
+- **tools:** ⚠️  Move to @agntn/tools ([#171](https://github.com/agntn/keys/pull/171))
+
+### ❤️ Contributors
+
+- Ori
+- Aeitwoen
+
 ## v0.4.0
 
 [compare changes](https://github.com/agntn/keys/compare/v0.3.5...v0.4.0)
