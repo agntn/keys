@@ -245,6 +245,21 @@ try {
     { chain: "ethereum", message: "disposable MCP test", signature, publicKey },
     /Signature is valid/,
   );
+  const coreSigned = await call(
+    "keys_message_sign",
+    { chain: "bitcoin", message: "disposable MCP test", privateKey, recovered: true },
+    /Signature: [A-Za-z0-9+/]{87}=/,
+  );
+  await call(
+    "keys_message_recover",
+    {
+      chain: "bitcoin",
+      message: "disposable MCP test",
+      signature: /Signature: (\S+)/.exec(coreSigned)?.[1],
+      address: "1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH",
+    },
+    /Given address: match \(legacy\)/,
+  );
   await call("keys_bip44_parse", { path: "m/44h/60h/0h/0/3" }, /Address index: 3$/m);
   await call("keys_bip44_generate", { chain: "bitcoin", change: 1 }, /m\/44'\/0'\/0'\/1\/0/);
   await call("keys_bip44_generate", { chain: "solana" }, /Path: m\/44'\/501'\/0'\/0'$/m);

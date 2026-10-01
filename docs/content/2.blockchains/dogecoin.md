@@ -74,7 +74,7 @@ Version `0x9e` on mainnet, so compressed keys start with `Q` and uncompressed on
 
 ## Signing
 
-Dogecoin Core signs under `"\x19Dogecoin Signed Message:\n"`, then does what Bitcoin does: compact size lengths, double SHA-256, secp256k1. So a Bitcoin signature doesn't verify here, and the other way round. The Dogecoin vectors in bitcoinjs-message match byte for byte once you drop their header byte. `{ recovered: true }` throws, same as on Bitcoin.
+Dogecoin Core signs under `"\x19Dogecoin Signed Message:\n"`, then does what Bitcoin does: compact size lengths, double SHA-256, secp256k1. So a Bitcoin signature doesn't verify here, and the other way round. The Dogecoin vectors in bitcoinjs-message match byte for byte once you drop their header byte. `{ recovered: true }` keeps it and gives their base64 whole, the uncompressed one too with `compressed: false`.
 
 ## Where it lives
 

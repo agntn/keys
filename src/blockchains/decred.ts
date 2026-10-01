@@ -5,10 +5,24 @@ import { base58check } from "@scure/base";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { encodeCompactSize } from "../utils/bitcoin.ts";
+import {
+  isCompactSignature,
+  recoverCompact,
+  signCompact,
+  verifyCompact,
+} from "../utils/secp256k1/compact-signature.ts";
 import { decodeKeyPrivate, decodePublicPoint } from "../utils/secp256k1/decode.ts";
 import { generateKeyPublic } from "../utils/secp256k1/keys.ts";
-import { assertNoRecoveryByte, hasRecoveryByte } from "../utils/signing.ts";
-import type { Curve, KeyOptions, Options, SigningOptions, Wallet, XpubWallet } from "../types.ts";
+import { hasRecoveryByte, readRecoveredFlag } from "../utils/signing.ts";
+import type {
+  Curve,
+  KeyOptions,
+  MessageSigner,
+  Options,
+  SigningOptions,
+  Wallet,
+  XpubWallet,
+} from "../types.ts";
 
 const codec = base58check(blake256);
 const messagePreamble = new TextEncoder().encode("Decred Signed Message:\n");
@@ -82,15 +96,21 @@ export class Decred extends AbstractBlockchain {
     }
   }
 
+  /**
+   * Sign as 64 bytes of `r||s` hex, or with `recovered` as the base64 dcrd's `signmessage` prints.
+   * @param message - The message to sign
+   * @param keyPrivate - The private key as hex
+   * @param options - `recovered` for dcrd's base64 form, `compressed` for its header
+   * @returns {string} The signature
+   */
   override signMessage(
     message: string | Uint8Array,
     keyPrivate: string,
     options?: SigningOptions,
   ): string {
-    assertNoRecoveryByte(
-      options,
-      "dcrd encodes its recoverable signature as base64 of header||r||s, not r||s||v",
-    );
+    if (readRecoveredFlag(options)) {
+      return signCompact(hashMessage(message), keyPrivate, options?.compressed !== false);
+    }
     return secp256k1
       .sign(hashMessage(message), decodeKeyPrivate(keyPrivate), { prehash: false })
       .toHex();
@@ -104,6 +124,9 @@ export class Decred extends AbstractBlockchain {
     if (hasRecoveryByte(signature)) {
       return false;
     }
+    if (isCompactSignature(signature)) {
+      return verifyCompact(hashMessage(message), signature, keyPublic);
+    }
     try {
       return secp256k1.verify(
         Uint8Array.fromHex(signature),
@@ -116,6 +139,20 @@ export class Decred extends AbstractBlockchain {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Recover the signer of a dcrd base64 signature; dcrd reads headers 27 to 34 only.
+   * @param message - The signed message
+   * @param signature - Base64 of the header byte, then `r` and `s`
+   * @returns {MessageSigner} The recovered key, always for a `legacy` P2PKH address
+   */
+  override recoverMessageSigner(message: string | Uint8Array, signature: string): MessageSigner {
+    const signer = recoverCompact(hashMessage(message), signature);
+    if (signer.addressType !== "legacy") {
+      throw new TypeError("Decred message signature header must be 27 to 34, as dcrd writes it");
+    }
+    return signer;
   }
 }
 

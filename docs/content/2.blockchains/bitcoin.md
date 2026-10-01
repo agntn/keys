@@ -82,7 +82,21 @@ Version `0x80` on mainnet, `0xef` on testnet, a trailing `0x01` when the public 
 
 ## Signing
 
-`signMessage` hashes with the `"\x18Bitcoin Signed Message:\n"` preamble, the same one Bitcoin Core uses, and signs with secp256k1. What comes back is 64 bytes of `r||s` in hex, no recovery byte, and `verifyMessage` checks it against the public key. It isn't the base64 recoverable format `bitcoin-cli signmessage` prints, so don't paste one into the other. `{ recovered: true }` throws here for the same reason: Core writes its header first and encodes the whole thing as base64, so Ethereum's `r||s||v` would be a format no Bitcoin tool reads.
+`signMessage` hashes with the `"\x18Bitcoin Signed Message:\n"` preamble, the one Bitcoin Core uses, and signs with secp256k1. By default you get 64 bytes of `r||s` hex. `verifyMessage` checks it against the public key.
+
+`bitcoin-cli signmessage` prints something else. Base64, with a header byte in front of `r||s` that says how to get the key back. Ask for that one with `recovered`:
+
+```js
+const signature = bitcoinChain.signMessage("hello", privateKey, { recovered: true });
+// base64, byte for byte what signmessagewithprivkey prints for the same key
+bitcoinChain.verifyMessage("hello", signature, publicKey); // true
+
+const signer = bitcoinChain.recoverMessageSigner("hello", signature);
+// { publicKey: "02...", addressType: "legacy" }
+bitcoinChain.getAddress(signer.publicKey, signer.addressType); // 1...
+```
+
+Got a signature and an address, but no key? That's what `recoverMessageSigner` is for. The header sets the key's encoding and, under BIP137, its address type. 27 to 34 is P2PKH, 35 to 38 P2SH-P2WPKH, 39 to 42 P2WPKH. Electrum ignores that and signs SegWit under a P2PKH header, so `keys_message_recover` matches a compressed key from such a header against all three. One catch. Any well formed signature recovers some key for any message. Wrong message, different key, no error. The address match is the real check.
 
 ## Where it lives
 

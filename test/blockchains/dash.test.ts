@@ -75,6 +75,12 @@ describe("Dash", () => {
     expect(signed).toBe(compactToRS(signature));
     expect(chain.verifyMessage(message, signed, publicKey)).toBe(true);
     expect(chain.verifyMessage(`${message}!`, signed, publicKey)).toBe(false);
+    expect(chain.signMessage(message, privateKey, { recovered: true })).toBe(signature);
+    expect(chain.verifyMessage(message, signature, publicKey)).toBe(true);
+    expect(chain.recoverMessageSigner(message, signature)).toEqual({
+      publicKey,
+      addressType: "legacy",
+    });
   });
 
   it("uses its own preamble, so a Bitcoin signature does not carry over", () => {
@@ -86,7 +92,8 @@ describe("Dash", () => {
       expect(chain.signMessage(message, privateKey)).not.toBe(signature);
       expect(chain.verifyMessage(message, signature, publicKeyCompressed)).toBe(false);
     }
-    expect(() => chain.signMessage("hello", privateKey, { recovered: true })).toThrow();
+    const core = new Bitcoin().signMessage("hello", privateKey, { recovered: true });
+    expect(chain.verifyMessage("hello", core, publicKeyCompressed)).toBe(false);
   });
 
   it("derives the receive address Ledger Live gives for the public test mnemonic", () => {

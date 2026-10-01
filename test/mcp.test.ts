@@ -1,11 +1,13 @@
 import { readFileSync } from "node:fs";
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import { hex } from "@scure/base";
+import { base64, hex } from "@scure/base";
 import { HDKey } from "@scure/bip32";
 import { mnemonicToSeedSync } from "@scure/bip39";
 import {
+  bip137MessageVectors,
   bip39TestVectors,
+  bitcoinMessageVectors,
   bitcoinTestVectors,
   electrumVectors,
   ethereumTestVectors,
@@ -30,6 +32,7 @@ import {
   brainwalletInput,
   brainwalletVectors,
 } from "./fixtures.ts";
+import Bitcoin from "../src/blockchains/bitcoin.ts";
 import { callTool, createMcpServer, toolListings } from "../src/mcp.ts";
 import { TOOL_NAMES } from "../src/tool-parameters.ts";
 
@@ -940,21 +943,174 @@ describe("keys MCP server", () => {
     }
   });
 
-  it("reports an error for a chain without an r||s||v form", async () => {
+  it("reports an error for a chain without a recoverable signature", async () => {
     const client = await connectTestClient();
 
     const response = await client.callTool({
       name: "keys_message_sign",
       arguments: {
-        chain: "litecoin",
+        chain: "solana",
         message: "hello",
-        privateKey: litecoinTestVectors.privateKey,
+        privateKey: secp256k1TestVectors.privateKey,
         recovered: true,
       },
     });
 
     expect(response.isError).toBe(true);
-    expect(text(response.content)).toContain("base64 of header");
+    expect(text(response.content)).toContain("secp256k1 only");
+  });
+
+  it("signs Litecoin Core's base64 and verifies it against the key", async () => {
+    const client = await connectTestClient();
+    const { privateKey, message, signature } = litecoinTestVectors.signed;
+
+    const signed = await client.callTool({
+      name: "keys_message_sign",
+      arguments: { chain: "litecoin", network: "testnet", message, privateKey, recovered: true },
+    });
+    expect(signed.isError).not.toBe(true);
+    expect(text(signed.content)).toBe(`Signature: ${signature}`);
+
+    const verified = await client.callTool({
+      name: "keys_message_verify",
+      arguments: {
+        chain: "litecoin",
+        message,
+        signature,
+        publicKey: bitcoinGoldTestVectors.signed.publicKey,
+      },
+    });
+    expect(text(verified.content)).toBe("Signature is valid");
+  });
+
+  it("recovers the signer of Core's signature and matches its address", async () => {
+    const client = await connectTestClient();
+    const { message, compactSignature, address } = bitcoinMessageVectors;
+
+    const response = await client.callTool({
+      name: "keys_message_recover",
+      arguments: {
+        chain: "bitcoin",
+        network: "testnet",
+        message,
+        signature: compactSignature,
+        address,
+      },
+    });
+
+    expect(response.isError).not.toBe(true);
+    expect(text(response.content)).toBe(
+      [
+        "Chain: bitcoin (testnet)",
+        `Public key: ${bitcoinGoldTestVectors.signed.publicKey}`,
+        `Address: ${address} (legacy)`,
+        "Given address: match (legacy)",
+      ].join("\n"),
+    );
+  });
+
+  it("matches a SegWit address signed under Electrum's P2PKH header, in any case", async () => {
+    const client = await connectTestClient();
+    const { message, signatures } = bip137MessageVectors;
+    const [, , [, segwit, , electrum]] = signatures;
+    const signature = base64.encode(hex.decode(electrum));
+
+    const matched = await client.callTool({
+      name: "keys_message_recover",
+      arguments: { chain: "bitcoin", message, signature, address: segwit.toUpperCase() },
+    });
+    expect(text(matched.content)).toContain("Given address: match (segwit)");
+
+    const otherMessage = await client.callTool({
+      name: "keys_message_recover",
+      arguments: { chain: "bitcoin", message: `${message}!`, signature, address: segwit },
+    });
+    expect(otherMessage.isError).not.toBe(true);
+    expect(text(otherMessage.content)).toContain("Given address: no match");
+  });
+
+  it("holds a BIP137 header to the one address type it names", async () => {
+    const client = await connectTestClient();
+    const { message, signatures } = bip137MessageVectors;
+    const [, [, p2sh, bip137]] = signatures;
+    const signature = base64.encode(hex.decode(bip137));
+    const signer = await client.callTool({
+      name: "keys_message_recover",
+      arguments: { chain: "bitcoin", message, signature, address: p2sh },
+    });
+    expect(text(signer.content)).toContain(`Address: ${p2sh} (p2sh)`);
+    expect(text(signer.content)).toContain("Given address: match (p2sh)");
+
+    const publicKey = /Public key: ([0-9a-f]+)/u.exec(text(signer.content))?.[1] ?? "";
+    const segwit = new Bitcoin().getAddress(publicKey, "segwit");
+    const response = await client.callTool({
+      name: "keys_message_recover",
+      arguments: { chain: "bitcoin", message, signature, address: segwit },
+    });
+    expect(text(response.content)).toContain("Given address: no match");
+  });
+
+  it("refuses what keys_message_recover cannot read instead of reporting no match", async () => {
+    const client = await connectTestClient();
+    const { message, compactSignature } = bitcoinMessageVectors;
+
+    for (const [arguments_, error] of [
+      [
+        {
+          chain: "bitcoin",
+          message,
+          signature: compactSignature,
+          address: "1BoatSLRHtKNngkdXEeobR76b53LETtpyX",
+        },
+        "Address is not a valid bitcoin mainnet address",
+      ],
+      [{ chain: "ethereum", message, signature: compactSignature }, "ethereum does not write"],
+      [
+        { chain: "bitcoin", message, signature: "00".repeat(65) },
+        "Invalid arguments at /signature",
+      ],
+    ] as const) {
+      const response = await client.callTool({
+        name: "keys_message_recover",
+        arguments: arguments_,
+      });
+      expect(response.isError).toBe(true);
+      expect(text(response.content)).toContain(error);
+    }
+
+    const verified = await client.callTool({
+      name: "keys_message_verify",
+      arguments: {
+        chain: "ethereum",
+        message,
+        signature: compactSignature,
+        publicKey: bitcoinGoldTestVectors.signed.publicKey,
+      },
+    });
+    expect(verified.isError).toBe(true);
+    expect(text(verified.content)).toContain("ethereum does not write");
+  });
+
+  it("calls a well formed base64 signature that recovers no key invalid, as Core does", async () => {
+    const client = await connectTestClient();
+    const { message, compactSignature } = bitcoinMessageVectors;
+    const publicKey = bitcoinGoldTestVectors.signed.publicKey;
+    const empty = base64.encode(Uint8Array.of(31, ...new Uint8Array(64)));
+    const header = base64.encode(Uint8Array.of(26, ...base64.decode(compactSignature).subarray(1)));
+
+    const verdict = await client.callTool({
+      name: "keys_message_verify",
+      arguments: { chain: "bitcoin", message, signature: empty, publicKey },
+    });
+    expect(verdict.isError).not.toBe(true);
+    expect(text(verdict.content)).toBe("Signature is invalid");
+
+    const refused = await client.callTool({
+      name: "keys_message_verify",
+      arguments: { chain: "bitcoin", message, signature: header, publicKey },
+    });
+    expect(refused.isError).toBe(true);
+    expect(text(refused.content)).toContain("27 to 42");
   });
 
   it("validates a known Bitcoin address", async () => {

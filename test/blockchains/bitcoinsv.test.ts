@@ -72,6 +72,9 @@ describe("Bitcoin SV", () => {
     expect(
       chain.verifyMessage(vector.signed.message, signature, chain.getKeyPublic(privateKey)),
     ).toBe(true);
+    expect(chain.signMessage(vector.signed.message, privateKey, { recovered: true })).toBe(
+      vector.signed.signature,
+    );
   });
 
   it("verifies the BSV SDK signature and rejects another message", () => {
@@ -79,6 +82,11 @@ describe("Bitcoin SV", () => {
     const { publicKey, message, signature } = vector.verified;
     expect(chain.verifyMessage(message, compactToRS(signature), publicKey)).toBe(true);
     expect(chain.verifyMessage(`${message}!`, compactToRS(signature), publicKey)).toBe(false);
+    expect(chain.verifyMessage(message, signature, publicKey)).toBe(true);
+    expect(chain.recoverMessageSigner(message, signature)).toEqual({
+      publicKey,
+      addressType: "legacy",
+    });
   });
 
   it("signs with Bitcoin's preamble, so both chains give one signature", () => {
@@ -88,9 +96,9 @@ describe("Bitcoin SV", () => {
       const signature = chain.signMessage(message, vector.keyOne.privateKey);
       expect(signature).toBe(bitcoin.signMessage(message, vector.keyOne.privateKey));
     }
-    expect(() =>
-      chain.signMessage("hello", vector.keyOne.privateKey, { recovered: true }),
-    ).toThrow();
+    expect(chain.signMessage("hello", vector.keyOne.privateKey, { recovered: true })).toBe(
+      bitcoin.signMessage("hello", vector.keyOne.privateKey, { recovered: true }),
+    );
   });
 
   it.each(vector.hd.wifs)("derives %s to the key the BSV SDK gives", (path, wif) => {

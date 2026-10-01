@@ -19,7 +19,7 @@ const COMPACT_SIGNATURE_LENGTH = 64;
  * @param options - Signing or verification options
  * @returns {boolean} Whether the caller asked for the recovery byte
  */
-function readRecoveredFlag(options: SigningOptions): boolean {
+export function readRecoveredFlag(options: SigningOptions = {}): boolean {
   /** Read as unknown: untyped callers can pass anything, and `null` must not pass as false. */
   const recovered: unknown = options.recovered;
   if (recovered === undefined) {

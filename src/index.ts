@@ -14,6 +14,7 @@ export type {
   Keys,
   Wallet,
   XpubWallet,
+  MessageSigner,
   KeyOptions,
   HDWalletOptions,
   SigningOptions,

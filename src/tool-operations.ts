@@ -24,6 +24,7 @@ import {
 import { getBlockchainPath, useBlockchain, type AbstractBlockchain } from "./blockchain.ts";
 import { blockchains } from "./_blockchains.ts";
 import { parse as parseBIP44Path } from "./utils/bip44/index.ts";
+import type { MessageSigner } from "./types.ts";
 import {
   MAX_BIP39_LOOKUP_ITEMS,
   BIP39_ENTROPY_BYTE_LENGTHS,
@@ -40,6 +41,7 @@ import {
   TOOL_WIF_CHAINS,
   PRIVATE_KEY_SCHEMA_PATTERN,
   PUBLIC_KEY_SCHEMA_PATTERN,
+  CORE_SIGNATURE_SCHEMA_PATTERN,
   SIGNATURE_SCHEMA_PATTERN,
   type ToolChain,
   type ToolNetwork,
@@ -162,7 +164,7 @@ export interface SignatureDetails {
   chain: string;
   network: string;
   signature: string;
-  /** True when the signature carries `v` and is 65 bytes rather than 64. */
+  /** True for the recoverable form: `r||s||v` hex on EVM and TRON, base64 on the Core family. */
   recovered: boolean;
 }
 
@@ -171,6 +173,21 @@ export interface SignatureVerificationDetails {
   chain: string;
   network: string;
   valid: boolean;
+}
+
+/** Signer recovered from a Core style signature, compared with an address when one was given. */
+export interface MessageSignerDetails {
+  chain: string;
+  network: string;
+  publicKey: string;
+  /** Address type the signature header names. */
+  addressType: string;
+  /** Address of that type for the recovered key. */
+  address: string;
+  /** Whether the given address belongs to the recovered key; absent without an address. */
+  matches?: boolean;
+  /** Address type the given address matched, SegWit included under a P2PKH header. */
+  matchedType?: string;
 }
 
 /** Parsed or generated BIP44 path. */
@@ -228,6 +245,7 @@ function requiredString(value: unknown, name: string): string {
 const PRIVATE_KEY_HEX = new RegExp(PRIVATE_KEY_SCHEMA_PATTERN, "u");
 const PUBLIC_KEY_HEX = new RegExp(PUBLIC_KEY_SCHEMA_PATTERN, "u");
 const SIGNATURE_HEX = new RegExp(SIGNATURE_SCHEMA_PATTERN, "u");
+const CORE_SIGNATURE = new RegExp(CORE_SIGNATURE_SCHEMA_PATTERN, "u");
 
 /**
  * Applies a schema's hex pattern for hosts that skip the schema, so a `0x` prefix fails as input
@@ -1151,6 +1169,26 @@ export async function signMessage(
 }
 
 /**
+ * Refuse a base64 signature the chain never writes or whose header is out of range, so neither
+ * reads as invalid. One that recovers no key stays a verdict, as in Core.
+ * @param blockchain - Chain the signature is checked on.
+ * @param message - Signed message.
+ * @param signature - Base64 signature.
+ * @returns {void} Nothing; it throws on unreadable input.
+ */
+function assertReadableSignature(
+  blockchain: Readonly<AbstractBlockchain>,
+  message: string,
+  signature: string,
+): void {
+  try {
+    blockchain.recoverMessageSigner(message, signature);
+  } catch (error) {
+    if (!(error instanceof RangeError)) throw error;
+  }
+}
+
+/**
  * Verify a signature against a message and public key.
  * @param chainValue - Blockchain name.
  * @param messageValue - Original message.
@@ -1168,22 +1206,132 @@ export async function verifyMessage(
 ): Promise<ToolResult<SignatureVerificationDetails>> {
   const { blockchain } = await getBlockchain(chainValue, networkValue);
   const message = requiredString(messageValue, "Message");
-  const signature = hexArgument(
-    signatureValue,
-    "Signature",
-    SIGNATURE_HEX,
-    "64 or 65 bytes of hex",
-  );
+  const signatureText = requiredString(signatureValue, "Signature");
+  const core = CORE_SIGNATURE.test(signatureText);
+  const signature = core
+    ? signatureText
+    : hexArgument(signatureText, "Signature", SIGNATURE_HEX, "64 or 65 bytes of hex");
   const publicKey = hexArgument(
     publicKeyValue,
     "Public key",
     PUBLIC_KEY_HEX,
     "a 32-byte ed25519 or SEC1 secp256k1 key in hex",
   );
+  if (core) assertReadableSignature(blockchain, message, signature);
   const valid = blockchain.verifyMessage(message, signature, publicKey);
   return {
     content: content(valid ? "Signature is valid" : "Signature is invalid"),
     details: { chain: blockchain.name, network: blockchain.network, valid },
+  };
+}
+
+/**
+ * Compare a written address with a typed one: bech32 and CashAddr ignore case, base58 doesn't.
+ * @param written - Address from `getAddress`
+ * @param given - Address the caller passed, already validated for the chain
+ * @returns {boolean} True when both name the same address
+ */
+function sameAddress(written: string, given: string): boolean {
+  if (written === given) return true;
+  if (!written.includes(":") && !/^[a-z]+1[02-9ac-hj-np-z]+$/u.test(written)) return false;
+  const lower = given.toLowerCase();
+  return lower === written || lower === written.slice(written.indexOf(":") + 1);
+}
+
+/**
+ * Read the optional address a recovered signer is compared with.
+ * @param value - Raw argument.
+ * @returns {string | undefined} The address, or undefined when it was left out.
+ */
+function expectedAddress(value: unknown): string | undefined {
+  const address = optionalName(value, "Address");
+  if (address !== undefined && Array.from(address).length > MAX_ADDRESS_LENGTH) {
+    throw new RangeError(`Address must not exceed ${MAX_ADDRESS_LENGTH} characters`);
+  }
+  return address;
+}
+
+/**
+ * Address types a signer may hold, as Electrum checks them for the header.
+ * @param signer - Key and header type from the signature.
+ * @returns {string[]} Types to compare, the header's first.
+ */
+function signerAddressTypes(signer: Readonly<MessageSigner>): string[] {
+  if (signer.addressType !== "legacy" || signer.publicKey.length !== 66)
+    return [signer.addressType];
+  return ["legacy", "p2sh", "segwit"];
+}
+
+/**
+ * Line that reports the comparison, empty when no address was given.
+ * @param expected - Address the caller passed.
+ * @param matchedType - Address type it matched, if any.
+ * @returns {string[]} Zero or one line.
+ */
+function comparisonLines(expected: string | undefined, matchedType: string | undefined): string[] {
+  if (expected === undefined) return [];
+  return [
+    matchedType === undefined ? "Given address: no match" : `Given address: match (${matchedType})`,
+  ];
+}
+
+/**
+ * Recover the signer of a Core style base64 signature and say whether it holds a given address.
+ * @param chainValue - Blockchain name.
+ * @param messageValue - Message that was signed.
+ * @param signatureValue - Base64 of the header byte, then `r` and `s`.
+ * @param addressValue - Optional address to compare with.
+ * @param networkValue - Optional network name.
+ * @returns {Promise<ToolResult<MessageSignerDetails>>} The signer and the comparison.
+ */
+export async function recoverMessageSigner(
+  chainValue: unknown,
+  messageValue: unknown,
+  signatureValue: unknown,
+  addressValue?: unknown,
+  networkValue?: unknown,
+): Promise<ToolResult<MessageSignerDetails>> {
+  const { blockchain } = await getBlockchain(chainValue, networkValue);
+  const message = requiredString(messageValue, "Message");
+  const signature = requiredString(signatureValue, "Signature");
+  if (!CORE_SIGNATURE.test(signature)) {
+    throw new TypeError("Signature must be base64 of 65 bytes: 87 characters and one =");
+  }
+  const expected = expectedAddress(addressValue);
+  if (expected !== undefined && !blockchain.validateAddress(expected)) {
+    throw new TypeError(`Address is not a valid ${blockchain.name} ${blockchain.network} address`);
+  }
+  const signer = blockchain.recoverMessageSigner(message, signature);
+  const address = blockchain.getAddress(signer.publicKey, signer.addressType);
+  const matchedType =
+    expected === undefined
+      ? undefined
+      : signerAddressTypes(signer).find((type) => {
+          try {
+            return sameAddress(blockchain.getAddress(signer.publicKey, type), expected);
+          } catch {
+            return false;
+          }
+        });
+  const details: MessageSignerDetails = {
+    chain: blockchain.name,
+    network: blockchain.network,
+    publicKey: signer.publicKey,
+    addressType: signer.addressType,
+    address,
+    ...(expected === undefined ? {} : { matches: matchedType !== undefined }),
+    ...(matchedType === undefined ? {} : { matchedType }),
+  };
+  return {
+    content: content(
+      [
+        `Chain: ${details.chain} (${details.network})`,
+        `Public key: ${details.publicKey}`,
+        `Address: ${details.address} (${details.addressType})`,
+        ...comparisonLines(expected, matchedType),
+      ].join("\n"),
+    ),
+    details,
   };
 }
 

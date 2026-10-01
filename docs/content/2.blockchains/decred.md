@@ -61,7 +61,7 @@ Decred WIF has its own layout: two prefix bytes, a scheme byte that's `0x00` for
 
 ## Signing
 
-`"Decred Signed Message:\n"` with compact size lengths in front of the preamble and the message, one round of BLAKE-256, then secp256k1. 64 bytes of `r||s` in hex, verified with `verifyMessage` on the same driver.
+`"Decred Signed Message:\n"` with compact size lengths in front of the preamble and the message, one round of BLAKE-256, then secp256k1. 64 bytes of `r||s` in hex, verified with `verifyMessage` on the same driver. `{ recovered: true }` gives dcrd's base64 with a header byte, and both of dcrd's `verifymessage` vectors come out byte for byte. dcrd stops at header 34, so `recoverMessageSigner` throws on the BIP137 headers above it.
 
 ## Where it lives
 

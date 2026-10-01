@@ -112,14 +112,21 @@ describe("Litecoin", () => {
     },
   );
 
-  it("refuses the recovery byte and rejects a signature carrying one", () => {
+  it("signs Litecoin Core's base64 vector and recovers its signer", () => {
+    const chain = new Litecoin({ network: "testnet" });
+    const { privateKey, address, message, signature } = vector.signed;
+    const publicKey = chain.getKeyPublic(privateKey);
+    expect(chain.signMessage(message, privateKey, { recovered: true })).toBe(signature);
+    expect(chain.verifyMessage(message, signature, publicKey)).toBe(true);
+    const signer = chain.recoverMessageSigner(message, signature);
+    expect(chain.getAddress(signer.publicKey, signer.addressType)).toBe(address);
+  });
+
+  it("rejects a signature carrying Ethereum's recovery byte", () => {
     const chain = new Litecoin();
     const [message] = vector.messageHashes[0];
     const signature = chain.signMessage(message, vector.privateKey);
 
-    expect(() => chain.signMessage(message, vector.privateKey, { recovered: true })).toThrow(
-      /base64 of header/,
-    );
     expect(chain.verifyMessage(message, signature + "1b", vector.publicKey)).toBe(false);
     expect(chain.verifyMessage(message, signature + "1c", vector.publicKey)).toBe(false);
   });

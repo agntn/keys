@@ -12,11 +12,17 @@ import {
 import { decodeCashAddr, encodeCashAddr } from "./cashaddr.ts";
 import { SLIP132_FORMATS, type ExtendedKeyFormats } from "./extended-key.ts";
 import { normalizeHardenedMarkers } from "./hd-index.ts";
+import {
+  isCompactSignature,
+  recoverCompact,
+  signCompact,
+  verifyCompact,
+} from "./secp256k1/compact-signature.ts";
 import { decodePublicPoint } from "./secp256k1/decode.ts";
 import { generateKeyPublic } from "./secp256k1/keys.ts";
 import {
-  assertNoRecoveryByte,
   hasRecoveryByte,
+  readRecoveredFlag,
   signMessage as genericSignMessage,
   verifyMessage as genericVerifyMessage,
 } from "./signing.ts";
@@ -26,6 +32,7 @@ import type {
   Curve,
   HDWalletOptions,
   KeyOptions,
+  MessageSigner,
   Options,
   SigningOptions,
   Wallet,
@@ -162,16 +169,22 @@ export abstract class AbstractBitcoinMessageBlockchain extends AbstractBlockchai
     return sha256(sha256(fullMessage));
   }
 
+  /**
+   * Sign as 64 bytes of `r||s` hex, or with `recovered` as the base64 Core's `signmessage` prints.
+   * @param message - The message to sign
+   * @param keyPrivate - The private key as hex
+   * @param options - `recovered` for Core's base64 form, `compressed` for its header
+   * @returns {string} The signature
+   */
   override signMessage(
     message: string | Uint8Array,
     keyPrivate: string,
     options?: SigningOptions,
   ): string {
-    assertNoRecoveryByte(
-      options,
-      "Core encodes its recoverable signature as base64 of header||r||s, not r||s||v",
-    );
     const hash = this.hashWithMessagePreamble(message);
+    if (readRecoveredFlag(options)) {
+      return signCompact(hash, keyPrivate, options?.compressed !== false);
+    }
     return genericSignMessage(hash, keyPrivate, {
       ...options,
       curve: "secp256k1",
@@ -189,6 +202,9 @@ export abstract class AbstractBitcoinMessageBlockchain extends AbstractBlockchai
       return false;
     }
     const hash = this.hashWithMessagePreamble(message);
+    if (isCompactSignature(signature)) {
+      return verifyCompact(hash, signature, keyPublic);
+    }
     try {
       return genericVerifyMessage(hash, signature, keyPublic, {
         ...options,
@@ -198,6 +214,10 @@ export abstract class AbstractBitcoinMessageBlockchain extends AbstractBlockchai
     } catch {
       return false;
     }
+  }
+
+  override recoverMessageSigner(message: string | Uint8Array, signature: string): MessageSigner {
+    return recoverCompact(this.hashWithMessagePreamble(message), signature);
   }
 }
 

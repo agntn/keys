@@ -69,7 +69,7 @@ WIF is Bitcoin's too, prefix `0x80`. `encode(privateKey, { chain: "bitcoin" })` 
 
 ## Signing
 
-The node kept `"\x18Bitcoin Signed Message:\n"`, so the digest is Bitcoin's: compact size lengths, double SHA-256, secp256k1. A Bitcoin SV signature is the same 64 bytes of `r||s` hex that Bitcoin gives for that key and message. The `BSM` vectors in the BSV Blockchain ts-sdk match byte for byte once you drop their header byte. Like Bitcoin, `{ recovered: true }` throws, because the recoverable form is base64 with that header byte in front.
+The node kept `"\x18Bitcoin Signed Message:\n"`, so the digest is Bitcoin's: compact size lengths, double SHA-256, secp256k1. A Bitcoin SV signature is the same 64 bytes of `r||s` hex that Bitcoin gives for that key and message. The `BSM` vectors in the BSV Blockchain ts-sdk match byte for byte once you drop their header byte. With `{ recovered: true }` you don't drop anything, it gives the ts-sdk's base64 string as is.
 
 ## Where it lives
 

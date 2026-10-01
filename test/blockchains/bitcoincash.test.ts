@@ -80,9 +80,10 @@ describe("Bitcoin Cash", () => {
       expect(chain.verifyMessage(message, signature, vector.keyOne.publicKey)).toBe(true);
       expect(chain.verifyMessage(`${message}!`, signature, vector.keyOne.publicKey)).toBe(false);
     }
-    expect(() =>
-      chain.signMessage("hello", vector.keyOne.privateKey, { recovered: true }),
-    ).toThrow();
+    const core = chain.signMessage("hello", vector.keyOne.privateKey, { recovered: true });
+    expect(core).toBe(bitcoin.signMessage("hello", vector.keyOne.privateKey, { recovered: true }));
+    const signer = chain.recoverMessageSigner("hello", core);
+    expect(chain.getAddress(signer.publicKey, signer.addressType)).toBe(vector.keyOne.address);
   });
 
   it.each(vector.hd.addresses)("derives %s to the address Trezor shows", (path, address) => {

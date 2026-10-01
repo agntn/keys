@@ -19,6 +19,7 @@ import {
   INSPECT_MNEMONIC_PARAMETERS,
   LOOKUP_BIP39_INDICES_PARAMETERS,
   LOOKUP_BIP39_WORDS_PARAMETERS,
+  RECOVER_MESSAGE_PARAMETERS,
   RECOVER_MNEMONIC_WORD_PARAMETERS,
   SIGN_MESSAGE_PARAMETERS,
   VALIDATE_ADDRESS_PARAMETERS,
@@ -388,14 +389,15 @@ export const messageSignTool = defineTool({
   name: "keys_message_sign",
   title: "Sign Message",
   description:
-    "Sign a message with a blockchain private key. Ask for recovered on Ethereum, base or tron when the signature goes to ethers, viem or TronWeb, which need v to recover the signer. The key, message, and signature enter the transcript, so use only public or disposable material.",
+    "Sign a message with a blockchain private key. Ask for recovered on Ethereum, base or tron when the signature goes to ethers, viem or TronWeb, which need v to recover the signer, and on the Bitcoin family or decred for the base64 signmessage prints. The key, message, and signature enter the transcript, so use only public or disposable material.",
   snippet: "Use to sign a message with a private key for any supported blockchain.",
   guidelines: [
     "Provide chain, message text, and private key (hex)",
-    "Returns the signature as hex string",
+    "Returns the signature as hex, or as base64 with recovered on the Bitcoin family and decred",
     "Bitcoin, Bitcoin Gold, Dash, Dogecoin, eCash, Litecoin and Zcash each use their own message preamble; Bitcoin Cash and Bitcoin SV sign with Bitcoin's",
     "Ethereum/Base use EIP-191 prefix",
     "Pass recovered on Ethereum, Base or TRON for 65-byte r||s||v, what ethers and TronWeb need",
+    "Pass recovered on the Bitcoin family or decred for signmessage's base64, which a wallet verifies against an address",
   ],
   effect: "write",
   idempotent: true,
@@ -413,10 +415,11 @@ export const messageSignTool = defineTool({
 export const messageVerifyTool = defineTool({
   name: "keys_message_verify",
   title: "Verify Message",
-  description: "Verify a message signature against a blockchain public key.",
+  description:
+    "Verify a message signature against a blockchain public key. To check a signmessage signature against an address instead, use keys_message_recover.",
   snippet: "Use to verify that a signature is valid for a given message and public key.",
   guidelines: [
-    "Provide chain, original message, signature (hex), and public key (hex)",
+    "Provide chain, original message, signature (hex, or signmessage's base64 on the Bitcoin family and decred), and public key (hex)",
     "Returns true if signature is valid, false otherwise",
   ],
   effect: "read",
@@ -427,6 +430,29 @@ export const messageVerifyTool = defineTool({
       params.message,
       params.signature,
       params.publicKey,
+      params.network,
+    ),
+});
+
+export const messageRecoverTool = defineTool({
+  name: "keys_message_recover",
+  title: "Recover Message Signer",
+  description:
+    "Recover the public key and address behind a base64 message signature, as bitcoin-cli signmessage, Electrum and Sparrow print it, on the Bitcoin family and decred. Any well formed signature recovers some key for any message, so pass the address the signer should hold and read the match.",
+  snippet:
+    "Use to check a signmessage signature against an address, or to learn the public key behind it.",
+  guidelines: [
+    "Provide chain, the exact signed message, the base64 signature, and the address it claims",
+    "Under a P2PKH header a compressed key matches its legacy, p2sh and segwit addresses, since Electrum signs SegWit that way; a BIP137 header names one type",
+  ],
+  effect: "read",
+  input: RECOVER_MESSAGE_PARAMETERS,
+  execute: async (params) =>
+    (await loadOperations()).recoverMessageSigner(
+      params.chain,
+      params.message,
+      params.signature,
+      params.address,
       params.network,
     ),
 });
@@ -491,6 +517,7 @@ export const keysTools: readonly ToolDefinition[] = [
   addressValidateTool,
   messageSignTool,
   messageVerifyTool,
+  messageRecoverTool,
   bip44ParseTool,
   bip44GenerateTool,
 ];
@@ -520,6 +547,7 @@ export const callSummaries: Readonly<
   keys_address_validate: (args) => String(args.address),
   keys_message_sign: (args) => preview(args.message),
   keys_message_verify: (args) => preview(args.message),
+  keys_message_recover: (args) => preview(args.message),
   keys_bip44_parse: (args) => String(args.path),
   keys_bip44_generate: (args) => String(args.chain),
 };

@@ -94,6 +94,9 @@ describe("Bitcoin Gold", () => {
     expect(signed).toBe(compactToRS(signature));
     expect(chain.verifyMessage(message, signed, chain.getKeyPublic(signedKey))).toBe(true);
     expect(chain.verifyMessage(`${message}!`, signed, chain.getKeyPublic(signedKey))).toBe(false);
+    expect(chain.signMessage(message, signedKey, { recovered: true })).toBe(signature);
+    const signer = chain.recoverMessageSigner(message, signature);
+    expect(chain.getAddress(signer.publicKey, signer.addressType)).toBe(vector.signed.address);
   });
 
   it("uses its own preamble, so a Bitcoin signature does not carry over", () => {
@@ -105,7 +108,8 @@ describe("Bitcoin Gold", () => {
       expect(chain.signMessage(message, privateKey)).not.toBe(signature);
       expect(chain.verifyMessage(message, signature, publicKeyCompressed)).toBe(false);
     }
-    expect(() => chain.signMessage("hello", privateKey, { recovered: true })).toThrow();
+    const core = bitcoin.signMessage("hello", privateKey, { recovered: true });
+    expect(chain.verifyMessage("hello", core, publicKeyCompressed)).toBe(false);
   });
 
   it.each([

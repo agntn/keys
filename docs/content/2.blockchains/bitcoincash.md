@@ -66,7 +66,7 @@ WIF is Bitcoin's too, prefix `0x80`. `encode(privateKey, { chain: "bitcoin" })` 
 
 ## Signing
 
-Bitcoin Cash Node kept Bitcoin's `"\x18Bitcoin Signed Message:\n"`, so the digest is identical: compact size lengths, double SHA-256, secp256k1. A Bitcoin Cash signature and a Bitcoin signature over the same key and message are the same 64 bytes of `r||s` hex. Like Bitcoin, `{ recovered: true }` throws, because the node's recoverable form is base64 with a header byte.
+Bitcoin Cash Node kept Bitcoin's `"\x18Bitcoin Signed Message:\n"`, so the digest is identical: compact size lengths, double SHA-256, secp256k1. A Bitcoin Cash signature and a Bitcoin signature over the same key and message are the same 64 bytes of `r||s` hex. Same story with `{ recovered: true }`: you get the base64 with a header byte, the string Bitcoin gives. `recoverMessageSigner` reads the key back, and `getAddress` turns it into the CashAddr.
 
 ## Where it lives
 

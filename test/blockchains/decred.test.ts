@@ -1,6 +1,6 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { blake256, sha256 } from "@agntn/hashes";
-import { hex } from "@scure/base";
+import { base64, hex } from "@scure/base";
 import { base58check } from "@scure/base";
 import { describe, expect, it } from "vite-plus/test";
 import Decred, { Decred as NamedDecred } from "../../src/blockchains/decred.ts";
@@ -94,12 +94,32 @@ describe("Decred", () => {
     expect(chain.verifyMessage(message, signature, "02")).toBe(false);
   });
 
-  it("refuses the recovery byte and rejects a signature carrying one", async () => {
+  it("signs dcrd's base64 vectors and recovers their signers", async () => {
+    const chain = await blockchains.decred()();
+    const { message, compressed, uncompressed, otherMessage } = vector.signed;
+    expect(chain.signMessage(message, vector.privateKey, { recovered: true })).toBe(compressed);
+    expect(
+      chain.signMessage(message, vector.privateKey, { recovered: true, compressed: false }),
+    ).toBe(uncompressed);
+    const signer = chain.recoverMessageSigner(message, compressed);
+    expect(signer).toEqual({ publicKey: vector.publicKey, addressType: "legacy" });
+    expect(chain.getAddress(signer.publicKey)).toBe(vector.addresses.mainnet);
+    const loose = chain.recoverMessageSigner(message, uncompressed);
+    expect(chain.getAddress(loose.publicKey)).toBe(vector.uncompressedAddresses.mainnet);
+    expect(chain.verifyMessage(message, compressed, vector.publicKey)).toBe(true);
+    expect(chain.verifyMessage(message, otherMessage, vector.publicKey)).toBe(false);
+  });
+
+  it("refuses the BIP137 headers dcrd does not read", async () => {
+    const chain = await blockchains.decred()();
+    const { message, compressed } = vector.signed;
+    const segwit = base64.encode(Uint8Array.of(39, ...base64.decode(compressed).subarray(1)));
+    expect(() => chain.recoverMessageSigner(message, segwit)).toThrow(/27 to 34/);
+  });
+
+  it("rejects a signature carrying Ethereum's recovery byte", async () => {
     const chain = await blockchains.decred()();
 
-    expect(() => chain.signMessage("hello", vector.privateKey, { recovered: true })).toThrow(
-      /base64 of header/,
-    );
     expect(chain.verifyMessage("hello", vector.signature + "1b", vector.publicKey)).toBe(false);
     expect(chain.verifyMessage("hello", vector.signature + "1c", vector.publicKey)).toBe(false);
   });
