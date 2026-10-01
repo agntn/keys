@@ -7,6 +7,7 @@ import {
   CONVERT_PUBLIC_KEY_PARAMETERS,
   DECRYPT_STORE_PARAMETERS,
   DERIVE_BIP39_SEED_PARAMETERS,
+  DECRYPT_BIP38_PARAMETERS,
   DERIVE_BRAINWALLET_PARAMETERS,
   DERIVE_ELECTRUM_WALLET_PARAMETERS,
   DERIVE_HD_WALLET_PARAMETERS,
@@ -125,6 +126,17 @@ export const bip38InspectTool = defineTool({
   input: INSPECT_BIP38_PARAMETERS,
   execute: async (params) =>
     (await loadOperations()).inspectBip38(params.encrypted, params.address),
+});
+
+export const bip38DecryptTool = defineTool({
+  name: "keys_bip38_decrypt",
+  title: "Decrypt BIP38",
+  description:
+    "Open a BIP38 encrypted private key (6P...) with its passphrase, EC multiply or not. Reports the mode, compression, lot and sequence, whether the passphrase is right and, when it is, the Bitcoin public key and P2PKH address. The WIF comes back only with revealKey: true. The passphrase enters the transcript, so use only public or disposable material.",
+  effect: "read",
+  input: DECRYPT_BIP38_PARAMETERS,
+  execute: async (params) =>
+    (await loadOperations()).decryptBip38(params.encrypted, params.passphrase, params.revealKey),
 });
 
 export const storeDecryptTool = defineTool({
@@ -519,6 +531,7 @@ export const keysTools: readonly ToolDefinition[] = [
   wifEncodeTool,
   wifDecodeTool,
   bip38InspectTool,
+  bip38DecryptTool,
   storeDecryptTool,
   walletGenerateTool,
   walletDeriveTool,

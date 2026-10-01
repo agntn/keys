@@ -29,7 +29,7 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, BIP
 | Dir            | Purpose                       | Exports                                                                                                                                       |
 | -------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `bip32/`       | HD key derivation (secp256k1) | `getMasterKeyFromSeed`, `deriveHDKey`, `HARDENED_OFFSET`                                                                                      |
-| `bip38/`       | Encrypted key headers         | `inspect`: mode, flags, address hash, owner entropy, lot and sequence without the passphrase; no decryption                                   |
+| `bip38/`       | Encrypted keys                | `inspect` reads the header without the passphrase; `decrypt` opens both modes, `BIP38PassphraseError` when the address hash misses            |
 | `bip39/`       | Mnemonic phrases              | `generateMnemonic`, `mnemonicToSeed`, `validateMnemonic`, `getMnemonicWordCandidates`, `lookupWords`, `lookupIndices`                         |
 | `bip44/`       | Derivation paths              | `BIP44` coin types, `BIP44Change`, `getPath`, `parse`; `getBIP32Path` and `getHardenedPath` for the chain shapes stay internal in `paths.ts`  |
 | `brainwallet/` | Brainwallet keys              | `derive`: scrypt or PBKDF2 over the passphrase and salt, then SHA-256 of the output bytes or their hex; or plain SHA-256 or keccak256 rounds  |

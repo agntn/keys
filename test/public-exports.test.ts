@@ -12,6 +12,7 @@ import type { BIP39MnemonicInspection } from "@agntn/keys/bip39";
 import type { ElectrumSeedType } from "@agntn/keys/electrum";
 import type { PublicKeyEncodingOptions } from "@agntn/keys/secp256k1";
 import {
+  bip38Vectors,
   brainwalletInput,
   brainwalletVectors,
   storeVectors,
@@ -121,6 +122,19 @@ describe("Public brainwallet exports", () => {
     expect(Object.keys(brainwallet)).toEqual(["derive"]);
     expect(await import("@agntn/keys")).not.toHaveProperty("derive");
   });
+});
+
+describe("Public BIP38 exports", () => {
+  it("reads and opens a BIP38 key from the built package, and nothing else from there", async () => {
+    const bip38 = await import("@agntn/keys/bip38");
+    const { encrypted, passphrase, wif, address } = bip38Vectors[3];
+    expect(bip38.decrypt(encrypted, passphrase)).toMatchObject({ wif, address });
+    expect(() => bip38.decrypt(encrypted, "wrong")).toThrow(bip38.BIP38PassphraseError);
+    expect(new Set(Object.keys(bip38))).toEqual(
+      new Set(["BIP38PassphraseError", "decrypt", "inspect"]),
+    );
+    expect(await import("@agntn/keys")).not.toHaveProperty("BIP38PassphraseError");
+  }, 20_000);
 });
 
 describe("Public keystore exports", () => {
@@ -278,6 +292,7 @@ describe("Consumer bundles", () => {
     ["convertPublicKey", "@agntn/keys/secp256k1"],
     ["derive", "@agntn/keys/brainwallet"],
     ["decrypt", "@agntn/keys/store"],
+    ["decrypt", "@agntn/keys/bip38"],
   ])(
     "leaves the chain registry and the Electrum list out of an app importing %s from %s",
     async (name, from) => {

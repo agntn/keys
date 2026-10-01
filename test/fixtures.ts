@@ -1287,12 +1287,15 @@ export const slip132PrivateKey =
 
 /**
  * BIP38 test vectors (bitcoin/bips bip-0038.mediawiki): the header of each key, read without its
- * passphrase. `address` is the one the spec lists; the compressed vector lists none.
+ * passphrase, and the passphrase and WIF the spec gives. `address` is the one the spec lists; the
+ * compressed vector lists none. The first passphrase is decomposed and NFC turns it into `cf93...`.
  */
 export const bip38Vectors = [
   {
     encrypted: "6PRW5o9FLp4gJDDVqJQKJFTpMvdsSGJxMYHtHaQBF3ooa8mwD69bapcDQn",
     address: "16ktGzmfrurhbhi6JGqsMWf7TyqK9HNAeF",
+    passphrase: "\u03D2\u0301\u0000\u{10400}\u{1F4A9}",
+    wif: "5Jajm8eQ22H3pGWLEVCXyvND8dQZhiQhoLJNKjYXk9roUFTMSZ4",
     inspection: {
       mode: "non-ec",
       flagByte: 0xc0,
@@ -1304,6 +1307,8 @@ export const bip38Vectors = [
   {
     encrypted: "6PYNKZ1EAgYgmQfmNVamxyXVWHzK5s6DGhwP4J5o44cvXdoY7sRzhtpUeo",
     address: undefined,
+    passphrase: "TestingOneTwoThree",
+    wif: "L44B5gGEpqEDRS9vVPz7QT35jcBG2r3CZwSwQ4fCewXAhAhqGVpP",
     inspection: {
       mode: "non-ec",
       flagByte: 0xe0,
@@ -1315,6 +1320,8 @@ export const bip38Vectors = [
   {
     encrypted: "6PfQu77ygVyJLZjfvMLyhLMQbYnu5uguoJJ4kMCLqWwPEdfpwANVS76gTX",
     address: "1PE6TQi6HTVNz5DLwB1LcpMBALubfuN2z2",
+    passphrase: "TestingOneTwoThree",
+    wif: "5K4caxezwjGCGfnoPTZ8tMcJBLB7Jvyjv4xxeacadhq8nLisLR2",
     inspection: {
       mode: "ec-multiply",
       flagByte: 0x00,
@@ -1328,6 +1335,8 @@ export const bip38Vectors = [
   {
     encrypted: "6PgNBNNzDkKdhkT6uJntUXwwzQV8Rr2tZcbkDcuC9DZRsS6AtHts4Ypo1j",
     address: "1Jscj8ALrYu2y9TD8NrpvDBugPedmbj4Yh",
+    passphrase: "MOLON LABE",
+    wif: "5JLdxTtcTHcfYcmJsNVy1v2PMDx432JPoYcBTVVRHpPaxUrdtf8",
     inspection: {
       mode: "ec-multiply",
       flagByte: 0x04,

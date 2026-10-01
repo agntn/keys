@@ -170,6 +170,8 @@ Brainwallets are a puzzle favorite too, and the salted kind hides a trap. brainw
 
 Got an old `UTC--...` file from MyEtherWallet or geth? That's a keystore, and `@agntn/keys/store` opens it. `decrypt(file, password)` gives the key back, `encrypt` writes a new file, `inspect` reads the KDF without a password. Agents get `keys_store_decrypt`. It says whether the password fits and gives the address, never the key. More: [Keys](https://keys.agntn.dev/guide/keys).
 
+A `6P...` key is the same story with BIP38. `decrypt(key, passphrase)` from `@agntn/keys/bip38` gives the WIF and the address, both modes. A wrong passphrase throws, `inspect` reads the header without one. Agents get `keys_bip38_decrypt`. Address only, unless they ask for the WIF with `revealKey: true`. More: [Keys](https://keys.agntn.dev/guide/keys).
+
 And a signed message is a clue. Somebody proves they hold an address with `signmessage`? That base64 gives away the public key behind it. `btc.recoverMessageSigner(message, signature)` reads it back, `keys_message_recover` does the same for agents. Any well formed signature recovers some key for any message, though. So check the address match, not just that a key came out.
 
 ## ⛓️ Chains

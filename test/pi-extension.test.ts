@@ -440,6 +440,28 @@ describe("keys Pi extension", () => {
     );
   });
 
+  it("opens a BIP38 key with the shared executor and checks revealKey without the schema", async () => {
+    const tool = (await registerTools()).get("keys_bip38_decrypt");
+    if (!tool) throw new Error("Missing BIP38 decrypt tool");
+    const { encrypted, passphrase, wif, address } = bip38Vectors[2];
+    expect(Value.Check(tool.parameters, { encrypted, passphrase })).toBe(true);
+    expect(Value.Check(tool.parameters, { encrypted, passphrase, revealKey: "yes" })).toBe(false);
+    await expect(tool.execute("bip38", { encrypted, passphrase })).resolves.toMatchObject({
+      details: { mode: "ec-multiply", unlocked: true, chain: "bitcoin", address },
+    });
+    await expect(
+      tool.execute("bip38", { encrypted, passphrase, revealKey: true }),
+    ).resolves.toMatchObject({ details: { wif } });
+    await expect(
+      skipSchema(tool)("bip38", { encrypted, passphrase, revealKey: "yes" }),
+    ).rejects.toThrow("revealKey must be a boolean");
+    const longPassphrase = { encrypted, passphrase: "x".repeat(4097) };
+    expect(Value.Check(tool.parameters, longPassphrase)).toBe(false);
+    await expect(skipSchema(tool)("bip38", longPassphrase)).rejects.toThrow(
+      "Passphrase must not exceed 4096 characters",
+    );
+  }, 30_000);
+
   it("refuses an overlong address even when Pi skips the schema", async () => {
     const tool = (await registerTools()).get("keys_address_validate");
     if (!tool) throw new Error("Missing address validation tool");
