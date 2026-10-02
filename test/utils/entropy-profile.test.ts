@@ -32,6 +32,34 @@ describe("entropy profile", () => {
     expect(profileEntropy(bytes(entropy)).patterns).toEqual([pattern]);
   });
 
+  it.each([
+    [`20090103${"00".repeat(12)}`, "2009-01-03", "hex-digits"],
+    [`8d7f2a91${"19991231"}9e2d3c4b5a69a1f4`, "1999-12-31", "hex-digits"],
+    [`${"00".repeat(12)}495fab29`, "2009-01-03T18:15:05.000Z", "unix-seconds"],
+    [`${"00".repeat(10)}011e9db49828`, "2009-01-03T18:15:05.000Z", "unix-milliseconds"],
+    [`${"00".repeat(24)}495fab29`, "2009-01-03T18:15:05.000Z", "unix-seconds"],
+  ])("reads the date in %s", (entropy, date, encoding) => {
+    expect(profileEntropy(bytes(entropy)).patterns).toContainEqual({
+      kind: "date",
+      date,
+      encoding,
+    });
+  });
+
+  it("skips digits and timestamps that name no plausible date", () => {
+    for (const entropy of [
+      `20090230${"ab".repeat(12)}`,
+      `20091301${"ab".repeat(12)}`,
+      `${"00".repeat(12)}0000002a`,
+      `01${"00".repeat(11)}495fab29`,
+      `${"00".repeat(8)}${"ff".repeat(8)}`,
+    ]) {
+      expect(profileEntropy(bytes(entropy)).patterns, entropy).not.toContainEqual(
+        expect.objectContaining({ kind: "date" }),
+      );
+    }
+  });
+
   it("finds no pattern in bytes that look drawn at random", () => {
     expect(profileEntropy(bytes("8d7f2a91c4e3b0657a1f9e2d3c4b5a69")).patterns).toEqual([]);
     expect(profileEntropy(bytes("0102030405060708090a0b0c0d0e0f10")).patterns).toEqual([]);

@@ -967,6 +967,14 @@ describe("keys MCP server", () => {
         "Entropy preimage: none (14 built-in, 1 given; sha256)",
       ].join("\n"),
     );
+    const dated = await client.callTool({
+      name: "keys_bip39_entropy_encode",
+      arguments: { entropy: `${"00".repeat(12)}495fab29` },
+    });
+    const datedMnemonic = /Mnemonic: ([a-z ]+)/u.exec(text(dated.content))?.[1];
+    expect(await inspect({ mnemonic: datedMnemonic })).toContain(
+      "Entropy pattern: date 2009-01-03T18:15:05.000Z as unix seconds",
+    );
     const quoted = await client.callTool({
       name: "keys_bip39_entropy_encode",
       arguments: { entropy: "6865207361696420226869225c6f6b07" },

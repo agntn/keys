@@ -6,7 +6,11 @@ export type EntropyPattern =
   | { readonly kind: "all-ones" }
   | { readonly kind: "repeated-byte"; readonly byte: string }
   | { readonly kind: "repeated-block"; readonly block: string }
-  | { readonly kind: "low-diversity"; readonly distinct: number };
+  | { readonly kind: "low-diversity"; readonly distinct: number }
+  | { readonly kind: "date"; readonly date: string; readonly encoding: EntropyDateEncoding };
+
+/** A date as digits read off the hex, or as a Unix timestamp in the last eight bytes. */
+export type EntropyDateEncoding = "hex-digits" | "unix-seconds" | "unix-milliseconds";
 
 /** A text whose digest, cut to the entropy length, equals the entropy. */
 export interface EntropyPreimage {
@@ -85,7 +89,41 @@ function repeatPeriod(entropy: Uint8Array): number | null {
   return null;
 }
 
+const HEX_DATE = /(?:19|20)\d\d(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])/u;
+
+/** Unix seconds from 2000 to 2100, where a timestamp in puzzle entropy plausibly falls. */
+const UNIX_SECONDS = { from: 946_684_800n, to: 4_102_444_800n } as const;
+
+function hexDate(entropy: Uint8Array): EntropyPattern[] {
+  const digits = HEX_DATE.exec(entropy.toHex())?.[0];
+  if (digits === undefined) return [];
+  const [year, month, day] = [digits.slice(0, 4), digits.slice(4, 6), digits.slice(6, 8)];
+  const date = `${year}-${month}-${day}`;
+  if (new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) !== date) return [];
+  return [{ kind: "date", date, encoding: "hex-digits" }];
+}
+
+function unixDate(entropy: Uint8Array): EntropyPattern[] {
+  const tail = entropy.length - 8;
+  if (entropy.subarray(0, tail).some((byte) => byte !== 0)) return [];
+  const value = BigInt(`0x${entropy.subarray(tail).toHex()}`);
+  for (const [encoding, scale] of [
+    ["unix-seconds", 1000n],
+    ["unix-milliseconds", 1n],
+  ] as const) {
+    const milliseconds = value * scale;
+    if (milliseconds >= UNIX_SECONDS.from * 1000n && milliseconds < UNIX_SECONDS.to * 1000n) {
+      return [{ kind: "date", date: new Date(Number(milliseconds)).toISOString(), encoding }];
+    }
+  }
+  return [];
+}
+
 function entropyPatterns(entropy: Uint8Array): EntropyPattern[] {
+  return [...shapePatterns(entropy), ...hexDate(entropy), ...unixDate(entropy)];
+}
+
+function shapePatterns(entropy: Uint8Array): EntropyPattern[] {
   const period = repeatPeriod(entropy);
   if (period === 1) {
     const [byte] = entropy;

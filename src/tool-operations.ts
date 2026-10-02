@@ -1792,6 +1792,8 @@ function describeEntropyPattern(pattern: EntropyPattern, length: number): string
       return `${pattern.block.length / 2}-byte block ${pattern.block} repeated`;
     case "low-diversity":
       return `only ${pattern.distinct} distinct bytes out of ${length}`;
+    case "date":
+      return `date ${pattern.date} as ${pattern.encoding.replace("-", " ")}`;
   }
 }
 
