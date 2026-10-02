@@ -11,6 +11,7 @@ import {
   isBIP39Language,
   lookupIndices,
   lookupWords,
+  lookupPrefixes,
   loadWordlist,
 } from "../../src/utils/bip39";
 import { hex } from "@agntn/encodings/hex";
@@ -88,6 +89,39 @@ describe("BIP39 Utils", () => {
       { word: "acción", zeroBasedIndex: 14 },
     ]);
     expect(compatibilityLookup).toEqual([{ word: "abandon", zeroBasedIndex: 0 }]);
+  });
+
+  it("expands abbreviations to every word they start and keeps whole words whole", async () => {
+    const english = await loadWordlist();
+    const found = await lookupPrefixes(["ABOU", "acc", "act", "zo", "xyz"]);
+
+    expect(found).toEqual([
+      { prefix: "abou", matches: [{ word: "about", zeroBasedIndex: 3 }] },
+      {
+        prefix: "acc",
+        matches: ["access", "accident", "account", "accuse"].map((word) => ({
+          word,
+          zeroBasedIndex: english.indexOf(word),
+        })),
+      },
+      { prefix: "act", matches: [{ word: "act", zeroBasedIndex: 19 }] },
+      { prefix: "zo", matches: [] },
+      { prefix: "xyz", matches: [] },
+    ]);
+    const fourLetters = await lookupPrefixes(english.map((word) => word.slice(0, 4)));
+    expect(fourLetters.map(({ matches }) => matches.map((match) => match.word))).toEqual(
+      english.map((word) => [word]),
+    );
+  });
+
+  it("expands abbreviations in the selected list after NFKD normalization", async () => {
+    expect(await lookupPrefixes(["orol"], "italian")).toEqual([
+      { prefix: "orol", matches: [{ word: "orologio", zeroBasedIndex: 1178 }] },
+    ]);
+    const [accented] = await lookupPrefixes(["\u00E9l\u00E8"], "french");
+    expect(accented?.matches.map((match) => match.word.normalize("NFC"))).toEqual([
+      "\u00E9l\u00E8ve",
+    ]);
   });
 
   it("maps indices from either base to localized BIP39 words", async () => {

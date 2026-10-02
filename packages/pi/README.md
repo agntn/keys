@@ -29,8 +29,9 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 | `keys_bip39_inspect`                | Validate a BIP39 mnemonic and read what its entropy looks like     |
 | `keys_bip39_entropy_encode`         | Encode hexadecimal entropy as an English BIP39 mnemonic            |
 | `keys_bip39_indices_lookup`         | Map numeric positions to words in an official BIP39 list           |
-| `keys_bip39_words_lookup`           | Search an official word list and report 0- and 1-based indices     |
+| `keys_bip39_words_lookup`           | Report 0- and 1-based indices, expanding prefixes of 3+ letters    |
 | `keys_bip39_word_recover`           | List words allowed by the checksum for one missing position        |
+| `keys_bip39_words_order`            | List orders of scattered words whose checksum passes               |
 | `keys_address_get`                  | Derive an address from a public key                                |
 | `keys_address_validate`             | Check if an address is valid for a chain                           |
 | `keys_message_sign`                 | Sign a message with a private key (secp256k1/ed25519)              |

@@ -4,6 +4,8 @@ import {
   TOOL_ADDRESS_TYPES,
   SUI_ADDRESS_TYPES,
   MAX_BIP39_LOOKUP_ITEMS,
+  MAX_BIP39_ORDERS_SHOWN,
+  MAX_BIP39_TEMPLATE_LENGTH,
   MAX_ENTROPY_PREIMAGES,
   MAX_ENTROPY_PREIMAGE_LENGTH,
   BIP39_ENTROPY_SCHEMA_PATTERN,
@@ -657,6 +659,38 @@ export const RECOVER_MNEMONIC_WORD_PARAMETERS = Type.Object(
       pattern: "\\?",
     }),
     language: BIP39_LANGUAGE_PARAMETER,
+  },
+  { additionalProperties: false },
+);
+
+export const ORDER_BIP39_WORDS_PARAMETERS = Type.Object(
+  {
+    words: Type.Array(
+      Type.String({
+        description: "A word whose position is unknown",
+        minLength: 1,
+        maxLength: 32,
+        pattern: BIP39_WORD_SCHEMA_PATTERN,
+      }),
+      { minItems: 1, maxItems: 24 },
+    ),
+    template: Type.Optional(
+      Type.String({
+        description:
+          "The phrase with known words in place and ? in each open position, one ? per word. Default: every position open",
+        minLength: 1,
+        maxLength: MAX_BIP39_TEMPLATE_LENGTH,
+        pattern: "\\?",
+      }),
+    ),
+    language: BIP39_LANGUAGE_PARAMETER,
+    limit: Type.Optional(
+      Type.Integer({
+        description: `Most valid orders to list, from 1 to ${MAX_BIP39_ORDERS_SHOWN}. Default: 20`,
+        minimum: 1,
+        maximum: MAX_BIP39_ORDERS_SHOWN,
+      }),
+    ),
   },
   { additionalProperties: false },
 );

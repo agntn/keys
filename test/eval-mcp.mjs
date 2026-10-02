@@ -17,6 +17,7 @@ import {
   brainwalletVectors,
   storeVectors,
   evmRecoverTestVectors,
+  bip39WordOrderVector,
 } from "./fixtures.ts";
 import { TOOL_NAMES } from "../src/tool-parameters.ts";
 
@@ -267,7 +268,19 @@ try {
     { words: ["skill", "zoo"] },
     /^Language: english\nIndices: zero-based, one-based\nskill: 1619, 1620\nzoo: 2047, 2048$/,
   );
+  await call(
+    "keys_bip39_words_lookup",
+    { words: ["abou"] },
+    /abou: not in BIP39, prefix of about \(3, 4\)/,
+  );
   await call("keys_bip39_word_recover", { mnemonic: missing }, /Candidates \(128\):/);
+  await call(
+    "keys_bip39_words_order",
+    { words: bip39WordOrderVector.words, template: bip39WordOrderVector.template },
+    new RegExp(
+      `Valid checksum: ${bip39WordOrderVector.valid}\\n.*\\n${bip39WordOrderVector.first}\\n`,
+    ),
+  );
   await call(
     "keys_bip39_word_recover",
     {
