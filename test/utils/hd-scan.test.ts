@@ -9,32 +9,35 @@ import { bip39TestVectors } from "../fixtures.ts";
 const first = { account: "0", change: "0", index: "0" } as const;
 
 describe("wallet scan schemes", () => {
-  it("opens every chain with the path its own class writes", async () => {
-    for (const chain of TOOL_CHAINS) {
-      const schemes = scanSchemes(chain, "mainnet");
-      if (chain === "decred" || chain === "cardano") {
-        expect(schemes, chain).toBeUndefined();
-        continue;
+  it.each(["mainnet", "testnet"])(
+    "opens every chain with the path its own class writes on %s",
+    async (network) => {
+      for (const chain of TOOL_CHAINS) {
+        const schemes = scanSchemes(chain, network);
+        if (chain === "decred" || chain === "cardano") {
+          expect(schemes, chain).toBeUndefined();
+          continue;
+        }
+        const opening = schemes?.[0];
+        if (!opening) throw new Error(`${chain} has no scheme`);
+        const blockchain = await blockchains[chain]({ network })();
+        expect(
+          opening.path.replaceAll(/\{(\w+)\}/gu, (_, name: keyof typeof first) => first[name]),
+          chain,
+        ).toBe(blockchain.getDerivationPath(0, 0, 0));
       }
-      const opening = schemes?.[0];
-      if (!opening) throw new Error(`${chain} has no scheme`);
-      const blockchain = await blockchains[chain]()();
-      expect(
-        opening.path.replaceAll(/\{(\w+)\}/gu, (_, name: keyof typeof first) => first[name]),
-        chain,
-      ).toBe(blockchain.getDerivationPath(0, 0, 0));
-    }
-  });
+    },
+  );
 
-  it("walks the library's coin type and then coin type 1 on a UTXO testnet", () => {
+  it("walks coin type 1 and then the mainnet coin type on a UTXO testnet", () => {
     const mainnet = scanSchemes("dogecoin", "mainnet");
     expect(scanSchemes("dogecoin", "testnet")).toEqual([
-      ...(mainnet ?? []),
       {
         name: "bip44-testnet",
         path: "m/44'/1'/{account}'/{change}/{index}",
         addressType: "legacy",
       },
+      ...(mainnet ?? []),
     ]);
     expect(scanSchemes("ethereum", "testnet")).toEqual(scanSchemes("ethereum", "mainnet"));
   });
@@ -50,10 +53,10 @@ describe("wallet scan schemes", () => {
       }
     }
     expect(scanSchemes("ecash", "testnet")?.map((scheme) => scheme.name)).toEqual([
+      "bip44-testnet",
       "bip44",
       "cashtab",
       "bitcoincash",
-      "bip44-testnet",
     ]);
   });
 });

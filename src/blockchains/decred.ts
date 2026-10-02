@@ -58,6 +58,14 @@ export class Decred extends AbstractBlockchain {
     }
   }
 
+  /**
+   * Coin type 1 on testnet, the `SLIP0044CoinType` of dcrd's testnet3 parameters.
+   * @returns {number} The coin type
+   */
+  override get coinType(): number {
+    return this.network === "testnet" ? BIP44.TESTNET : this.bip44;
+  }
+
   private get prefix(): Uint8Array {
     return this.network === "testnet" ? NETWORK_PREFIXES.testnet : NETWORK_PREFIXES.mainnet;
   }

@@ -139,7 +139,7 @@ export const ELECTRUM_SCHEMES: Readonly<Record<"standard" | "segwit", ScanScheme
 };
 
 /**
- * Lists the BIP39 wallet paths of a chain; a UTXO testnet adds coin type 1 as `-testnet`.
+ * Lists the BIP39 wallet paths of a chain; a UTXO testnet walks coin type 1 as `-testnet` first.
  * @param chain - Tool chain name
  * @param network - Network name
  * @returns {ScanScheme[] | undefined} Schemes, or undefined for a chain without BIP39 derivation
@@ -153,7 +153,7 @@ export function scanSchemes(chain: string, network: string): ScanScheme[] | unde
     const path = scheme.path.replace(/^(m\/\d+'\/)\d+'/u, `$1${TESTNET_COIN}'`);
     if (!testnet.has(path)) testnet.set(path, { ...scheme, name: `${scheme.name}-testnet`, path });
   }
-  return [...schemes, ...testnet.values()];
+  return [...testnet.values(), ...schemes];
 }
 
 /**

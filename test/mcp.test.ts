@@ -1889,6 +1889,22 @@ describe("keys MCP server", () => {
     expect(text(response.content)).toContain("Invalid arguments");
   });
 
+  it("gives a UTXO testnet coin type 1 in the path and the wallet", async () => {
+    const client = await connectTestClient();
+
+    const path = await client.callTool({
+      name: "keys_bip44_generate",
+      arguments: { chain: "litecoin", network: "testnet" },
+    });
+    expect(text(path.content)).toBe("Chain: litecoin (BIP44 coin type: 1)\nPath: m/44'/1'/0'/0/0");
+
+    const wallet = await client.callTool({
+      name: "keys_wallet_generate",
+      arguments: { chain: "bitcoin", network: "testnet" },
+    });
+    expect(text(wallet.content)).toContain("BIP44: 1\n");
+  });
+
   it("generates paths the ed25519 chains derive and refuses levels they lack", async () => {
     const client = await connectTestClient();
     const { mnemonic } = bip39TestVectors;

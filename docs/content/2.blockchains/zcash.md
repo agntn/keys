@@ -70,7 +70,7 @@ zcashChain.deriveHDWallet(mnemonic, "m/44'/133'/0'/0/0").address;
 
 The purpose level doesn't pick a format, there's only one. `m/84'` still gives you a `t1` address, and an explicit `"p2sh"` still throws.
 
-One trap on testnet. zcashd walks coin type 1 there, but `getDerivationPath` writes 133 on every network, like every other driver in the library. For a testnet wallet that has to match zcashd, pass `m/44'/1'/0'/0/0` yourself.
+On testnet `getDerivationPath` writes coin type 1, the same `m/44'/1'/0'/0/0` zcashd walks there.
 
 WIF works without a Zcash entry. Zcash kept Bitcoin's `0x80` and `0xef`, so `decode(wif, { chain: "bitcoin" })` from `@agntn/keys/wif` reads a key exported from zcashd.
 

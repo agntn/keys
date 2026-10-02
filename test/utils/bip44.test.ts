@@ -198,6 +198,29 @@ describe("Blockchain Path Integration", () => {
     expect(path).toBe("m/44'/0'/2'/1/5");
   });
 
+  test.each([
+    "bitcoin",
+    "litecoin",
+    "bitcoingold",
+    "bitcoincash",
+    "bitcoinsv",
+    "dash",
+    "dogecoin",
+    "zcash",
+    "ecash",
+    "decred",
+  ] as const)("should give a %s testnet wallet coin type 1", async (name) => {
+    const testnet = await blockchains[name]({ network: "testnet" })();
+    expect(testnet.coinType).toBe(BIP44.TESTNET);
+    expect(getBlockchainPath(testnet, 0, 1, 3)).toBe("m/44'/1'/0'/1/3");
+    const mainnet = await blockchains[name]()();
+    expect(mainnet.coinType).toBe(mainnet.bip44);
+  });
+
+  test("should keep the coin type of a chain whose testnet wallets share it", () => {
+    expect(getBlockchainPath(new Ethereum({ network: "testnet" }))).toBe("m/44'/60'/0'/0/0");
+  });
+
   test("should fall back to BIP44 for a chain that only carries a coin type", () => {
     expect(getBlockchainPath({ bip44: BIP44.SOLANA })).toBe("m/44'/501'/0'/0/0");
   });

@@ -497,7 +497,7 @@ export async function generateWallet(
     chain: blockchain.name,
     network: blockchain.network,
     curve: formatCurve(blockchain.curve),
-    bip44: blockchain.bip44,
+    bip44: blockchain.coinType,
     privateKey: wallet.keys.private,
     publicKey: wallet.keys.public,
     address: wallet.address,
@@ -2436,6 +2436,7 @@ export function parseBip44Path(pathValue: unknown): ToolResult<BIP44PathDetails>
  * @param changeValue - External or internal branch, or the CIP-1852 role on Cardano.
  * @param addressIndexValue - Address index.
  * @param addressTypeValue - Signature scheme on Sui, ed25519 by default.
+ * @param networkValue - Network, which picks the coin type on the UTXO chains.
  * @returns {Promise<ToolResult<BIP44PathDetails>>} The generated path.
  */
 export async function generateBip44Path(
@@ -2444,11 +2445,16 @@ export async function generateBip44Path(
   changeValue?: unknown,
   addressIndexValue?: unknown,
   addressTypeValue?: unknown,
+  networkValue?: unknown,
 ): Promise<ToolResult<BIP44PathDetails>> {
   const account = optionalIndex(accountValue, "Account") ?? 0;
   const change = optionalIndex(changeValue, "Change") ?? 0;
   const addressIndex = optionalIndex(addressIndexValue, "Address index") ?? 0;
-  const { blockchain, addressType } = await getBlockchain(chainValue, undefined, addressTypeValue);
+  const { blockchain, addressType } = await getBlockchain(
+    chainValue,
+    networkValue,
+    addressTypeValue,
+  );
   if (addressType !== undefined && !Array.isArray(blockchain.curve)) {
     throw new RangeError(`addressType names a scheme, and ${blockchain.name} has one curve`);
   }
@@ -2456,12 +2462,12 @@ export async function generateBip44Path(
   const generated = getBlockchainPath(blockchain, account, change, addressIndex, options);
   return {
     content: content(
-      `Chain: ${blockchain.name} (BIP44 coin type: ${blockchain.bip44})\nPath: ${generated}`,
+      `Chain: ${blockchain.name} (BIP44 coin type: ${blockchain.coinType})\nPath: ${generated}`,
     ),
     details: {
       path: generated,
       chain: blockchain.name,
-      coinType: blockchain.bip44,
+      coinType: blockchain.coinType,
       account,
       change,
       addressIndex,

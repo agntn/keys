@@ -165,6 +165,10 @@ describe("eCash", () => {
     ).toBe(testnetAddress);
   });
 
+  it("writes the coin type 1 path bip_utils walks on testnet", () => {
+    expect(new ECash({ network: "testnet" }).getDerivationPath()).toBe(vector.hd.testnet[0]);
+  });
+
   it.each(["m/44'/899'/0'/0/0", "m/44'/1899'/0'/0/0", "m/84'/899'/0'/0/0"])(
     "derives %s to a P2PKH address whatever the path",
     (path) => {
