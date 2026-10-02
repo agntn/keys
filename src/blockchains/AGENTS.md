@@ -24,6 +24,8 @@ Decred uses `AbstractBlockchain` directly: ECDSA P2PKH with BLAKE-256, not Bitco
 1. Create `src/blockchains/<name>.ts` with `class Name extends AbstractBlockchain`
 2. Implement `name`, `curve`, `bip44`, `getKeyPublic`, `getAddress`, `validateAddress`, `signMessage`, and `verifyMessage`
    - A chain that writes more than one address format also overrides `defaultAddressType`, so its wallets say which one they wrote
+   - A chain with one format still takes `type` in `getAddress` and passes it to `refuseAddressType`, so a wallet never carries a type it didn't write
+   - A secp256k1 chain whose address hashes one key form whatever it is given overrides `addressKeyForm`, and `deriveWallet` refuses the `compressed` that changes nothing
 3. Export the class by name and as the default export
 4. Register it in `src/_blockchains.ts`: `<name>: lazy("<name>", () => import("./blockchains/<name>.ts"))`
 5. Create `test/blockchains/<name>.test.ts` using fixtures from `test/fixtures.ts`

@@ -6,7 +6,7 @@ import { BIP44 } from "../utils/bip44/index.ts";
 import { getHardenedPath } from "../utils/bip44/paths.ts";
 import { decodeKeyPublic, generateKeyPublic } from "../utils/ed25519.ts";
 import { signMessage, verifyMessage } from "../utils/signing.ts";
-import type { Curve, KeyOptions } from "../types.ts";
+import type { AddressType, Curve, KeyOptions } from "../types.ts";
 
 /** SEP-23 StrKey address types: the version byte and the decoded length, checksum included. */
 const STRKEY_TYPES: Readonly<
@@ -86,9 +86,11 @@ export class Stellar extends AbstractBlockchain {
   /**
    * Encodes the public key as an account StrKey, the `G` address wallets show.
    * @param keyPublic - The ed25519 public key as hex
+   * @param type - Any type throws, Stellar has one address format
    * @returns {string} The 56-character StrKey
    */
-  override getAddress(keyPublic: string): string {
+  override getAddress(keyPublic: string, type?: AddressType): string {
+    this.refuseAddressType(type);
     return encodeStrKey(ACCOUNT_VERSION, decodeKeyPublic(keyPublic, "Stellar"));
   }
 

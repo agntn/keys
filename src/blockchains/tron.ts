@@ -6,7 +6,13 @@ import { hashWithPreamble } from "../utils/evm.ts";
 import { decodePublicPoint } from "../utils/secp256k1/decode.ts";
 import { generateKeyPublic } from "../utils/secp256k1/keys.ts";
 import { recoverSecp256k1Signer, signMessage, verifyMessage } from "../utils/signing.ts";
-import type { Curve, KeyOptions, MessageSigner, RecoverableSigningOptions } from "../types.ts";
+import type {
+  AddressType,
+  Curve,
+  KeyOptions,
+  MessageSigner,
+  RecoverableSigningOptions,
+} from "../types.ts";
 
 const ADDRESS_PREFIX_BYTE = 0x41;
 const ADDRESS_PREFIX_CHAR = "T";
@@ -23,7 +29,16 @@ export class Tron extends AbstractBlockchain {
     return generateKeyPublic(keyPrivate, options);
   }
 
-  override getAddress(keyPublic: string): string {
+  /**
+   * TRON addresses take the Keccak-256 of the uncompressed point, as on Ethereum.
+   * @returns {"uncompressed"} The form the address hashes
+   */
+  protected override get addressKeyForm(): "uncompressed" {
+    return "uncompressed";
+  }
+
+  override getAddress(keyPublic: string, type?: AddressType): string {
+    this.refuseAddressType(type);
     const keyBytesForHashing = decodePublicPoint(keyPublic).toBytes(false).slice(1);
 
     const addressBytes = keccak256(keyBytesForHashing).slice(-20);

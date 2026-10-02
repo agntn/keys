@@ -212,4 +212,52 @@ describe("address type of a wallet", () => {
     expect(new Ethereum().deriveWallet(privateKey)).not.toHaveProperty("addressType");
     expect(new Ethereum().defaultAddressType).toBeUndefined();
   });
+
+  it("refuses a type on chains with one format instead of writing it on the wallet", async () => {
+    for (const chain of ["ethereum", "base", "tron", "solana", "stellar", "aptos"] as const) {
+      const blockchain = await blockchains[chain]()();
+      const message = `Address type "p2wpkh" is not supported for ${chain}, which has one address format`;
+      expect(() => blockchain.deriveWallet(privateKey, {}, "p2wpkh"), chain).toThrow(message);
+      expect(() => blockchain.generateWallet({}, "p2wpkh"), chain).toThrow(message);
+      expect(() => blockchain.getAddress(blockchain.getKeyPublic(privateKey), "legacy")).toThrow(
+        RangeError,
+      );
+    }
+  });
+
+  it("refuses a compressed flag the wallet's address would ignore", async () => {
+    for (const [chain, options, addressType, message] of [
+      ["solana", { compressed: false }, undefined, "solana ed25519 keys take no compressed"],
+      ["aptos", { compressed: true }, undefined, "aptos ed25519 keys take no compressed"],
+      ["cardano", { compressed: true }, undefined, "cardano ed25519 keys take no compressed"],
+      ["sui", { compressed: true }, undefined, "sui ed25519 keys take no compressed"],
+      ["ethereum", { compressed: true }, undefined, "ethereum addresses hash the uncompressed key"],
+      ["tron", { compressed: true }, undefined, "tron addresses hash the uncompressed key"],
+      [
+        "sui",
+        { compressed: false },
+        "secp256k1",
+        "sui secp256k1 addresses hash the compressed key",
+      ],
+    ] as const) {
+      const blockchain = await blockchains[chain]()();
+      expect(() => blockchain.deriveWallet(privateKey, options, addressType), chain).toThrow(
+        message,
+      );
+      expect(() => blockchain.generateWallet(options, addressType), chain).toThrow(message);
+    }
+  });
+
+  it("keeps the forms that change the public key", async () => {
+    const ethereum = await blockchains.ethereum()();
+    expect(ethereum.deriveWallet(privateKey, { compressed: false }).keys.public).toMatch(/^04/u);
+    const sui = await blockchains.sui()();
+    expect(sui.deriveWallet(privateKey, { compressed: true }, "secp256k1").addressType).toBe(
+      "secp256k1",
+    );
+    const bitcoin = await blockchains.bitcoin()();
+    expect(bitcoin.deriveWallet(privateKey, { compressed: false }, "legacy").address).toBe(
+      "1EHNa6Q4Jz2uvNExL497mE43ikXhwF6kZm",
+    );
+  });
 });
