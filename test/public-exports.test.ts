@@ -23,6 +23,7 @@ import {
   invalidChecksumPuzzle,
   bip39TestVectors,
   bip39WordOrderVector,
+  bip39WordRepairVectors,
   publicKeyEncodingVector,
   secp256k1MathVectors,
   slip132Vectors,
@@ -257,6 +258,15 @@ describe("Public derivation exports", () => {
     ]);
   });
 
+  it("repairs a mistyped word from the built package", async () => {
+    const { repairWords, suggestWords } = await import("@agntn/keys/bip39");
+    const { written, mnemonic } = bip39WordRepairVectors.typo;
+    expect(suggestWords(written, { maxDistance: 1 })).toEqual([
+      { position: 12, suggestions: [{ word: "about", zeroBasedIndex: 3, distance: 1 }] },
+    ]);
+    expect(repairWords(written)[0]).toEqual({ words: mnemonic.split(" "), distance: 1 });
+  });
+
   it("drops the family from BIP39 export names", async () => {
     const bip39 = await import("@agntn/keys/bip39");
     for (const name of [
@@ -267,6 +277,8 @@ describe("Public derivation exports", () => {
       "lookupPrefixes",
       "orderWords",
       "countWordOrders",
+      "repairWords",
+      "suggestWords",
     ])
       expect(bip39).toHaveProperty(name);
     for (const name of [

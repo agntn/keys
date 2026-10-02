@@ -52,6 +52,7 @@ keys/
 | Xpub + child key   | `src/utils/bip32/parent.ts` → `recoverParent`                                     | Parent xprv from a normal child; the private prefix pairs with the xpub's           |
 | Curve math         | `src/utils/secp256k1/math.ts`                                                     | Points and scalars mod n; `keys_secp256k1_point_compute` takes the point side only  |
 | Scattered words    | `src/utils/bip39/order.ts` → `orderWords`                                         | Checksum filter over the orders of loose words; `keys_bip39_words_order` caps it    |
+| Mistyped words     | `src/utils/bip39/repair.ts` → `repairWords`                                       | Typo and OCR fixes for words off the list; `keys_bip39_words_repair` caps them      |
 | Write tests        | `test/` mirroring `src/` path                                                     | Use fixtures from `test/fixtures.ts`                                                |
 | Run demos          | `playground/*.ts`                                                                 | Execute via `pnpm playground <file>`                                                |
 | Docs / keyspace UI | `docs/`                                                                           | Docus: `content/` markdown, explorer in `app/components/`                           |

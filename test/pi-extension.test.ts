@@ -9,6 +9,7 @@ import {
   hdScanVectors,
   bip39TestVectors,
   bip39WordOrderVector,
+  bip39WordRepairVectors,
   electrumVectors,
   publicKeyEncodingVector,
   secp256k1MathVectors,
@@ -954,6 +955,49 @@ describe("keys Pi extension", () => {
       [{ ...args, language: "latin" }, "Unknown BIP39 language"],
     ] as const) {
       await expect(skipSchema(tool)("order", bad)).rejects.toThrow(message);
+    }
+  });
+
+  it("repairs mistyped words with the shared executor and checks its arguments without the schema", async () => {
+    const tool = (await registerTools()).get("keys_bip39_words_repair");
+    if (!tool) throw new Error("keys_bip39_words_repair was not registered");
+    const { written, mnemonic, combinations, valid } = bip39WordRepairVectors.twoWords;
+    const args = { mnemonic: written };
+
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    expect(Value.Check(tool.parameters, { ...args, maxDistance: 4 })).toBe(false);
+    expect(Value.Check(tool.parameters, { ...args, limit: 101 })).toBe(false);
+    const result = await tool.execute("repair", { ...args, maxDistance: 1 });
+    expect(result.details).toEqual({
+      language: "english",
+      maxDistance: 1,
+      positions: [
+        { position: 2, suggestions: [{ word: "winner", distance: 1 }] },
+        {
+          position: 12,
+          suggestions: [
+            { word: "below", distance: 1 },
+            { word: "yellow", distance: 1 },
+          ],
+        },
+      ],
+      checked: 2,
+      valid: 1,
+      repairs: [{ mnemonic, distance: 2 }],
+    });
+    const wide = await tool.execute("repair", { ...args, limit: 100 });
+    expect(wide.details).toMatchObject({ checked: combinations, valid });
+    for (const [bad, message] of [
+      [{ mnemonic: 12 }, "BIP39 mnemonic must be a string"],
+      [{ mnemonic: "   " }, "BIP39 mnemonic must not be empty"],
+      [{ mnemonic: `${written} `.repeat(20) }, "BIP39 mnemonic must be at most 1024 characters"],
+      [{ mnemonic: "winnr yelow" }, "A mnemonic must have 12, 15, 18, 21, or 24 words"],
+      [{ ...args, maxDistance: 0 }, "maxDistance must be an integer between 1 and 3"],
+      [{ ...args, maxDistance: 1.5 }, "maxDistance must be an integer between 1 and 3"],
+      [{ ...args, limit: 0 }, "Limit must be an integer between 1 and 100"],
+      [{ ...args, language: "latin" }, "Unknown BIP39 language"],
+    ] as const) {
+      await expect(skipSchema(tool)("repair", bad)).rejects.toThrow(message);
     }
   });
 

@@ -83,10 +83,13 @@ import {
 } from "./utils/entropy-profile.ts";
 import {
   MAX_BIP39_LOOKUP_ITEMS,
-  MAX_BIP39_ORDER_SEARCH,
-  MAX_BIP39_ORDERS_SHOWN,
-  MAX_BIP39_TEMPLATE_LENGTH,
-  DEFAULT_BIP39_ORDERS_SHOWN,
+  MAX_BIP39_CHECKSUM_SEARCH,
+  MAX_BIP39_PHRASES_SHOWN,
+  MAX_BIP39_PHRASE_LENGTH,
+  DEFAULT_BIP39_PHRASES_SHOWN,
+  MAX_BIP39_REPAIR_WORDS,
+  MAX_BIP39_REPAIR_DISTANCE,
+  DEFAULT_BIP39_REPAIR_DISTANCE,
   MAX_ENTROPY_PREIMAGES,
   MAX_ENTROPY_PREIMAGE_LENGTH,
   BIP39_ENTROPY_BYTE_LENGTHS,
@@ -132,6 +135,9 @@ import {
   lookupPrefixes as lookupBIP39Prefixes,
   countWordOrders,
   orderWords,
+  repairWords,
+  suggestWords,
+  type WordSuggestions,
 } from "./utils/bip39/index.ts";
 import { BIP39_LANGUAGES, isBIP39Language, type BIP39Language } from "./utils/bip39/languages.ts";
 
@@ -240,6 +246,16 @@ export interface BIP39WordOrderDetails {
   checked: number;
   valid: number;
   orders: string[];
+}
+
+/** Words close to the ones outside the list and the repaired phrases that pass the checksum. */
+export interface BIP39WordRepairDetails {
+  language: string;
+  maxDistance: number;
+  positions: Array<{ position: number; suggestions: Array<{ word: string; distance: number }> }>;
+  checked: number;
+  valid: number;
+  repairs: Array<{ mnemonic: string; distance: number }>;
 }
 
 /** Candidate words for one missing mnemonic position. */
@@ -2034,15 +2050,15 @@ function orderWordsArgument(value: unknown): readonly string[] {
  * @param value - Raw limit argument.
  * @returns {number} An integer from 1 to the listing cap.
  */
-function orderLimit(value: unknown): number {
-  const limit = value ?? DEFAULT_BIP39_ORDERS_SHOWN;
+function phraseLimit(value: unknown): number {
+  const limit = value ?? DEFAULT_BIP39_PHRASES_SHOWN;
   if (
     typeof limit !== "number" ||
     !Number.isInteger(limit) ||
     limit < 1 ||
-    limit > MAX_BIP39_ORDERS_SHOWN
+    limit > MAX_BIP39_PHRASES_SHOWN
   ) {
-    throw new RangeError(`Limit must be an integer between 1 and ${MAX_BIP39_ORDERS_SHOWN}`);
+    throw new RangeError(`Limit must be an integer between 1 and ${MAX_BIP39_PHRASES_SHOWN}`);
   }
   return limit;
 }
@@ -2063,16 +2079,16 @@ export async function orderBip39Words(
 ): Promise<ToolResult<BIP39WordOrderDetails>> {
   const words = orderWordsArgument(wordsValue);
   const template = optionalName(templateValue, "Template");
-  if (template !== undefined && template.length > MAX_BIP39_TEMPLATE_LENGTH) {
-    throw new RangeError(`Template must be at most ${MAX_BIP39_TEMPLATE_LENGTH} characters`);
+  if (template !== undefined && template.length > MAX_BIP39_PHRASE_LENGTH) {
+    throw new RangeError(`Template must be at most ${MAX_BIP39_PHRASE_LENGTH} characters`);
   }
   const language = parseBIP39Language(languageValue);
-  const limit = orderLimit(limitValue);
+  const limit = phraseLimit(limitValue);
   const options = { template, wordlist: await loadBIP39Wordlist(language), listName: language };
   const total = countWordOrders(words, options);
-  if (total > BigInt(MAX_BIP39_ORDER_SEARCH)) {
+  if (total > BigInt(MAX_BIP39_CHECKSUM_SEARCH)) {
     throw new RangeError(
-      `These words have ${total} orders, over the ${MAX_BIP39_ORDER_SEARCH} one call checks. Fix more positions in template, or search with orderWords from @agntn/keys/bip39`,
+      `These words have ${total} orders, over the ${MAX_BIP39_CHECKSUM_SEARCH} one call checks. Fix more positions in template, or search with orderWords from @agntn/keys/bip39`,
     );
   }
   const orders: string[] = [];
@@ -2094,6 +2110,132 @@ export async function orderBip39Words(
       ].join("\n"),
     ),
     details: { language, checked, valid, orders },
+  };
+}
+
+/** Suggestions per word the repair text lists, the rest only counted. */
+const SUGGESTIONS_SHOWN = 10;
+
+/**
+ * Reads how many edits a suggestion may be away, the default when it is left out.
+ * @param value - Raw maxDistance argument.
+ * @returns {number} An integer from 1 to the repair cap.
+ */
+function repairDistance(value: unknown): number {
+  if (value === undefined) return DEFAULT_BIP39_REPAIR_DISTANCE;
+  if (
+    typeof value !== "number" ||
+    !Number.isInteger(value) ||
+    value < 1 ||
+    value > MAX_BIP39_REPAIR_DISTANCE
+  ) {
+    throw new RangeError(
+      `maxDistance must be an integer between 1 and ${MAX_BIP39_REPAIR_DISTANCE}`,
+    );
+  }
+  return value;
+}
+
+/**
+ * Refuses a phrase with too many words outside the list or too many combinations to check.
+ * @param positions - Suggestions per word outside the list.
+ * @param language - List name for the error.
+ * @returns {number} Combinations the repair checks.
+ */
+function repairCombinations(positions: readonly WordSuggestions[], language: string): number {
+  if (positions.length > MAX_BIP39_REPAIR_WORDS) {
+    throw new RangeError(
+      `Words ${positions.map(({ position }) => position).join(", ")} are not in the ${language} list, and one call repairs ${MAX_BIP39_REPAIR_WORDS} at most. Correct the others first`,
+    );
+  }
+  const total = positions.reduce((product, { suggestions }) => product * suggestions.length, 1);
+  if (total > MAX_BIP39_CHECKSUM_SEARCH) {
+    throw new RangeError(
+      `These suggestions make ${total} combinations, over the ${MAX_BIP39_CHECKSUM_SEARCH} one call checks. Lower maxDistance`,
+    );
+  }
+  return total;
+}
+
+/**
+ * Writes an edit count as words.
+ * @param count - Number of edits.
+ * @returns {string} "1 edit" or "N edits".
+ */
+function edits(count: number): string {
+  return count === 1 ? "1 edit" : `${count} edits`;
+}
+
+/**
+ * Lists the nearest words for one position, the rest only counted.
+ * @param entry - Position and its suggestions.
+ * @param maxDistance - Edits the search allowed.
+ * @returns {string} One line of the repair text.
+ */
+function suggestionLine(entry: WordSuggestions, maxDistance: number): string {
+  const { position, suggestions } = entry;
+  if (suggestions.length === 0) return `Word ${position}: nothing within ${edits(maxDistance)}`;
+  const shown = suggestions
+    .slice(0, SUGGESTIONS_SHOWN)
+    .map(({ word, distance }) => `${word} (${distance})`);
+  const more = suggestions.length - shown.length;
+  return `Word ${position}, ${suggestions.length} within ${edits(maxDistance)}: ${shown.join(", ")}${more > 0 ? `, ${more} more` : ""}`;
+}
+
+/**
+ * Suggest list words for the words of a phrase outside the list and keep the checksum passes.
+ * @param mnemonicValue - Phrase with mistyped words.
+ * @param languageValue - Optional official BIP39 language key.
+ * @param maxDistanceValue - Optional most edits per word.
+ * @param limitValue - Optional count of repaired phrases to list.
+ * @returns {Promise<ToolResult<BIP39WordRepairDetails>>} Suggestions, combinations and repairs.
+ */
+export async function repairBip39Words(
+  mnemonicValue: unknown,
+  languageValue?: unknown,
+  maxDistanceValue?: unknown,
+  limitValue?: unknown,
+): Promise<ToolResult<BIP39WordRepairDetails>> {
+  const mnemonic = normalizedMnemonic(mnemonicValue);
+  if (mnemonic.length > MAX_BIP39_PHRASE_LENGTH) {
+    throw new RangeError(`BIP39 mnemonic must be at most ${MAX_BIP39_PHRASE_LENGTH} characters`);
+  }
+  const language = parseBIP39Language(languageValue);
+  const maxDistance = repairDistance(maxDistanceValue);
+  const limit = phraseLimit(limitValue);
+  const options = { wordlist: await loadBIP39Wordlist(language), maxDistance };
+  const positions = suggestWords(mnemonic, options);
+  const checked = repairCombinations(positions, language);
+  const repairs = repairWords(mnemonic, options).map(({ words, distance }) => ({
+    mnemonic: words.join(" "),
+    distance,
+  }));
+  const listed = repairs.slice(0, limit);
+  const outside = positions.map(({ position }) => position);
+  return {
+    content: content(
+      [
+        `Language: ${language}`,
+        `Not in the list: ${outside.length === 0 ? "none" : `${outside.length === 1 ? "word" : "words"} ${outside.join(", ")}`}`,
+        ...positions.map((entry) => suggestionLine(entry, maxDistance)),
+        `Combinations checked: ${checked}`,
+        `Valid checksum: ${repairs.length}`,
+        ...(listed.length === 0 ? [] : [`First ${listed.length}, fewest edits first:`]),
+        ...listed.map(({ mnemonic: phrase, distance }) => `${edits(distance)}: ${phrase}`),
+        "A wrong word that is in the list stays as written. If no phrase here opens the wallet, put ? in its place and use keys_bip39_word_recover.",
+      ].join("\n"),
+    ),
+    details: {
+      language,
+      maxDistance,
+      positions: positions.map(({ position, suggestions }) => ({
+        position,
+        suggestions: suggestions.map(({ word, distance }) => ({ word, distance })),
+      })),
+      checked,
+      valid: repairs.length,
+      repairs: listed,
+    },
   };
 }
 

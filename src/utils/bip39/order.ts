@@ -126,7 +126,7 @@ function fillOpen(placed: Uint16Array, open: readonly number[], free: Uint16Arra
  * @param length - Words in the phrase
  * @returns {(placed: Uint16Array) => boolean} True when the indices pass the checksum
  */
-function checksumTest(length: number): (placed: Uint16Array) => boolean {
+export function checksumTest(length: number): (placed: Uint16Array) => boolean {
   const checksumBits = length / 3;
   const checksumMask = (1 << checksumBits) - 1;
   const entropyBytes = (length * 11 - checksumBits) / 8;

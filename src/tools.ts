@@ -25,6 +25,7 @@ import {
   LOOKUP_BIP39_INDICES_PARAMETERS,
   LOOKUP_BIP39_WORDS_PARAMETERS,
   ORDER_BIP39_WORDS_PARAMETERS,
+  REPAIR_BIP39_WORDS_PARAMETERS,
   RECOVER_MESSAGE_PARAMETERS,
   RECOVER_MNEMONIC_WORD_PARAMETERS,
   SIGN_MESSAGE_PARAMETERS,
@@ -33,7 +34,7 @@ import {
   WIF_DECODE_PARAMETERS,
   WIF_ENCODE_PARAMETERS,
 } from "./tool-schemas.ts";
-import { MAX_BIP39_ORDER_SEARCH } from "./tool-parameters.ts";
+import { MAX_BIP39_CHECKSUM_SEARCH, MAX_BIP39_REPAIR_WORDS } from "./tool-parameters.ts";
 
 let operations: Promise<typeof import("./tool-operations.ts")> | undefined;
 
@@ -460,7 +461,7 @@ export const bip39WordRecoverTool = defineTool({
 export const bip39WordsOrderTool = defineTool({
   name: "keys_bip39_words_order",
   title: "Order Mnemonic Words",
-  description: `Put scattered BIP39 words in every order the open positions allow and list the orders whose checksum passes, with the number of orders checked and the number that pass. A search over more than ${MAX_BIP39_ORDER_SEARCH} orders is refused, so fix known positions in template first. Use this filter only when canonical BIP39 generation is established. Inputs enter the transcript, so use only public or disposable words.`,
+  description: `Put scattered BIP39 words in every order the open positions allow and list the orders whose checksum passes, with the number of orders checked and the number that pass. A search over more than ${MAX_BIP39_CHECKSUM_SEARCH} orders is refused, so fix known positions in template first. Use this filter only when canonical BIP39 generation is established. Inputs enter the transcript, so use only public or disposable words.`,
   snippet: "Use to order the words of a puzzle that hands them out one per clue.",
   guidelines: [
     "words holds each word whose position is unknown; a word that appears twice goes in twice",
@@ -476,6 +477,29 @@ export const bip39WordsOrderTool = defineTool({
       params.words,
       params.template,
       params.language,
+      params.limit,
+    ),
+});
+
+export const bip39WordsRepairTool = defineTool({
+  name: "keys_bip39_words_repair",
+  title: "Repair Mnemonic Words",
+  description: `Suggest BIP39 words close to each word of a phrase that is not in the list, by typo, swapped letters or OCR mix-ups such as rn for m, then list the repaired phrases whose checksum passes, fewest edits first. Repairs ${MAX_BIP39_REPAIR_WORDS} words outside the list at most, and refuses more than ${MAX_BIP39_CHECKSUM_SEARCH} combinations. A wrong word that is in the list is not found. Inputs enter the transcript, so use only public or disposable phrases.`,
+  snippet: "Use to fix a mnemonic copied from a photo, a video frame or handwriting.",
+  guidelines: [
+    "Pass the phrase as written; words outside the list are found by themselves",
+    "Each typo, swap of two neighbouring letters or OCR mix-up (rn and m, vv and w, cl and d) counts as one edit",
+    "The answer counts the combinations up front, then lists repaired phrases with the edits each took",
+    "Returns phrases, not wallets: derive each one to find the phrase that opens the target address",
+    "keys_bip39_words_repair accepts an explicit BIP39 language; omission means english, not automatic detection",
+  ],
+  effect: "read",
+  input: REPAIR_BIP39_WORDS_PARAMETERS,
+  execute: async (params) =>
+    (await loadOperations()).repairBip39Words(
+      params.mnemonic,
+      params.language,
+      params.maxDistance,
       params.limit,
     ),
 });
@@ -655,6 +679,7 @@ export const keysTools: readonly ToolDefinition[] = [
   bip39WordsLookupTool,
   bip39WordRecoverTool,
   bip39WordsOrderTool,
+  bip39WordsRepairTool,
   addressGetTool,
   addressValidateTool,
   messageSignTool,
