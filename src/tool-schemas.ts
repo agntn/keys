@@ -19,6 +19,7 @@ import {
   MAX_BIP39_SEED_INPUT_LENGTH,
   MAX_BIP38_ADDRESS_LENGTH,
   MAX_BIP38_PASSPHRASE_LENGTH,
+  MAX_EXTENDED_KEY_LENGTH,
   MAX_KEYSTORE_LENGTH,
   MAX_KEYSTORE_PASSWORD_LENGTH,
   MAX_ADDRESS_LENGTH,
@@ -437,6 +438,41 @@ export const DERIVE_XPUB_WALLET_PARAMETERS = Type.Object(
     }),
     addressType: addressTypeArgument,
     network: networkArgument,
+  },
+  { additionalProperties: false },
+);
+
+/** Shared MCP and Pi schema for recovering a parent key from its xpub and a leaked child. */
+export const RECOVER_BIP32_PARENT_PARAMETERS = Type.Object(
+  {
+    extendedKey: Type.String({
+      description:
+        "Extended public key of the parent: xpub, ypub, zpub, tpub, upub, vpub, Ltub, Mtub or ttub",
+      minLength: 1,
+      maxLength: MAX_EXTENDED_KEY_LENGTH,
+      pattern: "^[1-9A-HJ-NP-Za-km-z]+$",
+    }),
+    child: Type.String({
+      description:
+        "Public or disposable private key of a normal child: its xprv, a WIF, or 64 hex digits without 0x",
+      minLength: 1,
+      maxLength: MAX_EXTENDED_KEY_LENGTH,
+      pattern: "^[0-9A-Za-z]+$",
+    }),
+    index: Type.Optional(
+      Type.Integer({
+        minimum: 0,
+        maximum: 0x7fffffff,
+        description:
+          "Child index below the parent, normal only. Required for a WIF or hex key; an xprv carries its own",
+      }),
+    ),
+    revealKey: Type.Optional(
+      Type.Boolean({
+        description:
+          "Also return the parent xprv when the child belongs to it, so it enters the transcript. Default: false",
+      }),
+    ),
   },
   { additionalProperties: false },
 );

@@ -5,6 +5,7 @@ import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
 import { describe, expect, it } from "vite-plus/test";
 import {
+  bip32ParentVector,
   bip39TestVectors,
   electrumVectors,
   publicKeyEncodingVector,
@@ -123,6 +124,28 @@ describe("keys Pi extension", () => {
     await expect(skipSchema(tool)("xpub", { ...args, path: "m/0'/0" })).rejects.toThrow(
       "hardened levels need the private key",
     );
+  });
+  it("recovers a BIP32 parent with the shared executor and checks its arguments without the schema", async () => {
+    const tool = (await registerTools()).get("keys_bip32_parent_recover");
+    if (!tool) throw new Error("Missing BIP32 parent tool");
+    const { xpub, xprv, fingerprint, child } = bip32ParentVector;
+    const args = { extendedKey: xpub, child: child.privateKey, index: 0 };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    expect(Value.Check(tool.parameters, { ...args, index: 0.5 })).toBe(false);
+    const result = await tool.execute("parent", args);
+    expect(result).toMatchObject({ details: { recovered: true, fingerprint } });
+    expect(JSON.stringify(result)).not.toContain(xprv);
+    await expect(tool.execute("parent", { ...args, revealKey: true })).resolves.toMatchObject({
+      details: { extendedPrivateKey: xprv },
+    });
+    for (const [bad, message] of [
+      [{ ...args, revealKey: "yes" }, "revealKey must be a boolean"],
+      [{ ...args, index: 0.5 }, "Index must be an integer between 0 and 2147483647"],
+      [{ ...args, child: "z".repeat(129) }, "Child key is too long"],
+      [{ ...args, extendedKey: "x".repeat(129) }, "Extended key is too long"],
+    ] as const) {
+      await expect(skipSchema(tool)("parent", bad)).rejects.toThrow(message);
+    }
   });
   it("derives disposable BIP39 seeds without echoing the input", async () => {
     const tool = (await registerTools()).get("keys_bip39_seed_derive");

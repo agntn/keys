@@ -33,6 +33,7 @@ import {
   secp256k1TestVectors,
   slip132Vectors,
   bip38Vectors,
+  bip32ParentVector,
   brainwalletInput,
   brainwalletVectors,
   plainBrainwalletVectors,
@@ -42,7 +43,7 @@ import {
 import Bitcoin from "../src/blockchains/bitcoin.ts";
 import { callTool, createMcpServer, toolListings } from "../src/mcp.ts";
 import { TOOL_NAMES } from "../src/tool-parameters.ts";
-import { decode as decodeWIF } from "../src/utils/wif/index.ts";
+import { decode as decodeWIF, encode as encodeWIF } from "../src/utils/wif/index.ts";
 
 const openConnections: Array<{ close(): Promise<void> }> = [];
 
@@ -822,6 +823,69 @@ describe("keys MCP server", () => {
       expect(failed.isError).toBe(true);
       expect(text(failed.content)).toContain(message);
       expect(text(failed.content)).not.toContain(slip132PrivateKey.slice(4, 40));
+    }
+  });
+
+  it("recovers a BIP32 parent through MCP, with its xprv only on request", async () => {
+    const client = await connectTestClient();
+    const { xpub, xprv, fingerprint, child, hardenedGrandchild } = bip32ParentVector;
+    const recovered = [
+      "Extended key: xpub, depth 0",
+      "Child index: 0",
+      "Parent: recovered",
+      `Fingerprint: ${fingerprint}`,
+    ].join("\n");
+
+    const opened = await client.callTool({
+      name: "keys_bip32_parent_recover",
+      arguments: { extendedKey: xpub, child: child.xprv },
+    });
+    expect(opened.isError).not.toBe(true);
+    expect(text(opened.content)).toBe(recovered);
+    expect(JSON.stringify(opened)).not.toContain(xprv);
+
+    const wif = encodeWIF(child.privateKey, { chain: "bitcoin" });
+    for (const key of [wif, child.privateKey]) {
+      const revealed = await client.callTool({
+        name: "keys_bip32_parent_recover",
+        arguments: { extendedKey: xpub, child: key, index: 0, revealKey: true },
+      });
+      expect(text(revealed.content)).toBe(`${recovered}\nExtended private key: ${xprv}`);
+    }
+
+    const stranger = await client.callTool({
+      name: "keys_bip32_parent_recover",
+      arguments: { extendedKey: xpub, child: child.privateKey, index: 1, revealKey: true },
+    });
+    expect(stranger.isError).not.toBe(true);
+    expect(text(stranger.content)).toBe(
+      [
+        "Extended key: xpub",
+        "Child index: 1",
+        "Parent: not recovered. The child key does not derive from this extended public key at index 1",
+      ].join("\n"),
+    );
+
+    for (const [args, message] of [
+      [{ extendedKey: xpub, child: child.privateKey }, "Index is required unless"],
+      [
+        { extendedKey: xpub, child: child.privateKey, index: 0x80000000 },
+        "Invalid arguments at /index",
+      ],
+      [{ extendedKey: child.xpub, child: hardenedGrandchild }, "A hardened child does not reveal"],
+      [{ extendedKey: xprv, child: child.xprv }, "not a private one"],
+      [{ extendedKey: xpub, child: `0x${child.privateKey}` }, "64 hex digits without 0x"],
+      [{ extendedKey: xpub, child: "notakey" }, "Child key must be an xprv, a WIF or 64 hex"],
+      [
+        { extendedKey: xpub, child: child.xprv, revealKey: "yes" },
+        "Invalid arguments at /revealKey",
+      ],
+    ] as const) {
+      const failed = await client.callTool({ name: "keys_bip32_parent_recover", arguments: args });
+      expect(failed.isError).toBe(true);
+      expect(text(failed.content)).toContain(message);
+      expect(text(failed.content)).not.toContain(child.privateKey);
+      expect(text(failed.content)).not.toContain(child.xprv.slice(4, 40));
     }
   });
 

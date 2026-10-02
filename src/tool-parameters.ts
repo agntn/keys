@@ -18,6 +18,7 @@ export const TOOL_NAMES = [
   "keys_wallet_derive",
   "keys_hd_wallet_derive",
   "keys_xpub_wallet_derive",
+  "keys_bip32_parent_recover",
   "keys_bip39_generate",
   "keys_bip39_inspect",
   "keys_bip39_entropy_encode",
@@ -64,6 +65,12 @@ export const MAX_BIP38_ADDRESS_LENGTH = 128;
 
 /** Maximum BIP38 passphrase length, in characters. */
 export const MAX_BIP38_PASSPHRASE_LENGTH = 4096;
+
+/** Maximum length of a Base58Check extended key, which serializes to 111 or 112 characters. */
+export const MAX_EXTENDED_KEY_LENGTH = 128;
+
+/** Maximum WIF length; Decred's two byte prefix makes the longest one 53 characters. */
+export const MAX_WIF_LENGTH = 54;
 
 /** Maximum address length the address validation tool checks. */
 export const MAX_ADDRESS_LENGTH = 256;

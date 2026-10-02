@@ -48,6 +48,7 @@ keys/
 | Add BIP/derivation | `src/utils/bip32/`, `bip39/`, `bip44/`, `slip10/`                                 | Subdirs with index.ts                                                               |
 | Mnemonic to wallet | `src/blockchain.ts` → `deriveHDWallet` + `src/utils/hd.ts`                        | Bitcoin family infers the address type; Sui overrides it, Cardano throws (CIP-1852) |
 | Xpub to address    | `src/utils/extended-key.ts` → `deriveXpubWallet` on the base class                | SLIP-0132 prefixes pick the type on the Bitcoin family; normal levels only, no xprv |
+| Xpub + child key   | `src/utils/bip32/parent.ts` → `recoverParent`                                     | Parent xprv from a normal child; the private prefix pairs with the xpub's           |
 | Write tests        | `test/` mirroring `src/` path                                                     | Use fixtures from `test/fixtures.ts`                                                |
 | Run demos          | `playground/*.ts`                                                                 | Execute via `pnpm playground <file>`                                                |
 | Docs / keyspace UI | `docs/`                                                                           | Docus: `content/` markdown, explorer in `app/components/`                           |

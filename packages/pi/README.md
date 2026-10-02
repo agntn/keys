@@ -22,6 +22,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 | `keys_wallet_derive`                | Derive public key + address from an existing private key           |
 | `keys_hd_wallet_derive`             | Derive public key + address from a mnemonic or entropy and path    |
 | `keys_xpub_wallet_derive`           | Derive public key + address from an xpub, ypub or zpub and a path  |
+| `keys_bip32_parent_recover`         | Recover a parent from its xpub and one leaked normal child key     |
 | `keys_bip39_generate`               | Generate a disposable English BIP39 mnemonic                       |
 | `keys_bip39_inspect`                | Validate a BIP39 mnemonic and recover its entropy                  |
 | `keys_bip39_entropy_encode`         | Encode hexadecimal entropy as an English BIP39 mnemonic            |

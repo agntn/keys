@@ -11,7 +11,13 @@ import {
   deriveSeed as deriveElectrumSeed,
   inspect as inspectElectrumSeed,
 } from "./utils/electrum/index.ts";
-import { deriveHDKey, getMasterKeyFromSeed } from "./utils/bip32/index.ts";
+import {
+  BIP32ChildMismatchError,
+  deriveHDKey,
+  getMasterKeyFromSeed,
+  recoverParent,
+  type RecoveredParent,
+} from "./utils/bip32/index.ts";
 import { convertPublicKey as convertSecp256k1PublicKey } from "./utils/secp256k1/index.ts";
 import { describeInvalidMnemonic, normalizeMnemonic } from "./utils/hd.ts";
 import {
@@ -56,6 +62,8 @@ import {
   MAX_BIP39_SEED_INPUT_LENGTH,
   MAX_BIP38_ADDRESS_LENGTH,
   MAX_BIP38_PASSPHRASE_LENGTH,
+  MAX_EXTENDED_KEY_LENGTH,
+  MAX_WIF_LENGTH,
   MAX_KEYSTORE_LENGTH,
   MAX_KEYSTORE_PASSWORD_LENGTH,
   MAX_ADDRESS_LENGTH,
@@ -721,6 +729,141 @@ export async function deriveXpubWallet(
         ...addressTypeLines(details.addressType),
         `Public key: ${details.publicKey}`,
         `Address: ${details.address}`,
+      ].join("\n"),
+    ),
+    details,
+  };
+}
+
+/** What the parent of a leaked child key gives away, with its xprv only on request. */
+export interface RecoveredParentDetails {
+  /** Prefix of the extended public key, such as `xpub`. */
+  prefix: string;
+  /** Index of the child below the parent. */
+  index: number;
+  /** Whether the child key derives from the extended public key at that index. */
+  recovered: boolean;
+  /** Parent depth, 0 for a master key. */
+  depth?: number;
+  /** Parent fingerprint as 8 hex digits, the one its children carry. */
+  fingerprint?: string;
+  /** Parent extended private key, only when the caller asked for it. */
+  extendedPrivateKey?: string;
+}
+
+/**
+ * Reads a child private key given as an xprv, 64 hex digits or a WIF of any supported chain.
+ * Errors name the accepted forms and never echo the value.
+ * @param value - Raw child argument
+ * @returns {string | Uint8Array} An xprv as is, or the bare private key
+ */
+function childKeyArgument(value: unknown): string | Uint8Array {
+  const child = requiredString(value, "Child key");
+  if (PRIVATE_KEY_HEX.test(child)) return Uint8Array.fromHex(child);
+  if (child.length > MAX_EXTENDED_KEY_LENGTH) throw new RangeError("Child key is too long");
+  if (child.length > MAX_WIF_LENGTH && !/^0x/iu.test(child)) return child;
+  for (const chain of TOOL_WIF_CHAINS) {
+    for (const network of TOOL_NETWORKS) {
+      try {
+        return Uint8Array.fromHex(decodeWIF(child, { chain, network }).privateKey);
+      } catch {
+        continue;
+      }
+    }
+  }
+  throw new TypeError("Child key must be an xprv, a WIF or 64 hex digits without 0x");
+}
+
+/** Parent recovery arguments after the executor's own checks. */
+interface ParentArguments {
+  extendedKey: string;
+  child: string | Uint8Array;
+  requested: number | undefined;
+  revealKey: boolean;
+}
+
+/**
+ * Checks the parent recovery arguments for hosts that skip the schema, never echoing a key.
+ * @param extendedKeyValue - Raw extended key argument
+ * @param childValue - Raw child argument
+ * @param indexValue - Raw index argument
+ * @param revealKeyValue - Raw revealKey argument
+ * @returns {ParentArguments} The checked arguments
+ */
+function parentArguments(
+  extendedKeyValue: unknown,
+  childValue: unknown,
+  indexValue: unknown,
+  revealKeyValue: unknown,
+): ParentArguments {
+  const extendedKey = requiredString(extendedKeyValue, "Extended key");
+  if (extendedKey.length > MAX_EXTENDED_KEY_LENGTH) {
+    throw new RangeError("Extended key is too long");
+  }
+  const child = childKeyArgument(childValue);
+  const requested = optionalIndex(indexValue, "Index");
+  const revealKey = revealKeyValue ?? false;
+  if (typeof revealKey !== "boolean") throw new TypeError("revealKey must be a boolean");
+  if (typeof child !== "string" && requested === undefined) {
+    throw new TypeError("Index is required unless the child key is an xprv");
+  }
+  return { extendedKey, child, requested, revealKey };
+}
+
+/**
+ * Recovers the parent of a leaked normal child; a child from another xpub is a result, not an error.
+ * @param extendedKeyValue - Parent extended public key
+ * @param childValue - Child xprv, WIF or hex private key
+ * @param indexValue - Child index; required unless the child is an xprv
+ * @param revealKeyValue - Whether to return the parent xprv, false by default
+ * @returns {ToolResult<RecoveredParentDetails>} Verdict, fingerprint and the xprv on request
+ */
+export function recoverBip32Parent(
+  extendedKeyValue: unknown,
+  childValue: unknown,
+  indexValue?: unknown,
+  revealKeyValue?: unknown,
+): ToolResult<RecoveredParentDetails> {
+  const { extendedKey, child, requested, revealKey } = parentArguments(
+    extendedKeyValue,
+    childValue,
+    indexValue,
+    revealKeyValue,
+  );
+  const prefix = extendedKey.slice(0, 4);
+  let recovered: RecoveredParent;
+  try {
+    recovered = recoverParent(extendedKey, child, requested);
+  } catch (error) {
+    if (!(error instanceof BIP32ChildMismatchError)) throw error;
+    return {
+      content: content(
+        [
+          `Extended key: ${prefix}`,
+          `Child index: ${error.index}`,
+          `Parent: not recovered. ${error.message}`,
+        ].join("\n"),
+      ),
+      details: { prefix, index: error.index, recovered: false },
+    };
+  }
+  const fingerprint = recovered.parent.fingerprint.toString(16).padStart(8, "0");
+  const details: RecoveredParentDetails = {
+    prefix,
+    index: recovered.index,
+    recovered: true,
+    depth: recovered.parent.depth,
+    fingerprint,
+    ...(revealKey ? { extendedPrivateKey: recovered.parent.privateExtendedKey } : {}),
+  };
+  return {
+    content: content(
+      [
+        `Extended key: ${prefix}, depth ${details.depth}`,
+        `Child index: ${recovered.index}`,
+        "Parent: recovered",
+        `Fingerprint: ${fingerprint}`,
+        ...(revealKey ? [`Extended private key: ${recovered.parent.privateExtendedKey}`] : []),
       ].join("\n"),
     ),
     details,

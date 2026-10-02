@@ -104,6 +104,8 @@ console.log(btc.deriveXpubWallet(zpub, "m/0/0"));
 
 Same address as `m/84'/0'/0'/0/0` above, and the `z` picked segwit. Don't lean on that too hard. Plenty of wallets export a BIP84 account as a plain `xpub`, and then the prefix says legacy while the coins sit on segwit. Pass `"segwit"` as the third argument. Hardened levels and `xprv` get refused, this path never sees a secret.
 
+Careful with that xpub, though. Leak the private key of one normal child next to it and the parent is gone. `recoverParent(xpub, childXprv)` from `@agntn/keys/bip32` hands back the parent xprv, and every sibling with it. Agents get `keys_bip32_parent_recover`. Parent fingerprint only, unless they ask with `revealKey: true`. Hardened children are safe. More: [Wallets](https://keys.agntn.dev/guide/wallets).
+
 ## 🧠 Library
 
 ```ts
