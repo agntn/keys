@@ -23,6 +23,7 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, BIP
 | `crypto-hash.ts`    | ~70   | (internal)                                                                           | Hash function wrappers                                                                                                                   |
 | `bytes.ts`          | ~15   | signing, wif, decred, stellar, sui, zcash                                            | `concatBytes`, the one byte helper without a native equivalent                                                                           |
 | `hd.ts`             | ~100  | blockchain.ts, tool-operations.ts                                                    | Mnemonic to private key at a path: BIP32 for secp256k1, SLIP-10 for ed25519; names the BIP39 check a rejected phrase fails               |
+| `hd-scan.ts`        |       | tool-operations.ts                                                                   | Named wallet path schemes per chain and the walk over them, each parent node derived once                                                |
 | `extended-key.ts`   | ~130  | blockchain.ts, bitcoin.ts, litecoin, bip32/parent.ts                                 | SLIP-0132 prefixes; an xpub down normal levels to a child public key, refusing xprv and hardened levels                                  |
 
 **Subdirectories** (each has `index.ts`):

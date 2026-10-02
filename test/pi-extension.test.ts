@@ -6,6 +6,7 @@ import { Value } from "typebox/value";
 import { describe, expect, it } from "vite-plus/test";
 import {
   bip32ParentVector,
+  hdScanVectors,
   bip39TestVectors,
   electrumVectors,
   publicKeyEncodingVector,
@@ -124,6 +125,28 @@ describe("keys Pi extension", () => {
     await expect(skipSchema(tool)("xpub", { ...args, path: "m/0'/0" })).rejects.toThrow(
       "hardened levels need the private key",
     );
+  });
+  it("scans wallet paths with the shared executor and checks its arguments without the schema", async () => {
+    const tool = (await registerTools()).get("keys_hd_wallet_scan");
+    if (!tool) throw new Error("Missing wallet scan tool");
+    const { mnemonic, address, path } = hdScanVectors.puzzle;
+    const args = { chain: "bitcoin", mnemonic, address };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    expect(Value.Check(tool.parameters, { ...args, indices: 0.5 })).toBe(false);
+    await expect(tool.execute("scan", args)).resolves.toMatchObject({
+      details: { found: true, checked: 1, match: { scheme: "bip44", path, address } },
+    });
+    for (const [bad, message] of [
+      [{ ...args, accounts: 11 }, "accounts must be an integer between 1 and 10"],
+      [{ ...args, indices: 0.5 }, "indices must be an integer between 1 and 100"],
+      [{ ...args, allowInvalidChecksum: "yes" }, "allowInvalidChecksum must be a boolean"],
+      [{ ...args, mnemonic: "a ".repeat(2049) }, "Mnemonic must not exceed 4096 characters"],
+      [{ ...args, mnemonic: "   " }, "Mnemonic must not be empty"],
+      [{ ...args, address: "1".repeat(257) }, "Address must be 1 to 256 characters"],
+      [{ ...args, passphrase: 7 }, "Passphrase must be a string"],
+    ] as const) {
+      await expect(skipSchema(tool)("scan", bad)).rejects.toThrow(message);
+    }
   });
   it("recovers a BIP32 parent with the shared executor and checks its arguments without the schema", async () => {
     const tool = (await registerTools()).get("keys_bip32_parent_recover");

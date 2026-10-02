@@ -8,6 +8,7 @@ import {
   DECRYPT_STORE_PARAMETERS,
   DERIVE_BIP39_SEED_PARAMETERS,
   RECOVER_BIP32_PARENT_PARAMETERS,
+  SCAN_HD_WALLET_PARAMETERS,
   DECRYPT_BIP38_PARAMETERS,
   DERIVE_BRAINWALLET_PARAMETERS,
   DERIVE_ELECTRUM_WALLET_PARAMETERS,
@@ -240,6 +241,37 @@ export const hdWalletDeriveTool = defineTool({
       params.allowInvalidChecksum,
       params.language,
       params.entropy,
+    ),
+});
+
+export const hdWalletScanTool = defineTool({
+  name: "keys_hd_wallet_scan",
+  title: "Scan HD Wallet Paths",
+  description:
+    "Find which common wallet path takes a mnemonic to an address. Walks a fixed list of named schemes per chain (bip44, bip49, bip84 and bip86 on Bitcoin, ledger-live and ledger-legacy on Ethereum, a native Electrum seed's own paths, and so on) over a few accounts and indices, on the receiving and change branches. Reports the scheme, path and public key that hit, or every scheme it tried with its ranges, so a miss says exactly what was ruled out. No path outside the list is tried. Inputs enter the transcript, so use only public or disposable material.",
+  snippet: "Use when a puzzle mnemonic should reach an address but the wallet path is unknown.",
+  guidelines: [
+    "Provide a chain, the mnemonic and the target address; the address must belong to that chain and network",
+    "accounts and indices widen the walk, default 3 accounts and 20 indices; Ledger Live, Solana, Stellar, Aptos and Sui walk their account level with indices",
+    "On bitcoin a phrase that is a native Electrum seed is also walked on its Electrum paths; old seeds report change/index",
+    "A miss lists every scheme tried and every seed family skipped, with the reason. It rules out those paths only, not the mnemonic",
+    "Pass the passphrase the wallet used; it is a different wallet with any other one",
+    "Decred and Cardano are refused, as in keys_hd_wallet_derive",
+    "Returns public keys and addresses, never the mnemonic or a private key",
+  ],
+  effect: "read",
+  input: SCAN_HD_WALLET_PARAMETERS,
+  execute: async (params) =>
+    (await loadOperations()).scanHdWallet(
+      params.chain,
+      params.mnemonic,
+      params.address,
+      params.passphrase,
+      params.network,
+      params.language,
+      params.allowInvalidChecksum,
+      params.accounts,
+      params.indices,
     ),
 });
 
@@ -565,6 +597,7 @@ export const keysTools: readonly ToolDefinition[] = [
   walletGenerateTool,
   walletDeriveTool,
   hdWalletDeriveTool,
+  hdWalletScanTool,
   xpubWalletDeriveTool,
   bip32ParentRecoverTool,
   bip39GenerateTool,
@@ -599,6 +632,7 @@ export const callSummaries: Readonly<
   keys_wallet_generate: (args) => String(args.chain),
   keys_wallet_derive: (args) => String(args.chain),
   keys_hd_wallet_derive: (args) => `${String(args.chain)} ${String(args.path)}`,
+  keys_hd_wallet_scan: (args) => String(args.chain),
   keys_xpub_wallet_derive: (args) => `${String(args.chain)} ${String(args.path)}`,
   keys_bip32_parent_recover: (args) =>
     typeof args.index === "number" ? `child ${args.index}` : "child xprv",
