@@ -51,6 +51,7 @@ describe("Stellar", () => {
       ["a secret seed", vector.secret],
       ["a wrong checksum", vector.address.slice(0, -1) + "B"],
       ["lowercase", vector.address.toLowerCase()],
+      ["lowercase after the type letter", `G${vector.address.slice(1).toLowerCase()}`],
       ["a truncated key", vector.address.slice(0, -1)],
       ["padding", vector.address + "="],
       ["a muxed account with a non-zero trailing bit", vector.muxedAddress.slice(0, -1) + "L"],

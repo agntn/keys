@@ -12,8 +12,8 @@ importers:
         specifier: 0.5.0
         version: 0.5.0(ai@7.0.87(zod@4.6.5))
       '@agntn/encodings':
-        specifier: 0.0.0
-        version: 0.0.0(ai@7.0.87(zod@4.6.5))
+        specifier: 0.1.0
+        version: 0.1.0(ai@7.0.87(zod@4.6.5))
       '@agntn/hashes':
         specifier: 0.6.1
         version: 0.6.1(ai@7.0.87(zod@4.6.5))
@@ -27,9 +27,6 @@ importers:
         specifier: 2.2.0
         version: 2.2.0
       '@noble/curves':
-        specifier: 2.4.0
-        version: 2.4.0
-      '@scure/base':
         specifier: 2.4.0
         version: 2.4.0
       '@scure/bip32':
@@ -80,8 +77,8 @@ packages:
     engines: {node: '>=26'}
     hasBin: true
 
-  '@agntn/encodings@0.0.0':
-    resolution: {integrity: sha512-keeQhFYzvMCagnJeXb7qDQfzZXcFAjjkFxcoSrDfGPWhRR1GLDocEkSi2Z7lvYgUVfVzQzZxGsebClYJ1rMfkw==}
+  '@agntn/encodings@0.1.0':
+    resolution: {integrity: sha512-kPCR2TxPtpt+2CIRlAYHq8V7LwneVBMAp/0geftLkgKcselVI+EYm6dsL1YnZbqw6Cqtl+vHO6u7T5eZ9TTNDQ==}
     engines: {node: '>=26'}
     hasBin: true
     peerDependencies:
@@ -7679,7 +7676,7 @@ snapshots:
       - '@oh-my-pi/pi-coding-agent'
       - ai
 
-  '@agntn/encodings@0.0.0(ai@7.0.87(zod@4.6.5))':
+  '@agntn/encodings@0.1.0(ai@7.0.87(zod@4.6.5))':
     dependencies:
       '@agntn/hashes': 0.6.1(ai@7.0.87(zod@4.6.5))
       '@agntn/tools': 0.0.0(@modelcontextprotocol/server@2.2.0)(ai@7.0.87(zod@4.6.5))

@@ -1,4 +1,4 @@
-import { base58check } from "@agntn/encodings/base58";
+import { base58 } from "@agntn/encodings/base58";
 
 /**
  * Encode data with Base58Check
@@ -6,7 +6,7 @@ import { base58check } from "@agntn/encodings/base58";
  * @returns {string} Base58Check encoded string
  */
 export function encodeBase58Check(data: Uint8Array): string {
-  return base58check.encode(data);
+  return base58.encode(data, { check: true });
 }
 
 /**
@@ -15,7 +15,7 @@ export function encodeBase58Check(data: Uint8Array): string {
  * @returns {Uint8Array} Decoded bytes
  */
 export function decodeBase58Check(address: string): Uint8Array {
-  return base58check.decode(address);
+  return base58.decode(address, { check: true });
 }
 
 /**

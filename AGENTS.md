@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-TypeScript library providing a unified interface for key generation, address derivation, wallet creation, and message signing across 18 blockchains (Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, Cardano, SUI, TRON). Curves and HD derivation come from @noble/@scure, every hash from @agntn/hashes, base encodings from @agntn/encodings (CashAddr, Decred, Stellar and Zcash TEX still on @scure/base), AES from @agntn/ciphers. Nothing in the package is audited or meant for production, real funds or sensitive data.
+TypeScript library providing a unified interface for key generation, address derivation, wallet creation, and message signing across 18 blockchains (Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, Cardano, SUI, TRON). Curves and HD derivation come from @noble/@scure, every hash from @agntn/hashes, base encodings from @agntn/encodings, AES from @agntn/ciphers. Nothing in the package is audited or meant for production, real funds or sensitive data.
 
 ## STRUCTURE
 
@@ -58,7 +58,7 @@ keys/
 
 ## CONVENTIONS
 
-- **Crypto from @agntn first** - a primitive an `@agntn/*` package covers comes from it (every hash from `@agntn/hashes`); curves and HD stay on @noble/@scure until one does, and so do the base encodings @agntn/encodings lacks (agntn/encodings#6, #7, #8). A missing primitive is an issue on the sibling package, not a new @noble dependency, and an audit is no argument for one. Never import raw crypto from Node or other libs
+- **Crypto from @agntn first** - a primitive an `@agntn/*` package covers comes from it (every hash from `@agntn/hashes`); curves and HD stay on @noble/@scure until one does. A missing primitive is an issue on the sibling package, not a new @noble dependency, and an audit is no argument for one. Never import raw crypto from Node or other libs
 - **Hex and bytes** - `Uint8Array.fromHex`, `.toHex()` and `concatBytes` from `src/utils/bytes.ts` in `src/`; tests and playground use `hex` from `@agntn/encodings/hex`, because the type-aware lint types them without the `esnext` lib of `tsconfig.json`
 - **Class pattern** - every blockchain exports a named concrete class and the same class as its default export
 - **Abstract bases** - all chains extend `AbstractBlockchain`; Ethereum and Base extend `AbstractEVMBlockchain`
