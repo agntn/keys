@@ -3,7 +3,12 @@ import { AbstractBlockchain } from "../blockchain.ts";
 import { generateAddress, validateAddress } from "./evm-address.ts";
 import { generateKeyPublic as getSecp256k1KeyPublic } from "./secp256k1/keys.ts";
 import { recoverSecp256k1Signer, signMessage, verifyMessage } from "./signing.ts";
-import type { KeyOptions, MessageSigner, RecoverableSigningOptions } from "../types.ts";
+import type {
+  AddressType,
+  KeyOptions,
+  MessageSigner,
+  RecoverableSigningOptions,
+} from "../types.ts";
 
 export { generateAddress, toChecksumAddress, validateAddress } from "./evm-address.ts";
 
@@ -90,7 +95,16 @@ export abstract class AbstractEVMBlockchain extends AbstractBlockchain {
     return getSecp256k1KeyPublic(keyPrivate, options);
   }
 
-  override getAddress(keyPublic: string): string {
+  /**
+   * EVM addresses take the Keccak-256 of the uncompressed point.
+   * @returns {"uncompressed"} The form the address hashes
+   */
+  protected override get addressKeyForm(): "uncompressed" {
+    return "uncompressed";
+  }
+
+  override getAddress(keyPublic: string, type?: AddressType): string {
+    this.refuseAddressType(type);
     return generateAddress(keyPublic);
   }
 

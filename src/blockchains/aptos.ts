@@ -4,7 +4,7 @@ import { addSchemeByte, createPrefixedAddress, validateAddressHex } from "../uti
 import { BIP44Change, getHardenedPath } from "../utils/bip44/paths.ts";
 import { decodeKeyPublic, generateKeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
-import type { Curve, KeyOptions } from "../types.ts";
+import type { AddressType, Curve, KeyOptions } from "../types.ts";
 
 /** Aptos blockchain implementation. */
 export class Aptos extends AbstractBlockchain {
@@ -32,7 +32,8 @@ export class Aptos extends AbstractBlockchain {
     return getHardenedPath(this.bip44, [account, change, addressIndex]);
   }
 
-  override getAddress(keyPublic: string): string {
+  override getAddress(keyPublic: string, type?: AddressType): string {
+    this.refuseAddressType(type);
     const dataToHash = addSchemeByte(decodeKeyPublic(keyPublic, "Aptos"), 0x00, false);
     return createPrefixedAddress(sha3_256(dataToHash));
   }

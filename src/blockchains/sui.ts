@@ -137,6 +137,14 @@ export class Sui extends AbstractBlockchain {
     return "ed25519";
   }
 
+  /**
+   * Sui secp256k1 addresses hash the compressed key.
+   * @returns {"compressed"} The form the address hashes
+   */
+  protected override get addressKeyForm(): "compressed" {
+    return "compressed";
+  }
+
   override getAddress(keyPublic: string, type: string = this.defaultAddressType): string {
     const scheme = type.toLowerCase();
     if (scheme !== "ed25519" && scheme !== "secp256k1") {

@@ -84,7 +84,48 @@ export abstract class AbstractBlockchain implements Blockchain {
     return undefined;
   }
 
+  /**
+   * Public key form the chain's address hashes whatever form the key comes in.
+   * @returns {"compressed" | "uncompressed" | undefined} The fixed form, undefined where the address follows the key
+   */
+  protected get addressKeyForm(): "compressed" | "uncompressed" | undefined {
+    return undefined;
+  }
+
+  /**
+   * Refuses any address type on a chain with one format, instead of writing it on the wallet.
+   * @param type - Address type the caller asked for
+   * @throws {RangeError} When any type is given
+   */
+  protected refuseAddressType(type: AddressType | undefined): void {
+    if (type === undefined) return;
+    throw new RangeError(
+      `Address type ${JSON.stringify(type)} is not supported for ${this.name}, which has one address format. Omit addressType`,
+    );
+  }
+
+  /**
+   * Refuses a `compressed` that changes neither the public key nor the address.
+   * @param options - Key options of the wallet
+   * @throws {RangeError} When `compressed` changes neither the public key nor the address
+   */
+  protected checkCompressed(options?: KeyOptions): void {
+    const compressed = options?.compressed;
+    if (compressed === undefined) return;
+    const curve = this.resolveCurve(options);
+    if (curve === "ed25519") {
+      throw new RangeError(`${this.name} ed25519 keys take no compressed`);
+    }
+    const form = this.addressKeyForm;
+    if (form === undefined || compressed !== (form === "uncompressed")) return;
+    const label = typeof this.curve === "string" ? this.name : `${this.name} ${curve}`;
+    throw new RangeError(
+      `${label} addresses hash the ${form} key, so compressed: ${String(compressed)} does not apply`,
+    );
+  }
+
   deriveWallet(keyPrivate: string, options?: KeyOptions, addressType?: AddressType): Wallet {
+    this.checkCompressed(options);
     const keyPublic = this.getKeyPublic(keyPrivate, options);
     const type = addressType ?? this.defaultAddressType;
 
@@ -99,6 +140,7 @@ export abstract class AbstractBlockchain implements Blockchain {
   }
 
   generateWallet(options?: KeyOptions, addressType?: AddressType): Wallet {
+    this.checkCompressed(options);
     const keys = this.generateKeys(options);
     const type = addressType ?? this.defaultAddressType;
 
