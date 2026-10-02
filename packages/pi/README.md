@@ -13,6 +13,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 | `keys_brainwallet_derive`           | Derive a Bitcoin or Ethereum address from a brainwallet recipe     |
 | `keys_bip39_seed_derive`            | Derive seed hex from a valid mnemonic and optional passphrase      |
 | `keys_secp256k1_public_key_convert` | Convert secp256k1 public keys between SEC1 encodings               |
+| `keys_secp256k1_point_compute`      | Add, subtract, negate, multiply, lift or check secp256k1 points    |
 | `keys_wif_encode`                   | Export a disposable private key as native BTC, LTC or DCR WIF      |
 | `keys_wif_decode`                   | Read native WIF into a hex key, network and compression flag       |
 | `keys_bip38_inspect`                | Read a BIP38 key's header and check an address, no passphrase      |

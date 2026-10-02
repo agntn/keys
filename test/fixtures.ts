@@ -1272,6 +1272,21 @@ export const publicKeyEncodingVector = {
     "483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8",
 };
 
+/** Multiples of G as SEC1 hex and scalars mod n, the usual published secp256k1 constants. */
+export const secp256k1MathVectors = {
+  g: publicKeyEncodingVector.compressed,
+  minusG: "0379be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+  twoG: "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+  threeG: "02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9",
+  threeGUncompressed:
+    "04f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9" +
+    "388f7b0f632de8140fe337e62a37f3566500a99934c2231b6cb9fd7584b8e672",
+  orderMinusOne: "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140",
+  inverseOfTwo: "7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a1",
+  /** No point of the curve has x = 5. */
+  xWithoutPoint: "0000000000000000000000000000000000000000000000000000000000000005",
+};
+
 /** Electrum 9da4c342 tests/test_mnemonic.py; addresses checked with Electrum 4.8.1. */
 export const electrumVectors = [
   {

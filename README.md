@@ -106,6 +106,8 @@ Same address as `m/84'/0'/0'/0/0` above, and the `z` picked segwit. Don't lean o
 
 Careful with that xpub, though. Leak the private key of one normal child next to it and the parent is gone. `recoverParent(xpub, childXprv)` from `@agntn/keys/bip32` hands back the parent xprv, and every sibling with it. Agents get `keys_bip32_parent_recover`. Parent fingerprint only, unless they ask with `revealKey: true`. Hardened children are safe. More: [Wallets](https://keys.agntn.dev/guide/wallets).
 
+Some puzzles never touch a private key. They add two public keys, or ask what sits between two known ones. `addPoints`, `subtractPoints`, `multiplyPoint` and `liftX` from `@agntn/keys/secp256k1` do that curve math, and scalars mod n get their own four. Agents get `keys_secp256k1_point_compute` for the point side. More: [Keys](https://keys.agntn.dev/guide/keys).
+
 ## 🧠 Library
 
 ```ts

@@ -30,7 +30,15 @@ import {
   type ScanScheme,
   type ScanTried,
 } from "./utils/hd-scan.ts";
-import { convertPublicKey as convertSecp256k1PublicKey } from "./utils/secp256k1/index.ts";
+import {
+  addPoints,
+  convertPublicKey as convertSecp256k1PublicKey,
+  isOnCurve,
+  liftX,
+  multiplyPoint,
+  negatePoint,
+  subtractPoints,
+} from "./utils/secp256k1/index.ts";
 import { describeInvalidMnemonic, normalizeMnemonic } from "./utils/hd.ts";
 import {
   encode as encodeWIF,
@@ -104,6 +112,8 @@ import {
   DIGEST_SCHEMA_PATTERN,
   MAX_TYPED_DATA_LENGTH,
   SIGNATURE_SCHEMA_PATTERN,
+  SECP256K1_POINT_OPERATIONS,
+  type Secp256k1PointOperation,
   type ToolChain,
   type ToolNetwork,
 } from "./tool-parameters.ts";
@@ -2554,6 +2564,61 @@ export function convertPublicKey(
     compressed,
   });
   const details = { publicKey, compressed };
+  return { content: content(JSON.stringify(details)), details };
+}
+
+/** What the point tool computes, by operation. */
+export type Secp256k1PointDetails =
+  | { operation: Exclude<Secp256k1PointOperation, "lift" | "check">; point: string }
+  | { operation: "lift"; even: string; odd: string }
+  | { operation: "check"; onCurve: boolean };
+
+/** The arguments each point operation takes, so no argument drops silently. */
+const SECP256K1_POINT_ARGUMENTS: Readonly<Record<Secp256k1PointOperation, readonly string[]>> = {
+  add: ["point", "other", "compressed"],
+  subtract: ["point", "other", "compressed"],
+  negate: ["point", "compressed"],
+  multiply: ["point", "scalar", "compressed"],
+  lift: ["x", "compressed"],
+  check: ["point"],
+};
+
+/**
+ * Add, subtract, negate or multiply public secp256k1 points, lift an x or check a point.
+ * @param args - Tool arguments, the operation and the ones it takes
+ * @returns {ToolResult<Secp256k1PointDetails>} The resulting point, both lifted points or the verdict
+ */
+export function computeSecp256k1Point(
+  args: Readonly<Record<string, unknown>>,
+): ToolResult<Secp256k1PointDetails> {
+  const operation = oneOf(args["operation"], "operation", SECP256K1_POINT_OPERATIONS);
+  const taken = SECP256K1_POINT_ARGUMENTS[operation];
+  const foreign = ["point", "other", "scalar", "x", "compressed"].filter(
+    (name) => !taken.includes(name) && !isUnset(args[name]),
+  );
+  if (foreign.length > 0) {
+    throw new RangeError(`${operation} does not take ${foreign.join(", ")}`);
+  }
+  const argument = (name: string): string => {
+    if (isUnset(args[name])) throw new TypeError(`${operation} needs ${name}`);
+    return requiredString(args[name], name);
+  };
+  const compressed = args["compressed"] ?? true;
+  if (typeof compressed !== "boolean") throw new TypeError("Compressed must be a boolean");
+  const options = { compressed };
+  let details: Secp256k1PointDetails;
+  if (operation === "check") {
+    details = { operation, onCurve: isOnCurve(argument("point")) };
+  } else if (operation === "lift") {
+    details = { operation, ...liftX(argument("x"), options) };
+  } else if (operation === "negate") {
+    details = { operation, point: negatePoint(argument("point"), options) };
+  } else if (operation === "multiply") {
+    details = { operation, point: multiplyPoint(argument("point"), argument("scalar"), options) };
+  } else {
+    const compute = operation === "add" ? addPoints : subtractPoints;
+    details = { operation, point: compute(argument("point"), argument("other"), options) };
+  }
   return { content: content(JSON.stringify(details)), details };
 }
 

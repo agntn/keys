@@ -1,4 +1,4 @@
-import { Type } from "@agntn/tools";
+import { Type, type TOptional, type TString } from "@agntn/tools";
 import {
   TOOL_CHAINS,
   TOOL_ADDRESS_TYPES,
@@ -32,6 +32,7 @@ import {
   MAX_BRAINWALLET_INPUT_LENGTH,
   MAX_SCRYPT_BLOCKS,
   KDF_COST_LIMITS,
+  SECP256K1_POINT_OPERATIONS,
 } from "./tool-parameters.ts";
 import { BIP39_LANGUAGES } from "./utils/bip39/languages.ts";
 
@@ -174,6 +175,58 @@ export const CONVERT_PUBLIC_KEY_PARAMETERS = Type.Object(
     }),
     compressed: Type.Optional(
       Type.Boolean({ description: "Output compressed SEC1 encoding. Default: true" }),
+    ),
+  },
+  { additionalProperties: false },
+);
+
+/**
+ * SEC1 point argument of the point tool.
+ * @param description - The operations that take it
+ * @returns {TOptional<TString>} The optional argument
+ */
+function sec1Point(description: string): TOptional<TString> {
+  return Type.Optional(
+    Type.String({
+      maxLength: 130,
+      pattern: "^(?:0[23][0-9A-Fa-f]{64}|04[0-9A-Fa-f]{128})?$",
+      description: `${description}. Compressed or uncompressed SEC1 hex, without 0x`,
+    }),
+  );
+}
+
+/** Shared MCP and Pi schema for point arithmetic on secp256k1. */
+export const COMPUTE_SECP256K1_POINT_PARAMETERS = Type.Object(
+  {
+    operation: Type.String({
+      enum: [...SECP256K1_POINT_OPERATIONS],
+      description:
+        "add and subtract take point and other, negate takes point, multiply takes point and scalar, lift takes x, check takes point and answers whether it lies on the curve",
+    }),
+    point: sec1Point("Every operation but lift, required there"),
+    other: sec1Point(
+      "add and subtract only, required there: the point added to point or subtracted from it",
+    ),
+    scalar: Type.Optional(
+      Type.String({
+        maxLength: 64,
+        pattern: "^[0-9A-Fa-f]{0,64}$",
+        description:
+          "multiply only, required there: 1 to n - 1 as hex without 0x. It enters the transcript, so pass a public tweak or a disposable key",
+      }),
+    ),
+    x: Type.Optional(
+      Type.String({
+        maxLength: 64,
+        pattern: "^(?:[0-9A-Fa-f]{64})?$",
+        description:
+          "lift only, required there: x coordinate as 64 hex digits. The even point is the full key of a BIP340 x-only key",
+      }),
+    ),
+    compressed: Type.Optional(
+      Type.Boolean({
+        description: "Output SEC1 encoding, for every operation but check. Default: true",
+      }),
     ),
   },
   { additionalProperties: false },

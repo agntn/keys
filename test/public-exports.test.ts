@@ -23,6 +23,7 @@ import {
   invalidChecksumPuzzle,
   bip39TestVectors,
   publicKeyEncodingVector,
+  secp256k1MathVectors,
   slip132Vectors,
 } from "./fixtures.ts";
 import { blockchains as sourceChains } from "../src/_blockchains.ts";
@@ -104,11 +105,33 @@ describe("Public secp256k1 exports", () => {
     expect(convertPublicKey(uncompressed)).toBe(compressed);
   });
 
+  it("adds points and lifts x from the built package", async () => {
+    const { addPoints, liftX } = await import("@agntn/keys/secp256k1");
+    const { g, minusG, twoG } = secp256k1MathVectors;
+    expect(addPoints(g, g)).toBe(twoG);
+    expect(liftX(g.slice(2))).toEqual({ even: g, odd: minusG });
+  });
+
   it("keeps the conversion out of the root entry and key generation private", async () => {
     const root = await import("@agntn/keys");
     expect(root).not.toHaveProperty("convertSecp256k1PublicKey");
     const secp256k1 = await import("@agntn/keys/secp256k1");
-    expect(new Set(Object.keys(secp256k1))).toEqual(new Set(["convertPublicKey"]));
+    expect(new Set(Object.keys(secp256k1))).toEqual(
+      new Set([
+        "convertPublicKey",
+        "addPoints",
+        "subtractPoints",
+        "negatePoint",
+        "multiplyPoint",
+        "multiplyGenerator",
+        "addScalars",
+        "subtractScalars",
+        "multiplyScalars",
+        "invertScalar",
+        "liftX",
+        "isOnCurve",
+      ]),
+    );
   });
 });
 

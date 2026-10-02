@@ -17,6 +17,7 @@ import {
   evmRecoverTestVectors,
   tronTestVectors,
   publicKeyEncodingVector,
+  secp256k1MathVectors,
   litecoinTestVectors,
   bitcoinCashTestVectors,
   bitcoinGoldTestVectors,
@@ -217,6 +218,60 @@ describe("keys MCP server", () => {
         arguments: args,
       });
       expect(result.isError).toBe(true);
+    }
+  });
+
+  it("computes with secp256k1 points through MCP and names what an operation lacks", async () => {
+    const client = await connectTestClient();
+    const { g, minusG, twoG, threeG, threeGUncompressed, xWithoutPoint } = secp256k1MathVectors;
+    for (const [args, expected] of [
+      [
+        { operation: "add", point: g, other: g },
+        { operation: "add", point: twoG },
+      ],
+      [
+        { operation: "subtract", point: threeG, other: g },
+        { operation: "subtract", point: twoG },
+      ],
+      [
+        { operation: "negate", point: g },
+        { operation: "negate", point: minusG },
+      ],
+      [
+        { operation: "multiply", point: g, scalar: "3", compressed: false },
+        { operation: "multiply", point: threeGUncompressed },
+      ],
+      [
+        { operation: "lift", x: g.slice(2) },
+        { operation: "lift", even: g, odd: minusG },
+      ],
+      [
+        { operation: "check", point: `02${xWithoutPoint}` },
+        { operation: "check", onCurve: false },
+      ],
+    ] as const) {
+      const result = await client.callTool({
+        name: "keys_secp256k1_point_compute",
+        arguments: args,
+      });
+      expect(result.isError).not.toBe(true);
+      expect(JSON.parse(text(result.content))).toEqual(expected);
+    }
+    for (const [args, message] of [
+      [{ operation: "add", point: g, other: minusG }, "point at infinity"],
+      [{ operation: "add", point: g }, "add needs other"],
+      [{ operation: "negate", point: g, scalar: "2" }, "negate does not take scalar"],
+      [{ operation: "check", point: g, compressed: true }, "check does not take compressed"],
+      [{ operation: "multiply", point: g, scalar: "0" }, "from 1 to the curve order minus 1"],
+      [{ operation: "lift", x: xWithoutPoint }, "No point of secp256k1 has this x"],
+      [{ operation: "double", point: g }, "must be one of"],
+    ] as const) {
+      const result = await client.callTool({
+        name: "keys_secp256k1_point_compute",
+        arguments: args,
+      });
+      expect(result.isError).toBe(true);
+      expect(text(result.content)).toContain(message);
     }
   });
 
