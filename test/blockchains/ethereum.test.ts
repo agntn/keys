@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 import { bip39TestVectors, ethereumTestVectors, evmRecoverTestVectors } from "../fixtures";
 import { hashTypedData, useBlockchain } from "../../src";
 import Ethereum from "../../src/blockchains/ethereum";

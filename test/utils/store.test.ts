@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 import { KeystorePasswordError, decrypt, encrypt, inspect } from "../../src/utils/store/index.ts";
 import { storeVectors } from "../fixtures.ts";
 

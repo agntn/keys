@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 import { blake256 } from "@agntn/hashes";
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 import { concatBytes } from "../../src/utils/bytes.ts";
-import { base58 } from "@scure/base";
+import { base58 } from "@agntn/encodings/base58";
 import { decode as decodeWIF, encode as encodeWIF } from "../../src/utils/wif/index.ts";
 import { encodeBase58Check } from "../../src/utils/encoding.ts";
 import { secp256k1TestVectors, wifTestVectors } from "../fixtures.ts";

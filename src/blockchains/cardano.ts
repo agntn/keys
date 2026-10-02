@@ -1,5 +1,5 @@
 import { blake2b } from "@agntn/hashes";
-import { bech32 } from "@scure/base";
+import { bech32 } from "@agntn/encodings/bech32";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { getBIP32Path } from "../utils/bip44/paths.ts";
 import { decodeKeyPublic, generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
@@ -86,7 +86,7 @@ export class Cardano extends AbstractBlockchain {
     const bytes = new Uint8Array(1 + payload.length);
     bytes[0] = header;
     bytes.set(payload, 1);
-    return bech32.encode(hrp, bech32.toWords(bytes), false);
+    return bech32.encode(hrp, bytes, Number.POSITIVE_INFINITY);
   }
 
   private header(addressType: number): number {
@@ -137,8 +137,7 @@ export class Cardano extends AbstractBlockchain {
 
   override validateAddress(address: string): boolean {
     try {
-      const decoded = bech32.decode(address, false);
-      const bytes = bech32.fromWords(decoded.words);
+      const { prefix, bytes } = bech32.decode(address, Number.POSITIVE_INFINITY);
       const headerByte = bytes[0];
       if (headerByte === undefined) return false;
 
@@ -147,10 +146,10 @@ export class Cardano extends AbstractBlockchain {
       const addressType = headerByte >> 4;
       if (addressNetwork !== expectedNetwork) return false;
 
-      if (decoded.prefix === this.params.hrpStake) {
+      if (prefix === this.params.hrpStake) {
         return addressType === ADDRESS_TYPE.REWARD_KEY && bytes.length === 29;
       }
-      if (decoded.prefix !== this.params.hrpAddress) {
+      if (prefix !== this.params.hrpAddress) {
         return false;
       }
       if (addressType === ADDRESS_TYPE.BASE_PAYMENT) return bytes.length === 57;

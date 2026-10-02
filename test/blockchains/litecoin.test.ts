@@ -1,7 +1,5 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { sha256 } from "@agntn/hashes";
-import { hex } from "@scure/base";
-import { base58check, bech32, bech32m } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 import { describe, expect, it } from "vite-plus/test";
 import { blockchains, getBlockchainPath } from "../../src/index.ts";
 import Bitcoin from "../../src/blockchains/bitcoin.ts";
@@ -12,7 +10,6 @@ import {
   litecoinTestVectors as vector,
 } from "../fixtures.ts";
 
-const base58 = base58check(sha256);
 const formats = ["legacy", "p2sh", "segwit", "p2wsh", "taproot"] as const;
 
 describe("Litecoin", () => {
@@ -27,29 +24,16 @@ describe("Litecoin", () => {
     expect(() => new Litecoin({ network: "regtest" })).toThrow("mainnet and testnet only");
   });
 
-  for (const [network, p2pkh, p2sh, hrp] of [
-    ["mainnet", 48, 50, "ltc"],
-    ["testnet", 111, 58, "tltc"],
+  for (const [network, hrp] of [
+    ["mainnet", "ltc"],
+    ["testnet", "tltc"],
   ] as const) {
     const chain = new Litecoin({ network });
     const otherNetwork = new Litecoin({ network: network === "mainnet" ? "testnet" : "mainnet" });
 
     it(`${network} encodes the Core network prefixes and witness programs`, () => {
-      const legacy = base58.decode(chain.getAddress(vector.publicKey));
-      expect(legacy[0]).toBe(p2pkh);
-      expect(hex.encode(legacy.slice(1))).toBe(vector.publicKeyHash);
-      const nested = base58.decode(chain.getAddress(vector.publicKey, "p2sh"));
-      expect(nested[0]).toBe(p2sh);
-      expect(nested.length).toBe(21);
-      for (const type of ["segwit", "p2wsh", "taproot"] as const) {
-        const codec = type === "taproot" ? bech32m : bech32;
-        const decoded = codec.decode(chain.getAddress(vector.publicKey, type));
-        expect(decoded.prefix).toBe(hrp);
-        expect(decoded.words[0]).toBe(type === "taproot" ? 1 : 0);
-        expect(codec.fromWords(decoded.words.slice(1)).length).toBe(type === "segwit" ? 20 : 32);
-        if (type === "segwit") {
-          expect(hex.encode(codec.fromWords(decoded.words.slice(1)))).toBe(vector.publicKeyHash);
-        }
+      for (const type of formats) {
+        expect(chain.getAddress(vector.publicKey, type)).toBe(vector.addresses[network][type]);
       }
     });
 

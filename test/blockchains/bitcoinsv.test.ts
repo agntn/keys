@@ -1,4 +1,5 @@
-import { base64, hex } from "@scure/base";
+import { base64 } from "@agntn/encodings/base64";
+import { hex } from "@agntn/encodings/hex";
 import { describe, expect, it } from "vite-plus/test";
 import { blockchains, getBlockchainPath } from "../../src/index.ts";
 import Bitcoin from "../../src/blockchains/bitcoin.ts";

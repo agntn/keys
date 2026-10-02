@@ -219,6 +219,23 @@ export const litecoinTestVectors = {
   publicKey: "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
   publicKeyHash: "751e76e8199196d454941c45d1b3a323f1433bd6",
   address: "LVuDpNCSSj6pQ7t9Pv6d6sUkLKoqDEVUnJ",
+  /** Each format of the key, its prefix and program checked once with `@scure/base` 2.4.0. */
+  addresses: {
+    mainnet: {
+      legacy: "LVuDpNCSSj6pQ7t9Pv6d6sUkLKoqDEVUnJ",
+      p2sh: "MR8UQSBr5ULwWheBHznrHk2jxyxkHQu8vB",
+      segwit: "ltc1qw508d6qejxtdg4y5r3zarvary0c5xw7kgmn4n9",
+      p2wsh: "ltc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qmu8tk5",
+      taproot: "ltc1pmfr3p9j00pfxjh0zmgp99y8zftmd3s5pmedqhyptwy6lm87hf5sszjagvq",
+    },
+    testnet: {
+      legacy: "mrCDrCybB6J1vRfbwM5hemdJz73FwDBC8r",
+      p2sh: "QdqJHJa9kv3x4AksVMTQAkD3122J1Pbb8p",
+      segwit: "tltc1qw508d6qejxtdg4y5r3zarvary0c5xw7klfsuq0",
+      p2wsh: "tltc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qsnr4fp",
+      taproot: "tltc1pmfr3p9j00pfxjh0zmgp99y8zftmd3s5pmedqhyptwy6lm87hf5ssfaekn4",
+    },
+  },
   messageHashes: [
     ["hello", "51bd869e89676860cf1d778b8735f5e6768da32023d3dcd951711bd21c669d4c"],
     ["é".repeat(127), "08bebd99b9d1fbd73231de22e544e9b0b75c0c54ab6e3128f53665cdf944477f"],

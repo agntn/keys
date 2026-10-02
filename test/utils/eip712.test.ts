@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 import { evmRecoverTestVectors } from "../fixtures";
 import { hashTypedData, type TypedData } from "../../src";
 

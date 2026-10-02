@@ -2,7 +2,7 @@ import { ripemd160, sha256 } from "@agntn/hashes";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { encodeBase58Check, validateBase58Check } from "./encoding.ts";
 import { decodePublicPoint } from "./secp256k1/decode.ts";
-import { bech32, bech32m } from "@scure/base";
+import { segwit } from "@agntn/encodings/bech32";
 
 /**
  * Create RIPEMD160(SHA256(input)) hash - commonly used in Bitcoin-like blockchains
@@ -206,50 +206,7 @@ export function generateAddressSegWit(
     programBytes = hash160(bytesKeyPublic);
   }
 
-  // Convert program bytes to 5-bit words
-  const words =
-    options.witnessVersion === 0 ? bech32.toWords(programBytes) : bech32m.toWords(programBytes);
-
-  // Add witness version to the beginning of the words array
-  const wordsWithVersion = [options.witnessVersion, ...words];
-
-  // Encode with appropriate encoder (bech32 for v0, bech32m for v1+)
-  return options.witnessVersion === 0
-    ? bech32.encode(options.hrp, wordsWithVersion)
-    : bech32m.encode(options.hrp, wordsWithVersion);
-}
-
-/**
- * Result of an unsafe bech32/bech32m decode, as consumed by validation helpers
- */
-type DecodedBech = void | {
-  readonly prefix: string;
-  readonly words: readonly number[];
-};
-
-/**
- * Check that a SegWit address decoded with the expected human readable part,
- * falling back to the other bech32 variant when the primary decode failed
- * @param address - The address being validated
- * @param decoded - Result of decoding the address with the primary decoder
- * @param options - Options for SegWit address validation
- * @returns {boolean} Whether validation may continue
- */
-function hasValidSegWitPrefix(
-  address: string,
-  decoded: DecodedBech,
-  options: OptionsAddressSegWit,
-): boolean {
-  if (decoded && decoded.prefix === options.hrp) {
-    return true;
-  }
-
-  const fallback = options.witnessVersion === 0 ? bech32m : bech32;
-  const decoded2 = fallback.decodeUnsafe(address);
-  if (!decoded2 || decoded2.prefix !== options.hrp) {
-    return false;
-  }
-  return true;
+  return segwit.encode(options.hrp, options.witnessVersion, programBytes);
 }
 
 /**
@@ -278,25 +235,12 @@ function hasValidWitnessProgramLength(data: Uint8Array, witnessVersion: number):
  */
 export function validateAddressSegWit(address: string, options: OptionsAddressSegWit): boolean {
   try {
-    // Decode based on witness version (bech32 for v0, bech32m for v1+)
-    const decoder = options.witnessVersion === 0 ? bech32 : bech32m;
-    const decoded = decoder.decodeUnsafe(address);
-
-    if (!hasValidSegWitPrefix(address, decoded, options)) {
-      return false;
-    }
-
-    // If we get here, we've successfully decoded, now verify the witness version
-    const words = decoded ? decoded.words : [];
-    if (words.length === 0 || words[0] !== options.witnessVersion) {
-      return false;
-    }
-
-    // Check length (depends on witness version)
-    const data = decoder.fromWordsUnsafe(words.slice(1));
-    if (!data) return false;
-
-    return hasValidWitnessProgramLength(data, options.witnessVersion);
+    const { prefix, version, program } = segwit.decode(address);
+    return (
+      prefix === options.hrp &&
+      version === options.witnessVersion &&
+      hasValidWitnessProgramLength(program, version)
+    );
   } catch {
     // If decoding fails, the address is invalid
     return false;

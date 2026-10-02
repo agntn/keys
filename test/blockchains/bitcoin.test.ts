@@ -1,6 +1,7 @@
 import { webcrypto } from "node:crypto";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { base64, hex } from "@scure/base";
+import { base64 } from "@agntn/encodings/base64";
+import { hex } from "@agntn/encodings/hex";
 import { describe, expect, it, vi } from "vite-plus/test";
 import {
   bip137MessageVectors,

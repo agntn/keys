@@ -1,4 +1,4 @@
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 import { describe, expect, it } from "vite-plus/test";
 import { decodeCashAddr, encodeCashAddr } from "../../src/utils/cashaddr.ts";
 import { bitcoinCashTestVectors } from "../fixtures.ts";

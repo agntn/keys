@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 import { derive } from "../../src/utils/brainwallet/index.ts";
 import {
   brainwalletInput,

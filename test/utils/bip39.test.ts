@@ -13,7 +13,7 @@ import {
   lookupWords,
   loadWordlist,
 } from "../../src/utils/bip39";
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 import { bip39TestVectors, invalidChecksumPuzzle, localizedMnemonicVectors } from "../fixtures";
 
 describe("BIP39 Utils", () => {

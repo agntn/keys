@@ -1,4 +1,4 @@
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 import { describe, expect, it } from "vite-plus/test";
 import {
   BIP38PassphraseError,

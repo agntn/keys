@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 import { HDKey } from "@scure/bip32";
 import { mnemonicToSeedSync } from "@scure/bip39";
 import { blockchains } from "../../src/index.ts";

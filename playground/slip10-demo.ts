@@ -1,5 +1,5 @@
 import { getMasterKeyFromSeed, deriveHDKey } from "../src/utils/slip10";
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 
 // Use a static seed for reproducible results
 const testSeed = hex.decode("000102030405060708090a0b0c0d0e0f");

@@ -1,8 +1,8 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { sha256 } from "@agntn/hashes";
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 import { concatBytes } from "../../src/utils/bytes.ts";
-import { base64 } from "@scure/base";
+import { base64 } from "@agntn/encodings/base64";
 import { describe, expect, it } from "vite-plus/test";
 import { blockchains, getBlockchainPath } from "../../src/index.ts";
 import Bitcoin from "../../src/blockchains/bitcoin.ts";

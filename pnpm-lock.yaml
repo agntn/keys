@@ -27,9 +27,12 @@ importers:
       '@agntn/ciphers':
         specifier: 0.5.0
         version: 0.5.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
+      '@agntn/encodings':
+        specifier: 0.0.0
+        version: 0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
       '@agntn/hashes':
-        specifier: 0.4.0
-        version: 0.4.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(supports-color@7.2.0)(typebox@1.3.34)(zod@4.4.3)
+        specifier: 0.6.1
+        version: 0.6.1(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
       '@agntn/tools':
         specifier: 0.0.0
         version: 0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
@@ -108,16 +111,14 @@ packages:
     engines: {node: '>=26'}
     hasBin: true
 
-  '@agntn/hashes@0.4.0':
-    resolution: {integrity: sha512-9hzPrsEuNT7FxWmuN664nnQ0H5rdI6aG1e9Bvts9/5xT+VHj8F2JUii2DrKChu1/n01LLTFs2QNU5j2hhkkEzw==}
+  '@agntn/encodings@0.0.0':
+    resolution: {integrity: sha512-keeQhFYzvMCagnJeXb7qDQfzZXcFAjjkFxcoSrDfGPWhRR1GLDocEkSi2Z7lvYgUVfVzQzZxGsebClYJ1rMfkw==}
     engines: {node: '>=26'}
     hasBin: true
     peerDependencies:
-      '@earendil-works/pi-coding-agent': '>=0.87.1 <1'
-      '@oh-my-pi/pi-coding-agent': '>=18.4.2 <19'
+      '@earendil-works/pi-coding-agent': '>=0.84.2 <1'
+      '@oh-my-pi/pi-coding-agent': '>=18.0.0 <19'
       ai: '>=7.0.0'
-      typebox: '>=1.3.34 <2'
-      zod: '>=4.0.0'
     peerDependenciesMeta:
       '@earendil-works/pi-coding-agent':
         optional: true
@@ -125,11 +126,25 @@ packages:
         optional: true
       ai:
         optional: true
-      zod:
-        optional: true
 
   '@agntn/hashes@0.6.0':
     resolution: {integrity: sha512-6jRBp9LUA1jfL8jJ58777NtzEWKPdZesu70tBLplbP5W0mt0NrQaYMnWHtt86O2HPwcHz1Msu+6D49JIwoDu3w==}
+    engines: {node: '>=26'}
+    hasBin: true
+    peerDependencies:
+      '@earendil-works/pi-coding-agent': '>=0.87.1 <1'
+      '@oh-my-pi/pi-coding-agent': '>=18.4.2 <19'
+      ai: '>=7.0.0'
+    peerDependenciesMeta:
+      '@earendil-works/pi-coding-agent':
+        optional: true
+      '@oh-my-pi/pi-coding-agent':
+        optional: true
+      ai:
+        optional: true
+
+  '@agntn/hashes@0.6.1':
+    resolution: {integrity: sha512-pakVYxcaOtVUTU9cfssc8S3c5kr7R5w7EhIBKJdhdNkvMeMOs4gU9zCJUamyXbKSvZcI9EYHUFcXWqapVNyW1A==}
     engines: {node: '>=26'}
     hasBin: true
     peerDependencies:
@@ -3433,20 +3448,27 @@ snapshots:
       - '@oh-my-pi/pi-coding-agent'
       - ai
 
-  '@agntn/hashes@0.4.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(supports-color@7.2.0)(typebox@1.3.34)(zod@4.4.3)':
+  '@agntn/encodings@0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))':
     dependencies:
-      '@modelcontextprotocol/sdk': 1.30.1(supports-color@7.2.0)(zod@4.4.3)
+      '@agntn/hashes': 0.6.1(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
+      '@agntn/tools': 0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
+      '@modelcontextprotocol/server': 2.2.0
       citty: 0.2.2
-      typebox: 1.3.34
+      consola: 3.4.2
     optionalDependencies:
       '@earendil-works/pi-coding-agent': 0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3)
       '@oh-my-pi/pi-coding-agent': 18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
-      zod: 4.4.3
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - supports-color
 
   '@agntn/hashes@0.6.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))':
+    dependencies:
+      '@agntn/tools': 0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
+      '@modelcontextprotocol/server': 2.2.0
+      citty: 0.2.2
+    optionalDependencies:
+      '@earendil-works/pi-coding-agent': 0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3)
+      '@oh-my-pi/pi-coding-agent': 18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+
+  '@agntn/hashes@0.6.1(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))':
     dependencies:
       '@agntn/tools': 0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
       '@modelcontextprotocol/server': 2.2.0
@@ -3899,6 +3921,7 @@ snapshots:
   '@hono/node-server@2.1.1(hono@4.13.5)':
     dependencies:
       hono: 4.13.5
+    optional: true
 
   '@huggingface/jinja@0.5.10':
     optional: true
@@ -4068,6 +4091,7 @@ snapshots:
       zod-to-json-schema: 3.25.2(zod@4.4.3)
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   '@modelcontextprotocol/server@2.2.0':
     dependencies:
@@ -5013,6 +5037,7 @@ snapshots:
     dependencies:
       mime-types: 3.0.2
       negotiator: 1.1.0
+    optional: true
 
   adm-zip@0.6.1:
     optional: true
@@ -5024,6 +5049,7 @@ snapshots:
   ajv-formats@3.0.1(ajv@8.20.0):
     optionalDependencies:
       ajv: 8.20.0
+    optional: true
 
   ajv@8.20.0:
     dependencies:
@@ -5031,6 +5057,7 @@ snapshots:
       fast-uri: 3.1.6
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
+    optional: true
 
   ansi-regex@5.0.1: {}
 
@@ -5073,6 +5100,7 @@ snapshots:
       type-is: 2.1.0
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   bowser@2.14.1: {}
 
@@ -5091,7 +5119,8 @@ snapshots:
     dependencies:
       run-applescript: 7.1.0
 
-  bytes@3.1.2: {}
+  bytes@3.1.2:
+    optional: true
 
   c12@3.3.4(magicast@0.5.4):
     dependencies:
@@ -5128,11 +5157,13 @@ snapshots:
     dependencies:
       es-errors: 1.3.0
       function-bind: 1.1.2
+    optional: true
 
   call-bound@1.0.4:
     dependencies:
       call-bind-apply-helpers: 1.0.2
       get-intrinsic: 1.3.0
+    optional: true
 
   chai@6.2.2: {}
 
@@ -5180,24 +5211,30 @@ snapshots:
 
   consola@3.4.2: {}
 
-  content-disposition@1.1.0: {}
+  content-disposition@1.1.0:
+    optional: true
 
-  content-type@1.0.5: {}
+  content-type@1.0.5:
+    optional: true
 
-  content-type@2.1.0: {}
+  content-type@2.1.0:
+    optional: true
 
   convert-gitmoji@0.1.5: {}
 
   convert-source-map@2.0.0: {}
 
-  cookie-signature@1.2.2: {}
+  cookie-signature@1.2.2:
+    optional: true
 
-  cookie@0.7.2: {}
+  cookie@0.7.2:
+    optional: true
 
   cors@2.8.6:
     dependencies:
       object-assign: 4.1.1
       vary: 1.1.2
+    optional: true
 
   cross-spawn@7.0.6:
     dependencies:
@@ -5238,7 +5275,8 @@ snapshots:
 
   defu@6.1.7: {}
 
-  depd@2.0.0: {}
+  depd@2.0.0:
+    optional: true
 
   dequal@2.0.3: {}
 
@@ -5261,26 +5299,32 @@ snapshots:
       call-bind-apply-helpers: 1.0.2
       es-errors: 1.3.0
       gopd: 1.2.0
+    optional: true
 
   ecdsa-sig-formatter@1.0.11:
     dependencies:
       safe-buffer: 5.2.1
 
-  ee-first@1.1.1: {}
+  ee-first@1.1.1:
+    optional: true
 
   emoji-regex@10.6.0: {}
 
-  encodeurl@2.0.0: {}
+  encodeurl@2.0.0:
+    optional: true
 
-  es-define-property@1.0.1: {}
+  es-define-property@1.0.1:
+    optional: true
 
-  es-errors@1.3.0: {}
+  es-errors@1.3.0:
+    optional: true
 
   es-module-lexer@2.3.2: {}
 
   es-object-atoms@1.1.2:
     dependencies:
       es-errors: 1.3.0
+    optional: true
 
   esbuild@0.28.2:
     optionalDependencies:
@@ -5313,7 +5357,8 @@ snapshots:
 
   escalade@3.2.0: {}
 
-  escape-html@1.0.3: {}
+  escape-html@1.0.3:
+    optional: true
 
   escape-string-regexp@4.0.0:
     optional: true
@@ -5322,7 +5367,8 @@ snapshots:
     dependencies:
       '@types/estree': 1.0.9
 
-  etag@1.8.1: {}
+  etag@1.8.1:
+    optional: true
 
   eventsource-parser@3.1.1: {}
 
@@ -5339,6 +5385,7 @@ snapshots:
       ip-address: 10.7.0
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   express@5.2.1(supports-color@7.2.0):
     dependencies:
@@ -5372,16 +5419,19 @@ snapshots:
       vary: 1.1.2
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   exsolve@1.1.1: {}
 
   extend@3.0.2: {}
 
-  fast-deep-equal@3.1.3: {}
+  fast-deep-equal@3.1.3:
+    optional: true
 
   fast-sha256@1.3.0: {}
 
-  fast-uri@3.1.6: {}
+  fast-uri@3.1.6:
+    optional: true
 
   fdir@6.5.0(picomatch@4.0.7):
     optionalDependencies:
@@ -5402,6 +5452,7 @@ snapshots:
       statuses: 2.0.2
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   flatbuffers@25.9.23:
     optional: true
@@ -5410,14 +5461,17 @@ snapshots:
     dependencies:
       fetch-blob: 3.2.0
 
-  forwarded@0.2.0: {}
+  forwarded@0.2.0:
+    optional: true
 
-  fresh@2.0.0: {}
+  fresh@2.0.0:
+    optional: true
 
   fsevents@2.3.3:
     optional: true
 
-  function-bind@1.1.2: {}
+  function-bind@1.1.2:
+    optional: true
 
   gaxios@7.3.1(supports-color@7.2.0):
     dependencies:
@@ -5451,11 +5505,13 @@ snapshots:
       has-symbols: 1.1.0
       hasown: 2.0.4
       math-intrinsics: 1.1.0
+    optional: true
 
   get-proto@1.0.1:
     dependencies:
       dunder-proto: 1.0.1
       es-object-atoms: 1.1.2
+    optional: true
 
   get-tsconfig@5.0.0-beta.6:
     dependencies:
@@ -5492,7 +5548,8 @@ snapshots:
 
   google-logging-utils@1.2.0: {}
 
-  gopd@1.2.0: {}
+  gopd@1.2.0:
+    optional: true
 
   graceful-fs@4.2.11: {}
 
@@ -5508,15 +5565,18 @@ snapshots:
       es-define-property: 1.0.1
     optional: true
 
-  has-symbols@1.1.0: {}
+  has-symbols@1.1.0:
+    optional: true
 
   hasown@2.0.4:
     dependencies:
       function-bind: 1.1.2
+    optional: true
 
   highlight.js@10.7.3: {}
 
-  hono@4.13.5: {}
+  hono@4.13.5:
+    optional: true
 
   hosted-git-info@9.0.3:
     dependencies:
@@ -5531,6 +5591,7 @@ snapshots:
       setprototypeof: 1.2.0
       statuses: 2.0.2
       toidentifier: 1.0.1
+    optional: true
 
   http-proxy-agent@9.1.0(supports-color@7.2.0):
     dependencies:
@@ -5560,14 +5621,18 @@ snapshots:
   iconv-lite@0.7.3:
     dependencies:
       safer-buffer: 2.1.2
+    optional: true
 
   ignore@7.0.8: {}
 
-  inherits@2.0.4: {}
+  inherits@2.0.4:
+    optional: true
 
-  ip-address@10.7.0: {}
+  ip-address@10.7.0:
+    optional: true
 
-  ipaddr.js@1.9.1: {}
+  ipaddr.js@1.9.1:
+    optional: true
 
   is-docker@3.0.0: {}
 
@@ -5575,7 +5640,8 @@ snapshots:
     dependencies:
       is-docker: 3.0.0
 
-  is-promise@4.0.0: {}
+  is-promise@4.0.0:
+    optional: true
 
   is-wsl@3.1.1:
     dependencies:
@@ -5613,9 +5679,11 @@ snapshots:
       '@babel/runtime': 7.29.7
       ts-algebra: 2.0.0
 
-  json-schema-traverse@1.0.0: {}
+  json-schema-traverse@1.0.0:
+    optional: true
 
-  json-schema-typed@8.0.2: {}
+  json-schema-typed@8.0.2:
+    optional: true
 
   jwa@2.0.1:
     dependencies:
@@ -5712,11 +5780,14 @@ snapshots:
       escape-string-regexp: 4.0.0
     optional: true
 
-  math-intrinsics@1.1.0: {}
+  math-intrinsics@1.1.0:
+    optional: true
 
-  media-typer@1.1.1: {}
+  media-typer@1.1.1:
+    optional: true
 
-  merge-descriptors@2.0.0: {}
+  merge-descriptors@2.0.0:
+    optional: true
 
   micro-key-producer@0.10.2(patch_hash=244a752b6bd62389716cc3f0593bce1b07a86db1f2db833d74433010edc5e26d):
     dependencies:
@@ -5730,11 +5801,13 @@ snapshots:
     dependencies:
       '@scure/base': 2.4.0
 
-  mime-db@1.54.0: {}
+  mime-db@1.54.0:
+    optional: true
 
   mime-types@3.0.2:
     dependencies:
       mime-db: 1.54.0
+    optional: true
 
   minimatch@10.2.6:
     dependencies:
@@ -5755,6 +5828,7 @@ snapshots:
   negotiator@1.1.0:
     dependencies:
       content-type: 2.1.0
+    optional: true
 
   nf3@0.3.24: {}
 
@@ -5771,9 +5845,11 @@ snapshots:
   node-gyp-build@4.8.4:
     optional: true
 
-  object-assign@4.1.1: {}
+  object-assign@4.1.1:
+    optional: true
 
-  object-inspect@1.13.4: {}
+  object-inspect@1.13.4:
+    optional: true
 
   object-keys@1.1.1:
     optional: true
@@ -5817,10 +5893,12 @@ snapshots:
   on-finished@2.4.1:
     dependencies:
       ee-first: 1.1.1
+    optional: true
 
   once@1.4.0:
     dependencies:
       wrappy: 1.0.2
+    optional: true
 
   onnxruntime-common@1.30.0:
     optional: true
@@ -5920,13 +5998,15 @@ snapshots:
       '@types/retry': 0.12.0
       retry: 0.13.1
 
-  parseurl@1.3.3: {}
+  parseurl@1.3.3:
+    optional: true
 
   partial-json@0.1.7: {}
 
   path-key@3.1.1: {}
 
-  path-to-regexp@8.4.2: {}
+  path-to-regexp@8.4.2:
+    optional: true
 
   pathe@2.0.3: {}
 
@@ -5991,6 +6071,7 @@ snapshots:
     dependencies:
       forwarded: 0.2.0
       ipaddr.js: 1.9.1
+    optional: true
 
   proxy-agent-negotiate@1.1.0: {}
 
@@ -6012,8 +6093,10 @@ snapshots:
     dependencies:
       es-define-property: 1.0.1
       side-channel: 1.1.1
+    optional: true
 
-  range-parser@1.3.0: {}
+  range-parser@1.3.0:
+    optional: true
 
   raw-body@3.0.2:
     dependencies:
@@ -6021,6 +6104,7 @@ snapshots:
       http-errors: 2.0.1
       iconv-lite: 0.7.3
       unpipe: 1.0.0
+    optional: true
 
   rc9@3.0.1:
     dependencies:
@@ -6043,7 +6127,8 @@ snapshots:
 
   readdirp@5.1.1: {}
 
-  require-from-string@2.0.2: {}
+  require-from-string@2.0.2:
+    optional: true
 
   resolve-pkg-maps@1.0.0: {}
 
@@ -6095,12 +6180,14 @@ snapshots:
       path-to-regexp: 8.4.2
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   run-applescript@7.1.0: {}
 
   safe-buffer@5.2.1: {}
 
-  safer-buffer@2.1.2: {}
+  safer-buffer@2.1.2:
+    optional: true
 
   scheduler@0.27.0: {}
 
@@ -6123,6 +6210,7 @@ snapshots:
       statuses: 2.0.2
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   serialize-error@8.1.0:
     dependencies:
@@ -6137,8 +6225,10 @@ snapshots:
       send: 1.2.1(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
-  setprototypeof@1.2.0: {}
+  setprototypeof@1.2.0:
+    optional: true
 
   sharp@0.35.5(@types/node@26.4.1):
     dependencies:
@@ -6212,6 +6302,7 @@ snapshots:
     dependencies:
       es-errors: 1.3.0
       object-inspect: 1.13.4
+    optional: true
 
   side-channel-map@1.0.1:
     dependencies:
@@ -6219,6 +6310,7 @@ snapshots:
       es-errors: 1.3.0
       get-intrinsic: 1.3.0
       object-inspect: 1.13.4
+    optional: true
 
   side-channel-weakmap@1.0.2:
     dependencies:
@@ -6227,6 +6319,7 @@ snapshots:
       get-intrinsic: 1.3.0
       object-inspect: 1.13.4
       side-channel-map: 1.0.1
+    optional: true
 
   side-channel@1.1.1:
     dependencies:
@@ -6235,6 +6328,7 @@ snapshots:
       side-channel-list: 1.0.1
       side-channel-map: 1.0.1
       side-channel-weakmap: 1.0.2
+    optional: true
 
   siginfo@2.0.0: {}
 
@@ -6255,7 +6349,8 @@ snapshots:
       '@stablelib/base64': 1.0.1
       fast-sha256: 1.3.0
 
-  statuses@2.0.2: {}
+  statuses@2.0.2:
+    optional: true
 
   std-env@3.10.0: {}
 
@@ -6293,7 +6388,8 @@ snapshots:
 
   tinyrainbow@3.1.1: {}
 
-  toidentifier@1.0.1: {}
+  toidentifier@1.0.1:
+    optional: true
 
   totalist@3.0.1: {}
 
@@ -6315,6 +6411,7 @@ snapshots:
       content-type: 2.1.0
       media-typer: 1.1.1
       mime-types: 3.0.2
+    optional: true
 
   typebox@1.3.27: {}
 
@@ -6351,14 +6448,16 @@ snapshots:
 
   undici@8.10.2: {}
 
-  unpipe@1.0.0: {}
+  unpipe@1.0.0:
+    optional: true
 
   utf-8-validate@6.0.6:
     dependencies:
       node-gyp-build: 4.8.4
     optional: true
 
-  vary@1.1.2: {}
+  vary@1.1.2:
+    optional: true
 
   vite-plus@0.3.3(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(@vitest/coverage-v8@4.1.11)(bufferutil@4.1.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(utf-8-validate@6.0.6)(yaml@2.9.0):
     dependencies:
@@ -6466,7 +6565,8 @@ snapshots:
       string-width: 7.2.0
       strip-ansi: 7.2.0
 
-  wrappy@1.0.2: {}
+  wrappy@1.0.2:
+    optional: true
 
   ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6):
     optionalDependencies:
@@ -6573,6 +6673,7 @@ snapshots:
   zod-to-json-schema@3.25.2(zod@4.4.3):
     dependencies:
       zod: 4.4.3
+    optional: true
 
   zod@3.25.76: {}
 
