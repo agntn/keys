@@ -1,5 +1,40 @@
 # Changelog
 
+## v0.6.0
+
+[compare changes](https://github.com/agntn/keys/compare/v0.5.1...v0.6.0)
+
+### 🚀 Enhancements
+
+- **hd:** Derive straight from BIP39 entropy ([#201](https://github.com/agntn/keys/pull/201))
+- **tools:** Derive plain brainwallets ([#205](https://github.com/agntn/keys/pull/205))
+- **tools:** Derive uncompressed wallets ([#207](https://github.com/agntn/keys/pull/207))
+- **bip38:** Open a key with its passphrase ([#208](https://github.com/agntn/keys/pull/208))
+- **electrum:** Read seeds from before 2.0 ([#209](https://github.com/agntn/keys/pull/209))
+- **tools:** Derive WarpWallet keys ([#210](https://github.com/agntn/keys/pull/210))
+- **signing:** ⚠️  Read EVM and EIP-712 signers ([#211](https://github.com/agntn/keys/pull/211))
+- **hd:** Recover a parent from its child ([#215](https://github.com/agntn/keys/pull/215))
+- **hd:** Scan wallet paths for an address ([#218](https://github.com/agntn/keys/pull/218))
+- **bip39:** Read what the entropy says ([#220](https://github.com/agntn/keys/pull/220))
+
+### 🩹 Fixes
+
+- **bip44:** Give testnet wallets coin type 1 ([#221](https://github.com/agntn/keys/pull/221))
+
+### ✅ Tests
+
+- **store:** Give the PBKDF2 vector more time ([#202](https://github.com/agntn/keys/pull/202))
+- Drop the ethers and Solana scripts ([#213](https://github.com/agntn/keys/pull/213))
+
+#### ⚠️ Breaking Changes
+
+- **signing:** ⚠️  Read EVM and EIP-712 signers ([#211](https://github.com/agntn/keys/pull/211))
+
+### ❤️ Contributors
+
+- Aeitwoen ([@aeitwoen](https://github.com/aeitwoen))
+- Ori ([@oritwoen](https://github.com/oritwoen))
+
 ## v0.5.1
 
 [compare changes](https://github.com/agntn/keys/compare/v0.5.0...v0.5.1)
