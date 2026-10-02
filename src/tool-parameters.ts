@@ -168,6 +168,12 @@ export const TOOL_WIF_CHAINS = [
 /** Maximum number of words or indices accepted by one BIP39 lookup. */
 export const MAX_BIP39_LOOKUP_ITEMS = 100;
 
+/** Most caller texts one inspection hashes against the entropy. */
+export const MAX_ENTROPY_PREIMAGES = 100;
+
+/** Longest caller text one inspection hashes, in characters. */
+export const MAX_ENTROPY_PREIMAGE_LENGTH = 4096;
+
 /** BIP39 entropy byte lengths accepted by the package. */
 export const BIP39_ENTROPY_BYTE_LENGTHS: readonly number[] = [16, 20, 24, 28, 32];
 

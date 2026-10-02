@@ -65,7 +65,18 @@ import { parse as parseBIP44Path } from "./utils/bip44/index.ts";
 import type { Curve, MessageSigner } from "./types.ts";
 import { hashTypedData, type TypedData } from "./utils/eip712.ts";
 import {
+  entropyHashAlgorithms,
+  profileEntropy,
+  BUILT_IN_PREIMAGES,
+  ENTROPY_DIGEST_BYTES,
+  type EntropyPattern,
+  type EntropyPreimage,
+  type EntropyProfile,
+} from "./utils/entropy-profile.ts";
+import {
   MAX_BIP39_LOOKUP_ITEMS,
+  MAX_ENTROPY_PREIMAGES,
+  MAX_ENTROPY_PREIMAGE_LENGTH,
   BIP39_ENTROPY_BYTE_LENGTHS,
   TOOL_ADDRESS_TYPES_BY_CHAIN,
   TOOL_CHAINS,
@@ -163,6 +174,7 @@ export interface MnemonicInspectionDetails {
   wordlistValid: boolean;
   checksumValid: boolean | null;
   entropy?: string;
+  entropyProfile?: EntropyProfile;
 }
 
 /** Fresh disposable mnemonic and its word count. */
@@ -1755,24 +1767,110 @@ export async function generateBip39Mnemonic(
 }
 
 /**
+ * Quotes text for one result line, escaping every code point that could break or hide it.
+ * @param text - Text read from entropy or passed by the caller.
+ * @returns {string} The text in double quotes.
+ */
+function quoteEntropyText(text: string): string {
+  const escaped = text.replaceAll(/[\p{Cc}\p{Cf}\p{Co}\p{Cn}\p{Zl}\p{Zp}"\\]/gu, (character) =>
+    character === '"' || character === "\\"
+      ? `\\${character}`
+      : `\\u{${character.codePointAt(0)?.toString(16) ?? ""}}`,
+  );
+  return `"${escaped}"`;
+}
+
+function describeEntropyPattern(pattern: EntropyPattern, length: number): string {
+  switch (pattern.kind) {
+    case "all-zeros":
+      return "all zeros";
+    case "all-ones":
+      return "all ones (ff)";
+    case "repeated-byte":
+      return `byte ${pattern.byte} repeated`;
+    case "repeated-block":
+      return `${pattern.block.length / 2}-byte block ${pattern.block} repeated`;
+    case "low-diversity":
+      return `only ${pattern.distinct} distinct bytes out of ${length}`;
+  }
+}
+
+function describeEntropyPreimage(preimage: EntropyPreimage, length: number, cut: boolean): string {
+  const { algorithm, text, source } = preimage;
+  const prefix = cut ? `, first ${length} bytes` : "";
+  return `${algorithm} of ${quoteEntropyText(text)} (${source}${prefix})`;
+}
+
+interface InspectedEntropy {
+  details: { entropy?: string; entropyProfile?: EntropyProfile };
+  lines: string[];
+}
+
+/**
+ * Entropy of a valid mnemonic for the result, with what its bytes look like.
+ * @param entropy - Entropy bytes, or undefined for an invalid mnemonic.
+ * @param preimages - Caller texts hashed against the entropy.
+ * @returns {InspectedEntropy} Detail fields and result lines.
+ */
+function inspectedEntropy(
+  entropy: Uint8Array | undefined,
+  preimages: readonly string[],
+): InspectedEntropy {
+  if (entropy === undefined) return { details: {}, lines: [] };
+  const { length } = entropy;
+  const profile = profileEntropy(entropy, preimages);
+  const matches = profile.preimages.map((preimage) =>
+    describeEntropyPreimage(preimage, length, ENTROPY_DIGEST_BYTES[preimage.algorithm] > length),
+  );
+  const checked = `${BUILT_IN_PREIMAGES.length} built-in, ${preimages.length} given; ${entropyHashAlgorithms(length).join(", ")}`;
+  const patterns = profile.patterns.map((pattern) => describeEntropyPattern(pattern, length));
+  return {
+    details: { entropy: entropy.toHex(), entropyProfile: profile },
+    lines: [
+      `Entropy: ${entropy.toHex()}`,
+      `Entropy text: ${profile.text === null ? "none" : quoteEntropyText(profile.text)}`,
+      `Entropy pattern: ${patterns.join("; ") || "none"}`,
+      `Entropy preimage: ${matches.join("; ") || `none (${checked})`}`,
+    ],
+  };
+}
+
+function entropyPreimageTexts(value: unknown): readonly string[] {
+  if (value === undefined) return [];
+  const texts = stringArray(value, "Entropy preimages");
+  if (texts.length > MAX_ENTROPY_PREIMAGES) {
+    throw new RangeError(`Provide at most ${MAX_ENTROPY_PREIMAGES} entropy preimages`);
+  }
+  if (texts.some((text) => text.length > MAX_ENTROPY_PREIMAGE_LENGTH)) {
+    throw new RangeError(
+      `Each entropy preimage must be at most ${MAX_ENTROPY_PREIMAGE_LENGTH} characters`,
+    );
+  }
+  return texts;
+}
+
+/**
  * Validate a BIP39 mnemonic against the selected list and recover its entropy when valid.
  * @param mnemonicValue - BIP39 mnemonic candidate.
  * @param languageValue - Optional official BIP39 language key.
- * @returns {Promise<ToolResult<MnemonicInspectionDetails>>} Validity and optional entropy.
+ * @param preimagesValue - Optional caller texts hashed against the entropy after the built-in list.
+ * @returns {Promise<ToolResult<MnemonicInspectionDetails>>} Validity, entropy and its profile.
  */
 export async function inspectMnemonic(
   mnemonicValue: unknown,
   languageValue?: unknown,
+  preimagesValue?: unknown,
 ): Promise<ToolResult<MnemonicInspectionDetails>> {
   const mnemonic = normalizedMnemonic(mnemonicValue);
   const language = parseBIP39Language(languageValue);
+  const preimages = entropyPreimageTexts(preimagesValue);
   const wordlist = await loadBIP39Wordlist(language);
   const inspection = inspectBIP39Mnemonic(mnemonic, wordlist);
   const { valid, words, wordCountValid, wordlistValid, checksumValid } = inspection;
-  const entropy = valid
-    ? Buffer.from(bip39.mnemonicToEntropy(mnemonic, wordlist)).toString("hex")
-    : undefined;
-  const details = { language, ...inspection, ...(entropy === undefined ? {} : { entropy }) };
+  const entropy = inspectedEntropy(
+    valid ? bip39.mnemonicToEntropy(mnemonic, wordlist) : undefined,
+    preimages,
+  );
   return {
     content: content(
       [
@@ -1782,12 +1880,10 @@ export async function inspectMnemonic(
         `Word count valid: ${wordCountValid ? "yes" : "no"}`,
         `Wordlist valid: ${wordlistValid ? "yes" : "no"}`,
         `Checksum valid: ${checksumValid === null ? "not checked" : checksumValid ? "yes" : "no"}`,
-        entropy === undefined ? undefined : `Entropy: ${entropy}`,
-      ]
-        .filter((line) => line !== undefined)
-        .join("\n"),
+        ...entropy.lines,
+      ].join("\n"),
     ),
-    details,
+    details: { language, ...inspection, ...entropy.details },
   };
 }
 

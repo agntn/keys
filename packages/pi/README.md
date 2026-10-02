@@ -25,7 +25,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 | `keys_xpub_wallet_derive`           | Derive public key + address from an xpub, ypub or zpub and a path  |
 | `keys_bip32_parent_recover`         | Recover a parent from its xpub and one leaked normal child key     |
 | `keys_bip39_generate`               | Generate a disposable English BIP39 mnemonic                       |
-| `keys_bip39_inspect`                | Validate a BIP39 mnemonic and recover its entropy                  |
+| `keys_bip39_inspect`                | Validate a BIP39 mnemonic and read what its entropy looks like     |
 | `keys_bip39_entropy_encode`         | Encode hexadecimal entropy as an English BIP39 mnemonic            |
 | `keys_bip39_indices_lookup`         | Map numeric positions to words in an official BIP39 list           |
 | `keys_bip39_words_lookup`           | Search an official word list and report 0- and 1-based indices     |
@@ -62,7 +62,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 
 Got the entropy instead of the words? Pass `entropy` as hex, 16 to 32 bytes, in place of `mnemonic`. The tool spells it with the `language` list and derives from those words, so a puzzle that goes hash, entropy, wallet takes one call, not a detour through `keys_bip39_entropy_encode`. One of the two, never both.
 
-`keys_bip39_inspect` reports `wordCountValid`, `wordlistValid` and `checksumValid`. The checksum verdict is `null` when word count or dictionary membership prevents checking it. A bad checksum alone is not proof that a puzzle answer is wrong. `keys_bip39_word_recover` remains a checksum filter, so it is unsuitable when the target may use an invalid checksum. See the [Movie Enigma example](../../README.md#puzzle-phrases-with-an-invalid-checksum).
+`keys_bip39_inspect` reports `wordCountValid`, `wordlistValid` and `checksumValid`. The checksum verdict is `null` when word count or dictionary membership prevents checking it. A bad checksum alone is not proof that a puzzle answer is wrong. A valid phrase also gets its entropy read as text, as a pattern (all zeros, a repeated byte or block, a handful of distinct bytes) and as the MD5, SHA-1 or SHA-256 of a short built-in word list, cut to the entropy length. Got candidate answers? Pass them as `preimages` and they're hashed too, byte for byte, so `"Red Blue"` and `"red blue"` are two guesses. `keys_bip39_word_recover` remains a checksum filter, so it is unsuitable when the target may use an invalid checksum. See the [Movie Enigma example](../../README.md#puzzle-phrases-with-an-invalid-checksum).
 
 ## Install
 
