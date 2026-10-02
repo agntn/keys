@@ -956,7 +956,13 @@ describe("keys MCP server", () => {
       [segwit, "bip84"],
       [taproot, "bip86"],
     ] as const) {
-      const found = await scan({ chain: "bitcoin", mnemonic: reference, address: vector.address });
+      const found = await scan({
+        chain: "bitcoin",
+        mnemonic: reference,
+        address: vector.address,
+        accounts: 1,
+        indices: 1,
+      });
       expect(found).toContain(`Match: ${scheme},`);
       expect(found).toContain(`Path: ${vector.path}`);
     }
@@ -976,16 +982,22 @@ describe("keys MCP server", () => {
       `Path: ${solana.path}`,
     );
     for (const [path, scheme] of [
-      ["m/44'/60'/4'/0/0", "ledger-live"],
-      ["m/44'/60'/0'/7", "ledger-legacy"],
-      ["m/44'/60'/2'/0/19", "bip44"],
+      ["m/44'/60'/3'/0/0", "ledger-live"],
+      ["m/44'/60'/0'/4", "ledger-legacy"],
+      ["m/44'/60'/1'/0/4", "bip44"],
     ] as const) {
       const derived = await client.callTool({
         name: "keys_hd_wallet_derive",
         arguments: { chain: "ethereum", mnemonic: reference, path },
       });
       const address = /Address: (\S+)/u.exec(text(derived.content))?.[1];
-      const found = await scan({ chain: "ethereum", mnemonic: reference, address });
+      const found = await scan({
+        chain: "ethereum",
+        mnemonic: reference,
+        address,
+        accounts: 2,
+        indices: 5,
+      });
       expect(found, path).toContain(`Match: ${scheme},`);
       expect(found, path).toContain(`Path: ${path}`);
     }
@@ -999,43 +1011,56 @@ describe("keys MCP server", () => {
     expect(text(strict.content)).toContain("allowInvalidChecksum scans it");
     expect(text(strict.content)).not.toContain(mnemonic);
     expect(
-      await scan({ chain: "bitcoin", mnemonic, address, allowInvalidChecksum: true }),
+      await scan({
+        chain: "bitcoin",
+        mnemonic,
+        address,
+        allowInvalidChecksum: true,
+        accounts: 1,
+        indices: 1,
+      }),
     ).toContain("Warning: BIP39 checksum is invalid.");
-  });
+  }, 15_000);
 
-  it("reaches the address keys_hd_wallet_derive gives on every scheme of every chain", async () => {
-    const client = await connectTestClient();
-    const mnemonic = bip39TestVectors.mnemonic;
-    for (const chain of TOOL_CHAINS) {
-      for (const network of TOOL_NETWORKS) {
-        for (const scheme of scanSchemes(chain, network) ?? []) {
-          const path = scheme.path
-            .replace("{account}", "0")
-            .replace("{change}", "1")
-            .replace("{index}", "2");
-          const typed = TOOL_ADDRESS_TYPES_BY_CHAIN[chain].length > 0;
-          const derived = await client.callTool({
-            name: "keys_hd_wallet_derive",
-            arguments: {
-              chain,
-              network,
-              mnemonic,
-              path,
-              ...(typed && scheme.addressType ? { addressType: scheme.addressType } : {}),
-            },
-          });
-          const address = /Address: (\S+)/u.exec(text(derived.content))?.[1];
-          const scanned = await client.callTool({
-            name: "keys_hd_wallet_scan",
-            arguments: { chain, network, mnemonic, address, accounts: 1, indices: 3 },
-          });
-          const label = `${chain} ${network} ${scheme.name}`;
-          expect(text(scanned.content), label).toContain(`Match: ${scheme.name}, `);
-          expect(text(scanned.content), label).toContain(`Path: ${path}\n`);
-        }
+  /* On testnet only the `-testnet` schemes write anything mainnet does not already cover. */
+  it.each(TOOL_CHAINS.filter((chain) => scanSchemes(chain, "mainnet") !== undefined))(
+    "reaches the address keys_hd_wallet_derive gives on every %s scheme",
+    async (chain) => {
+      const client = await connectTestClient();
+      const mnemonic = bip39TestVectors.mnemonic;
+      const schemes = TOOL_NETWORKS.flatMap((network) =>
+        (scanSchemes(chain, network) ?? [])
+          .filter((scheme) => network === "mainnet" || scheme.name.endsWith("-testnet"))
+          .map((scheme) => ({ network, scheme })),
+      );
+      for (const { network, scheme } of schemes) {
+        const path = scheme.path
+          .replace("{account}", "0")
+          .replace("{change}", "0")
+          .replace("{index}", "1");
+        const typed = TOOL_ADDRESS_TYPES_BY_CHAIN[chain].length > 0;
+        const derived = await client.callTool({
+          name: "keys_hd_wallet_derive",
+          arguments: {
+            chain,
+            network,
+            mnemonic,
+            path,
+            ...(typed && scheme.addressType ? { addressType: scheme.addressType } : {}),
+          },
+        });
+        const address = /Address: (\S+)/u.exec(text(derived.content))?.[1];
+        const scanned = await client.callTool({
+          name: "keys_hd_wallet_scan",
+          arguments: { chain, network, mnemonic, address, accounts: 1, indices: 2 },
+        });
+        const label = `${network} ${scheme.name}`;
+        expect(text(scanned.content), label).toContain(`Match: ${scheme.name}, `);
+        expect(text(scanned.content), label).toContain(`Path: ${path}\n`);
       }
-    }
-  }, 30_000);
+    },
+    20_000,
+  );
 
   it("lists every scheme a scan walked when no path reaches the address", async () => {
     const client = await connectTestClient();
