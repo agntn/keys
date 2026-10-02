@@ -1,7 +1,7 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { blake256, ripemd160 } from "@agntn/hashes";
 import { concatBytes } from "../utils/bytes.ts";
-import { base58check } from "@scure/base";
+import { createBase58check } from "@agntn/encodings/base58";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { encodeCompactSize } from "../utils/bitcoin.ts";
@@ -24,7 +24,7 @@ import type {
   XpubWallet,
 } from "../types.ts";
 
-const codec = base58check(blake256);
+const codec = createBase58check(blake256);
 const messagePreamble = new TextEncoder().encode("Decred Signed Message:\n");
 
 /** ECDSA P2PKH prefixes from dcrd chaincfg, mainnet and testnet3. */

@@ -1,5 +1,5 @@
 import { concatBytes } from "../utils/bytes.ts";
-import { bech32m } from "@scure/base";
+import { bech32m, fromWordsUnsafe, type Bech32Words } from "@agntn/encodings/bech32";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { hash160 } from "../utils/address.ts";
 import { AbstractBitcoinMessageBlockchain } from "../utils/bitcoin.ts";
@@ -91,12 +91,13 @@ export class Zcash extends AbstractBitcoinMessageBlockchain {
     if (hasTransparentPrefix(address, prefixP2PKH) || hasTransparentPrefix(address, prefixP2SH)) {
       return true;
     }
-    const decoded = bech32m.decodeUnsafe(address);
-    return (
-      decoded !== undefined &&
-      decoded.prefix === hrpTEX &&
-      bech32m.fromWordsUnsafe(decoded.words)?.length === 20
-    );
+    let decoded: Bech32Words;
+    try {
+      decoded = bech32m.decodeWords(address);
+    } catch {
+      return false;
+    }
+    return decoded.prefix === hrpTEX && fromWordsUnsafe(decoded.words)?.length === 20;
   }
 }
 

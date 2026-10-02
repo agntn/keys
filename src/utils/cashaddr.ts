@@ -1,4 +1,4 @@
-import { bech32 } from "@scure/base";
+import { fromWords, toWords } from "@agntn/encodings/bech32";
 
 const ALPHABET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
 const GENERATORS = [0x98f2bc8e61n, 0x79b76d99e2n, 0xf33e5fb3c4n, 0xae2eabe2a8n, 0x1e4f43e470n];
@@ -53,7 +53,7 @@ function versionByte(type: number, length: number): number {
  * @returns {string} The address, such as `bitcoincash:qz3yjg59ypg6jqpwhaxgvjj44jm4hdx0w5wsxw2qez`
  */
 export function encodeCashAddr(prefix: string, type: number, hash: Uint8Array): string {
-  const payload = bech32.toWords(Uint8Array.of(versionByte(type, hash.length), ...hash));
+  const payload = toWords(Uint8Array.of(versionByte(type, hash.length), ...hash));
   const checksum = polymod(prefix, [...payload, 0, 0, 0, 0, 0, 0, 0, 0]);
   const checksumDigits = Array.from({ length: 8 }, (_, index) =>
     Number((checksum >> BigInt(5 * (7 - index))) & 31n),
@@ -85,7 +85,7 @@ function payloadDigits(address: string, prefix: string): number[] | undefined {
 function versionedHash(digits: readonly number[]): CashAddrContent | undefined {
   let bytes: Uint8Array;
   try {
-    bytes = bech32.fromWords([...digits]);
+    bytes = fromWords(digits);
   } catch {
     return undefined;
   }

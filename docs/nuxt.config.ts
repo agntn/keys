@@ -12,7 +12,6 @@ const libraryDependencies = [
   "@agntn/tools",
   "@modelcontextprotocol/server",
   "@noble/curves",
-  "@scure/base",
   "@scure/bip32",
   "@scure/bip39",
   "micro-key-producer",
@@ -20,13 +19,13 @@ const libraryDependencies = [
 
 /** Every subpath src/ imports, dynamic ones too, so dev bundles them up front, not on demand. */
 const libraryEntries = [
+  "@agntn/encodings/base32",
   "@agntn/encodings/base58",
   "@agntn/encodings/bech32",
   "@agntn/hashes",
   "@noble/curves/ed25519.js",
   "@noble/curves/secp256k1.js",
   "@noble/curves/utils.js",
-  "@scure/base",
   "@scure/bip32",
   "@scure/bip39",
   "@scure/bip39/wordlists/czech.js",

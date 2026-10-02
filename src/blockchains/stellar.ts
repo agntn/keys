@@ -1,6 +1,6 @@
 import { crc16Xmodem, sha256 } from "@agntn/hashes";
 import { concatBytes } from "../utils/bytes.ts";
-import { base32nopad } from "@scure/base";
+import { base32 } from "@agntn/encodings/base32";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { getHardenedPath } from "../utils/bip44/paths.ts";
@@ -40,7 +40,7 @@ function strKeyChecksum(payload: Uint8Array): Uint8Array {
  */
 function encodeStrKey(version: number, payload: Uint8Array): string {
   const data = concatBytes(Uint8Array.from([version]), payload);
-  return base32nopad.encode(concatBytes(data, strKeyChecksum(data)));
+  return base32.encode(concatBytes(data, strKeyChecksum(data)), { padding: false });
 }
 
 /**
@@ -106,11 +106,12 @@ export class Stellar extends AbstractBlockchain {
 
     let decoded: Uint8Array;
     try {
-      decoded = base32nopad.decode(address);
+      decoded = base32.decode(address);
     } catch {
       return false;
     }
     if (decoded.length !== type.bytes || decoded[0] !== type.version) return false;
+    if (base32.encode(decoded, { padding: false }) !== address) return false;
 
     const [low, high] = strKeyChecksum(decoded.subarray(0, -2));
     return decoded[type.bytes - 2] === low && decoded[type.bytes - 1] === high;
