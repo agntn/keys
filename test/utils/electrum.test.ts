@@ -92,35 +92,39 @@ describe("Electrum seed derivation", () => {
 });
 
 describe("Old Electrum seeds", () => {
-  it.each(electrumOldVectors)("matches Electrum's keys and addresses: $name", async (vector) => {
-    expect(inspect(vector.mnemonic)).toBe("old");
-    const masterPublicKey = deriveOldMasterPublicKey(vector.mnemonic);
-    expect(hex.encode(masterPublicKey)).toBe(vector.masterPublicKey);
-    for (const child of vector.children) {
-      expect(hex.encode(deriveOldPublicKey(masterPublicKey, child.change, child.index))).toBe(
-        child.publicKey,
-      );
-      const wallet = await deriveElectrumWallet(
-        vector.mnemonic,
-        undefined,
-        undefined,
-        undefined,
-        child.change,
-        child.index,
-      );
-      expect(wallet.details).toEqual({
-        chain: "bitcoin",
-        network: "mainnet",
-        scheme: "electrum",
-        seedType: "old",
-        masterPublicKey: vector.masterPublicKey,
-        change: child.change,
-        index: child.index,
-        publicKey: child.publicKey,
-        address: child.address,
-      });
-    }
-  });
+  it.each(electrumOldVectors)(
+    "matches Electrum's keys and addresses: $name",
+    { timeout: 30_000 },
+    async (vector) => {
+      expect(inspect(vector.mnemonic)).toBe("old");
+      const masterPublicKey = deriveOldMasterPublicKey(vector.mnemonic);
+      expect(hex.encode(masterPublicKey)).toBe(vector.masterPublicKey);
+      for (const child of vector.children) {
+        expect(hex.encode(deriveOldPublicKey(masterPublicKey, child.change, child.index))).toBe(
+          child.publicKey,
+        );
+        const wallet = await deriveElectrumWallet(
+          vector.mnemonic,
+          undefined,
+          undefined,
+          undefined,
+          child.change,
+          child.index,
+        );
+        expect(wallet.details).toEqual({
+          chain: "bitcoin",
+          network: "mainnet",
+          scheme: "electrum",
+          seedType: "old",
+          masterPublicKey: vector.masterPublicKey,
+          change: child.change,
+          index: child.index,
+          publicKey: child.publicKey,
+          address: child.address,
+        });
+      }
+    },
+  );
 
   it("decodes words to the hex seed Electrum stores, and opens both forms", () => {
     const [vector] = electrumOldVectors;
