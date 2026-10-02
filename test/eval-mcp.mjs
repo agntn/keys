@@ -11,6 +11,7 @@ import {
   bip39TestVectors,
   slip132Vectors,
   bip38Vectors,
+  bip32ParentVector,
   brainwalletInput,
   brainwalletVectors,
   storeVectors,
@@ -127,6 +128,12 @@ try {
     new RegExp(
       `Address type: segwit\\nPublic key: [0-9a-f]{66}\\nAddress: ${slip132Vectors[2].address}`,
     ),
+  );
+
+  await call(
+    "keys_bip32_parent_recover",
+    { extendedKey: bip32ParentVector.xpub, child: bip32ParentVector.child.xprv },
+    new RegExp(`Parent: recovered\\nFingerprint: ${bip32ParentVector.fingerprint}$`),
   );
 
   await call(

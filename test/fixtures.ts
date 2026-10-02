@@ -1389,6 +1389,24 @@ export const slip132PrivateKey =
   "xprv9xpXFhFpqdQK3TmytPBqXtGSwS3DLjojFhTGht8gwAAii8py5X6pxeBnQ6ehJiyJ6nDjWGJfZ95WxByFXVkDxHXrqu53WCRGypk2ttuqncb";
 
 /**
+ * BIP32 test vector 2 (bitcoin/bips bip-0032.mediawiki): the master xpub and xprv, its normal
+ * child m/0, and the hardened m/0/2147483647' below that child with the child's xpub.
+ */
+export const bip32ParentVector = {
+  xpub: "xpub661MyMwAqRbcFW31YEwpkMuc5THy2PSt5bDMsktWQcFF8syAmRUapSCGu8ED9W6oDMSgv6Zz8idoc4a6mr8BDzTJY47LJhkJ8UB7WEGuduB",
+  xprv: "xprv9s21ZrQH143K31xYSDQpPDxsXRTUcvj2iNHm5NUtrGiGG5e2DtALGdso3pGz6ssrdK4PFmM8NSpSBHNqPqm55Qn3LqFtT2emdEXVYsCzC2U",
+  fingerprint: "bd16bee5",
+  child: {
+    index: 0,
+    xpub: "xpub69H7F5d8KSRgmmdJg2KhpAK8SR3DjMwAdkxj3ZuxV27CprR9LgpeyGmXUbC6wb7ERfvrnKZjXoUmmDznezpbZb7ap6r1D3tgFxHmwMkQTPH",
+    xprv: "xprv9vHkqa6EV4sPZHYqZznhT2NPtPCjKuDKGY38FBWLvgaDx45zo9WQRUT3dKYnjwih2yJD9mkrocEZXo1ex8G81dwSM1fwqWpWkeS3v86pgKt",
+    privateKey: "abe74a98f6c7eabee0428f53798f0ab8aa1bd37873999041703c742f15ac7e1e",
+  },
+  hardenedGrandchild:
+    "xprv9wSp6B7kry3Vj9m1zSnLvN3xH8RdsPP1Mh7fAaR7aRLcQMKTR2vidYEeEg2mUCTAwCd6vnxVrcjfy2kRgVsFawNzmjuHc2YmYRmagcEPdU9",
+} as const;
+
+/**
  * BIP38 test vectors (bitcoin/bips bip-0038.mediawiki): the header of each key, read without its
  * passphrase, and the passphrase and WIF the spec gives. `address` is the one the spec lists; the
  * compressed vector lists none. The first passphrase is decomposed and NFC turns it into `cf93...`.

@@ -12,6 +12,7 @@ import type { BIP39MnemonicInspection } from "@agntn/keys/bip39";
 import type { ElectrumSeedType } from "@agntn/keys/electrum";
 import type { PublicKeyEncodingOptions } from "@agntn/keys/secp256k1";
 import {
+  bip32ParentVector,
   bip38Vectors,
   brainwalletInput,
   brainwalletVectors,
@@ -135,6 +136,18 @@ describe("Public BIP38 exports", () => {
     );
     expect(await import("@agntn/keys")).not.toHaveProperty("BIP38PassphraseError");
   }, 20_000);
+});
+
+describe("Public BIP32 exports", () => {
+  it("recovers a parent from the built package, outside the root", async () => {
+    const { recoverParent, BIP32ChildMismatchError } = await import("@agntn/keys/bip32");
+    const { xpub, xprv, child } = bip32ParentVector;
+    expect(recoverParent(xpub, child.xprv).parent.privateExtendedKey).toBe(xprv);
+    expect(() => recoverParent(xpub, hex.decode(child.privateKey), 1)).toThrow(
+      BIP32ChildMismatchError,
+    );
+    expect(await import("@agntn/keys")).not.toHaveProperty("recoverParent");
+  });
 });
 
 describe("Public keystore exports", () => {

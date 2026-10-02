@@ -7,6 +7,7 @@ import {
   CONVERT_PUBLIC_KEY_PARAMETERS,
   DECRYPT_STORE_PARAMETERS,
   DERIVE_BIP39_SEED_PARAMETERS,
+  RECOVER_BIP32_PARENT_PARAMETERS,
   DECRYPT_BIP38_PARAMETERS,
   DERIVE_BRAINWALLET_PARAMETERS,
   DERIVE_ELECTRUM_WALLET_PARAMETERS,
@@ -264,6 +265,29 @@ export const xpubWalletDeriveTool = defineTool({
       params.path,
       params.addressType,
       params.network,
+    ),
+});
+
+export const bip32ParentRecoverTool = defineTool({
+  name: "keys_bip32_parent_recover",
+  title: "Recover BIP32 Parent",
+  description:
+    "Recover a parent private key from its extended public key and the private key of one normal child, the known BIP32 weakness: any child at a non-hardened index gives away the parent and every sibling. The child goes in as an xprv, which carries its index, or as a WIF or hex key with index. Reports whether the child belongs to the xpub and the parent fingerprint; the parent xprv comes back only with revealKey: true. Hardened children are refused. The child key enters the transcript, so use only public or disposable material.",
+  snippet: "Use when a puzzle leaks a child private key next to the parent xpub.",
+  guidelines: [
+    "Provide the parent xpub and the child key: an xprv, or a WIF or hex key with its index",
+    "Only normal children work; a hardened index is refused",
+    "A child that does not belong to the xpub is reported, not an error",
+    "The parent xprv comes back only with revealKey: true and is saved in the transcript",
+  ],
+  effect: "read",
+  input: RECOVER_BIP32_PARENT_PARAMETERS,
+  execute: async (params) =>
+    (await loadOperations()).recoverBip32Parent(
+      params.extendedKey,
+      params.child,
+      params.index,
+      params.revealKey,
     ),
 });
 
@@ -542,6 +566,7 @@ export const keysTools: readonly ToolDefinition[] = [
   walletDeriveTool,
   hdWalletDeriveTool,
   xpubWalletDeriveTool,
+  bip32ParentRecoverTool,
   bip39GenerateTool,
   bip39InspectTool,
   bip39EntropyEncodeTool,
@@ -575,6 +600,8 @@ export const callSummaries: Readonly<
   keys_wallet_derive: (args) => String(args.chain),
   keys_hd_wallet_derive: (args) => `${String(args.chain)} ${String(args.path)}`,
   keys_xpub_wallet_derive: (args) => `${String(args.chain)} ${String(args.path)}`,
+  keys_bip32_parent_recover: (args) =>
+    typeof args.index === "number" ? `child ${args.index}` : "child xprv",
   keys_bip39_indices_lookup: (args) =>
     `${Array.isArray(args.indices) ? args.indices.length : 0} indices`,
   keys_bip39_words_lookup: (args) => `${Array.isArray(args.words) ? args.words.length : 0} words`,

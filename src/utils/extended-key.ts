@@ -25,7 +25,8 @@ export const SLIP132_FORMATS = {
 
 /** BIP32 serialization: version, depth, fingerprint, index, chain code, then the key. */
 const EXTENDED_KEY_LENGTH = 78;
-const KEY_OFFSET = 45;
+/** Offset of the key byte, which is 0 before a private key. */
+export const KEY_OFFSET = 45;
 /** A serialized key is 111 or 112 characters; the cap keeps base58 decoding cheap. */
 const MAX_EXTENDED_KEY_LENGTH = 128;
 
@@ -54,11 +55,12 @@ function assertNormalPath(path: string): void {
 }
 
 /**
- * Decodes the 78 serialized bytes and refuses a private key before anything reads it.
+ * Decodes the 78 serialized bytes of an extended key without echoing it in the error.
  * @param extendedKey - Base58Check extended key
- * @returns {Uint8Array} The serialized public key
+ * @param label - What the key is, for the error message
+ * @returns {Uint8Array} The serialized key
  */
-function decodeExtendedPublicKey(extendedKey: string): Uint8Array {
+export function decodeExtendedKey(extendedKey: string, label = "extended key"): Uint8Array {
   let bytes: Uint8Array | undefined;
   try {
     if (extendedKey.length <= MAX_EXTENDED_KEY_LENGTH) bytes = decodeBase58Check(extendedKey);
@@ -66,8 +68,27 @@ function decodeExtendedPublicKey(extendedKey: string): Uint8Array {
     bytes = undefined;
   }
   if (bytes?.length !== EXTENDED_KEY_LENGTH) {
-    throw new Error("Invalid extended key encoding or checksum");
+    throw new Error(`Invalid ${label} encoding or checksum`);
   }
+  return bytes;
+}
+
+/**
+ * Reads the four version bytes that pick the prefix.
+ * @param bytes - Serialized extended key
+ * @returns {number} The version
+ */
+export function extendedKeyVersion(bytes: Uint8Array): number {
+  return new DataView(bytes.buffer, bytes.byteOffset).getUint32(0, false);
+}
+
+/**
+ * Decodes the 78 serialized bytes and refuses a private key before anything reads it.
+ * @param extendedKey - Base58Check extended key
+ * @returns {Uint8Array} The serialized public key
+ */
+function decodeExtendedPublicKey(extendedKey: string): Uint8Array {
+  const bytes = decodeExtendedKey(extendedKey);
   if (bytes[KEY_OFFSET] === 0) {
     throw new Error("Extended private keys are not accepted; pass the public key of the account");
   }
@@ -90,7 +111,7 @@ export function deriveExtendedPublicChild(
 ): ExtendedPublicChild {
   assertNormalPath(path);
   const bytes = decodeExtendedPublicKey(extendedKey);
-  const version = new DataView(bytes.buffer, bytes.byteOffset).getUint32(0, false);
+  const version = extendedKeyVersion(bytes);
   const entry = Object.entries(formats).find(([, format]) => format.version === version);
   if (entry === undefined) {
     throw new RangeError(
