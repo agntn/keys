@@ -1,5 +1,5 @@
 import { webcrypto } from "node:crypto";
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 import { useBlockchain } from "../src/blockchain";
 
 // Dynamiczne importy blockchainów

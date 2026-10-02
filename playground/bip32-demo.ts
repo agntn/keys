@@ -6,7 +6,7 @@ import {
   HARDENED_OFFSET,
 } from "../src/utils/bip32";
 import { sha256 } from "@agntn/hashes";
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 
 // Commented out but kept for reference
 // Generate a seed from random bytes

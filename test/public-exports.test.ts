@@ -2,7 +2,7 @@ import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } fro
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 import { createJiti } from "jiti/static";
 import { build } from "vite-plus";
 import { describe, expect, it } from "vite-plus/test";

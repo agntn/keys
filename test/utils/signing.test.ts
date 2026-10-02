@@ -2,7 +2,7 @@ import { describe, it, expect, expectTypeOf } from "vite-plus/test";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { signMessage, verifyMessage } from "../../src/utils/signing";
 import { sha256 } from "@agntn/hashes";
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 import { evmSignMessage, evmVerifyMessage } from "../../src/utils/evm";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../../src/utils/ed25519-chains";
 import { secp256k1TestVectors, ed25519TestVectors, testMessages } from "../fixtures";

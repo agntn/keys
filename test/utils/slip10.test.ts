@@ -8,7 +8,7 @@ import {
   isHardenedIndex,
   formatIndex,
 } from "../../src/utils/slip10";
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 
 describe("SLIP-0010 Utils", () => {
   // Test vector from SLIP-0010 (ed25519)

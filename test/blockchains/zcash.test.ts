@@ -1,8 +1,8 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { sha256 } from "@agntn/hashes";
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 import { concatBytes } from "../../src/utils/bytes.ts";
-import { base58check, base64, bech32m } from "@scure/base";
+import { base64 } from "@agntn/encodings/base64";
 import { describe, expect, it } from "vite-plus/test";
 import { blockchains, getBlockchainPath } from "../../src/index.ts";
 import { decode as decodeWIF } from "../../src/utils/wif/index.ts";
@@ -86,22 +86,16 @@ describe("Zcash", () => {
     expect(mainnet.validateAddress(`${vector.tex.tex.slice(0, -1)}q`)).toBe(false);
 
     const testnet = new Zcash({ network: "testnet" });
-    const hash = bech32m.fromWords(bech32m.decode(vector.tex.tex).words);
     expect(testnet.validateAddress(vector.tex.tex)).toBe(false);
-    expect(testnet.validateAddress(bech32m.encode("textest", bech32m.toWords(hash)))).toBe(true);
-    expect(mainnet.validateAddress(bech32m.encode("tex", bech32m.toWords(hash.slice(1))))).toBe(
-      false,
-    );
+    expect(testnet.validateAddress("textest1s2rt77ggv6q989lr49rkgzmh5slsksa90ej7wz")).toBe(true);
+    expect(mainnet.validateAddress("tex1s6lhjzrxspfe0cafgajqkaay8u958fgyzra0d")).toBe(false);
   });
 
   it("refuses a broken checksum, Bitcoin's prefixes and shielded addresses", () => {
     const chain = new Zcash();
     const [address] = vector.mainnet;
     expect(chain.validateAddress(`${address.slice(0, -1)}G`)).toBe(false);
-    const short = base58check(sha256).encode(
-      concatBytes(Uint8Array.of(0x1c, 0xb8), new Uint8Array(19)),
-    );
-    expect(chain.validateAddress(short)).toBe(false);
+    expect(chain.validateAddress("CZEnuLZVaXS6oMY3vTNwBE6grg7qpfrGK3")).toBe(false);
     expect(chain.validateAddress("1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH")).toBe(false);
     expect(chain.validateAddress("3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy")).toBe(false);
     expect(

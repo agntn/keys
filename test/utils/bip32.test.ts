@@ -12,7 +12,7 @@ import {
   BIP32ChildMismatchError,
   HDKey,
 } from "../../src/utils/bip32";
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 import { bip32ParentVector, slip132PrivateKey, slip132Vectors } from "../fixtures";
 
 describe("BIP32 Utils", () => {

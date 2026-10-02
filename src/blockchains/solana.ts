@@ -1,4 +1,4 @@
-import { base58 } from "@scure/base";
+import { base58 } from "@agntn/encodings/base58";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { decodeKeyPublic, generateKeyPublic } from "../utils/ed25519.ts";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";

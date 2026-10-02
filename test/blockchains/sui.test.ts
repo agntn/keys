@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vite-plus/test";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 import { bip39TestVectors, slip10WalletVectors, suiTestVectors } from "../fixtures";
 import Sui from "../../src/blockchains/sui";
 import Ethereum from "../../src/blockchains/ethereum";

@@ -1,5 +1,4 @@
-import { sha256 } from "@agntn/hashes";
-import { base58check } from "@scure/base";
+import { base58check } from "@agntn/encodings/base58";
 
 /**
  * Encode data with Base58Check
@@ -7,7 +6,7 @@ import { base58check } from "@scure/base";
  * @returns {string} Base58Check encoded string
  */
 export function encodeBase58Check(data: Uint8Array): string {
-  return base58check(sha256).encode(data);
+  return base58check.encode(data);
 }
 
 /**
@@ -16,7 +15,7 @@ export function encodeBase58Check(data: Uint8Array): string {
  * @returns {Uint8Array} Decoded bytes
  */
 export function decodeBase58Check(address: string): Uint8Array {
-  return base58check(sha256).decode(address);
+  return base58check.decode(address);
 }
 
 /**

@@ -1,14 +1,11 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { blake256, sha256 } from "@agntn/hashes";
-import { base64, hex } from "@scure/base";
-import { base58check } from "@scure/base";
+import { base64 } from "@agntn/encodings/base64";
+import { hex } from "@agntn/encodings/hex";
 import { describe, expect, it } from "vite-plus/test";
 import Decred, { Decred as NamedDecred } from "../../src/blockchains/decred.ts";
 import { blockchains, getBlockchainPath } from "../../src/index.ts";
 import { deriveWallet, deriveHdWallet } from "../../src/tool-operations.ts";
 import { bip39TestVectors, decredTestVectors as vector } from "../fixtures.ts";
-
-const codec = base58check(blake256);
 
 describe("Decred", () => {
   it("loads ECDSA wallets through the registry and shared tools", async () => {
@@ -44,16 +41,15 @@ describe("Decred", () => {
 
   it("rejects bad checksums, wrong payload sizes, prefixes and unsupported formats", async () => {
     const chain = await blockchains.decred()();
-    const payload = codec.decode(vector.addresses.mainnet);
     for (const address of [
       "",
       "1".repeat(55),
       vector.addresses.mainnet.slice(0, -1) + "1",
-      base58check(sha256).encode(payload),
-      codec.encode(payload.slice(0, -1)),
-      codec.encode(new Uint8Array([...payload, 0])),
-      codec.encode(new Uint8Array([6, ...payload.slice(1)])),
-      codec.encode(new Uint8Array([payload[0]!, 0x3e, ...payload.slice(2)])),
+      "DsmcYVbP1Nmag2H4AS17UTvmWXmGe5sGoeL",
+      "3vC1oZJkxNFBMAoggkGtK1DBYAEf3M6ig8",
+      "yq5ut1Ck8f5mdEdrxdMVaDrKTLnQ2bJCAkN4",
+      "C6m68Ro5FcaxNfKMzAbqtKq67QdKA7YsbSr",
+      "DsNGwWV5ifb7oCqv5Qan9yoViuG1hPagYhK",
       "DeeUhrRoTp4DftsqddVW96yMGMW4sgQFYUE",
       "DcuQKx8BES9wU7C6Q5VmLBjw436r27hayjS",
       "DkM3ZigNyiwHrsXRjkDQ8t8tW6uKGW9g61qEkG3bMqQPQWYEf5X3J",

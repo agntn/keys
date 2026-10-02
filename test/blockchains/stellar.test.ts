@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { ed25519 } from "@noble/curves/ed25519.js";
-import { hex } from "@scure/base";
+import { hex } from "@agntn/encodings/hex";
 import { stellarTestVectors } from "../fixtures";
 import Stellar from "../../src/blockchains/stellar";
 import { useBlockchain } from "../../src/blockchain";

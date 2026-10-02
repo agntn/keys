@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import { base64, hex } from "@scure/base";
+import { base64 } from "@agntn/encodings/base64";
+import { hex } from "@agntn/encodings/hex";
 import { HDKey } from "@scure/bip32";
 import { mnemonicToSeedSync } from "@scure/bip39";
 import {

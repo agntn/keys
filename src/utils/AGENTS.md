@@ -10,7 +10,7 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, BIP
 
 | File                 | Lines | Used By                                                                              | Purpose                                                                                                                                  |
 | -------------------- | ----- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `address.ts`         | 312   | bitcoin, sui, aptos, tron, zcash                                                     | hash160, legacy/P2SH/SegWit address gen + validation, hex address validation                                                             |
+| `address.ts`         | 324   | bitcoin, sui, aptos, tron, zcash                                                     | hash160, legacy/P2SH/SegWit address gen + validation, hex address validation                                                             |
 | `bitcoin.ts`         |       | bitcoin, litecoin, bitcoingold, bitcoincash, ecash, bitcoinsv, dash, dogecoin, zcash | Keys and message serialization for all nine; base58 P2PKH for three, CashAddr for two, full addresses and HD purpose inference for three |
 | `cashaddr.ts`        |       | bitcoin.ts, for bitcoincash and ecash                                                | CashAddr encode and decode with the version byte rules Bitcoin Cash Node and Bitcoin ABC share                                           |
 | `evm.ts`             | ~220  | EVM classes and secp256k1 chains                                                     | EVM address generation, EIP-55 checksum, preamble signing, `AbstractEVMBlockchain`                                                       |
@@ -59,13 +59,13 @@ signing.ts
 
 address.ts
   ├── encoding.ts (base58check)
-  └── @agntn/hashes (sha256, ripemd160), @scure/base (bech32, bech32m)
+  └── @agntn/hashes (sha256, ripemd160), @agntn/encodings (segwit)
 
 bip44/ → bip32/ (imports HARDENED_OFFSET, formatIndex)
 ```
 
 ## HOTSPOTS
 
-- **`address.ts`** (312 lines) - most complex file. Handles legacy P2PKH, P2SH, SegWit v0 (bech32), SegWit v1/Taproot (bech32m), P2WSH, and hex address validation. Touch carefully.
+- **`address.ts`** (324 lines) - most complex file. Handles legacy P2PKH, P2SH, SegWit v0 (bech32), SegWit v1/Taproot (bech32m), P2WSH, and hex address validation. Touch carefully.
 - **`evm.ts`** (~220 lines) - EVM address generation, EIP-55 checksum, preamble signing, and the `AbstractEVMBlockchain` base used by Ethereum and Base.
 - **`createVersionedHash`** in address.ts is **deprecated** - use `addSchemeByte` instead.
