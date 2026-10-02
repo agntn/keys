@@ -24,7 +24,7 @@
  *
  */
 
-import { sha256 } from "@agntn/hashes";
+import { Sha256Hasher, sha256 } from "@agntn/hashes";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { concatBytes } from "../bytes.ts";
 import { decodeLegacyWords } from "./legacy.ts";
@@ -50,11 +50,16 @@ export function oldHexSeed(normalized: string): string {
  */
 export function oldMasterPublicKey(hexSeed: string): Uint8Array {
   const seed = new TextEncoder().encode(hexSeed);
-  let stretched: Uint8Array = seed;
-  for (let round = 0; round < STRETCH_ROUNDS; round++) {
-    stretched = sha256(concatBytes(stretched, seed));
+  const fresh = new Sha256Hasher();
+  const hasher = new Sha256Hasher();
+  /** Last digest up front, the seed behind it, so every round hashes in place. */
+  const round = new Uint8Array(32 + seed.length);
+  round.set(seed, 32);
+  hasher.update(seed).update(seed).digestInto(round);
+  for (let count = 1; count < STRETCH_ROUNDS; count++) {
+    hasher.load(fresh).update(round).digestInto(round);
   }
-  return secp256k1.getPublicKey(stretched, false).subarray(1);
+  return secp256k1.getPublicKey(round.subarray(0, 32), false).subarray(1);
 }
 
 /**
