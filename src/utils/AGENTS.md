@@ -37,7 +37,7 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, BIP
 | `bip44/`       | Derivation paths              | `BIP44` coin types, `BIP44Change`, `getPath`, `parse`; `getBIP32Path` and `getHardenedPath` for the chain shapes stay internal in `paths.ts`  |
 | `brainwallet/` | Brainwallet keys              | `derive`: scrypt or PBKDF2, then SHA-256 of the output bytes or their hex; plain SHA-256 or keccak256; WarpWallet                             |
 | `electrum/`    | Electrum seeds                | `inspect` names the version, `deriveSeed` seeds standard and SegWit, `deriveOld*` walk an old one; the normalizer and word list stay internal |
-| `secp256k1/`   | SEC1 public keys              | `convertPublicKey` between compressed and uncompressed; key generation, signing, Core's base64 signatures and key errors stay internal        |
+| `secp256k1/`   | SEC1 public keys, curve math  | `convertPublicKey`; point math and `liftX`, `isOnCurve`, scalars mod n from `math.ts`; key generation, signing and key errors stay internal   |
 | `slip10/`      | ED25519 HD derivation         | `getMasterKeyFromSeed`, `deriveHDKey`                                                                                                         |
 | `store/`       | Keystore files                | `decrypt`, `encrypt` and `inspect` for Web3 Secret Storage v3 keystores; `KeystorePasswordError` for a wrong password                         |
 | `wif/`         | Wallet import format          | `encode` and `decode` for Bitcoin, Litecoin, Dash, Decred and Dogecoin, checked against an explicit chain and network                         |

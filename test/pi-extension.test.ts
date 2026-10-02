@@ -10,6 +10,7 @@ import {
   bip39TestVectors,
   electrumVectors,
   publicKeyEncodingVector,
+  secp256k1MathVectors,
   litecoinTestVectors,
   bitcoinCashTestVectors,
   bitcoinGoldTestVectors,
@@ -168,6 +169,27 @@ describe("keys Pi extension", () => {
       [{ ...args, extendedKey: "x".repeat(129) }, "Extended key is too long"],
     ] as const) {
       await expect(skipSchema(tool)("parent", bad)).rejects.toThrow(message);
+    }
+  });
+  it("computes secp256k1 points with the shared executor and checks its arguments without the schema", async () => {
+    const tool = (await registerTools()).get("keys_secp256k1_point_compute");
+    if (!tool) throw new Error("Missing secp256k1 point tool");
+    const { g, twoG } = secp256k1MathVectors;
+    const args = { operation: "add", point: g, other: g };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    expect(Value.Check(tool.parameters, { ...args, operation: "double" })).toBe(false);
+    await expect(tool.execute("point", args)).resolves.toMatchObject({
+      details: { operation: "add", point: twoG },
+    });
+    for (const [bad, message] of [
+      [{ ...args, operation: "double" }, "operation must be one of"],
+      [{ ...args, other: 2 }, "other must be a string"],
+      [{ ...args, compressed: "no" }, "Compressed must be a boolean"],
+      [{ ...args, x: g.slice(2) }, "add does not take x"],
+      [{ operation: "lift", x: `0x${g.slice(4)}` }, "x must be 64 hex digits"],
+      [{ operation: "multiply", point: g, scalar: "0x03" }, "Scalar must be hex"],
+    ] as const) {
+      await expect(skipSchema(tool)("point", bad)).rejects.toThrow(message);
     }
   });
   it("derives disposable BIP39 seeds without echoing the input", async () => {

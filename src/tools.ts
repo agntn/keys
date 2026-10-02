@@ -4,6 +4,7 @@ import { defineTool, type ToolDefinition } from "@agntn/tools";
 import {
   BIP44_GENERATE_PARAMETERS,
   BIP44_PARSE_PARAMETERS,
+  COMPUTE_SECP256K1_POINT_PARAMETERS,
   CONVERT_PUBLIC_KEY_PARAMETERS,
   DECRYPT_STORE_PARAMETERS,
   DERIVE_BIP39_SEED_PARAMETERS,
@@ -92,6 +93,23 @@ export const secp256k1PublicKeyConvertTool = defineTool({
   input: CONVERT_PUBLIC_KEY_PARAMETERS,
   execute: async (params) =>
     (await loadOperations()).convertPublicKey(params.publicKey, params.compressed),
+});
+
+export const secp256k1PointComputeTool = defineTool({
+  name: "keys_secp256k1_point_compute",
+  title: "Compute secp256k1 Point",
+  description:
+    "Do curve math on public secp256k1 points: add or subtract two points, negate one, multiply one by a scalar, lift an x coordinate to both points, or check that a point lies on the curve. Points go in and come out as SEC1 hex. A sum that lands on the point at infinity is refused. The scalar enters the transcript, and multiplying G by a private key gives its public key, so pass only public tweaks or disposable keys.",
+  snippet: "Use for split key vanity addresses, offsets between known public keys and x-only keys.",
+  guidelines: [
+    "add and subtract take point and other; negate takes point",
+    "multiply takes point and scalar, hex from 1 to n - 1",
+    "lift takes x and returns the even and the odd point; the even one is the BIP340 key",
+    "check takes point and answers onCurve true or false",
+  ],
+  effect: "read",
+  input: COMPUTE_SECP256K1_POINT_PARAMETERS,
+  execute: async (params) => (await loadOperations()).computeSecp256k1Point(params),
 });
 
 export const wifEncodeTool = defineTool({
@@ -592,6 +610,7 @@ export const keysTools: readonly ToolDefinition[] = [
   brainwalletDeriveTool,
   bip39SeedDeriveTool,
   secp256k1PublicKeyConvertTool,
+  secp256k1PointComputeTool,
   wifEncodeTool,
   wifDecodeTool,
   bip38InspectTool,
@@ -632,6 +651,7 @@ function preview(value: unknown): string {
 export const callSummaries: Readonly<
   Record<string, (args: Readonly<Record<string, unknown>>) => string>
 > = {
+  keys_secp256k1_point_compute: (args) => String(args.operation),
   keys_wallet_generate: (args) => String(args.chain),
   keys_wallet_derive: (args) => String(args.chain),
   keys_hd_wallet_derive: (args) => `${String(args.chain)} ${String(args.path)}`,

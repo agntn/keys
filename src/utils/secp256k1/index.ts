@@ -31,3 +31,18 @@ export function convertPublicKey(
     throw new Error(INVALID_PUBLIC_KEY);
   }
 }
+
+export {
+  addPoints,
+  addScalars,
+  invertScalar,
+  isOnCurve,
+  liftX,
+  multiplyGenerator,
+  multiplyPoint,
+  multiplyScalars,
+  negatePoint,
+  subtractPoints,
+  subtractScalars,
+} from "./math.ts";
+export type { LiftedPoints, Scalar } from "./math.ts";

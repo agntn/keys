@@ -93,6 +93,16 @@ try {
   );
 
   await call(
+    "keys_secp256k1_point_compute",
+    {
+      operation: "add",
+      point: publicKeyEncodingVector.compressed,
+      other: publicKeyEncodingVector.compressed,
+    },
+    /"point":"02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"/,
+  );
+
+  await call(
     "keys_brainwallet_derive",
     {
       passphrase: brainwalletInput.passphrase,
