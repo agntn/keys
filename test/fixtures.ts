@@ -30,6 +30,16 @@ export const bip39TestVectors = {
     "c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e53495531f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04",
 };
 
+/** Trezor's `7f7f...` vector, last six words scattered; 51 of 720 orders pass `@scure/bip39`. */
+export const bip39WordOrderVector = {
+  mnemonic: "legal winner thank year wave sausage worth useful legal winner thank yellow",
+  template: "legal winner thank year wave sausage ? ? ? ? ? ?",
+  words: ["yellow", "thank", "winner", "legal", "useful", "worth"],
+  orders: 720,
+  valid: 51,
+  first: "legal winner thank year wave sausage legal thank worth yellow useful winner",
+};
+
 /** Wallets bip_utils 2.9.3 derives from the BIP39 reference mnemonic at each chain's own path. */
 export const slip10WalletVectors = [
   {

@@ -4,6 +4,8 @@ import { isBIP39Language, type BIP39Language } from "./languages.ts";
 
 export { BIP39_LANGUAGES, isBIP39Language } from "./languages.ts";
 export type { BIP39Language } from "./languages.ts";
+export { countWordOrders, orderWords } from "./order.ts";
+export type { WordOrderOptions } from "./order.ts";
 
 // Get English wordlist
 const wordlist = english.wordlist;
@@ -12,6 +14,18 @@ const wordlist = english.wordlist;
 export interface BIP39WordLookup {
   readonly word: string;
   readonly zeroBasedIndex: number | null;
+}
+
+/** A word of the list and its zero-based index. */
+export interface BIP39WordMatch {
+  readonly word: string;
+  readonly zeroBasedIndex: number;
+}
+
+/** A normalized prefix and every word of one BIP39 list it can stand for. */
+export interface BIP39PrefixLookup {
+  readonly prefix: string;
+  readonly matches: readonly BIP39WordMatch[];
 }
 
 /** One requested BIP39 index and the word found at that position. */
@@ -66,6 +80,32 @@ export async function lookupWords(
       word: normalizedWord,
       zeroBasedIndex: zeroBasedIndex === -1 ? null : zeroBasedIndex,
     };
+  });
+}
+
+/** Shortest abbreviation `lookupPrefixes` expands, in letters. */
+const MIN_PREFIX_LENGTH = 3;
+
+/**
+ * Expands abbreviations to the words of one BIP39 list; a whole word matches only itself.
+ * @param prefixes - Abbreviated or whole words
+ * @param language - Official BIP39 language key
+ * @returns {Promise<ReadonlyArray<BIP39PrefixLookup>>} Every match per prefix, in list order
+ */
+export async function lookupPrefixes(
+  prefixes: readonly string[],
+  language: BIP39Language = "english",
+): Promise<readonly BIP39PrefixLookup[]> {
+  const selectedWordlist = await loadWordlist(language);
+  return prefixes.map((input) => {
+    const prefix = input.normalize("NFKD").toLowerCase().normalize("NFKD");
+    const exact = selectedWordlist.indexOf(prefix);
+    if (exact !== -1) return { prefix, matches: [{ word: prefix, zeroBasedIndex: exact }] };
+    if ((prefix.match(/\p{L}/gu) ?? []).length < MIN_PREFIX_LENGTH) return { prefix, matches: [] };
+    const matches = selectedWordlist.flatMap((word, zeroBasedIndex) =>
+      word.startsWith(prefix) ? [{ word, zeroBasedIndex }] : [],
+    );
+    return { prefix, matches };
   });
 }
 

@@ -29,18 +29,18 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, BIP
 
 **Subdirectories** (each has `index.ts`):
 
-| Dir            | Purpose                       | Exports                                                                                                                                       |
-| -------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bip32/`       | HD key derivation (secp256k1) | `getMasterKeyFromSeed`, `deriveHDKey`, `HARDENED_OFFSET`; `recoverParent` takes an xpub and a normal child key back to the parent xprv        |
-| `bip38/`       | Encrypted keys                | `inspect` reads the header without the passphrase; `decrypt` opens both modes, `BIP38PassphraseError` when the address hash misses            |
-| `bip39/`       | Mnemonic phrases              | `generateMnemonic`, `mnemonicToSeed`, `validateMnemonic`, `getMnemonicWordCandidates`, `lookupWords`, `lookupIndices`                         |
-| `bip44/`       | Derivation paths              | `BIP44` coin types, `BIP44Change`, `getPath`, `parse`; `getBIP32Path` and `getHardenedPath` for the chain shapes stay internal in `paths.ts`  |
-| `brainwallet/` | Brainwallet keys              | `derive`: scrypt or PBKDF2, then SHA-256 of the output bytes or their hex; plain SHA-256 or keccak256; WarpWallet                             |
-| `electrum/`    | Electrum seeds                | `inspect` names the version, `deriveSeed` seeds standard and SegWit, `deriveOld*` walk an old one; the normalizer and word list stay internal |
-| `secp256k1/`   | SEC1 public keys, curve math  | `convertPublicKey`; point math and `liftX`, `isOnCurve`, scalars mod n from `math.ts`; key generation, signing and key errors stay internal   |
-| `slip10/`      | ED25519 HD derivation         | `getMasterKeyFromSeed`, `deriveHDKey`                                                                                                         |
-| `store/`       | Keystore files                | `decrypt`, `encrypt` and `inspect` for Web3 Secret Storage v3 keystores; `KeystorePasswordError` for a wrong password                         |
-| `wif/`         | Wallet import format          | `encode` and `decode` for Bitcoin, Litecoin, Dash, Decred and Dogecoin, checked against an explicit chain and network                         |
+| Dir            | Purpose                       | Exports                                                                                                                                                                                     |
+| -------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bip32/`       | HD key derivation (secp256k1) | `getMasterKeyFromSeed`, `deriveHDKey`, `HARDENED_OFFSET`; `recoverParent` takes an xpub and a normal child key back to the parent xprv                                                      |
+| `bip38/`       | Encrypted keys                | `inspect` reads the header without the passphrase; `decrypt` opens both modes, `BIP38PassphraseError` when the address hash misses                                                          |
+| `bip39/`       | Mnemonic phrases              | `generateMnemonic`, `mnemonicToSeed`, `validateMnemonic`, `getMnemonicWordCandidates`, `lookupWords`, `lookupPrefixes`, `lookupIndices`; `orderWords` and `countWordOrders` from `order.ts` |
+| `bip44/`       | Derivation paths              | `BIP44` coin types, `BIP44Change`, `getPath`, `parse`; `getBIP32Path` and `getHardenedPath` for the chain shapes stay internal in `paths.ts`                                                |
+| `brainwallet/` | Brainwallet keys              | `derive`: scrypt or PBKDF2, then SHA-256 of the output bytes or their hex; plain SHA-256 or keccak256; WarpWallet                                                                           |
+| `electrum/`    | Electrum seeds                | `inspect` names the version, `deriveSeed` seeds standard and SegWit, `deriveOld*` walk an old one; the normalizer and word list stay internal                                               |
+| `secp256k1/`   | SEC1 public keys, curve math  | `convertPublicKey`; point math and `liftX`, `isOnCurve`, scalars mod n from `math.ts`; key generation, signing and key errors stay internal                                                 |
+| `slip10/`      | ED25519 HD derivation         | `getMasterKeyFromSeed`, `deriveHDKey`                                                                                                                                                       |
+| `store/`       | Keystore files                | `decrypt`, `encrypt` and `inspect` for Web3 Secret Storage v3 keystores; `KeystorePasswordError` for a wrong password                                                                       |
+| `wif/`         | Wallet import format          | `encode` and `decode` for Bitcoin, Litecoin, Dash, Decred and Dogecoin, checked against an explicit chain and network                                                                       |
 
 ## DEPENDENCY FLOW
 

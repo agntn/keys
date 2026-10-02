@@ -22,6 +22,7 @@ import {
   localizedMnemonicVectors,
   invalidChecksumPuzzle,
   bip39TestVectors,
+  bip39WordOrderVector,
   publicKeyEncodingVector,
   secp256k1MathVectors,
   slip132Vectors,
@@ -241,9 +242,32 @@ describe("Public derivation exports", () => {
     expect(wallet.warnings).toEqual([expect.stringContaining("checksum is invalid")]);
   });
 
+  it("orders scattered words and expands abbreviations from the built package", async () => {
+    const { orderWords, countWordOrders, lookupPrefixes } = await import("@agntn/keys/bip39");
+    const { template, words, orders, mnemonic } = bip39WordOrderVector;
+    expect(countWordOrders(words, { template })).toBe(BigInt(orders));
+    let position = 0;
+    for (const order of orderWords(words, { template })) {
+      position++;
+      if (order.join(" ") === mnemonic) break;
+    }
+    expect(position).toBe(37);
+    expect(await lookupPrefixes(["abou"])).toEqual([
+      { prefix: "abou", matches: [{ word: "about", zeroBasedIndex: 3 }] },
+    ]);
+  });
+
   it("drops the family from BIP39 export names", async () => {
     const bip39 = await import("@agntn/keys/bip39");
-    for (const name of ["inspect", "loadWordlist", "lookupIndices", "lookupWords"])
+    for (const name of [
+      "inspect",
+      "loadWordlist",
+      "lookupIndices",
+      "lookupWords",
+      "lookupPrefixes",
+      "orderWords",
+      "countWordOrders",
+    ])
       expect(bip39).toHaveProperty(name);
     for (const name of [
       "inspectBIP39Mnemonic",

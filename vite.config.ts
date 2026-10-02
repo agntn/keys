@@ -49,6 +49,7 @@ export default defineConfig({
           allow: [
             ...(options?.allow ?? []),
             { from: "lib", name: "Uint8Array" },
+            { from: "lib", name: "Uint16Array" },
             { from: "package", name: "HDKey", package: "@scure/bip32" },
             { from: "package", name: "HDKey", package: "micro-key-producer" },
             { from: "package", name: "WeierstrassPoint", package: "@noble/curves" },

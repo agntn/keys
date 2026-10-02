@@ -24,6 +24,7 @@ import {
   INSPECT_MNEMONIC_PARAMETERS,
   LOOKUP_BIP39_INDICES_PARAMETERS,
   LOOKUP_BIP39_WORDS_PARAMETERS,
+  ORDER_BIP39_WORDS_PARAMETERS,
   RECOVER_MESSAGE_PARAMETERS,
   RECOVER_MNEMONIC_WORD_PARAMETERS,
   SIGN_MESSAGE_PARAMETERS,
@@ -32,6 +33,7 @@ import {
   WIF_DECODE_PARAMETERS,
   WIF_ENCODE_PARAMETERS,
 } from "./tool-schemas.ts";
+import { MAX_BIP39_ORDER_SEARCH } from "./tool-parameters.ts";
 
 let operations: Promise<typeof import("./tool-operations.ts")> | undefined;
 
@@ -420,13 +422,14 @@ export const bip39WordsLookupTool = defineTool({
   name: "keys_bip39_words_lookup",
   title: "Look Up BIP39 Words",
   description:
-    "Check word membership in an official BIP39 list and return both zero-based and one-based indices.",
+    "Check word membership in an official BIP39 list and return both zero-based and one-based indices. A word that is missing from the list but has three or more letters resolves as an abbreviation to the words it starts.",
   snippet: "Use to map public puzzle words to their BIP39 indices.",
   guidelines: [
     "Provide up to 100 public or disposable words",
     "Choose an official BIP39 language when the puzzle is not English",
     "Returns both zero-based and one-based indices because puzzle conventions differ",
     "Words are matched case-insensitively with Unicode NFKD normalization",
+    "A word not in the list with three or more letters is read as an abbreviation and lists every word it starts, so abou gives about",
   ],
   effect: "read",
   input: LOOKUP_BIP39_WORDS_PARAMETERS,
@@ -452,6 +455,29 @@ export const bip39WordRecoverTool = defineTool({
   input: RECOVER_MNEMONIC_WORD_PARAMETERS,
   execute: async (params) =>
     (await loadOperations()).recoverMnemonicWord(params.mnemonic, params.language),
+});
+
+export const bip39WordsOrderTool = defineTool({
+  name: "keys_bip39_words_order",
+  title: "Order Mnemonic Words",
+  description: `Put scattered BIP39 words in every order the open positions allow and list the orders whose checksum passes, with the number of orders checked and the number that pass. A search over more than ${MAX_BIP39_ORDER_SEARCH} orders is refused, so fix known positions in template first. Use this filter only when canonical BIP39 generation is established. Inputs enter the transcript, so use only public or disposable words.`,
+  snippet: "Use to order the words of a puzzle that hands them out one per clue.",
+  guidelines: [
+    "words holds each word whose position is unknown; a word that appears twice goes in twice",
+    "template is the phrase with known words in place and one ? per loose word; leave it out when no position is known",
+    "Nine open positions fit one call; about 1 in 16 orders of a twelve word phrase passes",
+    "Returns phrases, not wallets: derive each one to find the order that opens the target address",
+    "keys_bip39_words_order accepts an explicit BIP39 language; omission means english, not automatic detection",
+  ],
+  effect: "read",
+  input: ORDER_BIP39_WORDS_PARAMETERS,
+  execute: async (params) =>
+    (await loadOperations()).orderBip39Words(
+      params.words,
+      params.template,
+      params.language,
+      params.limit,
+    ),
 });
 
 export const addressGetTool = defineTool({
@@ -628,6 +654,7 @@ export const keysTools: readonly ToolDefinition[] = [
   bip39IndicesLookupTool,
   bip39WordsLookupTool,
   bip39WordRecoverTool,
+  bip39WordsOrderTool,
   addressGetTool,
   addressValidateTool,
   messageSignTool,
@@ -662,6 +689,7 @@ export const callSummaries: Readonly<
   keys_bip39_indices_lookup: (args) =>
     `${Array.isArray(args.indices) ? args.indices.length : 0} indices`,
   keys_bip39_words_lookup: (args) => `${Array.isArray(args.words) ? args.words.length : 0} words`,
+  keys_bip39_words_order: (args) => `${Array.isArray(args.words) ? args.words.length : 0} words`,
   keys_address_get: (args) => String(args.chain),
   keys_address_validate: (args) => String(args.address),
   keys_message_sign: (args) => preview(args.message),

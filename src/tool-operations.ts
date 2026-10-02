@@ -83,6 +83,10 @@ import {
 } from "./utils/entropy-profile.ts";
 import {
   MAX_BIP39_LOOKUP_ITEMS,
+  MAX_BIP39_ORDER_SEARCH,
+  MAX_BIP39_ORDERS_SHOWN,
+  MAX_BIP39_TEMPLATE_LENGTH,
+  DEFAULT_BIP39_ORDERS_SHOWN,
   MAX_ENTROPY_PREIMAGES,
   MAX_ENTROPY_PREIMAGE_LENGTH,
   BIP39_ENTROPY_BYTE_LENGTHS,
@@ -125,6 +129,9 @@ import {
   inspect as inspectBIP39Mnemonic,
   lookupIndices as lookupBIP39Indices,
   lookupWords as lookupBIP39Words,
+  lookupPrefixes as lookupBIP39Prefixes,
+  countWordOrders,
+  orderWords,
 } from "./utils/bip39/index.ts";
 import { BIP39_LANGUAGES, isBIP39Language, type BIP39Language } from "./utils/bip39/languages.ts";
 
@@ -208,10 +215,31 @@ export interface BIP39IndexLookupDetails {
   lookups: Array<{ index: number; word: string | null }>;
 }
 
+/** A list word with both index conventions. */
+export interface BIP39IndexedWord {
+  word: string;
+  zeroBasedIndex: number;
+  oneBasedIndex: number;
+}
+
 /** Result of a BIP39 word lookup. */
 export interface BIP39WordLookupDetails {
   language: string;
-  lookups: Array<{ word: string; zeroBasedIndex: number | null; oneBasedIndex: number | null }>;
+  lookups: Array<{
+    word: string;
+    zeroBasedIndex: number | null;
+    oneBasedIndex: number | null;
+    /** Words a missing entry of three or more letters starts, in list order. */
+    prefixOf?: BIP39IndexedWord[];
+  }>;
+}
+
+/** Orders of scattered words that pass the BIP39 checksum. */
+export interface BIP39WordOrderDetails {
+  language: string;
+  checked: number;
+  valid: number;
+  orders: string[];
 }
 
 /** Candidate words for one missing mnemonic position. */
@@ -1967,24 +1995,128 @@ export async function lookupBip39Words(
   }
   const language = parseBIP39Language(languageValue);
   const found = await lookupBIP39Words(words, language);
-  const lookups = found.map((lookup) => ({
-    word: lookup.word,
-    zeroBasedIndex: lookup.zeroBasedIndex,
-    oneBasedIndex: lookup.zeroBasedIndex === null ? null : lookup.zeroBasedIndex + 1,
-  }));
+  const missing = found.flatMap((lookup) => (lookup.zeroBasedIndex === null ? [lookup.word] : []));
+  const expanded = new Map(
+    (await lookupBIP39Prefixes(missing, language)).map(({ prefix, matches }) => [
+      prefix,
+      matches.map(({ word, zeroBasedIndex }) => ({
+        word,
+        zeroBasedIndex,
+        oneBasedIndex: zeroBasedIndex + 1,
+      })),
+    ]),
+  );
+  const lookups = found.map((lookup) => {
+    const prefixOf = expanded.get(lookup.word) ?? [];
+    return {
+      word: lookup.word,
+      zeroBasedIndex: lookup.zeroBasedIndex,
+      oneBasedIndex: lookup.zeroBasedIndex === null ? null : lookup.zeroBasedIndex + 1,
+      ...(prefixOf.length === 0 ? {} : { prefixOf }),
+    };
+  });
   return {
     content: content(
       [
         `Language: ${language}`,
         "Indices: zero-based, one-based",
-        ...lookups.map((lookup) =>
-          lookup.zeroBasedIndex === null
-            ? `${lookup.word}: not in BIP39`
-            : `${lookup.word}: ${lookup.zeroBasedIndex}, ${lookup.oneBasedIndex}`,
-        ),
+        ...lookups.map((lookup) => {
+          if (lookup.zeroBasedIndex !== null) {
+            return `${lookup.word}: ${lookup.zeroBasedIndex}, ${lookup.oneBasedIndex}`;
+          }
+          if (lookup.prefixOf === undefined) return `${lookup.word}: not in BIP39`;
+          const matches = lookup.prefixOf.map(
+            (match) => `${match.word} (${match.zeroBasedIndex}, ${match.oneBasedIndex})`,
+          );
+          return `${lookup.word}: not in BIP39, prefix of ${matches.join(", ")}`;
+        }),
       ].join("\n"),
     ),
     details: { language, lookups },
+  };
+}
+
+/**
+ * Applies the word count and letter rules of the order schema for hosts that skip it.
+ * @param value - Raw words argument.
+ * @returns {ReadonlyArray<string>} The words unchanged.
+ */
+function orderWordsArgument(value: unknown): readonly string[] {
+  const words = stringArray(value, "BIP39 words");
+  if (words.length === 0 || words.length > 24) {
+    throw new RangeError("Provide between 1 and 24 words");
+  }
+  if (words.some((word) => !BIP39_WORD_PATTERN.test(word))) {
+    throw new TypeError("BIP39 words must contain letters and combining marks only");
+  }
+  return words;
+}
+
+/**
+ * Reads how many valid orders to list, the default when it is left out.
+ * @param value - Raw limit argument.
+ * @returns {number} An integer from 1 to the listing cap.
+ */
+function orderLimit(value: unknown): number {
+  const limit = value ?? DEFAULT_BIP39_ORDERS_SHOWN;
+  if (
+    typeof limit !== "number" ||
+    !Number.isInteger(limit) ||
+    limit < 1 ||
+    limit > MAX_BIP39_ORDERS_SHOWN
+  ) {
+    throw new RangeError(`Limit must be an integer between 1 and ${MAX_BIP39_ORDERS_SHOWN}`);
+  }
+  return limit;
+}
+
+/**
+ * Put scattered words in every order the open positions allow and keep the checksum passes.
+ * @param wordsValue - Words without a known position.
+ * @param templateValue - Optional phrase with known words and one ? per loose word.
+ * @param languageValue - Optional official BIP39 language key.
+ * @param limitValue - Optional count of valid orders to list.
+ * @returns {Promise<ToolResult<BIP39WordOrderDetails>>} Orders checked, passed and listed.
+ */
+export async function orderBip39Words(
+  wordsValue: unknown,
+  templateValue?: unknown,
+  languageValue?: unknown,
+  limitValue?: unknown,
+): Promise<ToolResult<BIP39WordOrderDetails>> {
+  const words = orderWordsArgument(wordsValue);
+  const template = optionalName(templateValue, "Template");
+  if (template !== undefined && template.length > MAX_BIP39_TEMPLATE_LENGTH) {
+    throw new RangeError(`Template must be at most ${MAX_BIP39_TEMPLATE_LENGTH} characters`);
+  }
+  const language = parseBIP39Language(languageValue);
+  const limit = orderLimit(limitValue);
+  const options = { template, wordlist: await loadBIP39Wordlist(language), listName: language };
+  const total = countWordOrders(words, options);
+  if (total > BigInt(MAX_BIP39_ORDER_SEARCH)) {
+    throw new RangeError(
+      `These words have ${total} orders, over the ${MAX_BIP39_ORDER_SEARCH} one call checks. Fix more positions in template, or search with orderWords from @agntn/keys/bip39`,
+    );
+  }
+  const orders: string[] = [];
+  let valid = 0;
+  for (const order of orderWords(words, options)) {
+    valid++;
+    if (orders.length < limit) orders.push(order.join(" "));
+  }
+  const checked = Number(total);
+  return {
+    content: content(
+      [
+        `Language: ${language}`,
+        `Orders checked: ${checked}`,
+        `Valid checksum: ${valid}`,
+        ...(valid === 0
+          ? []
+          : [`First ${orders.length}, sorted by the list index of the loose words:`, ...orders]),
+      ].join("\n"),
+    ),
+    details: { language, checked, valid, orders },
   };
 }
 

@@ -30,6 +30,7 @@ import {
   stellarTestVectors,
   wifTestVectors,
   localizedMnemonicVectors,
+  bip39WordOrderVector,
   bip39EntropyWalletVector,
   invalidChecksumPuzzle,
   slip132PrivateKey,
@@ -805,6 +806,60 @@ describe("keys MCP server", () => {
       const rejected = await client.callTool({ name: "keys_bip39_word_recover", arguments: args });
       expect(rejected.isError).toBe(true);
       expect(text(rejected.content)).toContain(reason);
+    }
+  });
+
+  it("resolves abbreviated words and leaves too short ones unresolved", async () => {
+    const client = await connectTestClient();
+    const result = await client.callTool({
+      name: "keys_bip39_words_lookup",
+      arguments: { words: ["abou", "acc", "ab", "zoo"] },
+    });
+    expect(result.isError).not.toBe(true);
+    expect(text(result.content).split("\n")).toEqual([
+      "Language: english",
+      "Indices: zero-based, one-based",
+      "abou: not in BIP39, prefix of about (3, 4)",
+      "acc: not in BIP39, prefix of access (10, 11), accident (11, 12), account (12, 13), accuse (13, 14)",
+      "ab: not in BIP39",
+      "zoo: 2047, 2048",
+    ]);
+  });
+
+  it("orders scattered words and refuses a search over the call limit", async () => {
+    const client = await connectTestClient();
+    const { template, words, orders, valid, first } = bip39WordOrderVector;
+
+    const result = await client.callTool({
+      name: "keys_bip39_words_order",
+      arguments: { words, template, limit: 2 },
+    });
+    expect(result.isError).not.toBe(true);
+    const lines = text(result.content).split("\n");
+    expect(lines.slice(0, 5)).toEqual([
+      "Language: english",
+      `Orders checked: ${orders}`,
+      `Valid checksum: ${valid}`,
+      "First 2, sorted by the list index of the loose words:",
+      first,
+    ]);
+    expect(lines).toHaveLength(6);
+
+    const tenOpen = bip39WordOrderVector.mnemonic.split(" ");
+    for (const [args, reason] of [
+      [
+        { words: tenOpen.slice(2), template: `${tenOpen.slice(0, 2).join(" ")}${" ?".repeat(10)}` },
+        "These words have 1814400 orders, over the 1000000 one call checks",
+      ],
+      [{ words: words.slice(1), template }, "The template has 6 open positions for 5 words"],
+      [{ words: ["yelow", ...words.slice(1)], template }, "Word 1 is not in the english list"],
+      [{ words, template, limit: 0 }, "Invalid arguments at /limit"],
+      [{ words, template: "no placeholder" }, "Invalid arguments at /template"],
+    ] as const) {
+      const rejected = await client.callTool({ name: "keys_bip39_words_order", arguments: args });
+      expect(rejected.isError).toBe(true);
+      expect(text(rejected.content)).toContain(reason);
+      expect(text(rejected.content)).not.toContain("yelow");
     }
   });
 

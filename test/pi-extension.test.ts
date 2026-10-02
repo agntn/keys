@@ -8,6 +8,7 @@ import {
   bip32ParentVector,
   hdScanVectors,
   bip39TestVectors,
+  bip39WordOrderVector,
   electrumVectors,
   publicKeyEncodingVector,
   secp256k1MathVectors,
@@ -903,6 +904,57 @@ describe("keys Pi extension", () => {
     await expect(
       skipSchema(tool)("call-2", { words: ["orologio"], language: "unknown" }),
     ).rejects.toThrow("Unknown BIP39 language");
+  });
+
+  it("lists every word an abbreviation starts in the lookup details", async () => {
+    const tool = (await registerTools()).get("keys_bip39_words_lookup");
+    if (!tool) throw new Error("keys_bip39_words_lookup was not registered");
+
+    const result = await tool.execute("call-1", { words: ["orol", "ab"], language: "italian" });
+    expect(result.details).toEqual({
+      language: "italian",
+      lookups: [
+        {
+          word: "orol",
+          zeroBasedIndex: null,
+          oneBasedIndex: null,
+          prefixOf: [{ word: "orologio", zeroBasedIndex: 1178, oneBasedIndex: 1179 }],
+        },
+        { word: "ab", zeroBasedIndex: null, oneBasedIndex: null },
+      ],
+    });
+  });
+
+  it("orders scattered words with the shared executor and checks its arguments without the schema", async () => {
+    const tool = (await registerTools()).get("keys_bip39_words_order");
+    if (!tool) throw new Error("keys_bip39_words_order was not registered");
+    const { template, words, orders, valid, first, mnemonic } = bip39WordOrderVector;
+    const args = { words, template };
+
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    expect(Value.Check(tool.parameters, { ...args, limit: 101 })).toBe(false);
+    expect(Value.Check(tool.parameters, { ...args, words: [] })).toBe(false);
+    const result = await tool.execute("order", { ...args, limit: 100 });
+    expect(result.details).toMatchObject({ language: "english", checked: orders, valid });
+    expect(result.details).toHaveProperty("orders", expect.arrayContaining([first, mnemonic]));
+    await expect(skipSchema(tool)("order", { ...args, template: " " })).rejects.toThrow(
+      "A mnemonic must have 12, 15, 18, 21, or 24 words",
+    );
+    for (const [bad, message] of [
+      [{ ...args, words: "yellow" }, "BIP39 words must be an array of strings"],
+      [{ ...args, words: [] }, "Provide between 1 and 24 words"],
+      [{ ...args, words: ["two words"] }, "must contain letters and combining marks only"],
+      [{ ...args, template: 12 }, "Template must be a string"],
+      [
+        { ...args, template: `${template} `.repeat(100) },
+        "Template must be at most 1024 characters",
+      ],
+      [{ ...args, limit: 0 }, "Limit must be an integer between 1 and 100"],
+      [{ ...args, limit: 1.5 }, "Limit must be an integer between 1 and 100"],
+      [{ ...args, language: "latin" }, "Unknown BIP39 language"],
+    ] as const) {
+      await expect(skipSchema(tool)("order", bad)).rejects.toThrow(message);
+    }
   });
 
   it("lists words compatible with the checksum for one missing mnemonic position", async () => {
