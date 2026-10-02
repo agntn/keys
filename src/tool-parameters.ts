@@ -28,6 +28,7 @@ export const TOOL_NAMES = [
   "keys_bip39_words_lookup",
   "keys_bip39_word_recover",
   "keys_bip39_words_order",
+  "keys_bip39_words_repair",
   "keys_address_get",
   "keys_address_validate",
   "keys_message_sign",
@@ -182,17 +183,26 @@ export const TOOL_WIF_CHAINS = [
 /** Maximum number of words or indices accepted by one BIP39 lookup. */
 export const MAX_BIP39_LOOKUP_ITEMS = 100;
 
-/** Most word orders one `keys_bip39_words_order` call checks, about a second of hashing. */
-export const MAX_BIP39_ORDER_SEARCH = 1_000_000;
+/** Most phrases one order or repair call checks against the checksum, about a second of hashing. */
+export const MAX_BIP39_CHECKSUM_SEARCH = 1_000_000;
 
-/** Longest template `keys_bip39_words_order` takes, in characters. */
-export const MAX_BIP39_TEMPLATE_LENGTH = 1024;
+/** Longest template or phrase the order and repair tools take, in characters. */
+export const MAX_BIP39_PHRASE_LENGTH = 1024;
 
-/** Most valid orders one `keys_bip39_words_order` call lists. */
-export const MAX_BIP39_ORDERS_SHOWN = 100;
+/** Most phrases one order or repair call lists. */
+export const MAX_BIP39_PHRASES_SHOWN = 100;
 
-/** Valid orders `keys_bip39_words_order` lists when the caller sets no limit. */
-export const DEFAULT_BIP39_ORDERS_SHOWN = 20;
+/** Phrases the order and repair tools list when the caller sets no limit. */
+export const DEFAULT_BIP39_PHRASES_SHOWN = 20;
+
+/** Most words outside the list one `keys_bip39_words_repair` call fixes. */
+export const MAX_BIP39_REPAIR_WORDS = 2;
+
+/** Most edits `keys_bip39_words_repair` allows between a word and a suggestion. */
+export const MAX_BIP39_REPAIR_DISTANCE = 3;
+
+/** Edits `keys_bip39_words_repair` allows when the caller sets no limit. */
+export const DEFAULT_BIP39_REPAIR_DISTANCE = 2;
 
 /** Most caller texts one inspection hashes against the entropy. */
 export const MAX_ENTROPY_PREIMAGES = 100;

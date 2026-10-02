@@ -31,6 +31,7 @@ import {
   wifTestVectors,
   localizedMnemonicVectors,
   bip39WordOrderVector,
+  bip39WordRepairVectors,
   bip39EntropyWalletVector,
   invalidChecksumPuzzle,
   slip132PrivateKey,
@@ -54,6 +55,7 @@ import {
   TOOL_NAMES,
   TOOL_NETWORKS,
 } from "../src/tool-parameters.ts";
+import { loadWordlist as loadBIP39Wordlist } from "../src/utils/bip39/index.ts";
 import { scanSchemes } from "../src/utils/hd-scan.ts";
 import { decode as decodeWIF, encode as encodeWIF } from "../src/utils/wif/index.ts";
 
@@ -860,6 +862,48 @@ describe("keys MCP server", () => {
       expect(rejected.isError).toBe(true);
       expect(text(rejected.content)).toContain(reason);
       expect(text(rejected.content)).not.toContain("yelow");
+    }
+  });
+
+  it("repairs mistyped words with the combinations counted up front", async () => {
+    const client = await connectTestClient();
+    const { written, mnemonic, combinations, valid } = bip39WordRepairVectors.twoWords;
+
+    const result = await client.callTool({
+      name: "keys_bip39_words_repair",
+      arguments: { mnemonic: written, limit: 1 },
+    });
+    expect(result.isError).not.toBe(true);
+    expect(text(result.content).split("\n")).toEqual([
+      "Language: english",
+      "Not in the list: words 2, 12",
+      "Word 2, 9 within 2 edits: winner (1), dinner (2), inner (2), minor (2), win (2), wine (2), wing (2), wink (2), winter (2)",
+      "Word 12, 6 within 2 edits: below (1), yellow (1), allow (2), elbow (2), glow (2), slow (2)",
+      `Combinations checked: ${combinations}`,
+      `Valid checksum: ${valid}`,
+      "First 1, fewest edits first:",
+      `2 edits: ${mnemonic}`,
+      "A wrong word that is in the list stays as written. If no phrase here opens the wallet, put ? in its place and use keys_bip39_word_recover.",
+    ]);
+
+    const chinese = await loadBIP39Wordlist("simplified-chinese");
+    const offList = `x ${chinese.slice(1, 11).join(" ")} y`;
+    for (const [args, reason] of [
+      [
+        { mnemonic: offList, language: "simplified-chinese" },
+        "These suggestions make 4194304 combinations, over the 1000000 one call checks",
+      ],
+      [
+        { mnemonic: `qq ${written.split(" ").slice(1).join(" ")}` },
+        "Words 1, 2, 12 are not in the english list, and one call repairs 2 at most",
+      ],
+      [{ mnemonic: written, maxDistance: 4 }, "Invalid arguments at /maxDistance"],
+      [{ mnemonic: "   " }, "Invalid arguments at /mnemonic"],
+    ] as const) {
+      const rejected = await client.callTool({ name: "keys_bip39_words_repair", arguments: args });
+      expect(rejected.isError).toBe(true);
+      expect(text(rejected.content)).toContain(reason);
+      expect(text(rejected.content)).not.toContain("winnr");
     }
   });
 

@@ -4,8 +4,11 @@ import {
   TOOL_ADDRESS_TYPES,
   SUI_ADDRESS_TYPES,
   MAX_BIP39_LOOKUP_ITEMS,
-  MAX_BIP39_ORDERS_SHOWN,
-  MAX_BIP39_TEMPLATE_LENGTH,
+  MAX_BIP39_PHRASES_SHOWN,
+  MAX_BIP39_PHRASE_LENGTH,
+  DEFAULT_BIP39_PHRASES_SHOWN,
+  MAX_BIP39_REPAIR_DISTANCE,
+  DEFAULT_BIP39_REPAIR_DISTANCE,
   MAX_ENTROPY_PREIMAGES,
   MAX_ENTROPY_PREIMAGE_LENGTH,
   BIP39_ENTROPY_SCHEMA_PATTERN,
@@ -679,16 +682,44 @@ export const ORDER_BIP39_WORDS_PARAMETERS = Type.Object(
         description:
           "The phrase with known words in place and ? in each open position, one ? per word. Default: every position open",
         minLength: 1,
-        maxLength: MAX_BIP39_TEMPLATE_LENGTH,
+        maxLength: MAX_BIP39_PHRASE_LENGTH,
         pattern: "\\?",
       }),
     ),
     language: BIP39_LANGUAGE_PARAMETER,
     limit: Type.Optional(
       Type.Integer({
-        description: `Most valid orders to list, from 1 to ${MAX_BIP39_ORDERS_SHOWN}. Default: 20`,
+        description: `Most valid orders to list, from 1 to ${MAX_BIP39_PHRASES_SHOWN}. Default: 20`,
         minimum: 1,
-        maximum: MAX_BIP39_ORDERS_SHOWN,
+        maximum: MAX_BIP39_PHRASES_SHOWN,
+      }),
+    ),
+  },
+  { additionalProperties: false },
+);
+
+export const REPAIR_BIP39_WORDS_PARAMETERS = Type.Object(
+  {
+    mnemonic: Type.String({
+      description:
+        "The phrase as written, with one or two words that are not in the selected BIP39 list",
+      minLength: 1,
+      maxLength: MAX_BIP39_PHRASE_LENGTH,
+      pattern: "\\S",
+    }),
+    language: BIP39_LANGUAGE_PARAMETER,
+    maxDistance: Type.Optional(
+      Type.Integer({
+        description: `Most edits between a written word and a suggestion, from 1 to ${MAX_BIP39_REPAIR_DISTANCE}. Default: ${DEFAULT_BIP39_REPAIR_DISTANCE}`,
+        minimum: 1,
+        maximum: MAX_BIP39_REPAIR_DISTANCE,
+      }),
+    ),
+    limit: Type.Optional(
+      Type.Integer({
+        description: `Most repaired phrases to list, from 1 to ${MAX_BIP39_PHRASES_SHOWN}. Default: ${DEFAULT_BIP39_PHRASES_SHOWN}`,
+        minimum: 1,
+        maximum: MAX_BIP39_PHRASES_SHOWN,
       }),
     ),
   },

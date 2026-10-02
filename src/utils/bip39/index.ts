@@ -6,6 +6,8 @@ export { BIP39_LANGUAGES, isBIP39Language } from "./languages.ts";
 export type { BIP39Language } from "./languages.ts";
 export { countWordOrders, orderWords } from "./order.ts";
 export type { WordOrderOptions } from "./order.ts";
+export { repairWords, suggestWords } from "./repair.ts";
+export type { WordRepair, WordRepairOptions, WordSuggestion, WordSuggestions } from "./repair.ts";
 
 // Get English wordlist
 const wordlist = english.wordlist;

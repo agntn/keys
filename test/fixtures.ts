@@ -40,6 +40,23 @@ export const bip39WordOrderVector = {
   first: "legal winner thank year wave sausage legal thank worth yellow useful winner",
 };
 
+/** The typo from #200 and Trezor's `7f7f...` vector with two words off. */
+export const bip39WordRepairVectors = {
+  typo: {
+    written:
+      "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abuot",
+    mnemonic:
+      "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+  },
+  twoWords: {
+    written: "legal winnr thank year wave sausage worth useful legal winner thank yelow",
+    mnemonic: "legal winner thank year wave sausage worth useful legal winner thank yellow",
+    positions: [2, 12],
+    combinations: 54,
+    valid: 7,
+  },
+};
+
 /** Wallets bip_utils 2.9.3 derives from the BIP39 reference mnemonic at each chain's own path. */
 export const slip10WalletVectors = [
   {

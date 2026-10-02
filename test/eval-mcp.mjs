@@ -18,6 +18,7 @@ import {
   storeVectors,
   evmRecoverTestVectors,
   bip39WordOrderVector,
+  bip39WordRepairVectors,
 } from "./fixtures.ts";
 import { TOOL_NAMES } from "../src/tool-parameters.ts";
 
@@ -280,6 +281,11 @@ try {
     new RegExp(
       `Valid checksum: ${bip39WordOrderVector.valid}\\n.*\\n${bip39WordOrderVector.first}\\n`,
     ),
+  );
+  await call(
+    "keys_bip39_words_repair",
+    { mnemonic: bip39WordRepairVectors.typo.written },
+    new RegExp(`1 edit: ${bip39WordRepairVectors.typo.mnemonic}\\n`),
   );
   await call(
     "keys_bip39_word_recover",
