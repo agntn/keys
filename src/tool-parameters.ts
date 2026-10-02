@@ -17,6 +17,7 @@ export const TOOL_NAMES = [
   "keys_wallet_generate",
   "keys_wallet_derive",
   "keys_hd_wallet_derive",
+  "keys_hd_wallet_scan",
   "keys_xpub_wallet_derive",
   "keys_bip32_parent_recover",
   "keys_bip39_generate",
@@ -71,6 +72,15 @@ export const MAX_EXTENDED_KEY_LENGTH = 128;
 
 /** Maximum WIF length; Decred's two byte prefix makes the longest one 53 characters. */
 export const MAX_WIF_LENGTH = 54;
+
+/** Maximum phrase length the wallet scan reads, in characters. */
+export const MAX_SCAN_MNEMONIC_LENGTH = 4096;
+
+/** Accounts the wallet scan walks by default and at most, from account 0. */
+export const SCAN_ACCOUNTS = { default: 3, maximum: 10 } as const;
+
+/** Address indices the wallet scan walks by default and at most; 20 is the BIP44 gap limit. */
+export const SCAN_INDICES = { default: 20, maximum: 100 } as const;
 
 /** Maximum address length the address validation tool checks. */
 export const MAX_ADDRESS_LENGTH = 256;

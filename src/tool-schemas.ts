@@ -23,6 +23,9 @@ import {
   MAX_KEYSTORE_LENGTH,
   MAX_KEYSTORE_PASSWORD_LENGTH,
   MAX_ADDRESS_LENGTH,
+  MAX_SCAN_MNEMONIC_LENGTH,
+  SCAN_ACCOUNTS,
+  SCAN_INDICES,
   MAX_TYPED_DATA_LENGTH,
   MAX_BRAINWALLET_INPUT_LENGTH,
   MAX_SCRYPT_BLOCKS,
@@ -416,6 +419,53 @@ export const DERIVE_HD_WALLET_PARAMETERS = Type.Object(
       }),
     ),
     addressType: addressTypeArgument,
+    network: networkArgument,
+  },
+  { additionalProperties: false },
+);
+
+/** Shared MCP and Pi schema for scanning the common wallet paths for an address. */
+export const SCAN_HD_WALLET_PARAMETERS = Type.Object(
+  {
+    chain: chainArgument,
+    mnemonic: Type.String({
+      description:
+        "Public or disposable BIP39 mnemonic in the selected language; on bitcoin also a native Electrum seed",
+      minLength: 1,
+      maxLength: MAX_SCAN_MNEMONIC_LENGTH,
+      pattern: "\\S",
+    }),
+    address: Type.String({
+      description: "Target address on the chain and network",
+      minLength: 1,
+      maxLength: MAX_ADDRESS_LENGTH,
+      pattern: "\\S",
+    }),
+    passphrase: Type.Optional(
+      Type.String({
+        description: "BIP39 passphrase, also used as the Electrum seed extension. Default: empty",
+      }),
+    ),
+    language: BIP39_LANGUAGE_PARAMETER,
+    allowInvalidChecksum: Type.Optional(
+      Type.Boolean({
+        description: "Scan BIP39 words that fail only the checksum, with a warning. Default: false",
+      }),
+    ),
+    accounts: Type.Optional(
+      Type.Integer({
+        minimum: 1,
+        maximum: SCAN_ACCOUNTS.maximum,
+        description: `Accounts walked from 0 where a path has an account level. Default: ${SCAN_ACCOUNTS.default}`,
+      }),
+    ),
+    indices: Type.Optional(
+      Type.Integer({
+        minimum: 1,
+        maximum: SCAN_INDICES.maximum,
+        description: `Address indices walked from 0, on the receiving and change branches. Default: ${SCAN_INDICES.default}`,
+      }),
+    ),
     network: networkArgument,
   },
   { additionalProperties: false },

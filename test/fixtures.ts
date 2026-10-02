@@ -1806,3 +1806,19 @@ export const electrumOldVectors = [
     ],
   },
 ] as const;
+
+/** Addresses the wallet scan has to reach, each from a source outside this library. */
+export const hdScanVectors = {
+  /** Solved quizchain block 74, the vector of agntn/keys#188. */
+  puzzle: {
+    mnemonic: "apology tonight anxiety cloud oven excess object purity leopard sing sing poet",
+    address: "1HbUcHKfpkUSssNtcfS3vKzdTMue3EByMQ",
+    path: "m/44'/0'/0'/0/0",
+  },
+  /** First receiving addresses of the BIP84 and BIP86 test vectors, from the reference mnemonic. */
+  segwit: { address: "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu", path: "m/84'/0'/0'/0/0" },
+  taproot: {
+    address: "bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr",
+    path: "m/86'/0'/0'/0/0",
+  },
+} as const;

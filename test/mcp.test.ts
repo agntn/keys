@@ -34,6 +34,8 @@ import {
   slip132Vectors,
   bip38Vectors,
   bip32ParentVector,
+  hdScanVectors,
+  slip10WalletVectors,
   brainwalletInput,
   brainwalletVectors,
   plainBrainwalletVectors,
@@ -42,7 +44,13 @@ import {
 } from "./fixtures.ts";
 import Bitcoin from "../src/blockchains/bitcoin.ts";
 import { callTool, createMcpServer, toolListings } from "../src/mcp.ts";
-import { TOOL_NAMES } from "../src/tool-parameters.ts";
+import {
+  TOOL_ADDRESS_TYPES_BY_CHAIN,
+  TOOL_CHAINS,
+  TOOL_NAMES,
+  TOOL_NETWORKS,
+} from "../src/tool-parameters.ts";
+import { scanSchemes } from "../src/utils/hd-scan.ts";
 import { decode as decodeWIF, encode as encodeWIF } from "../src/utils/wif/index.ts";
 
 const openConnections: Array<{ close(): Promise<void> }> = [];
@@ -920,6 +928,202 @@ describe("keys MCP server", () => {
     expect(text(inspection.content)).toContain("Wordlist valid: yes");
     expect(text(inspection.content)).toContain("Checksum valid: no");
     expect(text(inspection.content)).not.toContain("Entropy:");
+  });
+
+  it("scans the common wallet paths for an address through MCP", async () => {
+    const client = await connectTestClient();
+    const scan = async (args: Readonly<Record<string, unknown>>): Promise<string> => {
+      const result = await client.callTool({ name: "keys_hd_wallet_scan", arguments: args });
+      expect(result.isError, JSON.stringify(args)).not.toBe(true);
+      return text(result.content);
+    };
+    const { puzzle, segwit, taproot } = hdScanVectors;
+    const reference = bip39TestVectors.mnemonic;
+
+    expect(
+      await scan({ chain: "bitcoin", mnemonic: puzzle.mnemonic, address: puzzle.address }),
+    ).toBe(
+      [
+        "Chain: bitcoin (mainnet)",
+        "Match: bip44, 1 address checked",
+        `Path: ${puzzle.path}`,
+        "Address type: legacy",
+        "Public key: 0312b422a56647895f549b81db0f36a964479696ec86b374be8b353167257825dd",
+        `Address: ${puzzle.address}`,
+      ].join("\n"),
+    );
+    for (const [vector, scheme] of [
+      [segwit, "bip84"],
+      [taproot, "bip86"],
+    ] as const) {
+      const found = await scan({
+        chain: "bitcoin",
+        mnemonic: reference,
+        address: vector.address,
+        accounts: 1,
+        indices: 1,
+      });
+      expect(found).toContain(`Match: ${scheme},`);
+      expect(found).toContain(`Path: ${vector.path}`);
+    }
+
+    const [electrum] = electrumVectors;
+    expect(
+      await scan({ chain: "bitcoin", mnemonic: electrum.mnemonic, address: electrum.address }),
+    ).toContain(`Match: electrum-segwit, 1 address checked\nPath: ${electrum.path}`);
+    const [old] = electrumOldVectors;
+    const oldChild = old.children[2];
+    expect(
+      await scan({ chain: "bitcoin", mnemonic: old.mnemonic, address: oldChild.address }),
+    ).toContain(`Match: electrum-old, 6 addresses checked\nPath: 0/5`);
+
+    const [solana] = slip10WalletVectors;
+    expect(await scan({ chain: "solana", mnemonic: reference, address: solana.address })).toContain(
+      `Path: ${solana.path}`,
+    );
+    for (const [path, scheme] of [
+      ["m/44'/60'/3'/0/0", "ledger-live"],
+      ["m/44'/60'/0'/4", "ledger-legacy"],
+      ["m/44'/60'/1'/0/4", "bip44"],
+    ] as const) {
+      const derived = await client.callTool({
+        name: "keys_hd_wallet_derive",
+        arguments: { chain: "ethereum", mnemonic: reference, path },
+      });
+      const address = /Address: (\S+)/u.exec(text(derived.content))?.[1];
+      const found = await scan({
+        chain: "ethereum",
+        mnemonic: reference,
+        address,
+        accounts: 2,
+        indices: 5,
+      });
+      expect(found, path).toContain(`Match: ${scheme},`);
+      expect(found, path).toContain(`Path: ${path}`);
+    }
+
+    const { mnemonic, address } = invalidChecksumPuzzle;
+    const strict = await client.callTool({
+      name: "keys_hd_wallet_scan",
+      arguments: { chain: "bitcoin", mnemonic, address },
+    });
+    expect(strict.isError).toBe(true);
+    expect(text(strict.content)).toContain("allowInvalidChecksum scans it");
+    expect(text(strict.content)).not.toContain(mnemonic);
+    expect(
+      await scan({
+        chain: "bitcoin",
+        mnemonic,
+        address,
+        allowInvalidChecksum: true,
+        accounts: 1,
+        indices: 1,
+      }),
+    ).toContain("Warning: BIP39 checksum is invalid.");
+  }, 15_000);
+
+  /* On testnet only the `-testnet` schemes write anything mainnet does not already cover. */
+  it.each(TOOL_CHAINS.filter((chain) => scanSchemes(chain, "mainnet") !== undefined))(
+    "reaches the address keys_hd_wallet_derive gives on every %s scheme",
+    async (chain) => {
+      const client = await connectTestClient();
+      const mnemonic = bip39TestVectors.mnemonic;
+      const schemes = TOOL_NETWORKS.flatMap((network) =>
+        (scanSchemes(chain, network) ?? [])
+          .filter((scheme) => network === "mainnet" || scheme.name.endsWith("-testnet"))
+          .map((scheme) => ({ network, scheme })),
+      );
+      for (const { network, scheme } of schemes) {
+        const path = scheme.path
+          .replace("{account}", "0")
+          .replace("{change}", "0")
+          .replace("{index}", "1");
+        const typed = TOOL_ADDRESS_TYPES_BY_CHAIN[chain].length > 0;
+        const derived = await client.callTool({
+          name: "keys_hd_wallet_derive",
+          arguments: {
+            chain,
+            network,
+            mnemonic,
+            path,
+            ...(typed && scheme.addressType ? { addressType: scheme.addressType } : {}),
+          },
+        });
+        const address = /Address: (\S+)/u.exec(text(derived.content))?.[1];
+        const scanned = await client.callTool({
+          name: "keys_hd_wallet_scan",
+          arguments: { chain, network, mnemonic, address, accounts: 1, indices: 2 },
+        });
+        const label = `${network} ${scheme.name}`;
+        expect(text(scanned.content), label).toContain(`Match: ${scheme.name}, `);
+        expect(text(scanned.content), label).toContain(`Path: ${path}\n`);
+      }
+    },
+    20_000,
+  );
+
+  it("lists every scheme a scan walked when no path reaches the address", async () => {
+    const client = await connectTestClient();
+    const result = await client.callTool({
+      name: "keys_hd_wallet_scan",
+      arguments: {
+        chain: "bitcoin",
+        mnemonic: bip39TestVectors.mnemonic,
+        address: hdScanVectors.puzzle.address,
+        accounts: 1,
+        indices: 5,
+      },
+    });
+    expect(result.isError).not.toBe(true);
+    expect(text(result.content)).toBe(
+      [
+        "Chain: bitcoin (mainnet)",
+        "Match: none, 40 addresses checked",
+        "Tried: bip44 m/44'/0'/0'/{0,1}/{0..4} legacy",
+        "Tried: bip49 m/49'/0'/0'/{0,1}/{0..4} p2sh",
+        "Tried: bip84 m/84'/0'/0'/{0,1}/{0..4} segwit",
+        "Tried: bip86 m/86'/0'/0'/{0,1}/{0..4} taproot",
+        "Skipped: electrum. Not an Electrum seed",
+      ].join("\n"),
+    );
+  });
+
+  it("refuses a scan no path could answer, echoing no phrase", async () => {
+    const client = await connectTestClient();
+    const { mnemonic, address } = hdScanVectors.puzzle;
+    for (const [args, message] of [
+      [{ chain: "litecoin", mnemonic, address }, "not a litecoin mainnet address"],
+      [
+        { chain: "bitcoin", mnemonic, address, network: "testnet" },
+        "not a bitcoin testnet address",
+      ],
+      [{ chain: "decred", mnemonic, address }, "decred has no wallet paths to scan"],
+      [{ chain: "cardano", mnemonic, address }, "cardano has no wallet paths to scan"],
+      [
+        { chain: "bitcoin", mnemonic: "sing sing poet", address },
+        "bip39: Invalid BIP39 mnemonic: 3 words",
+      ],
+      [
+        {
+          chain: "bitcoin",
+          mnemonic: "science dawn member doll dutch real can brick knife deny drive list",
+          address,
+        },
+        "electrum: Electrum 2FA seeds are multisig and are not derived",
+      ],
+      [
+        { chain: "bitcoin", mnemonic: electrumOldVectors[0].mnemonic, address, passphrase: "x" },
+        "electrum: Old Electrum seeds take no passphrase",
+      ],
+      [{ chain: "bitcoin", mnemonic, address, accounts: 0 }, "Invalid arguments at /accounts"],
+      [{ chain: "bitcoin", mnemonic, address, indices: 101 }, "Invalid arguments at /indices"],
+      [{ chain: "bitcoin", mnemonic, address, path: "m/0" }, "unknown property"],
+    ] as const) {
+      const failed = await client.callTool({ name: "keys_hd_wallet_scan", arguments: args });
+      expect(failed.isError, message).toBe(true);
+      expect(text(failed.content)).toContain(message);
+      expect(text(failed.content)).not.toContain("sing sing poet");
+    }
   });
 
   it("derives Litecoin through the MCP schema and executor", async () => {

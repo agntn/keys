@@ -12,6 +12,7 @@ import {
   slip132Vectors,
   bip38Vectors,
   bip32ParentVector,
+  hdScanVectors,
   brainwalletInput,
   brainwalletVectors,
   storeVectors,
@@ -128,6 +129,16 @@ try {
     new RegExp(
       `Address type: segwit\\nPublic key: [0-9a-f]{66}\\nAddress: ${slip132Vectors[2].address}`,
     ),
+  );
+
+  await call(
+    "keys_hd_wallet_scan",
+    {
+      chain: "bitcoin",
+      mnemonic: hdScanVectors.puzzle.mnemonic,
+      address: hdScanVectors.puzzle.address,
+    },
+    new RegExp(`Match: bip44, 1 address checked\\nPath: m/44'/0'/0'/0/0\\n`),
   );
 
   await call(
