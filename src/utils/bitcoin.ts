@@ -1,5 +1,6 @@
 import { sha256 } from "@agntn/hashes";
 import { AbstractBlockchain } from "../blockchain.ts";
+import { BIP44 } from "./bip44/index.ts";
 import {
   generateAddressLegacy,
   generateAddressP2SH,
@@ -151,6 +152,14 @@ export function encodeCompactSize(value: number): Uint8Array {
 export abstract class AbstractBitcoinMessageBlockchain extends AbstractBlockchain {
   override readonly curve: Curve = "secp256k1";
   protected abstract readonly messagePreamble: string;
+
+  /**
+   * Coin type 1 on testnet, as Bitcoin Core and the other UTXO nodes write it.
+   * @returns {number} The coin type
+   */
+  override get coinType(): number {
+    return this.network === "testnet" ? BIP44.TESTNET : this.bip44;
+  }
 
   override getKeyPublic(keyPrivate: string, options?: KeyOptions): string {
     return generateKeyPublic(keyPrivate, options);

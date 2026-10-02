@@ -752,6 +752,7 @@ export const BIP44_GENERATE_PARAMETERS = Type.Object(
         enum: SUI_ADDRESS_TYPES,
       }),
     ),
+    network: networkArgument,
   },
   { additionalProperties: false },
 );

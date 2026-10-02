@@ -35,6 +35,14 @@ export abstract class AbstractBlockchain implements Blockchain {
     this.network = options?.network || "mainnet";
   }
 
+  /**
+   * SLIP-0044 coin type the chain's wallets write on this network.
+   * @returns {number} The coin type
+   */
+  get coinType(): number {
+    return this.bip44;
+  }
+
   abstract getKeyPublic(keyPrivate: string, options?: KeyOptions): string;
   abstract getAddress(keyPublic: string, type?: string): string;
   abstract validateAddress(address: string): boolean;
@@ -143,7 +151,7 @@ export abstract class AbstractBlockchain implements Blockchain {
     addressIndex = 0,
     _options?: KeyOptions,
   ): string {
-    return getPath(this.bip44, account, change, addressIndex);
+    return getPath(this.coinType, account, change, addressIndex);
   }
 
   deriveHDWallet(

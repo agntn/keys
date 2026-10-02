@@ -571,6 +571,7 @@ export const bip44GenerateTool = defineTool({
     "account, change and addressIndex default to 0; addressType picks the Sui scheme, ed25519 by default",
     "Stellar paths end at the account and Solana paths at the change branch; a deeper index on those chains is an error",
     "Cardano reads change as the CIP-1852 role: 0 external, 1 internal, 2 staking, up to 5",
+    "On testnet the UTXO chains and Decred take coin type 1, the one testnet wallets write",
   ],
   effect: "read",
   input: BIP44_GENERATE_PARAMETERS,
@@ -581,6 +582,7 @@ export const bip44GenerateTool = defineTool({
       params.change,
       params.addressIndex,
       params.addressType,
+      params.network,
     ),
 });
 

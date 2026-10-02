@@ -314,6 +314,11 @@ try {
   await call("keys_bip44_generate", { chain: "solana" }, /Path: m\/44'\/501'\/0'\/0'$/m);
   await call(
     "keys_bip44_generate",
+    { chain: "bitcoin", network: "testnet" },
+    /m\/44'\/1'\/0'\/0\/0/,
+  );
+  await call(
+    "keys_bip44_generate",
     { chain: "sui", addressType: "secp256k1" },
     /Path: m\/54'\/784'\/0'\/0\/0$/m,
   );
