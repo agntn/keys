@@ -24,7 +24,6 @@ keys/
 │   ├── fixtures.ts          # Shared test vectors (secp256k1, ed25519, bip39, addresses)
 │   ├── blockchains/         # One test file per chain
 │   └── utils/               # One test file per utility
-├── test-integration/        # Separate package - compatibility with ethers and @solana/web3.js
 ├── playground/              # Node demo scripts (bip32, bip39, bip44, slip10, signing)
 └── docs/                    # Docus site: markdown guide plus browser keyspace explorer
 ```
@@ -50,7 +49,6 @@ keys/
 | Mnemonic to wallet | `src/blockchain.ts` → `deriveHDWallet` + `src/utils/hd.ts`                        | Bitcoin family infers the address type; Sui overrides it, Cardano throws (CIP-1852) |
 | Xpub to address    | `src/utils/extended-key.ts` → `deriveXpubWallet` on the base class                | SLIP-0132 prefixes pick the type on the Bitcoin family; normal levels only, no xprv |
 | Write tests        | `test/` mirroring `src/` path                                                     | Use fixtures from `test/fixtures.ts`                                                |
-| Integration test   | `test-integration/`                                                               | Separate pnpm package, manual execution                                             |
 | Run demos          | `playground/*.ts`                                                                 | Execute via `pnpm playground <file>`                                                |
 | Docs / keyspace UI | `docs/`                                                                           | Docus: `content/` markdown, explorer in `app/components/`                           |
 
