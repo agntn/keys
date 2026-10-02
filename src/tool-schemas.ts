@@ -4,6 +4,8 @@ import {
   TOOL_ADDRESS_TYPES,
   SUI_ADDRESS_TYPES,
   MAX_BIP39_LOOKUP_ITEMS,
+  MAX_ENTROPY_PREIMAGES,
+  MAX_ENTROPY_PREIMAGE_LENGTH,
   BIP39_ENTROPY_SCHEMA_PATTERN,
   BIP39_WORD_SCHEMA_PATTERN,
   DERIVATION_PATH_SCHEMA_PATTERN,
@@ -535,6 +537,13 @@ export const INSPECT_MNEMONIC_PARAMETERS = Type.Object(
       minLength: 1,
       pattern: "\\S",
     }),
+    preimages: Type.Optional(
+      Type.Array(Type.String({ maxLength: MAX_ENTROPY_PREIMAGE_LENGTH }), {
+        description:
+          "Candidate texts, such as puzzle answers, hashed as exact UTF-8 bytes with MD5, SHA-1 and SHA-256 and compared with the entropy",
+        maxItems: MAX_ENTROPY_PREIMAGES,
+      }),
+    ),
   },
   { additionalProperties: false },
 );

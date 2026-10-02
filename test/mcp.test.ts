@@ -5,6 +5,7 @@ import { base64, hex } from "@scure/base";
 import { HDKey } from "@scure/bip32";
 import { mnemonicToSeedSync } from "@scure/bip39";
 import {
+  entropyProfileVectors,
   bip137MessageVectors,
   bip39TestVectors,
   bitcoinMessageVectors,
@@ -928,6 +929,80 @@ describe("keys MCP server", () => {
     expect(text(inspection.content)).toContain("Wordlist valid: yes");
     expect(text(inspection.content)).toContain("Checksum valid: no");
     expect(text(inspection.content)).not.toContain("Entropy:");
+  });
+
+  it("reads what the entropy of a valid mnemonic looks like through MCP", async () => {
+    const client = await connectTestClient();
+    const inspect = async (args: Readonly<Record<string, unknown>>): Promise<string> => {
+      const result = await client.callTool({ name: "keys_bip39_inspect", arguments: args });
+      expect(result.isError, JSON.stringify(args)).not.toBe(true);
+      return text(result.content);
+    };
+    const { text: textVector, md5Given } = entropyProfileVectors;
+    expect(await inspect({ mnemonic: textVector.mnemonic })).toContain(
+      [
+        `Entropy: ${textVector.entropy}`,
+        `Entropy text: "${textVector.text}"`,
+        "Entropy pattern: none",
+        "Entropy preimage: none (14 built-in, 0 given; md5, sha1, sha256)",
+      ].join("\n"),
+    );
+    const encoded = await client.callTool({
+      name: "keys_bip39_entropy_encode",
+      arguments: { entropy: md5Given.digest },
+    });
+    const mnemonic = /Mnemonic: ([a-z ]+)/u.exec(text(encoded.content))?.[1];
+    expect(await inspect({ mnemonic, preimages: ["red", md5Given.text] })).toContain(
+      `Entropy preimage: md5 of "${md5Given.text}" (given)`,
+    );
+    const zeros = await client.callTool({
+      name: "keys_bip39_entropy_encode",
+      arguments: { entropy: "00".repeat(32) },
+    });
+    const zeroMnemonic = /Mnemonic: ([a-z ]+)/u.exec(text(zeros.content))?.[1];
+    expect(await inspect({ mnemonic: zeroMnemonic, preimages: ['a\u202E\u0007"b'] })).toContain(
+      [
+        "Entropy text: none",
+        "Entropy pattern: all zeros",
+        "Entropy preimage: none (14 built-in, 1 given; sha256)",
+      ].join("\n"),
+    );
+    const dated = await client.callTool({
+      name: "keys_bip39_entropy_encode",
+      arguments: { entropy: `${"00".repeat(12)}495fab29` },
+    });
+    const datedMnemonic = /Mnemonic: ([a-z ]+)/u.exec(text(dated.content))?.[1];
+    expect(await inspect({ mnemonic: datedMnemonic })).toContain(
+      "Entropy pattern: date 2009-01-03T18:15:05.000Z as unix seconds",
+    );
+    const quoted = await client.callTool({
+      name: "keys_bip39_entropy_encode",
+      arguments: { entropy: "6865207361696420226869225c6f6b07" },
+    });
+    const quotedMnemonic = /Mnemonic: ([a-z ]+)/u.exec(text(quoted.content))?.[1];
+    expect(await inspect({ mnemonic: quotedMnemonic })).toContain(
+      'Entropy text: "he said \\"hi\\"\\\\ok\\u{7}"',
+    );
+    const separated = await client.callTool({
+      name: "keys_bip39_entropy_encode",
+      arguments: { entropy: "6c696e65e280a8627265616b696e6721" },
+    });
+    const separatedMnemonic = /Mnemonic: ([a-z ]+)/u.exec(text(separated.content))?.[1];
+    expect(await inspect({ mnemonic: separatedMnemonic })).toContain(
+      'Entropy text: "line\\u{2028}breaking!"',
+    );
+    for (const preimages of [
+      "red",
+      [1],
+      Array.from({ length: 101 }, () => "x"),
+      ["x".repeat(4097)],
+    ]) {
+      const rejected = await client.callTool({
+        name: "keys_bip39_inspect",
+        arguments: { mnemonic: textVector.mnemonic, preimages },
+      });
+      expect(rejected.isError).toBe(true);
+    }
   });
 
   it("scans the common wallet paths for an address through MCP", async () => {

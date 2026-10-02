@@ -1822,3 +1822,16 @@ export const hdScanVectors = {
     path: "m/86'/0'/0'/0/0",
   },
 } as const;
+
+/** Entropy that means something. Digests from coreutils `md5sum`, `sha1sum` and `sha256sum`. */
+export const entropyProfileVectors = {
+  text: {
+    entropy: "68656c6c6f20776f726c642031323334",
+    text: "hello world 1234",
+    mnemonic: "half clock brand tattoo alter response situate milk cage maze mimic harbor",
+  },
+  md5Empty: "d41d8cd98f00b204e9800998ecf8427e",
+  sha1Satoshi: "df60cdc9182e4ce7d68b6baaaf2312f27a7a025c",
+  sha256Bitcoin: "6b88c087247aa2f07ee1c5956b8e1a9f4c7f892a70e324f1bb3d161e05ca107b",
+  md5Given: { text: "red blue green", digest: "0f26a0352db2265b7ce21e58c8525881" },
+} as const;

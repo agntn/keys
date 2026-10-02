@@ -345,7 +345,7 @@ export const bip39InspectTool = defineTool({
   name: "keys_bip39_inspect",
   title: "Inspect Mnemonic",
   description:
-    "Inspect BIP39 word count, dictionary membership and checksum separately. Recover entropy only when valid. A bad checksum does not rule out a puzzle candidate. The phrase enters the transcript, so use only public or disposable candidates.",
+    "Inspect BIP39 word count, dictionary membership and checksum separately. Recover entropy only when valid, and read it as text, as a byte pattern and as an MD5, SHA-1 or SHA-256 digest of a known or given text. A bad checksum does not rule out a puzzle candidate. The phrase enters the transcript, so use only public or disposable candidates.",
   snippet: "Use to check mnemonic candidates from public crypto puzzles.",
   guidelines: [
     "keys_bip39_inspect accepts an explicit BIP39 language; omission means english, not automatic detection",
@@ -353,12 +353,13 @@ export const bip39InspectTool = defineTool({
     "Use only public or disposable candidates because tool arguments are saved in the transcript",
     "Returns wordCountValid, wordlistValid and checksumValid separately, with entropy only for valid mnemonics",
     "checksumValid is null when word count or dictionary membership prevents checking it",
+    "Pass preimages with candidate answers: each is hashed as its exact UTF-8 bytes, digests cut to the entropy length. A built-in list of common words is always checked",
     "A checksum failure is not proof that a puzzle candidate is wrong. keys_hd_wallet_derive accepts allowInvalidChecksum=true explicitly",
   ],
   effect: "read",
   input: INSPECT_MNEMONIC_PARAMETERS,
   execute: async (params) =>
-    (await loadOperations()).inspectMnemonic(params.mnemonic, params.language),
+    (await loadOperations()).inspectMnemonic(params.mnemonic, params.language, params.preimages),
 });
 
 export const bip39EntropyEncodeTool = defineTool({
