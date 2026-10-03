@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, BIP44, brainwallet, Electrum, secp256k1, SLIP-10, store and WIF are public package subpaths; other utilities are internal. Every hash comes from `@agntn/hashes`, hex goes through the native `Uint8Array.fromHex` and `toHex`.
+Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, BIP44, brainwallet, curve, Electrum, secp256k1, SLIP-10, store and WIF are public package subpaths; other utilities are internal. Every hash comes from `@agntn/hashes`, hex goes through the native `Uint8Array.fromHex` and `toHex`.
 
 ## STRUCTURE
 
@@ -36,6 +36,7 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, BIP
 | `bip39/`       | Mnemonic phrases              | `generateMnemonic`, `mnemonicToSeed`, `validateMnemonic`, `getMnemonicWordCandidates`, `lookupWords`, `lookupPrefixes`, `lookupIndices`; `orderWords` and `countWordOrders` from `order.ts`; `repairWords` and `suggestWords` from `repair.ts` |
 | `bip44/`       | Derivation paths              | `BIP44` coin types, `BIP44Change`, `getPath`, `parse`; `getBIP32Path` and `getHardenedPath` for the chain shapes stay internal in `paths.ts`                                                                                                   |
 | `brainwallet/` | Brainwallet keys              | `derive`: scrypt or PBKDF2, then SHA-256 of the output bytes or their hex; plain SHA-256 or keccak256; WarpWallet                                                                                                                              |
+| `curve/`       | Curves the caller defines     | `defineCurve`, point math and `isOnCurve` from `arithmetic.ts`; `countPoints`, `listPoints`, `pointOrder`, `discreteLog` and their `MAX_*` limits from `group.ts`; `field.ts` stays internal                                                   |
 | `electrum/`    | Electrum seeds                | `inspect` names the version, `deriveSeed` seeds standard and SegWit, `deriveOld*` walk an old one; the normalizer and word list stay internal                                                                                                  |
 | `secp256k1/`   | SEC1 public keys, curve math  | `convertPublicKey`; point math and `liftX`, `isOnCurve`, scalars mod n from `math.ts`; key generation, signing and key errors stay internal                                                                                                    |
 | `slip10/`      | ED25519 HD derivation         | `getMasterKeyFromSeed`, `deriveHDKey`                                                                                                                                                                                                          |

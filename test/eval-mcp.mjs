@@ -105,6 +105,12 @@ try {
   );
 
   await call(
+    "keys_curve_compute",
+    { operation: "order", a: "2", b: "2", p: "17", point: { x: "5", y: "1" } },
+    /"order":"19"/,
+  );
+
+  await call(
     "keys_brainwallet_derive",
     {
       passphrase: brainwalletInput.passphrase,

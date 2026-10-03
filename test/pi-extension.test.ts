@@ -194,6 +194,37 @@ describe("keys Pi extension", () => {
       await expect(skipSchema(tool)("point", bad)).rejects.toThrow(message);
     }
   });
+  it("computes on a curve the caller defines and checks its arguments without the schema", async () => {
+    const tool = (await registerTools()).get("keys_curve_compute");
+    if (!tool) throw new Error("Missing curve tool");
+    const args = { operation: "double", a: "2", b: "2", p: "17", point: { x: "5", y: "1" } };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    expect(Value.Check(tool.parameters, { ...args, point: { x: "5", y: "1", z: "1" } })).toBe(
+      false,
+    );
+    await expect(tool.execute("curve", args)).resolves.toMatchObject({
+      details: { operation: "double", point: { x: "6", y: "3" } },
+    });
+    for (const [bad, message] of [
+      [{ ...args, operation: "subtract" }, "operation must be one of"],
+      [{ ...args, p: 17 }, "p must be a string"],
+      [{ ...args, a: "1e3" }, "a must be an integer"],
+      [{ ...args, a: "9".repeat(161) }, "a must be an integer"],
+      [{ ...args, point: [5, 1] }, "point must be an object with x and y"],
+      [{ ...args, point: { x: "5", y: "1", z: "1" } }, "point takes only x and y"],
+      [{ ...args, point: { x: "5" } }, "point.y must be a string"],
+      [{ ...args, scalar: "2" }, "double does not take scalar"],
+      [{ ...args, operation: "points", point: undefined, limit: 1001 }, "limit must be"],
+      [{ ...args, operation: "points", point: undefined, limit: 0.5 }, "limit must be"],
+      [{ ...args, operation: "points", point: undefined, limit: -5 }, "limit must be"],
+      [{ ...args, operation: "points", point: undefined, limit: 0 }, "limit must be"],
+    ] as const) {
+      await expect(skipSchema(tool)("curve", bad)).rejects.toThrow(message);
+    }
+    await expect(
+      skipSchema(tool)("curve", { ...args, operation: "points", point: undefined }),
+    ).resolves.toMatchObject({ details: { total: "18", truncated: false } });
+  });
   it("derives disposable BIP39 seeds without echoing the input", async () => {
     const tool = (await registerTools()).get("keys_bip39_seed_derive");
     if (!tool) throw new Error("Missing BIP39 seed tool");

@@ -26,6 +26,7 @@ import {
   bip39WordRepairVectors,
   publicKeyEncodingVector,
   secp256k1MathVectors,
+  curveVectors,
   slip132Vectors,
 } from "./fixtures.ts";
 import { blockchains as sourceChains } from "../src/_blockchains.ts";
@@ -36,6 +37,7 @@ const EXPORTS = [
   ["@agntn/keys/bip38", "/dist/utils/bip38/index.mjs"],
   ["@agntn/keys/bip39", "/dist/utils/bip39/index.mjs"],
   ["@agntn/keys/brainwallet", "/dist/utils/brainwallet/index.mjs"],
+  ["@agntn/keys/curve", "/dist/utils/curve/index.mjs"],
   ["@agntn/keys/bip44", "/dist/utils/bip44/index.mjs"],
   ["@agntn/keys/electrum", "/dist/utils/electrum/index.mjs"],
   ["@agntn/keys/secp256k1", "/dist/utils/secp256k1/index.mjs"],
@@ -132,6 +134,40 @@ describe("Public secp256k1 exports", () => {
         "invertScalar",
         "liftX",
         "isOnCurve",
+      ]),
+    );
+  });
+});
+
+describe("Public curve exports", () => {
+  it("does arithmetic on a curve the caller defines from the built package", async () => {
+    const { defineCurve, doublePoint, pointOrder } = await import("@agntn/keys/curve");
+    const { paar } = curveVectors;
+    const curve = defineCurve(paar);
+    expect(doublePoint(curve, { x: 5n, y: 1n })).toEqual({ x: 6n, y: 3n });
+    expect(pointOrder(curve, { x: 5n, y: 1n })).toBe(paar.order);
+  });
+
+  it("exports the curve toolkit from its subpath only", async () => {
+    const root = await import("@agntn/keys");
+    expect(root).not.toHaveProperty("defineCurve");
+    const curve = await import("@agntn/keys/curve");
+    expect(new Set(Object.keys(curve))).toEqual(
+      new Set([
+        "defineCurve",
+        "isOnCurve",
+        "addPoints",
+        "doublePoint",
+        "negatePoint",
+        "multiplyPoint",
+        "countPoints",
+        "listPoints",
+        "pointOrder",
+        "discreteLog",
+        "MAX_COUNTED_PRIME",
+        "MAX_FILTERED_PRIME",
+        "MAX_ORDER_PRIME",
+        "MAX_LOG_ORDER",
       ]),
     );
   });
@@ -364,6 +400,7 @@ describe("Consumer bundles", () => {
     ["encode", "@agntn/keys/wif"],
     ["decode", "@agntn/keys/wif"],
     ["convertPublicKey", "@agntn/keys/secp256k1"],
+    ["defineCurve", "@agntn/keys/curve"],
     ["derive", "@agntn/keys/brainwallet"],
     ["decrypt", "@agntn/keys/store"],
     ["decrypt", "@agntn/keys/bip38"],

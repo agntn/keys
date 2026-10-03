@@ -4,6 +4,7 @@ import { defineTool, type ToolDefinition } from "@agntn/tools";
 import {
   BIP44_GENERATE_PARAMETERS,
   BIP44_PARSE_PARAMETERS,
+  COMPUTE_CURVE_PARAMETERS,
   COMPUTE_SECP256K1_POINT_PARAMETERS,
   CONVERT_PUBLIC_KEY_PARAMETERS,
   DECRYPT_STORE_PARAMETERS,
@@ -35,6 +36,12 @@ import {
   WIF_ENCODE_PARAMETERS,
 } from "./tool-schemas.ts";
 import { MAX_BIP39_CHECKSUM_SEARCH, MAX_BIP39_REPAIR_WORDS } from "./tool-parameters.ts";
+import {
+  MAX_COUNTED_PRIME,
+  MAX_FILTERED_PRIME,
+  MAX_LOG_ORDER,
+  MAX_ORDER_PRIME,
+} from "./utils/curve/group.ts";
 
 let operations: Promise<typeof import("./tool-operations.ts")> | undefined;
 
@@ -113,6 +120,23 @@ export const secp256k1PointComputeTool = defineTool({
   effect: "read",
   input: COMPUTE_SECP256K1_POINT_PARAMETERS,
   execute: async (params) => (await loadOperations()).computeSecp256k1Point(params),
+});
+
+export const curveComputeTool = defineTool({
+  name: "keys_curve_compute",
+  title: "Compute on a Curve",
+  description: `Do arithmetic on a short Weierstrass curve y^2 = x^3 + ax + b over a prime field the caller gives: add, double, negate or multiply points, check a point, find the order of a point, count the points, list them, or find a discrete log. Integers go in as decimal or 0x hex strings and come out as decimal strings; the point at infinity comes out as "infinity". count and points take p up to ${MAX_COUNTED_PRIME}, or ${MAX_FILTERED_PRIME} when points filters by order. order and log take p up to ${MAX_ORDER_PRIME}, and log a base of order up to ${MAX_LOG_ORDER}. Public math only, no keys involved; secp256k1 itself has keys_secp256k1_point_compute.`,
+  snippet:
+    "Use for toy curves over small prime fields, points of a given order and small discrete logs.",
+  guidelines: [
+    "add takes point and other; double, negate, check and order take point",
+    "multiply takes point and scalar, any integer",
+    "count gives the group order with infinity; points lists by x then y, optionally of one order",
+    "log takes point as the base and other as the target, and answers scalar null when there is no k",
+  ],
+  effect: "read",
+  input: COMPUTE_CURVE_PARAMETERS,
+  execute: async (params) => (await loadOperations()).computeCurve(params),
 });
 
 export const wifEncodeTool = defineTool({
@@ -661,6 +685,7 @@ export const keysTools: readonly ToolDefinition[] = [
   bip39SeedDeriveTool,
   secp256k1PublicKeyConvertTool,
   secp256k1PointComputeTool,
+  curveComputeTool,
   wifEncodeTool,
   wifDecodeTool,
   bip38InspectTool,
@@ -704,6 +729,7 @@ export const callSummaries: Readonly<
   Record<string, (args: Readonly<Record<string, unknown>>) => string>
 > = {
   keys_secp256k1_point_compute: (args) => String(args.operation),
+  keys_curve_compute: (args) => String(args.operation),
   keys_wallet_generate: (args) => String(args.chain),
   keys_wallet_derive: (args) => String(args.chain),
   keys_hd_wallet_derive: (args) => `${String(args.chain)} ${String(args.path)}`,
