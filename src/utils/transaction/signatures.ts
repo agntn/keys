@@ -137,24 +137,45 @@ function readSpend(
  * @returns {[bigint, bigint] | undefined} r and s, undefined when the bytes are no signature
  */
 function readDer(der: Uint8Array): [bigint, bigint] | undefined {
-  if (der[0] !== 0x30 || der.length < 8) return undefined;
-  const r = readDerInteger(der, 2);
+  const start = sequenceBody(der);
+  const r = start === undefined ? undefined : readDerInteger(der, start);
   const s = r === undefined ? undefined : readDerInteger(der, r[1]);
   if (r === undefined || s === undefined) return undefined;
   return Fn.isValidNot0(r[0]) && Fn.isValidNot0(s[0]) ? [r[0], s[0]] : undefined;
 }
 
 /**
- * Reads one DER integer as unsigned.
+ * Skips the sequence tag and its length, which Core's lax parser never checks.
+ * @param der - DER signature
+ * @returns {number | undefined} Offset of the first integer, or undefined
+ */
+function sequenceBody(der: Uint8Array): number | undefined {
+  const length = der[1] ?? 0;
+  const start = 2 + (length & 0x80 ? length - 0x80 : 0);
+  return der[0] === 0x30 && start <= der.length ? start : undefined;
+}
+
+/**
+ * Reads one DER integer as unsigned, its length in short or long form.
  * @param der - DER signature
  * @param offset - Position of its 0x02 tag
  * @returns {[bigint, number] | undefined} The value and the offset after it, or undefined
  */
 function readDerInteger(der: Uint8Array, offset: number): [bigint, number] | undefined {
-  const length = der[offset + 1] ?? 0;
-  const end = offset + 2 + length;
+  const first = der[offset + 1] ?? 0;
+  let start = offset + 2;
+  let length = first;
+  if (first & 0x80) {
+    const octets = der.subarray(start, start + first - 0x80);
+    start += first - 0x80;
+    const zeros = octets.findIndex((octet) => octet !== 0);
+    const significant = zeros === -1 ? octets.subarray(octets.length) : octets.subarray(zeros);
+    if (start > der.length || significant.length > 3) return undefined;
+    length = significant.reduce((total, octet) => total * 256 + octet, 0);
+  }
+  const end = start + length;
   if (der[offset] !== 0x02 || length === 0 || end > der.length) return undefined;
-  return [BigInt(`0x${der.subarray(offset + 2, end).toHex()}`), end];
+  return [BigInt(`0x${der.subarray(start, end).toHex()}`), end];
 }
 
 /**
@@ -163,7 +184,7 @@ function readDerInteger(der: Uint8Array, offset: number): [bigint, number] | und
  * @returns {{ r: bigint; s: bigint; hashType: number } | undefined} Its parts, or undefined
  */
 function readEcdsa(item: Uint8Array): { r: bigint; s: bigint; hashType: number } | undefined {
-  if (item.length < 9 || item.length > 73) return undefined;
+  if (item.length < 9) return undefined;
   const parts = readDer(item.subarray(0, -1));
   return parts === undefined ? undefined : { r: parts[0], s: parts[1], hashType: item.at(-1) ?? 0 };
 }

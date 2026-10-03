@@ -1,6 +1,7 @@
 import { hex } from "@agntn/encodings/hex";
 import { describe, expect, it } from "vite-plus/test";
 import { extractSignatures } from "../../src/utils/transaction/index.ts";
+import { scriptPushes } from "../../src/utils/transaction/script.ts";
 import { legacySighash, taprootSighash } from "../../src/utils/transaction/sighash.ts";
 import {
   decodeTransaction,
@@ -104,6 +105,20 @@ describe("extractSignatures", () => {
       [r, publicKey],
     ]);
     expect(signatures[0]?.z).not.toBe(signatures[1]?.z);
+  });
+
+  it("reads long form DER lengths, as Core's lax parser does before BIP66", () => {
+    const { transaction, spent } = reusedNonce2012;
+    const decoded = decodeTransaction(hex.decode(transaction));
+    const [original] = extractSignatures(transaction, 0, spent);
+    const [, publicKey] = scriptPushes(decoded.inputs[0]?.scriptSig ?? new Uint8Array(0));
+    const der = `3081470281 20${original?.r}028200 20${original?.s}01`.replaceAll(" ", "");
+    const scriptSig = hex.decode(`4b${der}41${hex.encode(publicKey ?? new Uint8Array(0))}`);
+    const inputs = decoded.inputs.map((input, index) =>
+      index === 0 ? { ...input, scriptSig } : input,
+    );
+    const stretched = hex.encode(serializeTransaction({ ...decoded, inputs }, false));
+    expect(extractSignatures(stretched, 0, spent)).toEqual([original]);
   });
 
   it("answers an unsigned input with no signatures", () => {
