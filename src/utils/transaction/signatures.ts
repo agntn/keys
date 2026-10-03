@@ -1,7 +1,7 @@
 import { sha256 } from "@agntn/hashes";
 import { schnorr, secp256k1 } from "@noble/curves/secp256k1.js";
 import { concatBytes } from "../bytes.ts";
-import { scriptOperations, scriptPushes } from "./script.ts";
+import { pushOf, scriptOperations, scriptPushes } from "./script.ts";
 import { legacySighash, segwitSighash, taprootSighash } from "./sighash.ts";
 import {
   decodeTransaction,
@@ -235,9 +235,7 @@ function ecdsaSigner(
  * @returns {Uint8Array} The script code without them
  */
 function findAndDelete(scriptCode: Uint8Array, signatures: readonly Uint8Array[]): Uint8Array {
-  const pushes = new Set(
-    signatures.map((signature) => concatBytes(Uint8Array.of(signature.length), signature).toHex()),
-  );
+  const pushes = new Set(signatures.map((signature) => pushOf(signature).toHex()));
   const operations = scriptOperations(scriptCode);
   const read = operations.reduce((total, operation) => total + operation.bytes.length, 0);
   const kept = operations.filter((operation) => !pushes.has(operation.bytes.toHex()));

@@ -1,3 +1,5 @@
+import { concatBytes } from "../bytes.ts";
+
 const OP_PUSHDATA1 = 0x4c;
 const OP_PUSHDATA2 = 0x4d;
 const OP_PUSHDATA4 = 0x4e;
@@ -53,6 +55,30 @@ export function scriptOperations(script: Uint8Array): ScriptOperation[] {
     offset = end;
   }
   return operations;
+}
+
+/**
+ * Pushes data the way Core's `CScript() << data` does: a direct push up to 75 bytes, then the shortest `OP_PUSHDATA`.
+ * @param data - Bytes to push
+ * @returns {Uint8Array} The push opcode, its length bytes and the data
+ */
+export function pushOf(data: Uint8Array): Uint8Array {
+  const { length } = data;
+  const header =
+    length < OP_PUSHDATA1
+      ? [length]
+      : length <= 0xff
+        ? [OP_PUSHDATA1, length]
+        : length <= 0xffff
+          ? [OP_PUSHDATA2, length & 0xff, length >>> 8]
+          : [
+              OP_PUSHDATA4,
+              length & 0xff,
+              (length >>> 8) & 0xff,
+              (length >>> 16) & 0xff,
+              length >>> 24,
+            ];
+  return concatBytes(Uint8Array.from(header), data);
 }
 
 /**

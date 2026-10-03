@@ -1,13 +1,14 @@
 import { hex } from "@agntn/encodings/hex";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { describe, expect, it } from "vite-plus/test";
 import { extractSignatures } from "../../src/utils/transaction/index.ts";
-import { scriptPushes } from "../../src/utils/transaction/script.ts";
+import { pushOf, scriptPushes } from "../../src/utils/transaction/script.ts";
 import { legacySighash, taprootSighash } from "../../src/utils/transaction/sighash.ts";
 import {
   decodeTransaction,
   serializeTransaction,
 } from "../../src/utils/transaction/transaction.ts";
-import { transactionVectors } from "../fixtures.ts";
+import { secp256k1TestVectors, transactionVectors } from "../fixtures.ts";
 
 const { legacy, p2wpkh, p2shP2wpkh, p2shP2wsh, taproot, reusedNonce2012 } = transactionVectors;
 
@@ -48,6 +49,15 @@ describe("taproot sighash", () => {
     expect(() => taprootSighash(transaction, 0, taprootSpent, 0x04)).toThrow(/no hash type 0x4/u);
     const short = { ...transaction, outputs: [] };
     expect(() => taprootSighash(short, 0, taprootSpent, 0x03)).toThrow(/needs an output 0/u);
+  });
+});
+
+describe("pushOf", () => {
+  it("pushes directly up to 75 bytes, then with the shortest OP_PUSHDATA", () => {
+    const heads = [75, 76, 255, 256].map((length) =>
+      hex.encode(pushOf(new Uint8Array(length)).subarray(0, 3)),
+    );
+    expect(heads).toEqual(["4b0000", "4c4c00", "4cff00", "4d0001"]);
   });
 });
 
@@ -119,6 +129,26 @@ describe("extractSignatures", () => {
     );
     const stretched = hex.encode(serializeTransaction({ ...decoded, inputs }, false));
     expect(extractSignatures(stretched, 0, spent)).toEqual([original]);
+  });
+
+  it("drops a signature over 75 bytes from the script code under OP_PUSHDATA1", () => {
+    const { privateKey, publicKeyCompressed } = secp256k1TestVectors;
+    const decoded = decodeTransaction(hex.decode(reusedNonce2012.transaction));
+    const tail = hex.decode(`7521${publicKeyCompressed}ac`);
+    const digest = legacySighash(decoded, 0, tail, 1);
+    const compact = hex.encode(
+      secp256k1.sign(digest, hex.decode(privateKey), { prehash: false, format: "compact" }),
+    );
+    const der = `30820048028200 20${compact.slice(0, 64)}028200 20${compact.slice(64)}01`;
+    const push = `4c4d${der.replaceAll(" ", "")}`;
+    const inputs = decoded.inputs.map((input, index) =>
+      index === 0 ? { ...input, scriptSig: hex.decode(push) } : input,
+    );
+    const transaction = hex.encode(serializeTransaction({ ...decoded, inputs }, false));
+    const spent = [{ script: `${push}${hex.encode(tail)}`, value: 130000 }];
+    const [signature] = extractSignatures(transaction, 0, spent);
+    expect(signature?.z).toBe(hex.encode(digest));
+    expect(signature?.publicKey).toBe(publicKeyCompressed);
   });
 
   it("answers an unsigned input with no signatures", () => {
