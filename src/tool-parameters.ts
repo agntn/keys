@@ -35,6 +35,8 @@ export const TOOL_NAMES = [
   "keys_message_sign",
   "keys_message_verify",
   "keys_message_recover",
+  "keys_bip322_sign",
+  "keys_bip322_verify",
   "keys_bip44_parse",
   "keys_bip44_generate",
 ] as const;
@@ -272,3 +274,12 @@ export const DIGEST_SCHEMA_PATTERN = "^[0-9A-Fa-f]{64}$";
 /** JSON Schema pattern for a signature the verify tool reads: hex as above, or Core's base64. */
 export const MESSAGE_SIGNATURE_SCHEMA_PATTERN =
   "^(?:[0-9A-Fa-f]{128}(?:[0-9A-Fa-f]{2})?|[A-Za-z0-9+/]{87}=)$";
+
+/** Address types `keys_bip322_sign` writes for. */
+export const BIP322_SIGNING_TYPES = ["legacy", "p2sh", "segwit", "taproot"] as const;
+
+/** Longest BIP322 signature the verify tool reads, room for a full `to_sign` with large pushes. */
+export const MAX_BIP322_SIGNATURE_LENGTH = 8192;
+
+/** JSON Schema pattern for a BIP322 signature: an optional `smp`, `ful` or `pof`, then base64. */
+export const BIP322_SIGNATURE_SCHEMA_PATTERN = "^(?:smp|ful|pof)?[A-Za-z0-9+/]*={0,2}$";

@@ -19,6 +19,7 @@ import {
   evmRecoverTestVectors,
   bip39WordOrderVector,
   bip39WordRepairVectors,
+  bip322Vectors,
 } from "./fixtures.ts";
 import { TOOL_NAMES } from "../src/tool-parameters.ts";
 
@@ -343,6 +344,25 @@ try {
       address: evmRecoverTestVectors.mail.address,
     },
     /EIP-712 digest: be609aee[\s\S]*Given address: match$/,
+  );
+  const bip322Signed = await call(
+    "keys_bip322_sign",
+    { message: "disposable MCP test", privateKey, addressType: "taproot" },
+    /^Signature: smp\S+\nAddress: bc1p\S+ \(taproot, simple\)$/,
+  );
+  await call(
+    "keys_bip322_verify",
+    {
+      address: /Address: (\S+)/.exec(bip322Signed)?.[1],
+      message: "disposable MCP test",
+      signature: /Signature: (\S+)/.exec(bip322Signed)?.[1],
+    },
+    /^Signature is valid \(simple, taproot\)/,
+  );
+  await call(
+    "keys_bip322_verify",
+    bip322Vectors.unprefixed,
+    /^Signature is valid \(simple, segwit\)/,
   );
   await call("keys_bip44_parse", { path: "m/44h/60h/0h/0/3" }, /Address index: 3$/m);
   await call("keys_bip44_generate", { chain: "bitcoin", change: 1 }, /m\/44'\/0'\/0'\/1\/0/);

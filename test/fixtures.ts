@@ -1957,3 +1957,246 @@ export const entropyProfileVectors = {
   sha256Bitcoin: "6b88c087247aa2f07ee1c5956b8e1a9f4c7f892a70e324f1bb3d161e05ca107b",
   md5Given: { text: "red blue green", digest: "0f26a0352db2265b7ce21e58c8525881" },
 } as const;
+
+/**
+ * BIP322 vectors from bitcoin/bips: `bip-0322/basic-test-vectors.json` and the btcd generated set,
+ * `generated-test-vectors.json` (btcsuite/btcd#2521). `unprefixed` is the one agntn/keys#198 quotes.
+ */
+export const bip322Vectors = {
+  hashes: [
+    {
+      message: "",
+      address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l",
+      messageHash: "c90c269c4f8fcbe6880f72a721ddfbf1914268a794cbb21cfafee13770ae19f1",
+      toSpend: "c5680aa69bb8d860bf82d4e9cd3504b55dde018de765a91bb566283c545a99a7",
+      toSign: "1e9654e951a5ba44c8604c4de6c67fd78a27e81dcadcfe1edf638ba3aaebaed6",
+    },
+    {
+      message: "Hello World",
+      address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l",
+      messageHash: "f0eb03b1a75ac6d9847f55c624a99169b5dccba2a31f5b23bea77ba270de0a7a",
+      toSpend: "b79d196740ad5217771c1098fc4a4b51e0535c32236c71f1ea4d61a2d603352b",
+      toSign: "88737ae86f2077145f93cc4b153ae9a1cb8d56afa511988c149c5c8c9d93bddf",
+    },
+    {
+      message: "UTF-8 support: öäüéàè 测试文本 😄",
+      address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l",
+      messageHash: "43936b237ea38c7794eb5d755e0d220b6db92ebfc5c8f482759d22b1286376d7",
+      toSpend: "c8f4f525fe8afb1bc09b44175bd2096f079c98425e8a1be676b712add1fb62f0",
+      toSign: "8f488e06b89eafd019ec528109eafaf7f1d1811fd617aa1eeb9658f1c1be6586",
+    },
+  ],
+  /** One key signs both `""` and `Hello World`; RFC 6979 makes its ECDSA signatures exact. */
+  segwitKey: "L3VFeEujGtevx9w18HD1fhRbCH67Az2dpCymeRE1SoPK6XQtaN2k",
+  simple: [
+    {
+      addressType: "segwit",
+      address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l",
+      message: "",
+      signature:
+        "smpAkcwRAIgM2gBAQqvZX15ZiysmKmQpDrG83avLIT492QBzLnQIxYCIBaTpOaD20qRlEylyxFSeEA2ba9YOixpX8z46TSDtS40ASECx/EgAxlkQpQ9hYjgGu6EBCPMVPwVIVJqO4XCsMvViHI=",
+    },
+    {
+      addressType: "segwit",
+      address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l",
+      message: "",
+      signature:
+        "smpAkgwRQIhAPkJ1Q4oYS0htvyuSFHLxRQpFAY56b70UvE7Dxazen0ZAiAtZfFz1S6T6I23MWI2lK/pcNTWncuyL8UL+oMdydVgzAEhAsfxIAMZZEKUPYWI4BruhAQjzFT8FSFSajuFwrDL1Yhy",
+    },
+    {
+      addressType: "segwit",
+      address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l",
+      message: "Hello World",
+      signature:
+        "smpAkcwRAIgZRfIY3p7/DoVTty6YZbWS71bc5Vct9p9Fia83eRmw2QCICK/ENGfwLtptFluMGs2KsqoNSk89pO7F29zJLUx9a/sASECx/EgAxlkQpQ9hYjgGu6EBCPMVPwVIVJqO4XCsMvViHI=",
+    },
+    {
+      addressType: "segwit",
+      address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l",
+      message: "Hello World",
+      signature:
+        "smpAkgwRQIhAOzyynlqt93lOKJr+wmmxIens//zPzl9tqIOua93wO6MAiBi5n5EyAcPScOjf1lAqIUIQtr3zKNeavYabHyR8eGhowEhAsfxIAMZZEKUPYWI4BruhAQjzFT8FSFSajuFwrDL1Yhy",
+    },
+    {
+      addressType: "taproot",
+      address: "bc1pss0zhytly75awhm6x2hhvd5lnzv3vssgrf9axfheq8ldyzn88ges79fler",
+      message: "No prefix fallback",
+      signature:
+        "AUCJYOwOjxYAvatTAGYaVlNXBVyFuc4MwNQkOuK2tl8xhfKDONd0NjfYyNSYcRqeCp8hsAnCEPHAVEkO9h6vbQ/R",
+    },
+    {
+      addressType: "taproot",
+      address: "bc1pcquvhrqv0q68t4m0hfq6tpn006qrskyc7yrqnp2uyrf2emg3wynsdjyk38",
+      message: "PURVOQ544B6HUATVBJZN5EZJUU",
+      signature:
+        "smpAUB6B2Rbupzua8LTQIF06516wzl+cwKy1be8RgoiW0riyXdKwe6GTz/5Hnb37m67pJwIKCh+D5jDueG6KpvYpmu8",
+    },
+  ],
+  unprefixed: {
+    address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l",
+    message: "Hello World",
+    signature:
+      "AkcwRAIgZRfIY3p7/DoVTty6YZbWS71bc5Vct9p9Fia83eRmw2QCICK/ENGfwLtptFluMGs2KsqoNSk89pO7F29zJLUx9a/sASECx/EgAxlkQpQ9hYjgGu6EBCPMVPwVIVJqO4XCsMvViHI=",
+  },
+  /** Each one sets version 2, lock time 2016 and sequence 2016 on `to_sign`. */
+  full: [
+    {
+      addressType: "legacy",
+      address: "13vU5PUSuArDXJdCWZvUFEbgJ2wcmtSJWn",
+      message: "MOISC5NCQ42ADH2SUXLELUJOWH",
+      signature:
+        "fulAgAAAAGn3Z6t/gsHNyHdgZTOVro0Hej+qbd/ilU1ACalKoHX3gAAAABqRzBEAiB+8t/tm8Jm6zYv9JGZZVlAUjmqg7ZglIA39U+bim8EKQIgDv3E5cHOagN+xYgN3ZQjTYlAJp/WyslwJWuFP1TmM3IBIQJcPK2h9SY+Ki1oussvHnMdFAhJgsYBFPl+rNcMv9P1ROAHAAABAAAAAAAAAAABauAHAAA=",
+    },
+    {
+      addressType: "segwit",
+      address: "bc1qrqtlzcq86850yzgsyq9sssawx2qxlx5yq3xpkd",
+      message: "KLE5MMJBTNF4AVZXIO3GIL5UWF",
+      signature:
+        "fulAgAAAAABAUrfzHHOLAKmgCIFSTT3krp+cQxj1BDPBN4GBg3tRmFXAAAAAADgBwAAAQAAAAAAAAAAAWoCSDBFAiEAjYj85zyhQKa9DbMO0reDwdhkNwKJkF3q2qFcijXDgMUCIAaQ75s3fwqrCeYIUJugLvhxZFxQIVquGN90vIKCW3QLASEDMurnDzvc0zABUwVwCADfGXoDx/M3SQnYt7e3IHDoU3PgBwAA",
+    },
+    {
+      addressType: "taproot",
+      address: "bc1pve87s3l2levjmhetzr2f9xvep3y266xty0hnefmyv8tkxc3e4qssll2kdu",
+      message: "XQMVC3YR6AOGZIHLSUQ2NSSBI2",
+      signature:
+        "fulAgAAAAABAROFPNY6Zt8hFK0YQq5Wb6wk/CnUYEPtQ0HTHDyzNROrAAAAAADgBwAAAQAAAAAAAAAAAWoBQNRdLOo5XZY0SBqAsLZNr/z3Bqrmo3OxVn7e4tD/OOD4H9U/L1unq5Nmdz+S1w7SHtt46bFwnd8xnRVan8BofFfgBwAA",
+    },
+    {
+      addressType: "p2sh",
+      address: "32Utb7Seg6EXq7UesMNJXhQ1gdohYNyzQ9",
+      message: "EMYGZHEY3LIANYKCR7XJF3NMFQ",
+      signature:
+        "fulAgAAAAABAe5xLNMlYQH4OGjJ3h4lqQaVp0Cic7mwxkvyWswqFMXeAAAAABcWABSy/hpDH/KLAi4x25Tmb2UaO1xtWeAHAAABAAAAAAAAAAABagJHMEQCIDEleqb0n1R5c21TGkWRXNFae98wbwI0QOyh/YmRuQX1AiAcv1MhyTzPOVgZ1VIwuu0tDxrVJUHK8lhOUOXpsZnGwwEhAsjeDEoWX8hvEC8A/692yGQsPh6JBO8Zf4aITEQsKAcJ4AcAAA==",
+    },
+  ],
+  inconclusive: [
+    {
+      addressType: "p2wsh",
+      witness: true,
+      address: "bc1qp0ahvfh83088w49k405szqgg4f3pptr7p2g06tdxfjcd40z4lh4q95lsz9",
+      message: "This will be a p2wsh 3-of-3 multisig BIP 322 signed message",
+      signature:
+        "smpBQBHMEQCIFX9aaqPJWq2Ff2kpen5bFDTid+ehgUOpHV0LfjncXy4AiA3GNicF7aKPzdpa9PCpmaYQs3pHd+qbvvhXdxOCKCAMAFIMEUCIQD/ELXg6CNYyUQijCg96JtgvgjZb9dsl1Ctof4QAeyTcQIgVM/1AAblFl/DCt6A1gJg+T/i2qU5SQD09+chFJzolRwBSDBFAiEAlqRfSFyWNVQhvaCnmeV5tyneiCWMTcFbuujoD/pFa3wCIGnZjfQb8NolSYq9asV+ZeBSkCGHJcqnaV4JYS5MYPEGAWlTIQJ1aLEfEi/4p7wcV+XHZCBVvGGJZ7L3v+jhH+mZA8lN0yECCovfec+kIdllXpKCgA8RX/HZ2x5yHOtCSKP8/sf6pnwhAwxSng6kCgCXXSAmJOOZFdr3vdK3HzGqCFloOHgc5fM6U64=",
+    },
+    {
+      addressType: "taproot",
+      witness: true,
+      address: "bc1p6vffkx7vcyezrjq7pg9qqdjv7vmtanfhk8ukwsn4syejwmarmhxqp0rw5x",
+      message: "AY2VOQOXYI5CN2EHZKLOX7ZI37",
+      signature:
+        "fulAgAAAAABAaza7/ukfX9ZdxCUvK7CPJgADDdPdF7ikXVKWctd5EHrAAAAAADgBwAAAQAAAAAAAAAAAWoEQPvuT0enYGwsab2lsPZU0U3OcRkGng+o/PAt4QU2lc8hG7lTUmflkt0To+eoipv2vptf0TlGOBCsKU5xE3kXKcMAS2MgrYfXhOkh0CvwuJpB+O3tal2ECfO0v7k1/A4PTlGcQiBnAuAHsnUgJjLn4tl5ytgC8CNTyITXmg4rx9ctxPedwRMPEBvfoUBorCHBJjLn4tl5ytgC8CNTyITXmg4rx9ctxPedwRMPEBvfoUDgBwAA",
+    },
+    {
+      addressType: "p2sh",
+      witness: false,
+      address: "3Nye4j1GUFqCEBR3do2KEFZAs9oLe8NZ6X",
+      message: "7OKFLKRXSP6J42VQOMSG7MVXEP",
+      signature:
+        "fulAgAAAAEvAyd4zsoz8gcVU5H19GLYokTAN5PxuKCBlEPjODJ86gAAAADaAEcwRAIgT6rcfxgCmG6b3DpzNV6UG0jiCQGclG9sfiSpV45HDXMCIGgtqjFBuJ7rbi+cgnG0TZiKZaxMk0KI+gQd0pHJfEYCAUgwRQIhANCvCLjGMuZMzH+nCEkNhWhR45T6QRYMLin8utpuF9r1AiBTjG2NLjkre7ec+HPg8UUhK1jL1vgq7YKjq5ROv+h07AFHUiEDhKjcb/Pv1/7AYutzOXwgec08wwD/VwiPm58Lc0xjohghAhycjpwdBuP33orQXAH1CAsrgSkuspxM2+FPQ4OCVhQWUq7gBwAAAQAAAAAAAAAAAWrgBwAA",
+    },
+    {
+      addressType: "p2sh",
+      witness: true,
+      address: "3PGZjFkYBL1m9WBWkWbCW5FEFTaS1Hj4EB",
+      message: "NQVRV3DJYLKBANM3OPTNBULEU3",
+      signature:
+        "fulAgAAAAABAVscdBvYDFN98A//Rt/fAWcN7mdM0x2yWzBjC33c7X5HAAAAACMiACDkkR/DseXy+GXBPtxHvHehUjHt+9XjRmZAgxuuomAC4eAHAAABAAAAAAAAAAABagQASDBFAiEA47YK5XeIGBMQC9bCfWb+IIfirIWlqAzQVc6E/lgBPZICIA0k/EO2t3YhqmYR5WdXUBGgAzR+IqgZ5/mxvj+4UoDTAUgwRQIhAPCIVZCSoIaOjY9BzYIXWEvbhpOl4JR88p/xYVoZObd6AiADyJXNqpDg/Lc2viPX14N2d0jQdEjamY4SmiU7GNbIOgFHUiED+4JBU/wACiE8VFbQF4DR8pKgz7+8X2+PHccTcGxVGdEhA9uIzp+4CB5QRgvrN1OXQbBmfW8kOd0cooPWMYJCHBCxUq7gBwAA",
+    },
+  ],
+  invalid: [
+    {
+      description: "invalid base64 encoding",
+      address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l",
+      message: "",
+      signature: "not-valid-base64!!!",
+    },
+    {
+      description: "empty signature",
+      address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l",
+      message: "",
+      signature: "",
+    },
+    {
+      description: "wrong message for valid simple p2wpkh signature (empty message was signed)",
+      address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l",
+      message: "Wrong message that was not signed",
+      signature:
+        "smpAkcwRAIgM2gBAQqvZX15ZiysmKmQpDrG83avLIT492QBzLnQIxYCIBaTpOaD20qRlEylyxFSeEA2ba9YOixpX8z46TSDtS40ASECx/EgAxlkQpQ9hYjgGu6EBCPMVPwVIVJqO4XCsMvViHI=",
+    },
+    {
+      description: "wrong address for valid simple p2wpkh signature (signed for different address)",
+      address: "bc1qp0ahvfh83088w49k405szqgg4f3pptr7p2g06tdxfjcd40z4lh4q95lsz9",
+      message: "",
+      signature:
+        "smpAkcwRAIgM2gBAQqvZX15ZiysmKmQpDrG83avLIT492QBzLnQIxYCIBaTpOaD20qRlEylyxFSeEA2ba9YOixpX8z46TSDtS40ASECx/EgAxlkQpQ9hYjgGu6EBCPMVPwVIVJqO4XCsMvViHI=",
+    },
+    {
+      description: "empty witness stack (single zero byte)",
+      address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l",
+      message: "",
+      signature: "smpAA==",
+    },
+    {
+      description: "wrong message for valid simple p2wsh 3-of-3 multisig signature",
+      address: "bc1qp0ahvfh83088w49k405szqgg4f3pptr7p2g06tdxfjcd40z4lh4q95lsz9",
+      message: "This is not the message that was signed",
+      signature:
+        "smpBQBHMEQCIFX9aaqPJWq2Ff2kpen5bFDTid+ehgUOpHV0LfjncXy4AiA3GNicF7aKPzdpa9PCpmaYQs3pHd+qbvvhXdxOCKCAMAFIMEUCIQD/ELXg6CNYyUQijCg96JtgvgjZb9dsl1Ctof4QAeyTcQIgVM/1AAblFl/DCt6A1gJg+T/i2qU5SQD09+chFJzolRwBSDBFAiEAlqRfSFyWNVQhvaCnmeV5tyneiCWMTcFbuujoD/pFa3wCIGnZjfQb8NolSYq9asV+ZeBSkCGHJcqnaV4JYS5MYPEGAWlTIQJ1aLEfEi/4p7wcV+XHZCBVvGGJZ7L3v+jhH+mZA8lN0yECCovfec+kIdllXpKCgA8RX/HZ2x5yHOtCSKP8/sf6pnwhAwxSng6kCgCXXSAmJOOZFdr3vdK3HzGqCFloOHgc5fM6U64=",
+    },
+    {
+      description: "invalid signature prefix",
+      address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l",
+      message: "",
+      signature: "fooAA==",
+    },
+    {
+      description: "incorrect prefix type",
+      address: "bc1pyrgrm6cu6n54jrvkdjd9rvyd3xfyu84s2623awu2srn6mxhscwpsm5644w",
+      message: "incorrect prefix",
+      signature:
+        "fulAUDZwFXUp+adN+/UZj5dVrGAbB3zKs1Vcalz5fCF9srxS63eSWNGvH1NYbrBkPt1BJDUyWUz9zgUxfc63/QheT6M",
+    },
+    {
+      description: "wrong message for p2tr simple signature",
+      address: "bc1pcquvhrqv0q68t4m0hfq6tpn006qrskyc7yrqnp2uyrf2emg3wynsdjyk38",
+      message: "56VM6YK6Y76XTBXNPITF232EPX",
+      signature:
+        "smpAUB6B2Rbupzua8LTQIF06516wzl+cwKy1be8RgoiW0riyXdKwe6GTz/5Hnb37m67pJwIKCh+D5jDueG6KpvYpmu8",
+    },
+    {
+      description: "wrong signer for p2tr simple signature",
+      address: "bc1pltvk000nd54v3hrrcn7lsffdra72hphpm40rhzf9hn8arqkgermq2p9029",
+      message: "PURVOQ544B6HUATVBJZN5EZJUU",
+      signature:
+        "smpAUB6B2Rbupzua8LTQIF06516wzl+cwKy1be8RgoiW0riyXdKwe6GTz/5Hnb37m67pJwIKCh+D5jDueG6KpvYpmu8",
+    },
+    {
+      description: "wrong message for p2pkh full signature",
+      address: "13vU5PUSuArDXJdCWZvUFEbgJ2wcmtSJWn",
+      message: "TCHG6CQ5E2T5S4S7DPLAEFVDY2",
+      signature:
+        "fulAgAAAAGn3Z6t/gsHNyHdgZTOVro0Hej+qbd/ilU1ACalKoHX3gAAAABqRzBEAiB+8t/tm8Jm6zYv9JGZZVlAUjmqg7ZglIA39U+bim8EKQIgDv3E5cHOagN+xYgN3ZQjTYlAJp/WyslwJWuFP1TmM3IBIQJcPK2h9SY+Ki1oussvHnMdFAhJgsYBFPl+rNcMv9P1ROAHAAABAAAAAAAAAAABauAHAAA=",
+    },
+    {
+      description: "wrong signer for p2pkh full signature",
+      address: "1BxMhvfWLnGLqVhJ3j39oDBk7qf5D86BFe",
+      message: "MOISC5NCQ42ADH2SUXLELUJOWH",
+      signature:
+        "fulAgAAAAGn3Z6t/gsHNyHdgZTOVro0Hej+qbd/ilU1ACalKoHX3gAAAABqRzBEAiB+8t/tm8Jm6zYv9JGZZVlAUjmqg7ZglIA39U+bim8EKQIgDv3E5cHOagN+xYgN3ZQjTYlAJp/WyslwJWuFP1TmM3IBIQJcPK2h9SY+Ki1oussvHnMdFAhJgsYBFPl+rNcMv9P1ROAHAAABAAAAAAAAAAABauAHAAA=",
+    },
+    {
+      description: "wrong message for p2sh-p2wpkh full signature",
+      address: "32Utb7Seg6EXq7UesMNJXhQ1gdohYNyzQ9",
+      message: "CPVOBEXDTFAXS6N4YASD753CZV",
+      signature:
+        "fulAgAAAAABAe5xLNMlYQH4OGjJ3h4lqQaVp0Cic7mwxkvyWswqFMXeAAAAABcWABSy/hpDH/KLAi4x25Tmb2UaO1xtWeAHAAABAAAAAAAAAAABagJHMEQCIDEleqb0n1R5c21TGkWRXNFae98wbwI0QOyh/YmRuQX1AiAcv1MhyTzPOVgZ1VIwuu0tDxrVJUHK8lhOUOXpsZnGwwEhAsjeDEoWX8hvEC8A/692yGQsPh6JBO8Zf4aITEQsKAcJ4AcAAA==",
+    },
+    {
+      description: "wrong signer for p2sh-p2wpkh full signature",
+      address: "3QMEQj2LTUtKKR1UatUK44z1NwrWrcVSGh",
+      message: "EMYGZHEY3LIANYKCR7XJF3NMFQ",
+      signature:
+        "fulAgAAAAABAe5xLNMlYQH4OGjJ3h4lqQaVp0Cic7mwxkvyWswqFMXeAAAAABcWABSy/hpDH/KLAi4x25Tmb2UaO1xtWeAHAAABAAAAAAAAAAABagJHMEQCIDEleqb0n1R5c21TGkWRXNFae98wbwI0QOyh/YmRuQX1AiAcv1MhyTzPOVgZ1VIwuu0tDxrVJUHK8lhOUOXpsZnGwwEhAsjeDEoWX8hvEC8A/692yGQsPh6JBO8Zf4aITEQsKAcJ4AcAAA==",
+    },
+  ],
+} as const;

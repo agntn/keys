@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, BIP44, brainwallet, curve, Electrum, secp256k1, SLIP-10, store and WIF are public package subpaths; other utilities are internal. Every hash comes from `@agntn/hashes`, hex goes through the native `Uint8Array.fromHex` and `toHex`.
+Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP322, BIP39, BIP44, brainwallet, curve, Electrum, secp256k1, SLIP-10, store and WIF are public package subpaths; other utilities are internal. Every hash comes from `@agntn/hashes`, hex goes through the native `Uint8Array.fromHex` and `toHex`.
 
 ## STRUCTURE
 
@@ -33,6 +33,7 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP39, BIP
 | -------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `bip32/`       | HD key derivation (secp256k1) | `getMasterKeyFromSeed`, `deriveHDKey`, `HARDENED_OFFSET`; `recoverParent` takes an xpub and a normal child key back to the parent xprv                                                                                                         |
 | `bip38/`       | Encrypted keys                | `inspect` reads the header without the passphrase; `decrypt` opens both modes, `BIP38PassphraseError` when the address hash misses                                                                                                             |
+| `bip322/`      | Message proofs by address     | `verify` answers valid, invalid or inconclusive for simple, full and legacy signatures; `sign` writes them for legacy, p2sh, segwit and taproot. Transactions and sighash stay internal                                                        |
 | `bip39/`       | Mnemonic phrases              | `generateMnemonic`, `mnemonicToSeed`, `validateMnemonic`, `getMnemonicWordCandidates`, `lookupWords`, `lookupPrefixes`, `lookupIndices`; `orderWords` and `countWordOrders` from `order.ts`; `repairWords` and `suggestWords` from `repair.ts` |
 | `bip44/`       | Derivation paths              | `BIP44` coin types, `BIP44Change`, `getPath`, `parse`; `getBIP32Path` and `getHardenedPath` for the chain shapes stay internal in `paths.ts`                                                                                                   |
 | `brainwallet/` | Brainwallet keys              | `derive`: scrypt or PBKDF2, then SHA-256 of the output bytes or their hex; plain SHA-256 or keccak256; WarpWallet                                                                                                                              |

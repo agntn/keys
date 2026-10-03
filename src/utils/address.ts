@@ -17,7 +17,13 @@ function bytesToNumberBE(bytes: Uint8Array): bigint {
   return BigInt(`0x${bytes.toHex()}`);
 }
 
-function taggedHash(tag: string, data: Uint8Array): Uint8Array {
+/**
+ * BIP340 tagged hash: SHA-256 over the tag's SHA-256 twice, then the data.
+ * @param tag - Tag text, such as `TapTweak`
+ * @param data - Bytes to hash
+ * @returns {Uint8Array} 32-byte digest
+ */
+export function taggedHash(tag: string, data: Uint8Array): Uint8Array {
   const tagHash = sha256(new TextEncoder().encode(tag));
   const input = new Uint8Array(tagHash.length * 2 + data.length);
   input.set(tagHash);

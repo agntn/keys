@@ -14,6 +14,7 @@ import type { PublicKeyEncodingOptions } from "@agntn/keys/secp256k1";
 import {
   bip32ParentVector,
   bip38Vectors,
+  bip322Vectors,
   brainwalletInput,
   brainwalletVectors,
   storeVectors,
@@ -26,6 +27,7 @@ import {
   bip39WordRepairVectors,
   publicKeyEncodingVector,
   secp256k1MathVectors,
+  secp256k1TestVectors,
   curveVectors,
   slip132Vectors,
 } from "./fixtures.ts";
@@ -34,6 +36,7 @@ import { ELECTRUM_LEGACY_WORDS } from "../src/utils/electrum/legacy.ts";
 
 const EXPORTS = [
   ["@agntn/keys/bip32", "/dist/utils/bip32/index.mjs"],
+  ["@agntn/keys/bip322", "/dist/utils/bip322/index.mjs"],
   ["@agntn/keys/bip38", "/dist/utils/bip38/index.mjs"],
   ["@agntn/keys/bip39", "/dist/utils/bip39/index.mjs"],
   ["@agntn/keys/brainwallet", "/dist/utils/brainwallet/index.mjs"],
@@ -197,6 +200,18 @@ describe("Public BIP38 exports", () => {
     );
     expect(await import("@agntn/keys")).not.toHaveProperty("BIP38PassphraseError");
   }, 20_000);
+});
+
+describe("Public BIP322 exports", () => {
+  it("verifies and signs from the built package, outside the root", async () => {
+    const bip322 = await import("@agntn/keys/bip322");
+    const { address, message, signature } = bip322Vectors.unprefixed;
+    expect(bip322.verify(address, message, signature).state).toBe("valid");
+    const signed = bip322.sign(message, secp256k1TestVectors.privateKey, "taproot");
+    expect(signed.startsWith("smp")).toBe(true);
+    expect(new Set(Object.keys(bip322))).toEqual(new Set(["sign", "verify"]));
+    expect(await import("@agntn/keys")).not.toHaveProperty("verify");
+  });
 });
 
 describe("Public BIP32 exports", () => {
@@ -404,6 +419,7 @@ describe("Consumer bundles", () => {
     ["derive", "@agntn/keys/brainwallet"],
     ["decrypt", "@agntn/keys/store"],
     ["decrypt", "@agntn/keys/bip38"],
+    ["verify", "@agntn/keys/bip322"],
   ])(
     "leaves the chain registry and the Electrum list out of an app importing %s from %s",
     async (name, from) => {

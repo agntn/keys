@@ -186,6 +186,8 @@ A `6P...` key is the same story with BIP38. `decrypt(key, passphrase)` from `@ag
 
 And a signed message is a clue. Somebody proves they hold an address with `signmessage`? That base64 gives away the public key behind it. `btc.recoverMessageSigner(message, signature)` reads it back. Ethereum, Base and TRON do the same with 65 bytes of `r||s||v`. EIP-712? `hashTypedData` builds the digest and `recoverDigestSigner` takes it from there. `keys_message_recover` does all of that for agents. Any well formed signature recovers some key for any message, though. So check the address match, not just that a key came out.
 
+Core's `signmessage` stops at P2PKH. A `bc1q` or `bc1p` address proves itself with BIP322 instead. `verify(address, message, signature)` from `@agntn/keys/bip322` answers `valid`, `invalid` or `inconclusive`, and says why. Multisig and script paths land on `inconclusive`. No guessing. `sign` writes one for your own key. Agents get `keys_bip322_verify` and `keys_bip322_sign`. More: [Bitcoin](https://keys.agntn.dev/blockchains/bitcoin).
+
 ## ⛓️ Chains
 
 | Chain            | Curve              | Address Formats                      | Testnet |

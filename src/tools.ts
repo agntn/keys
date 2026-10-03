@@ -4,6 +4,8 @@ import { defineTool, type ToolDefinition } from "@agntn/tools";
 import {
   BIP44_GENERATE_PARAMETERS,
   BIP44_PARSE_PARAMETERS,
+  BIP322_SIGN_PARAMETERS,
+  BIP322_VERIFY_PARAMETERS,
   COMPUTE_CURVE_PARAMETERS,
   COMPUTE_SECP256K1_POINT_PARAMETERS,
   CONVERT_PUBLIC_KEY_PARAMETERS,
@@ -639,6 +641,40 @@ export const messageRecoverTool = defineTool({
     ),
 });
 
+export const bip322SignTool = defineTool({
+  name: "keys_bip322_sign",
+  title: "Sign BIP322",
+  description:
+    "Sign a message by BIP322 for the Bitcoin address of a private key: a simple smp signature for segwit (P2WPKH) and taproot, a full ful one for p2sh (P2SH-P2WPKH) and legacy (P2PKH). SegWit and Taproot wallets read these where signmessage stops at P2PKH. The key, message and signature enter the transcript, so use only public or disposable material.",
+  effect: "write",
+  idempotent: true,
+  input: BIP322_SIGN_PARAMETERS,
+  execute: async (params) =>
+    (await loadOperations()).signBip322(
+      params.message,
+      params.privateKey,
+      params.addressType,
+      params.network,
+      params.compressed,
+    ),
+});
+
+export const bip322VerifyTool = defineTool({
+  name: "keys_bip322_verify",
+  title: "Verify BIP322",
+  description:
+    "Verify a BIP322 signature of a message by a Bitcoin address, the proof SegWit and Taproot wallets give: simple (smp) and full (ful) for P2WPKH, P2TR key path, P2SH-P2WPKH and P2PKH, and signmessage's legacy base64 for P2PKH. Answers valid, invalid or inconclusive with the reason; P2WSH, Taproot script paths and other P2SH scripts get their hash commitments checked, then come back inconclusive, as does proof of funds. A valid one names the key it checked against.",
+  effect: "read",
+  input: BIP322_VERIFY_PARAMETERS,
+  execute: async (params) =>
+    (await loadOperations()).verifyBip322(
+      params.address,
+      params.message,
+      params.signature,
+      params.network,
+    ),
+});
+
 export const bip44ParseTool = defineTool({
   name: "keys_bip44_parse",
   title: "Parse BIP44 Path",
@@ -710,6 +746,8 @@ export const keysTools: readonly ToolDefinition[] = [
   messageSignTool,
   messageVerifyTool,
   messageRecoverTool,
+  bip322SignTool,
+  bip322VerifyTool,
   bip44ParseTool,
   bip44GenerateTool,
 ];
@@ -749,6 +787,8 @@ export const callSummaries: Readonly<
     args.message === undefined
       ? `${String(args.chain)} ${args.typedData === undefined ? "digest" : "typed data"}`
       : preview(args.message),
+  keys_bip322_sign: (args) => `${String(args.addressType)} ${preview(args.message)}`,
+  keys_bip322_verify: (args) => preview(args.message),
   keys_bip44_parse: (args) => String(args.path),
   keys_bip44_generate: (args) => String(args.chain),
 };
