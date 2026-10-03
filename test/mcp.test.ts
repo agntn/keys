@@ -278,6 +278,104 @@ describe("keys MCP server", () => {
     }
   });
 
+  it("computes on a curve the caller defines through MCP and names what an operation lacks", async () => {
+    const client = await connectTestClient();
+    const curve = { a: "2", b: "2", p: "17" };
+    const base = { x: "5", y: "1" };
+    for (const [args, expected] of [
+      [
+        { operation: "add", ...curve, point: base, other: { x: "6", y: "3" } },
+        { operation: "add", point: { x: "10", y: "6" } },
+      ],
+      [
+        { operation: "double", ...curve, point: base },
+        { operation: "double", point: { x: "6", y: "3" } },
+      ],
+      [
+        { operation: "negate", ...curve, point: base },
+        { operation: "negate", point: { x: "5", y: "16" } },
+      ],
+      [
+        { operation: "multiply", ...curve, point: base, scalar: "0x13" },
+        { operation: "multiply", point: "infinity" },
+      ],
+      [
+        { operation: "multiply", ...curve, point: base, scalar: "-2" },
+        { operation: "multiply", point: { x: "6", y: "14" } },
+      ],
+      [
+        { operation: "check", ...curve, point: { x: "5", y: "2" } },
+        { operation: "check", onCurve: false },
+      ],
+      [
+        { operation: "order", ...curve, point: base },
+        { operation: "order", order: "19" },
+      ],
+      [
+        { operation: "count", ...curve },
+        { operation: "count", count: "19" },
+      ],
+      [
+        { operation: "points", ...curve, limit: 2 },
+        {
+          operation: "points",
+          total: "18",
+          points: [
+            { x: "0", y: "6" },
+            { x: "0", y: "11" },
+          ],
+          truncated: true,
+        },
+      ],
+      [
+        { operation: "points", a: "1", b: "1", p: "23", order: "7", limit: 2 },
+        {
+          operation: "points",
+          total: "6",
+          points: [
+            { x: "5", y: "4" },
+            { x: "5", y: "19" },
+          ],
+          truncated: true,
+        },
+      ],
+      [
+        { operation: "log", ...curve, point: base, other: { x: "16", y: "4" } },
+        { operation: "log", order: "19", scalar: "13" },
+      ],
+      [
+        {
+          operation: "log",
+          a: "1",
+          b: "1",
+          p: "23",
+          point: { x: "5", y: "4" },
+          other: { x: "4", y: "0" },
+        },
+        { operation: "log", order: "7", scalar: null },
+      ],
+    ] as const) {
+      const result = await client.callTool({ name: "keys_curve_compute", arguments: args });
+      expect(result.isError).not.toBe(true);
+      expect(JSON.parse(text(result.content))).toEqual(expected);
+    }
+    for (const [args, message] of [
+      [{ operation: "add", ...curve, point: base }, "add needs other"],
+      [{ operation: "count", ...curve, point: base }, "count does not take point"],
+      [{ operation: "multiply", ...curve, point: base }, "multiply needs scalar"],
+      [{ operation: "double", ...curve, point: { x: "5", y: "2" } }, "not on the curve"],
+      [{ operation: "count", a: "2", b: "2", p: "21" }, "p must be a prime above 3"],
+      [{ operation: "count", a: "0", b: "0", p: "17" }, "singular"],
+      [{ operation: "count", a: "2", b: "3", p: "1048583" }, "takes p up to 1048576"],
+      [{ operation: "count", a: "two", b: "2", p: "17" }, "Invalid arguments at /a"],
+      [{ operation: "subtract", ...curve, point: base }, "must be one of"],
+    ] as const) {
+      const result = await client.callTool({ name: "keys_curve_compute", arguments: args });
+      expect(result.isError).toBe(true);
+      expect(text(result.content)).toContain(message);
+    }
+  });
+
   it("encodes and inspects localized mnemonics through MCP", async () => {
     const client = await connectTestClient();
     for (const { language, entropy, mnemonic } of localizedMnemonicVectors) {

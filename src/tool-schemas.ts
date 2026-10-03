@@ -1,4 +1,4 @@
-import { Type, type TOptional, type TString } from "@agntn/tools";
+import { Type, type TObject, type TOptional, type TString } from "@agntn/tools";
 import {
   TOOL_CHAINS,
   TOOL_ADDRESS_TYPES,
@@ -38,8 +38,13 @@ import {
   MAX_SCRYPT_BLOCKS,
   KDF_COST_LIMITS,
   SECP256K1_POINT_OPERATIONS,
+  CURVE_OPERATIONS,
+  MAX_CURVE_INTEGER_LENGTH,
+  MAX_CURVE_POINTS_SHOWN,
+  DEFAULT_CURVE_POINTS_SHOWN,
 } from "./tool-parameters.ts";
 import { BIP39_LANGUAGES } from "./utils/bip39/languages.ts";
+import { MAX_FILTERED_PRIME } from "./utils/curve/group.ts";
 
 /** The default list is English. Language is never inferred. */
 export const BIP39_LANGUAGE_PARAMETER = Type.Optional(
@@ -231,6 +236,77 @@ export const COMPUTE_SECP256K1_POINT_PARAMETERS = Type.Object(
     compressed: Type.Optional(
       Type.Boolean({
         description: "Output SEC1 encoding, for every operation but check. Default: true",
+      }),
+    ),
+  },
+  { additionalProperties: false },
+);
+
+const CURVE_INTEGER_PATTERN = "-?(?:0[xX][0-9A-Fa-f]+|[0-9]+)";
+
+/**
+ * Integer argument of the curve tool, decimal or 0x hex.
+ * @param description - What the integer is
+ * @returns {TString} The argument
+ */
+function curveInteger(description: string): TString {
+  return Type.String({
+    maxLength: MAX_CURVE_INTEGER_LENGTH,
+    pattern: `^${CURVE_INTEGER_PATTERN}$`,
+    description: `${description}. Decimal, or hex with 0x`,
+  });
+}
+
+/**
+ * Point argument of the curve tool.
+ * @param description - The operations that take it
+ * @returns {TOptional<TObject<{ x: TString; y: TString }>>} The optional argument
+ */
+function curvePoint(description: string): TOptional<TObject<{ x: TString; y: TString }>> {
+  return Type.Optional(
+    Type.Object(
+      { x: curveInteger("x, from 0 to p - 1"), y: curveInteger("y, from 0 to p - 1") },
+      {
+        additionalProperties: false,
+        description: `${description}. A finite point; the point at infinity comes back as "infinity" and does not go in`,
+      },
+    ),
+  );
+}
+
+/** Shared MCP and Pi schema for arithmetic on a short Weierstrass curve the caller defines. */
+export const COMPUTE_CURVE_PARAMETERS = Type.Object(
+  {
+    operation: Type.String({
+      enum: [...CURVE_OPERATIONS],
+      description:
+        "add takes point and other, double, negate and order take point, multiply takes point and scalar, check takes point and answers whether it lies on the curve, count counts the points, points lists them, log takes point as the base and other as the target",
+    }),
+    a: curveInteger("a in y^2 = x^3 + ax + b, reduced mod p, so -3 works"),
+    b: curveInteger("b in y^2 = x^3 + ax + b, reduced mod p"),
+    p: curveInteger("The field prime, above 3"),
+    point: curvePoint("Every operation but count and points, required there; the base for log"),
+    other: curvePoint("add and log only, required there; the target for log"),
+    scalar: Type.Optional(
+      Type.String({
+        maxLength: MAX_CURVE_INTEGER_LENGTH,
+        pattern: `^(?:${CURVE_INTEGER_PATTERN})?$`,
+        description:
+          "multiply only, required there: any integer, decimal or hex with 0x. A negative one multiplies the negation",
+      }),
+    ),
+    order: Type.Optional(
+      Type.String({
+        maxLength: MAX_CURVE_INTEGER_LENGTH,
+        pattern: `^(?:${CURVE_INTEGER_PATTERN})?$`,
+        description: `points only: list just the points of exactly this order, 1 or more. Takes p up to ${MAX_FILTERED_PRIME}`,
+      }),
+    ),
+    limit: Type.Optional(
+      Type.Integer({
+        minimum: 1,
+        maximum: MAX_CURVE_POINTS_SHOWN,
+        description: `points only: most points to list, from 1 to ${MAX_CURVE_POINTS_SHOWN}. Default: ${DEFAULT_CURVE_POINTS_SHOWN}`,
       }),
     ),
   },

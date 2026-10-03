@@ -108,6 +108,8 @@ Careful with that xpub, though. Leak the private key of one normal child next to
 
 Some puzzles never touch a private key. They add two public keys, or ask what sits between two known ones. `addPoints`, `subtractPoints`, `multiplyPoint` and `liftX` from `@agntn/keys/secp256k1` do that curve math, and scalars mod n get their own four. Agents get `keys_secp256k1_point_compute` for the point side. More: [Keys](https://keys.agntn.dev/guide/keys).
 
+Others skip secp256k1 altogether. A toy curve over F17, one point, what's its order? `defineCurve` from `@agntn/keys/curve` takes any a, b and p. Then you add, multiply, count points and find small discrete logs. Agents get `keys_curve_compute`. More: [Keys](https://keys.agntn.dev/guide/keys#a-curve-of-your-own).
+
 ## 🧠 Library
 
 ```ts
