@@ -33,6 +33,8 @@ export interface RecoveredNonceKey {
   readonly publicKey: string;
 }
 
+const SAME_DIGEST = "Both signatures sign the same digest, which leaves the nonce unknown";
+
 /** The two signatures read as numbers. */
 interface Pair {
   readonly r: bigint;
@@ -67,7 +69,7 @@ function digestBytes(digest: bigint): Uint8Array {
  * Reads r and s from 1 to n minus 1 and the digests, refusing two signatures that leak nothing.
  * @param first - One signature
  * @param second - The other
- * @returns {Pair} The numbers, digests reduced mod n
+ * @returns {Pair} The numbers, digests as given
  * @throws {RangeError} When r or s is out of range, the r values differ or the digests match
  */
 function readPair(first: Readonly<NonceSignature>, second: Readonly<NonceSignature>): Pair {
@@ -80,9 +82,7 @@ function readPair(first: Readonly<NonceSignature>, second: Readonly<NonceSignatu
   if (readHex(second.r, "r") !== r) {
     throw new RangeError("The two signatures have different r, so they did not share a nonce");
   }
-  if (Fn.create(z[0]) === Fn.create(z[1])) {
-    throw new RangeError("Both signatures sign the same digest, which leaves the nonce unknown");
-  }
+  if (z[0] === z[1]) throw new RangeError(SAME_DIGEST);
   return { r, s, z };
 }
 
@@ -144,11 +144,12 @@ function expectedKey(keys: readonly unknown[], xOnly: boolean): string | undefin
  * @param pair - The signatures
  * @param expected - Compressed key the result must match
  * @returns {RecoveredNonceKey} The key whose public key verifies both signatures
- * @throws {RangeError} When no candidate verifies both, or none matches the key
+ * @throws {RangeError} When the digests match mod n, no candidate verifies both, or none matches
  */
 function recoverEcdsa(pair: Readonly<Pair>, expected: string | undefined): RecoveredNonceKey {
   const { r, s, z } = pair;
   const difference = Fn.sub(z[0], z[1]);
+  if (Fn.is0(difference)) throw new RangeError(SAME_DIGEST);
   for (const denominator of [Fn.sub(s[0], s[1]), Fn.add(s[0], s[1])]) {
     if (Fn.is0(denominator)) continue;
     const nonce = Fn.div(difference, denominator);

@@ -13,7 +13,11 @@ const { r, first, second } = reusedNonceVector;
 const padded = (value: string): string => value.padStart(64, "0");
 
 /* Two BIP340 signatures of one key over two messages with one nonce, built by hand. */
-const schnorrPair = (): {
+const schnorrPair = (
+  messages: readonly Uint8Array[] = ["one", "two"].map((label) =>
+    sha256(new TextEncoder().encode(label)),
+  ),
+): {
   publicKey: string;
   privateKey: bigint;
   signatures: { r: string; s: string; z: string }[];
@@ -25,8 +29,7 @@ const schnorrPair = (): {
   const nonce = secp256k1.Point.BASE.multiply(0xbad_cafen);
   const k = nonce.y % 2n === 0n ? 0xbad_cafen : Fn.neg(0xbad_cafen);
   const rx = Fn.toBytes(nonce.x);
-  const signatures = ["one", "two"].map((label) => {
-    const message = sha256(new TextEncoder().encode(label));
+  const signatures = messages.map((message) => {
     const challenge = schnorr.utils.taggedHash(
       "BIP0340/challenge",
       rx,
@@ -85,11 +88,29 @@ describe("recoverReusedNonce", () => {
     );
   });
 
+  it("tells apart Schnorr messages that differ by the curve order", () => {
+    const low = hex.decode(`${"00".repeat(31)}01`);
+    const high = hex.decode((1n + Fn.ORDER).toString(16).padStart(64, "0"));
+    const { publicKey, privateKey, signatures } = schnorrPair([low, high]);
+    const [a, b] = signatures;
+    if (a === undefined || b === undefined) throw new Error("missing signature");
+    const recovered = recoverReusedNonce(
+      { ...a, type: "schnorr" },
+      { ...b, type: "schnorr" },
+      { publicKey },
+    );
+    expect(recovered.privateKey).toBe(hex.encode(Fn.toBytes(privateKey)));
+  });
+
   it("refuses pairs that leak nothing or disagree", () => {
     const one = { r, ...first };
     const two = { r, ...second };
     expect(() => recoverReusedNonce(one, { ...two, r: "01" })).toThrow(/different r/u);
     expect(() => recoverReusedNonce(one, { ...two, z: first.z })).toThrow(/same digest/u);
+    const wrapped = (1n + Fn.ORDER).toString(16);
+    expect(() => recoverReusedNonce({ ...one, z: "1" }, { ...two, z: wrapped })).toThrow(
+      /same digest/u,
+    );
     expect(() => recoverReusedNonce(one, { ...two, type: "schnorr" })).toThrow(TypeError);
     expect(() => recoverReusedNonce(one, { ...two, s: "0" })).toThrow(/from 1/u);
     expect(() => recoverReusedNonce(one, { ...two, s: "0x1" })).toThrow(TypeError);
