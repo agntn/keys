@@ -1,3 +1,4 @@
+import { base58 } from "@agntn/encodings/base58";
 import { base64 } from "@agntn/encodings/base64";
 import { segwit } from "@agntn/encodings/bech32";
 import { hex } from "@agntn/encodings/hex";
@@ -257,6 +258,19 @@ describe("bip322 verify", () => {
     expect(verify(address, "nested", `smp${witness}`).reason).toBe(
       "An smp signature is for native SegWit; P2SH takes a full one",
     );
+  });
+
+  it.each([
+    [0x52, 32, "inconclusive"],
+    [0x00, 25, "invalid"],
+  ] as const)("reads P2SH over opcode %i and a %i-byte program as %s", (opcode, length, state) => {
+    const redeem = Uint8Array.of(opcode, length, ...new Uint8Array(length).fill(3));
+    const address = base58.encode(Uint8Array.of(5, ...hash160(redeem)), { check: true });
+    const spend = toSpend("wrapped", challengeOf(address, "mainnet"));
+    const scriptSig = Uint8Array.of(redeem.length, ...redeem);
+    const signed = toSign(spend, { scriptSig, witness: [Uint8Array.of(1)] });
+    const signature = `ful${base64.encode(serializeTransaction(signed, true))}`;
+    expect(verify(address, "wrapped", signature).state).toBe(state);
   });
 
   it("checks what input 0 spends before deferring extra inputs", () => {

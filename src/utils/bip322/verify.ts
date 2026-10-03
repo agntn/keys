@@ -233,14 +233,38 @@ function checkSegwit(transaction: Readonly<Transaction>, challenge: Readonly<Cha
 }
 
 /**
- * Reads the program of a P2SH redeem script that wraps SegWit version 0.
+ * Reads a redeem script that BIP141 treats as a witness program: `OP_0` to `OP_16`, 2 to 40 bytes.
  * @param redeem - Redeem script
- * @returns {Uint8Array | undefined} The 20 or 32-byte program, undefined for any other script
+ * @returns {{ version: number; program: Uint8Array } | undefined} The program, undefined otherwise
  */
-function nestedProgram(redeem: Uint8Array): Uint8Array | undefined {
+function nestedProgram(redeem: Uint8Array): { version: number; program: Uint8Array } | undefined {
+  const opcode = redeem[0] ?? -1;
   const length = redeem[1] ?? 0;
-  const wraps = redeem[0] === 0 && (length === 20 || length === 32) && redeem.length === length + 2;
-  return wraps ? redeem.subarray(2) : undefined;
+  const version = opcode === 0 ? 0 : opcode - 0x50;
+  const wraps = version >= 0 && version <= 16 && length >= 2 && length <= 40;
+  return wraps && redeem.length === length + 2
+    ? { version, program: redeem.subarray(2) }
+    : undefined;
+}
+
+/**
+ * Checks the witness a wrapped program asks for; version 0 must be 20 or 32 bytes.
+ * @param transaction - `to_sign`
+ * @param nested - Version and program of the redeem script
+ * @returns {Outcome} The verdict on the witness
+ */
+function checkNestedProgram(
+  transaction: Readonly<Transaction>,
+  nested: Readonly<{ version: number; program: Uint8Array }>,
+): Outcome {
+  if (nested.version > 0) {
+    return inconclusive(
+      "Witness programs other than version 0 and Taproot are reserved for upgrades",
+    );
+  }
+  if (nested.program.length === 20) return checkWitnessKeyHash(transaction, nested.program);
+  if (nested.program.length === 32) return checkWitnessScript(transaction, nested.program);
+  return invalid("A version 0 witness program must be 20 or 32 bytes");
 }
 
 /**
@@ -261,9 +285,7 @@ function checkNested(transaction: Readonly<Transaction>, challenge: Readonly<Cha
   if (read.pushes.length !== 1) {
     return invalid("A wrapped SegWit scriptSig must push just the redeem script");
   }
-  return nested.length === 20
-    ? checkWitnessKeyHash(transaction, nested)
-    : checkWitnessScript(transaction, nested);
+  return checkNestedProgram(transaction, nested);
 }
 
 /**
@@ -279,7 +301,8 @@ function checkLegacyScript(transaction: Readonly<Transaction>): Outcome {
 }
 
 /**
- * Checks what a P2WSH spend commits to: the last witness item hashes to the program.
+ * Checks what a P2WSH spend commits to: the last witness item hashes to the program. Stack and
+ * script size limits belong to execution, so a spend past them stays inconclusive, never valid.
  * @param transaction - `to_sign`
  * @param scriptHash - The 32-byte witness program
  * @returns {Outcome} Invalid on a broken commitment, inconclusive otherwise
