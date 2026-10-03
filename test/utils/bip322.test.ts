@@ -21,6 +21,7 @@ import {
   encodeWitness,
   serializeTransaction,
   transactionId,
+  type TransactionInput,
 } from "../../src/utils/bip322/transaction.ts";
 import { decode as decodeWIF } from "../../src/utils/wif/index.ts";
 import { bip322Vectors, secp256k1TestVectors } from "../fixtures.ts";
@@ -227,6 +228,25 @@ describe("bip322 verify", () => {
       expect(verify(address, message, flipped).state).toBe("invalid");
     },
   );
+
+  it("refuses a P2SH spend with opcodes in its scriptSig or a witness it cannot carry", () => {
+    const bare = bip322Vectors.inconclusive.find((vector) => !vector.witness);
+    if (bare === undefined) throw new Error("fixture lost its bare P2SH vector");
+    const edit = (change: (input: TransactionInput) => TransactionInput): string =>
+      rewritten(bare.signature, (bytes) => {
+        const transaction = decodeTransaction(bytes);
+        const inputs = transaction.inputs.map((input) => change(input));
+        return serializeTransaction({ ...transaction, inputs }, true);
+      });
+    const nop = edit((input) => ({ ...input, scriptSig: Uint8Array.of(0x61, ...input.scriptSig) }));
+    expect(verify(bare.address, bare.message, nop).reason).toBe(
+      "BIP16: scriptSig runs opcodes besides data pushes",
+    );
+    const witnessed = edit((input) => ({ ...input, witness: [Uint8Array.of(1)] }));
+    expect(verify(bare.address, bare.message, witnessed).reason).toBe(
+      "A P2SH spend that wraps no SegWit carries no witness",
+    );
+  });
 
   it("checks what input 0 spends before deferring extra inputs", () => {
     const key = secp256k1TestVectors.privateKey;

@@ -251,21 +251,31 @@ function nestedProgram(redeem: Uint8Array): Uint8Array | undefined {
  */
 function checkNested(transaction: Readonly<Transaction>, challenge: Readonly<Challenge>): Outcome {
   const read = readPushes(transaction.inputs[0]?.scriptSig ?? new Uint8Array(0));
-  if ("reason" in read) return read;
+  if ("reason" in read) return invalid(`BIP16: ${read.reason}`);
   const redeem = read.pushes.at(-1);
   if (redeem === undefined || !equalBytes(hash160(redeem), challenge.program)) {
     return invalid("scriptSig does not end with a redeem script the address hashes");
   }
   const nested = nestedProgram(redeem);
-  if (nested === undefined) {
-    return inconclusive("P2SH scripts other than wrapped SegWit need a script interpreter");
-  }
+  if (nested === undefined) return checkLegacyScript(transaction);
   if (read.pushes.length !== 1) {
     return invalid("A wrapped SegWit scriptSig must push just the redeem script");
   }
   return nested.length === 20
     ? checkWitnessKeyHash(transaction, nested)
     : checkWitnessScript(transaction, nested);
+}
+
+/**
+ * Checks a P2SH spend whose redeem script wraps no SegWit, which leaves no room for a witness.
+ * @param transaction - `to_sign`
+ * @returns {Outcome} Invalid with a witness, inconclusive otherwise
+ */
+function checkLegacyScript(transaction: Readonly<Transaction>): Outcome {
+  if ((transaction.inputs[0]?.witness.length ?? 0) > 0) {
+    return invalid("A P2SH spend that wraps no SegWit carries no witness");
+  }
+  return inconclusive("P2SH scripts other than wrapped SegWit need a script interpreter");
 }
 
 /**
@@ -380,7 +390,8 @@ function checkTaproot(transaction: Readonly<Transaction>, challenge: Readonly<Ch
 }
 
 /**
- * Checks the first input of `to_sign` by the script of the address.
+ * Checks the first input of `to_sign` by the script of the address. Inconclusive comes only
+ * after every rule that needs no script execution, push only, witness placement and commitments.
  * @param transaction - `to_sign`
  * @param challenge - The address
  * @returns {Outcome} The verdict on its spend
