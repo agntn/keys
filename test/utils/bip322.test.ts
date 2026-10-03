@@ -80,9 +80,10 @@ describe("bip322 script and transaction reading", () => {
   });
 
   it("reads an unprefixed 65-byte stack as a witness when the address is not P2PKH", () => {
-    const stack = encodeWitness(
-      new Array<Uint8Array>(27).fill(new Uint8Array(0)).concat([new Uint8Array(36)]),
-    );
+    const stack = encodeWitness([
+      ...Array.from({ length: 27 }, () => new Uint8Array(0)),
+      new Uint8Array(36),
+    ]);
     expect(stack).toHaveLength(65);
     const { address, message } = bip322Vectors.inconclusive[0];
     expect(verify(address, message, base64.encode(stack))).toMatchObject({
