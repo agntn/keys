@@ -7,42 +7,44 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 
 ## Tools
 
-| Tool                                | Purpose                                                            |
-| ----------------------------------- | ------------------------------------------------------------------ |
-| `keys_electrum_wallet_derive`       | Derive a Bitcoin address from an Electrum phrase and path or index |
-| `keys_brainwallet_derive`           | Derive a Bitcoin or Ethereum address from a brainwallet recipe     |
-| `keys_bip39_seed_derive`            | Derive seed hex from a valid mnemonic and optional passphrase      |
-| `keys_secp256k1_public_key_convert` | Convert secp256k1 public keys between SEC1 encodings               |
-| `keys_secp256k1_point_compute`      | Add, subtract, negate, multiply, lift or check secp256k1 points    |
-| `keys_curve_compute`                | Point math, orders, counts and small logs on a curve you define    |
-| `keys_wif_encode`                   | Export a disposable private key as native BTC, LTC or DCR WIF      |
-| `keys_wif_decode`                   | Read native WIF into a hex key, network and compression flag       |
-| `keys_bip38_inspect`                | Read a BIP38 key's header and check an address, no passphrase      |
-| `keys_bip38_decrypt`                | Open a BIP38 key with its passphrase, WIF only with `revealKey`    |
-| `keys_store_decrypt`                | Open a v3 keystore with its password, address only, never the key  |
-| `keys_wallet_generate`              | Generate private key + public key + address for a chain            |
-| `keys_wallet_derive`                | Derive public key + address from an existing private key           |
-| `keys_hd_wallet_derive`             | Derive public key + address from a mnemonic or entropy and path    |
-| `keys_hd_wallet_scan`               | Find which common wallet path takes a mnemonic to an address       |
-| `keys_xpub_wallet_derive`           | Derive public key + address from an xpub, ypub or zpub and a path  |
-| `keys_bip32_parent_recover`         | Recover a parent from its xpub and one leaked normal child key     |
-| `keys_bip39_generate`               | Generate a disposable English BIP39 mnemonic                       |
-| `keys_bip39_inspect`                | Validate a BIP39 mnemonic and read what its entropy looks like     |
-| `keys_bip39_entropy_encode`         | Encode hexadecimal entropy as an English BIP39 mnemonic            |
-| `keys_bip39_indices_lookup`         | Map numeric positions to words in an official BIP39 list           |
-| `keys_bip39_words_lookup`           | Report 0- and 1-based indices, expanding prefixes of 3+ letters    |
-| `keys_bip39_word_recover`           | List words allowed by the checksum for one missing position        |
-| `keys_bip39_words_order`            | List orders of scattered words whose checksum passes               |
-| `keys_bip39_words_repair`           | Fix mistyped words and list the phrases whose checksum passes      |
-| `keys_address_get`                  | Derive an address from a public key                                |
-| `keys_address_validate`             | Check if an address is valid for a chain                           |
-| `keys_message_sign`                 | Sign a message with a private key (secp256k1/ed25519)              |
-| `keys_message_verify`               | Verify a signature against message + public key                    |
-| `keys_message_recover`              | Recover key + address from signmessage, personal_sign or EIP-712   |
-| `keys_bip322_sign`                  | Sign a BIP322 proof for a legacy, P2SH, SegWit or Taproot address  |
-| `keys_bip322_verify`                | Check a BIP322 proof: valid, invalid or inconclusive with a reason |
-| `keys_bip44_parse`                  | Parse a BIP44 path into its levels                                 |
-| `keys_bip44_generate`               | Generate the derivation path a chain's wallets use                 |
+| Tool                                  | Purpose                                                                 |
+| ------------------------------------- | ----------------------------------------------------------------------- |
+| `keys_electrum_wallet_derive`         | Derive a Bitcoin address from an Electrum phrase and path or index      |
+| `keys_brainwallet_derive`             | Derive a Bitcoin or Ethereum address from a brainwallet recipe          |
+| `keys_bip39_seed_derive`              | Derive seed hex from a valid mnemonic and optional passphrase           |
+| `keys_secp256k1_public_key_convert`   | Convert secp256k1 public keys between SEC1 encodings                    |
+| `keys_secp256k1_point_compute`        | Add, subtract, negate, multiply, lift or check secp256k1 points         |
+| `keys_secp256k1_nonce_recover`        | Find the key behind two signatures that share a nonce, public half only |
+| `keys_curve_compute`                  | Point math, orders, counts and small logs on a curve you define         |
+| `keys_wif_encode`                     | Export a disposable private key as native BTC, LTC or DCR WIF           |
+| `keys_wif_decode`                     | Read native WIF into a hex key, network and compression flag            |
+| `keys_bip38_inspect`                  | Read a BIP38 key's header and check an address, no passphrase           |
+| `keys_bip38_decrypt`                  | Open a BIP38 key with its passphrase, WIF only with `revealKey`         |
+| `keys_store_decrypt`                  | Open a v3 keystore with its password, address only, never the key       |
+| `keys_wallet_generate`                | Generate private key + public key + address for a chain                 |
+| `keys_wallet_derive`                  | Derive public key + address from an existing private key                |
+| `keys_hd_wallet_derive`               | Derive public key + address from a mnemonic or entropy and path         |
+| `keys_hd_wallet_scan`                 | Find which common wallet path takes a mnemonic to an address            |
+| `keys_xpub_wallet_derive`             | Derive public key + address from an xpub, ypub or zpub and a path       |
+| `keys_bip32_parent_recover`           | Recover a parent from its xpub and one leaked normal child key          |
+| `keys_bip39_generate`                 | Generate a disposable English BIP39 mnemonic                            |
+| `keys_bip39_inspect`                  | Validate a BIP39 mnemonic and read what its entropy looks like          |
+| `keys_bip39_entropy_encode`           | Encode hexadecimal entropy as an English BIP39 mnemonic                 |
+| `keys_bip39_indices_lookup`           | Map numeric positions to words in an official BIP39 list                |
+| `keys_bip39_words_lookup`             | Report 0- and 1-based indices, expanding prefixes of 3+ letters         |
+| `keys_bip39_word_recover`             | List words allowed by the checksum for one missing position             |
+| `keys_bip39_words_order`              | List orders of scattered words whose checksum passes                    |
+| `keys_bip39_words_repair`             | Fix mistyped words and list the phrases whose checksum passes           |
+| `keys_address_get`                    | Derive an address from a public key                                     |
+| `keys_address_validate`               | Check if an address is valid for a chain                                |
+| `keys_message_sign`                   | Sign a message with a private key (secp256k1/ed25519)                   |
+| `keys_message_verify`                 | Verify a signature against message + public key                         |
+| `keys_message_recover`                | Recover key + address from signmessage, personal_sign or EIP-712        |
+| `keys_bip322_sign`                    | Sign a BIP322 proof for a legacy, P2SH, SegWit or Taproot address       |
+| `keys_bip322_verify`                  | Check a BIP322 proof: valid, invalid or inconclusive with a reason      |
+| `keys_transaction_signatures_extract` | Read r, s, sighash z and signer of each signature on an input           |
+| `keys_bip44_parse`                    | Parse a BIP44 path into its levels                                      |
+| `keys_bip44_generate`                 | Generate the derivation path a chain's wallets use                      |
 
 ## BIP39 seed
 

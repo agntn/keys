@@ -15,7 +15,7 @@ import {
   toSpend,
 } from "../../src/utils/bip322/challenge.ts";
 import { readPushes } from "../../src/utils/bip322/script.ts";
-import { segwitSighash, taprootSighash } from "../../src/utils/bip322/sighash.ts";
+import { segwitSighash, taprootSighash } from "../../src/utils/transaction/sighash.ts";
 import {
   decodeTransaction,
   decodeWitness,
@@ -23,7 +23,7 @@ import {
   serializeTransaction,
   transactionId,
   type TransactionInput,
-} from "../../src/utils/bip322/transaction.ts";
+} from "../../src/utils/transaction/transaction.ts";
 import { decode as decodeWIF } from "../../src/utils/wif/index.ts";
 import { bip322Vectors, secp256k1TestVectors } from "../fixtures.ts";
 

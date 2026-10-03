@@ -11,8 +11,8 @@ import {
   legacySighash,
   segwitSighash,
   taprootSighash,
-} from "./sighash.ts";
-import { encodeWitness, serializeTransaction } from "./transaction.ts";
+} from "../transaction/sighash.ts";
+import { encodeWitness, serializeTransaction } from "../transaction/transaction.ts";
 
 /** Address types `sign` writes a signature for. */
 export type BIP322SigningType = "legacy" | "p2sh" | "segwit" | "taproot";

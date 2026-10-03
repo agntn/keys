@@ -115,6 +115,29 @@ Three answers, not two. `valid`, `invalid`, or `inconclusive` when only a script
 
 The prefix names the format. `smp` is just the witness, `ful` the whole signed transaction. No prefix? It reads as simple, the way signers wrote it before the BIP was final. A P2PKH address also takes the old `signmessage` base64. `sign` writes `smp` for segwit and taproot, `ful` for p2sh and legacy. MCP and Pi call them `keys_bip322_verify` and `keys_bip322_sign`.
 
+## Recovering a key from a reused nonce
+
+ECDSA has one rule. Every signature gets a fresh nonce. Reuse it once and the key is gone. Two signatures with the same `r` over different digests, a bit of algebra, done. Sounds rare? Transaction `9ec4bc49...` from 2012 signs both of its inputs with one `r`.
+
+The algebra is the easy part. The real work is `z`, the sighash each signature signs. `@agntn/keys/transaction` reads it out of the raw transaction:
+
+```js
+import { recoverReusedNonce } from "@agntn/keys/secp256k1";
+import { extractSignatures } from "@agntn/keys/transaction";
+
+const p2pkh = "76a91470792fb74a5df745bac07df6fe020f871cbb293b88ac";
+const spent = [{ script: p2pkh, value: 130000 }, { script: p2pkh, value: 20000 }];
+const [first] = extractSignatures(rawTx, 0, spent);
+const [second] = extractSignatures(rawTx, 1, spent);
+// both: { type: "ecdsa", r: "d47ce4c0...", s, z, hashType: 1, publicKey: "04dbd0c6..." }
+
+recoverReusedNonce(first, second); // { privateKey, nonce, publicKey: "03dbd0c6..." }
+```
+
+`spent` is what each input spends. Grab the script and the value from any explorer. Legacy, SegWit v0 and Taproot key path all work, with every hash type. That 2012 transaction even has DER from before BIP66, and it reads fine. Taproot wants every spent output, unless it signs with `ANYONECANPAY`. Script paths and `OP_CODESEPARATOR` get refused, not guessed.
+
+Schnorr leaks the same way. Pass `type: "schnorr"` and the x-only key. The key comes back only after both signatures verify under it, so no lucky false positives. Agents get `keys_transaction_signatures_extract` and `keys_secp256k1_nonce_recover`. The second one names the public key and keeps the private one to itself.
+
 ## Where it lives
 
 `src/blockchains/bitcoin.ts` holds the network table and the preamble. The five formats, validation and purpose inference sit in `AbstractBitcoinBlockchain` in `src/utils/bitcoin.ts`, shared with Litecoin and Bitcoin Gold. Keys and message hashing come from `AbstractBitcoinMessageBlockchain` under it, which Bitcoin Cash, Bitcoin SV, Dash, Dogecoin, Zcash and eCash share too; Bitcoin SV, Dash and Dogecoin reach it through `AbstractBitcoinP2PKHBlockchain`, Bitcoin Cash and eCash through `AbstractCashAddrBlockchain`. The hashing and encoding helpers below that are `src/utils/address.ts` and `src/utils/encoding.ts`, shared with TRON and the custom chain example.

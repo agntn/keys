@@ -45,6 +45,14 @@ import {
   BIP322_SIGNING_TYPES,
   BIP322_SIGNATURE_SCHEMA_PATTERN,
   MAX_BIP322_SIGNATURE_LENGTH,
+  HEX_BYTES_SCHEMA_PATTERN,
+  MAX_INPUT_INDEX,
+  MAX_SPENT_OUTPUTS,
+  MAX_SPENT_SCRIPT_HEX_LENGTH,
+  MAX_SPENT_SCRIPTS_HEX_LENGTH,
+  MAX_TRANSACTION_HEX_LENGTH,
+  NONCE_SCALAR_SCHEMA_PATTERN,
+  NONCE_SIGNATURE_TYPES,
 } from "./tool-parameters.ts";
 import { BIP39_LANGUAGES } from "./utils/bip39/languages.ts";
 import { MAX_FILTERED_PRIME } from "./utils/curve/group.ts";
@@ -240,6 +248,87 @@ export const COMPUTE_SECP256K1_POINT_PARAMETERS = Type.Object(
       Type.Boolean({
         description: "Output SEC1 encoding, for every operation but check. Default: true",
       }),
+    ),
+  },
+  { additionalProperties: false },
+);
+
+/**
+ * r, s or z of a signature for the nonce tool.
+ * @param description - What the value is
+ * @returns {TString} The schema
+ */
+function nonceScalar(description: string): TString {
+  return Type.String({ maxLength: 64, pattern: NONCE_SCALAR_SCHEMA_PATTERN, description });
+}
+
+export const RECOVER_SECP256K1_NONCE_PARAMETERS = Type.Object(
+  {
+    type: Type.Optional(
+      Type.String({
+        enum: [...NONCE_SIGNATURE_TYPES],
+        description:
+          "ecdsa for legacy and SegWit v0 signatures, schnorr for BIP340 as Taproot signs. Default: ecdsa",
+      }),
+    ),
+    signatures: Type.Array(
+      Type.Object(
+        {
+          r: nonceScalar("r as hex without 0x, the same in both; for schnorr the x of R"),
+          s: nonceScalar("s as hex without 0x, low or high"),
+          z: nonceScalar(
+            "The digest the signature signs as hex without 0x: the sighash keys_transaction_signatures_extract gives, or the message for schnorr",
+          ),
+        },
+        { additionalProperties: false },
+      ),
+      { minItems: 2, maxItems: 2, description: "The two signatures that share r" },
+    ),
+    publicKey: Type.Optional(
+      Type.String({
+        pattern: PUBLIC_KEY_SCHEMA_PATTERN,
+        description:
+          "Key the result must match: SEC1 hex, or x-only for schnorr, which needs it. Without one, ecdsa answers with the key both signatures verify under",
+      }),
+    ),
+  },
+  { additionalProperties: false },
+);
+
+export const EXTRACT_TRANSACTION_SIGNATURES_PARAMETERS = Type.Object(
+  {
+    transaction: Type.String({
+      minLength: 2,
+      maxLength: MAX_TRANSACTION_HEX_LENGTH,
+      pattern: HEX_BYTES_SCHEMA_PATTERN,
+      description: "Raw signed transaction as hex without 0x, with its witnesses",
+    }),
+    index: Type.Integer({
+      minimum: 0,
+      maximum: MAX_INPUT_INDEX,
+      description: "Input to read, from 0",
+    }),
+    spent: Type.Array(
+      Type.Object(
+        {
+          script: Type.String({
+            maxLength: MAX_SPENT_SCRIPT_HEX_LENGTH,
+            pattern: HEX_BYTES_SCHEMA_PATTERN,
+            description: "scriptPubKey of the spent output as hex without 0x",
+          }),
+          value: Type.Integer({
+            minimum: 0,
+            maximum: Number.MAX_SAFE_INTEGER,
+            description: "Value of the spent output in satoshis",
+          }),
+        },
+        { additionalProperties: false },
+      ),
+      {
+        minItems: 1,
+        maxItems: MAX_SPENT_OUTPUTS,
+        description: `The output this input spends, or one per input in order. A Taproot input needs every one unless it signs with ANYONECANPAY; SegWit inputs need the value. All scripts together take at most ${MAX_SPENT_SCRIPTS_HEX_LENGTH} hex digits`,
+      },
     ),
   },
   { additionalProperties: false },

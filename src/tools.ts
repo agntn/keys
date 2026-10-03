@@ -19,6 +19,7 @@ import {
   DERIVE_HD_WALLET_PARAMETERS,
   DERIVE_WALLET_PARAMETERS,
   DERIVE_XPUB_WALLET_PARAMETERS,
+  EXTRACT_TRANSACTION_SIGNATURES_PARAMETERS,
   ENCODE_BIP39_ENTROPY_PARAMETERS,
   GENERATE_MNEMONIC_PARAMETERS,
   GENERATE_WALLET_PARAMETERS,
@@ -31,6 +32,7 @@ import {
   REPAIR_BIP39_WORDS_PARAMETERS,
   RECOVER_MESSAGE_PARAMETERS,
   RECOVER_MNEMONIC_WORD_PARAMETERS,
+  RECOVER_SECP256K1_NONCE_PARAMETERS,
   SIGN_MESSAGE_PARAMETERS,
   VALIDATE_ADDRESS_PARAMETERS,
   VERIFY_MESSAGE_PARAMETERS,
@@ -122,6 +124,28 @@ export const secp256k1PointComputeTool = defineTool({
   effect: "read",
   input: COMPUTE_SECP256K1_POINT_PARAMETERS,
   execute: async (params) => (await loadOperations()).computeSecp256k1Point(params),
+});
+
+export const secp256k1NonceRecoverTool = defineTool({
+  name: "keys_secp256k1_nonce_recover",
+  title: "Recover Reused Nonce Key",
+  description:
+    "Recover the private key behind two secp256k1 signatures that reused a nonce: the same r over two different digests. ECDSA takes s low or high; schnorr is BIP340, as Taproot signs, and needs the x-only key. The answer names the public key both signatures verify under and whether it matches publicKey. The private key stays out of the answer; recoverReusedNonce from @agntn/keys/secp256k1 returns it.",
+  snippet:
+    "Use when two signatures from one key share r, to learn whether the key falls out and which key it is.",
+  guidelines: [
+    "Pass r, s and z of each signature; keys_transaction_signatures_extract reads them from a transaction",
+    "Pass publicKey to check the result against a known key; schnorr needs it",
+    "Same r with the same z leaks nothing and is refused",
+  ],
+  effect: "read",
+  input: RECOVER_SECP256K1_NONCE_PARAMETERS,
+  execute: async (params) =>
+    (await loadOperations()).recoverSecp256k1Nonce(
+      params.type,
+      params.signatures,
+      params.publicKey,
+    ),
 });
 
 export const curveComputeTool = defineTool({
@@ -675,6 +699,29 @@ export const bip322VerifyTool = defineTool({
     ),
 });
 
+export const transactionSignaturesExtractTool = defineTool({
+  name: "keys_transaction_signatures_extract",
+  title: "Extract Transaction Signatures",
+  description:
+    "Read the signatures of one Bitcoin transaction input with the sighash z each one signs, the r, s and z that nonce reuse analysis starts from. The spent script picks the rules: legacy for P2PKH, P2PK, bare multisig and P2SH, BIP143 for P2WPKH and P2WSH, native or nested, and BIP341 for a Taproot key path. Every hash type is read, ANYONECANPAY included, and each signature names the key it verifies under. Taproot script paths and scripts with OP_CODESEPARATOR are refused.",
+  snippet:
+    "Use to get r, s and z of a transaction input, for example to check two inputs for a reused r.",
+  guidelines: [
+    "Pass the raw signed transaction hex, the input index and the output it spends; an explorer gives the scriptPubKey and value",
+    "A Taproot input needs the spent output of every input in order, unless it signs with ANYONECANPAY",
+    "Signatures from before BIP66 with loose DER are read too",
+    "Two signatures with the same r go to keys_secp256k1_nonce_recover",
+  ],
+  effect: "read",
+  input: EXTRACT_TRANSACTION_SIGNATURES_PARAMETERS,
+  execute: async (params) =>
+    (await loadOperations()).extractTransactionSignatures(
+      params.transaction,
+      params.index,
+      params.spent,
+    ),
+});
+
 export const bip44ParseTool = defineTool({
   name: "keys_bip44_parse",
   title: "Parse BIP44 Path",
@@ -721,6 +768,7 @@ export const keysTools: readonly ToolDefinition[] = [
   bip39SeedDeriveTool,
   secp256k1PublicKeyConvertTool,
   secp256k1PointComputeTool,
+  secp256k1NonceRecoverTool,
   curveComputeTool,
   wifEncodeTool,
   wifDecodeTool,
@@ -748,6 +796,7 @@ export const keysTools: readonly ToolDefinition[] = [
   messageRecoverTool,
   bip322SignTool,
   bip322VerifyTool,
+  transactionSignaturesExtractTool,
   bip44ParseTool,
   bip44GenerateTool,
 ];
@@ -767,6 +816,7 @@ export const callSummaries: Readonly<
   Record<string, (args: Readonly<Record<string, unknown>>) => string>
 > = {
   keys_secp256k1_point_compute: (args) => String(args.operation),
+  keys_secp256k1_nonce_recover: (args) => (args.type === "schnorr" ? "schnorr" : "ecdsa"),
   keys_curve_compute: (args) => String(args.operation),
   keys_wallet_generate: (args) => String(args.chain),
   keys_wallet_derive: (args) => String(args.chain),
@@ -789,6 +839,8 @@ export const callSummaries: Readonly<
       : preview(args.message),
   keys_bip322_sign: (args) => `${String(args.addressType)} ${preview(args.message)}`,
   keys_bip322_verify: (args) => preview(args.message),
+  keys_transaction_signatures_extract: (args) =>
+    typeof args.index === "number" ? `input ${args.index}` : "input",
   keys_bip44_parse: (args) => String(args.path),
   keys_bip44_generate: (args) => String(args.chain),
 };

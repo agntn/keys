@@ -10,6 +10,7 @@ export const TOOL_NAMES = [
   "keys_bip39_seed_derive",
   "keys_secp256k1_public_key_convert",
   "keys_secp256k1_point_compute",
+  "keys_secp256k1_nonce_recover",
   "keys_curve_compute",
   "keys_wif_encode",
   "keys_wif_decode",
@@ -37,6 +38,7 @@ export const TOOL_NAMES = [
   "keys_message_recover",
   "keys_bip322_sign",
   "keys_bip322_verify",
+  "keys_transaction_signatures_extract",
   "keys_bip44_parse",
   "keys_bip44_generate",
 ] as const;
@@ -283,3 +285,27 @@ export const MAX_BIP322_SIGNATURE_LENGTH = 8192;
 
 /** JSON Schema pattern for a BIP322 signature: an optional `smp`, `ful` or `pof`, then base64. */
 export const BIP322_SIGNATURE_SCHEMA_PATTERN = "^(?:smp|ful|pof)?[A-Za-z0-9+/]*={0,2}$";
+
+/** Signature schemes `keys_secp256k1_nonce_recover` solves. */
+export const NONCE_SIGNATURE_TYPES = ["ecdsa", "schnorr"] as const;
+
+/** JSON Schema pattern for r, s or z: hex without 0x, up to 64 digits. */
+export const NONCE_SCALAR_SCHEMA_PATTERN = "^[0-9A-Fa-f]{1,64}$";
+
+/** Longest raw transaction `keys_transaction_signatures_extract` reads, 200 kB as hex. */
+export const MAX_TRANSACTION_HEX_LENGTH = 400_000;
+
+/** Longest spent output script it reads, 10 kB as hex, the size Core lets a script run at. */
+export const MAX_SPENT_SCRIPT_HEX_LENGTH = 20_000;
+
+/** Most spent outputs one call takes, more than the inputs of the largest standard transaction. */
+export const MAX_SPENT_OUTPUTS = 3000;
+
+/** Most hex digits all spent scripts of one call take together, as much as the transaction. */
+export const MAX_SPENT_SCRIPTS_HEX_LENGTH = 400_000;
+
+/** Highest input index it takes. */
+export const MAX_INPUT_INDEX = MAX_SPENT_OUTPUTS - 1;
+
+/** JSON Schema pattern for whole bytes of hex. */
+export const HEX_BYTES_SCHEMA_PATTERN = "^(?:[0-9A-Fa-f]{2})*$";

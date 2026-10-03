@@ -188,6 +188,8 @@ And a signed message is a clue. Somebody proves they hold an address with `signm
 
 Core's `signmessage` stops at P2PKH. A `bc1q` or `bc1p` address proves itself with BIP322 instead. `verify(address, message, signature)` from `@agntn/keys/bip322` answers `valid`, `invalid` or `inconclusive`, and says why. Multisig and script paths land on `inconclusive`. No guessing. `sign` writes one for your own key. Agents get `keys_bip322_verify` and `keys_bip322_sign`. More: [Bitcoin](https://keys.agntn.dev/blockchains/bitcoin).
 
+Same `r` on two signatures? Somebody reused a nonce, and the key falls right out. `extractSignatures` from `@agntn/keys/transaction` reads `r`, `s` and the sighash `z` of a transaction input. Legacy, SegWit and Taproot key path, every hash type. `recoverReusedNonce` from `@agntn/keys/secp256k1` takes two of those and hands back the key. Only after it verifies both, though. Agents get `keys_transaction_signatures_extract` and `keys_secp256k1_nonce_recover`, which names the public key and nothing more. More: [Bitcoin](https://keys.agntn.dev/blockchains/bitcoin).
+
 ## ⛓️ Chains
 
 | Chain            | Curve              | Address Formats                      | Testnet |

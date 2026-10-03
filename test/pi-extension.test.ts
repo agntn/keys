@@ -34,6 +34,8 @@ import {
   brainwalletInput,
   brainwalletVectors,
   storeVectors,
+  reusedNonceVector,
+  transactionVectors,
 } from "./fixtures.ts";
 import keysExtension from "../packages/pi/extensions/keys.ts";
 import { keysTools } from "../src/tools.ts";
@@ -224,6 +226,57 @@ describe("keys Pi extension", () => {
     await expect(
       skipSchema(tool)("curve", { ...args, operation: "points", point: undefined }),
     ).resolves.toMatchObject({ details: { total: "18", truncated: false } });
+  });
+  it("checks the nonce and transaction arguments without the schema", async () => {
+    const tools = await registerTools();
+    const nonce = tools.get("keys_secp256k1_nonce_recover");
+    const extract = tools.get("keys_transaction_signatures_extract");
+    if (!nonce || !extract) throw new Error("Missing nonce or transaction tool");
+    const { r, first, second } = reusedNonceVector;
+    const signatures = [
+      { r, ...first },
+      { r, ...second },
+    ];
+    await expect(skipSchema(nonce)("nonce", { signatures, type: "" })).resolves.toMatchObject({
+      details: { type: "ecdsa" },
+    });
+    for (const [bad, message] of [
+      [{ signatures: [signatures[0]] }, "signatures must be an array of 2 items"],
+      [{ signatures: [signatures[0], { ...second, r, k: "1" }] }, "takes only r, s, z"],
+      [{ signatures: [signatures[0], { ...second, r: "0x1" }] }, "signatures[1].r must be"],
+      [{ signatures, type: "dsa" }, "type must be one of ecdsa, schnorr"],
+      [{ signatures, publicKey: "zz" }, "Public key must be SEC1 or x-only hex"],
+    ] as const) {
+      await expect(skipSchema(nonce)("nonce", bad)).rejects.toThrow(message);
+    }
+    const { transaction, spent } = transactionVectors.reusedNonce2012;
+    await expect(extract.execute("tx", { transaction, index: 0, spent })).resolves.toMatchObject({
+      details: { index: 0, signatures: [{ r: transactionVectors.reusedNonce2012.r }] },
+    });
+    for (const [bad, message] of [
+      [{ transaction: "0x", index: 0, spent }, "Transaction must be hex without 0x"],
+      [{ transaction, index: -1, spent }, "Index must be an integer between 0 and 2999"],
+      [{ transaction, index: 0, spent: [] }, "spent must be an array of 1 to 3000 items"],
+      [
+        { transaction, index: 0, spent: [{ script: "zz", value: 1 }] },
+        "spent[0].script must be hex",
+      ],
+      [{ transaction, index: 0, spent: [{ script: "", value: 1.5 }] }, "spent[0].value must be"],
+      [
+        {
+          transaction,
+          index: 0,
+          spent: Array.from({ length: 21 }, () => ({ script: "ab".repeat(10_000), value: 1 })),
+        },
+        "spent scripts together take at most 400000 hex digits",
+      ],
+      [
+        { transaction, index: 0, spent: [{ script: "", value: 1, x: 1 }] },
+        "takes only script, value",
+      ],
+    ] as const) {
+      await expect(skipSchema(extract)("tx", bad)).rejects.toThrow(message);
+    }
   });
   it("derives disposable BIP39 seeds without echoing the input", async () => {
     const tool = (await registerTools()).get("keys_bip39_seed_derive");
