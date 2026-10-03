@@ -3,7 +3,7 @@ import { schnorr, secp256k1 } from "@noble/curves/secp256k1.js";
 import { concatBytes } from "../bytes.ts";
 
 const { Point } = secp256k1;
-const { Fn } = Point;
+const { Fn, Fp } = Point;
 
 /** One signature with the digest it signs, as `extractSignatures` gives it. */
 export interface NonceSignature {
@@ -66,18 +66,30 @@ function digestBytes(digest: bigint): Uint8Array {
 }
 
 /**
- * Reads r and s from 1 to n minus 1 and the digests, refusing two signatures that leak nothing.
+ * Reads s from 1 to n minus 1, r as a scalar for ECDSA or an x coordinate below p for Schnorr, and the digests, refusing two signatures that leak nothing.
  * @param first - One signature
  * @param second - The other
+ * @param schnorr - Whether r is the x coordinate BIP340 signs with
  * @returns {Pair} The numbers, digests as given
  * @throws {RangeError} When r or s is out of range, the r values differ or the digests match
  */
-function readPair(first: Readonly<NonceSignature>, second: Readonly<NonceSignature>): Pair {
+function readPair(
+  first: Readonly<NonceSignature>,
+  second: Readonly<NonceSignature>,
+  schnorr: boolean,
+): Pair {
   const r = readHex(first.r, "r");
   const s: [bigint, bigint] = [readHex(first.s, "s"), readHex(second.s, "s")];
   const z: [bigint, bigint] = [readHex(first.z, "z"), readHex(second.z, "z")];
-  if (![r, ...s].every((value) => Fn.isValidNot0(value))) {
-    throw new RangeError("r and s must run from 1 to the curve order minus 1");
+  if (!s.every((value) => Fn.isValidNot0(value))) {
+    throw new RangeError("s must run from 1 to the curve order minus 1");
+  }
+  if (schnorr ? !Fp.isValidNot0(r) : !Fn.isValidNot0(r)) {
+    throw new RangeError(
+      schnorr
+        ? "Schnorr r must run from 1 to the field prime minus 1"
+        : "r must run from 1 to the curve order minus 1",
+    );
   }
   if (readHex(second.r, "r") !== r) {
     throw new RangeError("The two signatures have different r, so they did not share a nonce");
@@ -221,7 +233,7 @@ export function recoverReusedNonce(
   if ((second.type ?? "ecdsa") !== type || (type !== "ecdsa" && type !== "schnorr")) {
     throw new TypeError("Both signatures must be ecdsa or both schnorr");
   }
-  const pair = readPair(first, second);
+  const pair = readPair(first, second, type === "schnorr");
   const expected = expectedKey(
     [options.publicKey, first.publicKey, second.publicKey],
     type === "schnorr",

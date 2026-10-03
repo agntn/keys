@@ -102,6 +102,20 @@ describe("recoverReusedNonce", () => {
     expect(recovered.privateKey).toBe(hex.encode(Fn.toBytes(privateKey)));
   });
 
+  it("reads Schnorr r as an x coordinate below the field prime, not a scalar", () => {
+    const { publicKey, signatures } = schnorrPair();
+    const [a, b] = signatures;
+    if (a === undefined || b === undefined) throw new Error("missing signature");
+    const recover = (r: bigint): unknown =>
+      recoverReusedNonce(
+        { ...a, r: r.toString(16), type: "schnorr" },
+        { ...b, r: r.toString(16), type: "schnorr" },
+        { publicKey },
+      );
+    expect(() => recover(Fn.ORDER)).toThrow(/does not match publicKey/u);
+    expect(() => recover(secp256k1.Point.Fp.ORDER)).toThrow(/field prime/u);
+  });
+
   it("refuses pairs that leak nothing or disagree", () => {
     const one = { r, ...first };
     const two = { r, ...second };
