@@ -1,4 +1,4 @@
-import { sha256 } from "@agntn/hashes";
+import { ripemd160, sha256 } from "@agntn/hashes";
 import { schnorr, secp256k1 } from "@noble/curves/secp256k1.js";
 import { concatBytes } from "../bytes.ts";
 import { pushOf, scriptOperations, scriptPushes } from "./script.ts";
@@ -393,6 +393,7 @@ function witnessProgram(script: Uint8Array): Uint8Array | undefined {
  * Reads a P2SH spend: the last push is the redeem script.
  * @param spend - The input
  * @returns {InputSignature[]} The signatures, none while the scriptSig is empty
+ * @throws {RangeError} When the last push does not hash to the output
  */
 function scriptHashSignatures(spend: Readonly<Spend>): InputSignature[] {
   const pushes = scriptOperations(spend.input.scriptSig).flatMap((operation) =>
@@ -400,6 +401,9 @@ function scriptHashSignatures(spend: Readonly<Spend>): InputSignature[] {
   );
   const redeem = pushes.at(-1);
   if (redeem === undefined) return [];
+  if (ripemd160(sha256(redeem)).toHex() !== spend.output.script.subarray(2, 22).toHex()) {
+    throw new RangeError("The last scriptSig push does not hash to the P2SH output");
+  }
   const program = witnessProgram(redeem);
   if (program !== undefined) return witnessSignatures(spend, program);
   return legacySignatures(spend, redeem, pushes.slice(0, -1));
@@ -464,7 +468,7 @@ function taprootSignatures(spend: Readonly<Spend>, outputKey: Uint8Array): Input
  * @throws {TypeError} When a hex argument or a value is malformed
  * @throws {RangeError} When the transaction does not decode, the index or spent outputs do not
  *   fit it, or the input is a Taproot script path, a script with `OP_CODESEPARATOR` or a script
- *   holding a signature beside `OP_CHECKMULTISIG`
+ *   holding a signature beside `OP_CHECKMULTISIG`, or the script hash does not match its script
  */
 export function extractSignatures(
   transaction: string,

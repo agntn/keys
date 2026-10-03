@@ -100,6 +100,13 @@ describe("extractSignatures", () => {
     });
   });
 
+  it("refuses a redeem script that does not hash to the P2SH output", () => {
+    const other = [{ script: `a914${"00".repeat(20)}87`, value: p2shP2wpkh.spent[0]?.value ?? 0 }];
+    expect(() => extractSignatures(p2shP2wpkh.transaction, 0, other)).toThrow(
+      /does not hash to the P2SH output/u,
+    );
+  });
+
   it("reads P2WPKH nested in P2SH from the one output it spends", () => {
     const [signature] = extractSignatures(p2shP2wpkh.transaction, 0, p2shP2wpkh.spent);
     expect(signature?.z).toBe(p2shP2wpkh.sighash);
