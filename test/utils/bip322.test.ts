@@ -73,6 +73,24 @@ describe("bip322 virtual transactions", () => {
 });
 
 describe("bip322 script and transaction reading", () => {
+  it("refuses one byte pushed with a data opcode when a number opcode exists", () => {
+    expect(readPushes(Uint8Array.of(0x01, 0x05))).toMatchObject({ state: "invalid" });
+    expect(readPushes(Uint8Array.of(0x01, 0x81))).toMatchObject({ state: "invalid" });
+    expect(readPushes(Uint8Array.of(0x01, 0x11))).toEqual({ pushes: [Uint8Array.of(0x11)] });
+  });
+
+  it("reads an unprefixed 65-byte stack as a witness when the address is not P2PKH", () => {
+    const stack = encodeWitness(
+      new Array<Uint8Array>(27).fill(new Uint8Array(0)).concat([new Uint8Array(36)]),
+    );
+    expect(stack).toHaveLength(65);
+    const { address, message } = bip322Vectors.inconclusive[0];
+    expect(verify(address, message, base64.encode(stack))).toMatchObject({
+      format: "simple",
+      reason: "Witness script does not hash to the address",
+    });
+  });
+
   it("splits pushes and refuses the ones MINIMALDATA forbids", () => {
     const data = new Uint8Array(80).fill(7);
     expect(readPushes(Uint8Array.of(0x00, 0x4f, 0x51, 0x60, 0x02, 1, 2))).toEqual({
@@ -308,9 +326,7 @@ describe("bip322 verify", () => {
     const signature = bitcoin.signMessage("core", key, { recovered: true });
     expect(verify(legacy, "core", signature)).toMatchObject({ state: "valid", format: "legacy" });
     expect(verify(legacy, "other", signature).state).toBe("invalid");
-    expect(verify(segwit, "core", signature).reason).toBe(
-      "BIP322 takes a legacy signature for a P2PKH address only",
-    );
+    expect(verify(segwit, "core", signature)).toMatchObject({ state: "invalid", format: "simple" });
   });
 
   it("refuses a P2WPKH witness with a hash type other than SIGHASH_ALL", () => {

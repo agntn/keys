@@ -45,6 +45,18 @@ function minimalFloor(opcode: number): number {
 }
 
 /**
+ * Tells a push in its shortest form: one byte from 1 to 16 or 0x81 has an opcode of its own.
+ * @param opcode - Push opcode
+ * @param data - Pushed bytes
+ * @returns {boolean} Whether `MINIMALDATA` takes it
+ */
+function isMinimalPush(opcode: number, data: Uint8Array): boolean {
+  if (opcode >= OP_PUSHDATA1) return data.length >= minimalFloor(opcode);
+  const byte = data[0] ?? 0;
+  return data.length !== 1 || ((byte < 1 || byte > 16) && byte !== 0x81);
+}
+
+/**
  * Reads the length a push opcode announces.
  * @param script - Whole script
  * @param offset - Position after the opcode
@@ -85,13 +97,14 @@ export function readPushes(script: Uint8Array): Pushes {
     if (length < 0 || start + length > script.length) {
       return { state: "invalid", reason: "scriptSig ends inside a push" };
     }
-    if (opcode >= OP_PUSHDATA1 && length < minimalFloor(opcode)) {
+    const data = script.slice(start, start + length);
+    if (!isMinimalPush(opcode, data)) {
       return {
         state: "invalid",
         reason: "scriptSig pushes data with a longer opcode than it needs",
       };
     }
-    pushes.push(script.slice(start, start + length));
+    pushes.push(data);
     offset = start + length;
   }
   return { pushes };

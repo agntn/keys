@@ -100,11 +100,13 @@ function isLegacy(bytes: Uint8Array): boolean {
 }
 
 /**
- * Splits the variant prefix from the base64. Without one, BIP322 lets a verifier assume simple.
+ * Splits the variant prefix from the base64. Without one it reads as simple, or as Core's legacy
+ * signature when the address is P2PKH.
  * @param signature - Signature text
+ * @param legacyAddress - Whether the address is P2PKH
  * @returns {Decoded} Format and bytes, or why the text is not base64
  */
-function decodeSignature(signature: string): Decoded {
+function decodeSignature(signature: string, legacyAddress: boolean): Decoded {
   const prefix = signature.slice(0, 3);
   const named = Object.hasOwn(PREFIXES, prefix) ? PREFIXES[prefix] : undefined;
   let bytes: Uint8Array;
@@ -114,7 +116,8 @@ function decodeSignature(signature: string): Decoded {
     return { format: named ?? "simple", reason: "Signature is not base64" };
   }
   if (named !== undefined) return { format: named, bytes, prefixed: true };
-  return { format: isLegacy(bytes) ? "legacy" : "simple", bytes, prefixed: false };
+  const legacy = legacyAddress && isLegacy(bytes);
+  return { format: legacy ? "legacy" : "simple", bytes, prefixed: false };
 }
 
 /**
@@ -586,17 +589,10 @@ export function verify(
     throw new TypeError("Message must be a string or bytes");
   }
   const challenge = challengeOf(address, network);
-  const decoded = decodeSignature(signature);
+  const decoded = decodeSignature(signature, challenge.type === "legacy");
   const base = { format: decoded.format, addressType: challenge.type };
   if ("reason" in decoded) return { ...base, state: "invalid", reason: decoded.reason };
   if (decoded.format === "legacy") {
-    if (challenge.type !== "legacy") {
-      return {
-        ...base,
-        state: "invalid",
-        reason: "BIP322 takes a legacy signature for a P2PKH address only",
-      };
-    }
     return { ...base, ...checkLegacy(address, message, signature, network) };
   }
   const spend = toSpend(message, challenge);
