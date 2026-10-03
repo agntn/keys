@@ -18,6 +18,7 @@ export default defineBuildConfig({
         "./src/tool-operations.ts",
         "./src/tools.ts",
         "./src/utils/bip32/index.ts",
+        "./src/utils/bip322/index.ts",
         "./src/utils/bip38/index.ts",
         "./src/utils/bip39/index.ts",
         "./src/utils/brainwallet/index.ts",

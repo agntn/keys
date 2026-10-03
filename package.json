@@ -55,6 +55,10 @@
       "types": "./dist/utils/bip32/index.d.mts",
       "default": "./dist/utils/bip32/index.mjs"
     },
+    "./bip322": {
+      "types": "./dist/utils/bip322/index.d.mts",
+      "default": "./dist/utils/bip322/index.mjs"
+    },
     "./bip38": {
       "types": "./dist/utils/bip38/index.d.mts",
       "default": "./dist/utils/bip38/index.mjs"

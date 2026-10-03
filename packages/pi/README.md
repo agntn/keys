@@ -39,6 +39,8 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 | `keys_message_sign`                 | Sign a message with a private key (secp256k1/ed25519)              |
 | `keys_message_verify`               | Verify a signature against message + public key                    |
 | `keys_message_recover`              | Recover key + address from signmessage, personal_sign or EIP-712   |
+| `keys_bip322_sign`                  | Sign a BIP322 proof for a legacy, P2SH, SegWit or Taproot address  |
+| `keys_bip322_verify`                | Check a BIP322 proof: valid, invalid or inconclusive with a reason |
 | `keys_bip44_parse`                  | Parse a BIP44 path into its levels                                 |
 | `keys_bip44_generate`               | Generate the derivation path a chain's wallets use                 |
 

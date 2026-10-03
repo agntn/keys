@@ -42,6 +42,9 @@ import {
   MAX_CURVE_INTEGER_LENGTH,
   MAX_CURVE_POINTS_SHOWN,
   DEFAULT_CURVE_POINTS_SHOWN,
+  BIP322_SIGNING_TYPES,
+  BIP322_SIGNATURE_SCHEMA_PATTERN,
+  MAX_BIP322_SIGNATURE_LENGTH,
 } from "./tool-parameters.ts";
 import { BIP39_LANGUAGES } from "./utils/bip39/languages.ts";
 import { MAX_FILTERED_PRIME } from "./utils/curve/group.ts";
@@ -903,6 +906,48 @@ export const RECOVER_MESSAGE_PARAMETERS = Type.Object(
         maxLength: MAX_ADDRESS_LENGTH,
       }),
     ),
+    network: networkArgument,
+  },
+  { additionalProperties: false },
+);
+
+export const BIP322_SIGN_PARAMETERS = Type.Object(
+  {
+    message: Type.String({ description: "Message to sign, read as UTF-8" }),
+    privateKey: Type.String({
+      pattern: PRIVATE_KEY_SCHEMA_PATTERN,
+      description: "Private key as 64 hex characters without 0x",
+    }),
+    addressType: Type.String({
+      enum: BIP322_SIGNING_TYPES,
+      description:
+        "Bitcoin address to sign for: segwit (P2WPKH) and taproot get a simple signature, p2sh (P2SH-P2WPKH) and legacy (P2PKH) a full one",
+    }),
+    network: networkArgument,
+    compressed: Type.Optional(
+      Type.Boolean({
+        description: "legacy only: sign for the address of the compressed key. Default: true",
+      }),
+    ),
+  },
+  { additionalProperties: false },
+);
+
+export const BIP322_VERIFY_PARAMETERS = Type.Object(
+  {
+    address: Type.String({
+      description: "Bitcoin address that signed: P2PKH, P2SH-P2WPKH, P2WPKH or P2TR",
+      minLength: 1,
+      maxLength: MAX_ADDRESS_LENGTH,
+    }),
+    message: Type.String({ description: "Message that was signed, read as UTF-8" }),
+    signature: Type.String({
+      minLength: 1,
+      maxLength: MAX_BIP322_SIGNATURE_LENGTH,
+      pattern: BIP322_SIGNATURE_SCHEMA_PATTERN,
+      description:
+        "BIP322 signature: smp (simple) or ful (full) and base64, unprefixed base64 read as simple, or signmessage's base64 for a P2PKH address",
+    }),
     network: networkArgument,
   },
   { additionalProperties: false },

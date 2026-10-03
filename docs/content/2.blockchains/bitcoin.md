@@ -98,6 +98,23 @@ bitcoinChain.getAddress(signer.publicKey, signer.addressType); // 1...
 
 Got a signature and an address, but no key? That's what `recoverMessageSigner` is for. The header sets the key's encoding and, under BIP137, its address type. 27 to 34 is P2PKH, 35 to 38 P2SH-P2WPKH, 39 to 42 P2WPKH. Electrum ignores that and signs SegWit under a P2PKH header, so `keys_message_recover` matches a compressed key from such a header against all three. One catch. Any well formed signature recovers some key for any message. Wrong message, different key, no error. The address match is the real check.
 
+## Proving a bc1 address with BIP322
+
+`signmessage` stops at P2PKH. So how does the owner of a `bc1q` or `bc1p` address prove it? BIP322. The wallet signs a fake transaction that spends from the address. The witness of that spend is the signature. `@agntn/keys/bip322` checks it:
+
+```js
+import { sign, verify } from "@agntn/keys/bip322";
+
+verify("bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l", "Hello World", "smpAkcwRAIg...");
+// { state: "valid", format: "simple", addressType: "segwit", publicKey: "02c7f1...", lockTime: 0, sequence: 0 }
+
+sign("Hello World", privateKey, "taproot"); // "smp..."
+```
+
+Three answers, not two. `valid`, `invalid`, or `inconclusive` when only a script interpreter could tell. P2WPKH, Taproot key path, P2SH-P2WPKH and P2PKH get the full check. Multisig, P2WSH, Taproot script paths and proof of funds come back `inconclusive`, reason included. Never `valid` on a guess.
+
+The prefix names the format. `smp` is just the witness, `ful` the whole signed transaction. No prefix? It reads as simple, the way signers wrote it before the BIP was final. A P2PKH address also takes the old `signmessage` base64. `sign` writes `smp` for segwit and taproot, `ful` for p2sh and legacy. MCP and Pi call them `keys_bip322_verify` and `keys_bip322_sign`.
+
 ## Where it lives
 
 `src/blockchains/bitcoin.ts` holds the network table and the preamble. The five formats, validation and purpose inference sit in `AbstractBitcoinBlockchain` in `src/utils/bitcoin.ts`, shared with Litecoin and Bitcoin Gold. Keys and message hashing come from `AbstractBitcoinMessageBlockchain` under it, which Bitcoin Cash, Bitcoin SV, Dash, Dogecoin, Zcash and eCash share too; Bitcoin SV, Dash and Dogecoin reach it through `AbstractBitcoinP2PKHBlockchain`, Bitcoin Cash and eCash through `AbstractCashAddrBlockchain`. The hashing and encoding helpers below that are `src/utils/address.ts` and `src/utils/encoding.ts`, shared with TRON and the custom chain example.

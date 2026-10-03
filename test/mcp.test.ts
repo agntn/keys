@@ -46,6 +46,7 @@ import {
   plainBrainwalletVectors,
   warpWalletVectors,
   storeVectors,
+  bip322Vectors,
 } from "./fixtures.ts";
 import Bitcoin from "../src/blockchains/bitcoin.ts";
 import { callTool, createMcpServer, toolListings } from "../src/mcp.ts";
@@ -1923,6 +1924,103 @@ describe("keys MCP server", () => {
       arguments: { chain: "bitcoin", message, signature, address: segwit },
     });
     expect(text(response.content)).toContain("Given address: no match");
+  });
+
+  it("verifies BIP322 signatures through MCP with the verdict and its reason", async () => {
+    const client = await connectTestClient();
+    const { address, message, signature } = bip322Vectors.unprefixed;
+
+    const valid = await client.callTool({
+      name: "keys_bip322_verify",
+      arguments: { address, message, signature },
+    });
+    expect(valid.isError).not.toBe(true);
+    expect(text(valid.content)).toBe(
+      "Signature is valid (simple, segwit)\nPublic key: 02c7f12003196442943d8588e01aee840423cc54fc1521526a3b85c2b0cbd58872",
+    );
+
+    const [legacy] = bip322Vectors.full;
+    const timed = await client.callTool({
+      name: "keys_bip322_verify",
+      arguments: { address: legacy.address, message: legacy.message, signature: legacy.signature },
+    });
+    expect(text(timed.content)).toMatch(
+      /^Signature is valid \(full, legacy\)\nPublic key: 0[23][0-9a-f]{64}\nValid from lock time 2016 and sequence 2016$/u,
+    );
+
+    const wrong = await client.callTool({
+      name: "keys_bip322_verify",
+      arguments: { address, message: "Hello Worlds", signature },
+    });
+    expect(wrong.isError).not.toBe(true);
+    expect(text(wrong.content)).toBe(
+      "Signature is invalid (simple, segwit): ECDSA signature does not verify",
+    );
+
+    const [multisig] = bip322Vectors.inconclusive;
+    const unknown = await client.callTool({
+      name: "keys_bip322_verify",
+      arguments: {
+        address: multisig.address,
+        message: multisig.message,
+        signature: multisig.signature,
+      },
+    });
+    expect(text(unknown.content)).toBe(
+      "Signature is inconclusive (simple, p2wsh): P2WSH scripts need a script interpreter",
+    );
+
+    for (const [args, error] of [
+      [{ address, message, signature, network: "testnet" }, "not a valid bitcoin testnet address"],
+      [{ address, message, signature: "not base64!" }, "Invalid arguments at /signature"],
+      [{ address, message, signature, extra: true }, "Invalid arguments"],
+    ] as const) {
+      const failed = await client.callTool({ name: "keys_bip322_verify", arguments: args });
+      expect(failed.isError).toBe(true);
+      expect(text(failed.content)).toContain(error);
+    }
+  });
+
+  it("signs by BIP322 through MCP for each address type, verifiable by the verify tool", async () => {
+    const client = await connectTestClient();
+    const privateKey = secp256k1TestVectors.privateKey;
+    for (const addressType of ["legacy", "p2sh", "segwit", "taproot"] as const) {
+      const signed = await client.callTool({
+        name: "keys_bip322_sign",
+        arguments: { message: "disposable", privateKey, addressType },
+      });
+      expect(signed.isError).not.toBe(true);
+      const [, signature = "", address = ""] =
+        /^Signature: (\S+)\nAddress: (\S+) \(/u.exec(text(signed.content)) ?? [];
+      expect(address).toBe(
+        new Bitcoin().getAddress(new Bitcoin().getKeyPublic(privateKey), addressType),
+      );
+      const verified = await client.callTool({
+        name: "keys_bip322_verify",
+        arguments: { address, message: "disposable", signature },
+      });
+      expect(text(verified.content)).toMatch(/^Signature is valid/u);
+    }
+
+    const segwit = await client.callTool({
+      name: "keys_bip322_sign",
+      arguments: {
+        message: "Hello World",
+        privateKey: decodeWIF(bip322Vectors.segwitKey, { chain: "bitcoin" }).privateKey,
+        addressType: "segwit",
+      },
+    });
+    expect(text(segwit.content)).toBe(
+      `Signature: ${bip322Vectors.simple[3]?.signature}\nAddress: ${bip322Vectors.unprefixed.address} (segwit, simple)`,
+    );
+
+    const failed = await client.callTool({
+      name: "keys_bip322_sign",
+      arguments: { message: "x", privateKey, addressType: "segwit", compressed: false },
+    });
+    expect(failed.isError).toBe(true);
+    expect(text(failed.content)).toContain("compressed applies to legacy only");
+    expect(text(failed.content)).not.toContain(privateKey);
   });
 
   it("refuses what keys_message_recover cannot read instead of reporting no match", async () => {
