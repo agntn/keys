@@ -241,7 +241,7 @@ That last line is not decoration. Keys, seeds, signatures, all of it crosses the
 
 ## 🚫 What this does not do
 
-Balances, transactions, broadcasting, anything that needs a node. [@agntn/explorers](https://github.com/agntn/explorers) reads chains and [@agntn/chains](https://github.com/agntn/chains) describes them, this one only makes keys. It doesn't keep them either: no keystore, no encryption, a private key here is a hex string in a variable and WIF is just another spelling of it.
+Balances, transactions, broadcasting, anything that needs a node. [@agntn/explorers](https://github.com/agntn/explorers) reads chains and [@agntn/chains](https://github.com/agntn/chains) describes them, this one only makes keys. It doesn't keep them either. A private key here is a hex string in a variable, and WIF is just another spelling of it. `@agntn/keys/store` reads and writes keystore files, but where that file lives is your call, not ours.
 
 ## 🔐 Security
 

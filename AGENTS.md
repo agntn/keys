@@ -30,33 +30,33 @@ keys/
 
 ## WHERE TO LOOK
 
-| Task               | Location                                                                          | Notes                                                                               |
-| ------------------ | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Add new blockchain | `src/blockchains/` + `src/_blockchains.ts`                                        | Extend the appropriate base class, register in lazy loader                          |
-| Add address format | `src/utils/address.ts`                                                            | Shared across chains (legacy, segwit, hex, base58)                                  |
-| Add Bitcoin family | `src/utils/bitcoin.ts` → `AbstractBitcoinBlockchain`                              | Reuse transparent address and HD behavior; keep chain signing rules explicit        |
-| Bitcoin keys only  | `src/utils/bitcoin.ts` → `AbstractBitcoinMessageBlockchain`                       | Keys and Core message signing without address formats, as Zcash uses                |
-| Base58 P2PKH only  | `src/utils/bitcoin.ts` → `AbstractBitcoinP2PKHBlockchain`                         | One byte versions per network, P2SH optional, as BSV, Dash and Dogecoin use         |
-| CashAddr P2PKH     | `src/utils/bitcoin.ts` → `AbstractCashAddrBlockchain`                             | A prefix per network and the hash lengths each type pays to, as BCH and eCash use   |
-| Add EVM chain      | `src/utils/evm.ts` → `AbstractEVMBlockchain`                                      | Minimal subclass with `name` and `bip44`                                            |
-| Fix signing        | `src/utils/signing.ts` (generic) or `evm.ts`/`ed25519-chains.ts` (chain-specific) | EVM uses preamble hash, ed25519 signs raw                                           |
-| Core signature     | `src/utils/secp256k1/compact-signature.ts`                                        | Base64 `header                                                                      |     | r   |     | s`for the Bitcoin family and Decred;`recoverMessageSigner` reads it |
-| EVM signer         | `src/utils/eip712.ts` + `recoverSecp256k1Signer` in `signing.ts`                  | `hashTypedData`; `recoverMessageSigner`/`recoverDigestSigner` on EVM and TRON       |
-| Change public API  | `src/index.ts`                                                                    | Re-exports only, never add logic here                                               |
-| Change agent tools | `src/tools.ts`, `src/tool-schemas.ts`, `src/tool-operations.ts`                   | One definition per tool; a new tool also gets its file in `docs/server/mcp/tools/`  |
-| Keystore files     | `src/utils/store/`                                                                | Web3 Secret Storage v3: scrypt/PBKDF2, AES-128-CTR from `@agntn/ciphers/aes`        |
-| Add BIP/derivation | `src/utils/bip32/`, `bip39/`, `bip44/`, `slip10/`                                 | Subdirs with index.ts                                                               |
-| Mnemonic to wallet | `src/blockchain.ts` → `deriveHDWallet` + `src/utils/hd.ts`                        | Bitcoin family infers the address type; Sui overrides it, Cardano throws (CIP-1852) |
-| Scan wallet paths  | `src/utils/hd-scan.ts` → `scanSchemes`                                            | Named schemes per chain as data; `keys_hd_wallet_scan` walks them                   |
-| Xpub to address    | `src/utils/extended-key.ts` → `deriveXpubWallet` on the base class                | SLIP-0132 prefixes pick the type on the Bitcoin family; normal levels only, no xprv |
-| Xpub + child key   | `src/utils/bip32/parent.ts` → `recoverParent`                                     | Parent xprv from a normal child; the private prefix pairs with the xpub's           |
-| Curve math         | `src/utils/secp256k1/math.ts`                                                     | Points and scalars mod n; `keys_secp256k1_point_compute` takes the point side only  |
-| Custom curves      | `src/utils/curve/`                                                                | Short Weierstrass over a prime you give; counting, orders and logs stop at limits   |
-| Scattered words    | `src/utils/bip39/order.ts` → `orderWords`                                         | Checksum filter over the orders of loose words; `keys_bip39_words_order` caps it    |
-| Mistyped words     | `src/utils/bip39/repair.ts` → `repairWords`                                       | Typo and OCR fixes for words off the list; `keys_bip39_words_repair` caps them      |
-| Write tests        | `test/` mirroring `src/` path                                                     | Use fixtures from `test/fixtures.ts`                                                |
-| Run demos          | `playground/*.ts`                                                                 | Execute via `pnpm playground <file>`                                                |
-| Docs / keyspace UI | `docs/`                                                                           | Docus: `content/` markdown, explorer in `app/components/`                           |
+| Task               | Location                                                                          | Notes                                                                                                         |
+| ------------------ | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Add new blockchain | `src/blockchains/` + `src/_blockchains.ts`                                        | Extend the appropriate base class, register in lazy loader                                                    |
+| Add address format | `src/utils/address.ts`                                                            | Shared across chains (legacy, segwit, hex, base58)                                                            |
+| Add Bitcoin family | `src/utils/bitcoin.ts` → `AbstractBitcoinBlockchain`                              | Reuse transparent address and HD behavior; keep chain signing rules explicit                                  |
+| Bitcoin keys only  | `src/utils/bitcoin.ts` → `AbstractBitcoinMessageBlockchain`                       | Keys and Core message signing without address formats, as Zcash uses                                          |
+| Base58 P2PKH only  | `src/utils/bitcoin.ts` → `AbstractBitcoinP2PKHBlockchain`                         | One byte versions per network, P2SH optional, as BSV, Dash and Dogecoin use                                   |
+| CashAddr P2PKH     | `src/utils/bitcoin.ts` → `AbstractCashAddrBlockchain`                             | A prefix per network and the hash lengths each type pays to, as BCH and eCash use                             |
+| Add EVM chain      | `src/utils/evm.ts` → `AbstractEVMBlockchain`                                      | Minimal subclass with `name` and `bip44`                                                                      |
+| Fix signing        | `src/utils/signing.ts` (generic) or `evm.ts`/`ed25519-chains.ts` (chain-specific) | EVM uses preamble hash, ed25519 signs raw                                                                     |
+| Core signature     | `src/utils/secp256k1/compact-signature.ts`                                        | Base64 of a header byte, then `r` and `s`, for the Bitcoin family and Decred; `recoverMessageSigner` reads it |
+| EVM signer         | `src/utils/eip712.ts` + `recoverSecp256k1Signer` in `signing.ts`                  | `hashTypedData`; `recoverMessageSigner`/`recoverDigestSigner` on EVM and TRON                                 |
+| Change public API  | `src/index.ts`                                                                    | Re-exports only, never add logic here                                                                         |
+| Change agent tools | `src/tools.ts`, `src/tool-schemas.ts`, `src/tool-operations.ts`                   | One definition per tool; a new tool also gets its file in `docs/server/mcp/tools/`                            |
+| Keystore files     | `src/utils/store/`                                                                | Web3 Secret Storage v3: scrypt/PBKDF2, AES-128-CTR from `@agntn/ciphers/aes`                                  |
+| Add BIP/derivation | `src/utils/bip32/`, `bip39/`, `bip44/`, `slip10/`                                 | Subdirs with index.ts                                                                                         |
+| Mnemonic to wallet | `src/blockchain.ts` → `deriveHDWallet` + `src/utils/hd.ts`                        | Bitcoin family infers the address type; Sui overrides it, Cardano throws (CIP-1852)                           |
+| Scan wallet paths  | `src/utils/hd-scan.ts` → `scanSchemes`                                            | Named schemes per chain as data; `keys_hd_wallet_scan` walks them                                             |
+| Xpub to address    | `src/utils/extended-key.ts` → `deriveXpubWallet` on the base class                | SLIP-0132 prefixes pick the type on the Bitcoin family; normal levels only, no xprv                           |
+| Xpub + child key   | `src/utils/bip32/parent.ts` → `recoverParent`                                     | Parent xprv from a normal child; the private prefix pairs with the xpub's                                     |
+| Curve math         | `src/utils/secp256k1/math.ts`                                                     | Points and scalars mod n; `keys_secp256k1_point_compute` takes the point side only                            |
+| Custom curves      | `src/utils/curve/`                                                                | Short Weierstrass over a prime you give; counting, orders and logs stop at limits                             |
+| Scattered words    | `src/utils/bip39/order.ts` → `orderWords`                                         | Checksum filter over the orders of loose words; `keys_bip39_words_order` caps it                              |
+| Mistyped words     | `src/utils/bip39/repair.ts` → `repairWords`                                       | Typo and OCR fixes for words off the list; `keys_bip39_words_repair` caps them                                |
+| Write tests        | `test/` mirroring `src/` path                                                     | Use fixtures from `test/fixtures.ts`                                                                          |
+| Run demos          | `playground/*.ts`                                                                 | Execute via `pnpm playground <file>`                                                                          |
+| Docs / keyspace UI | `docs/`                                                                           | Docus: `content/` markdown, explorer in `app/components/`                                                     |
 
 ## CONVENTIONS
 
