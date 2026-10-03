@@ -3,7 +3,7 @@ import { Bitcoin } from "../../blockchains/bitcoin.ts";
 import { taggedHash } from "../address.ts";
 import { concatBytes } from "../bytes.ts";
 import { decodeBase58Check } from "../encoding.ts";
-import { transactionId, type Transaction } from "./transaction.ts";
+import { transactionId, type Transaction } from "../transaction/transaction.ts";
 
 /** Address types BIP322 names, `witness` for a SegWit version past Taproot. */
 export type ChallengeType = "legacy" | "p2sh" | "segwit" | "p2wsh" | "taproot" | "witness";

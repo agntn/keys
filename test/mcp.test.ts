@@ -47,6 +47,8 @@ import {
   warpWalletVectors,
   storeVectors,
   bip322Vectors,
+  reusedNonceVector,
+  transactionVectors,
 } from "./fixtures.ts";
 import Bitcoin from "../src/blockchains/bitcoin.ts";
 import { callTool, createMcpServer, toolListings } from "../src/mcp.ts";
@@ -2021,6 +2023,121 @@ describe("keys MCP server", () => {
     expect(failed.isError).toBe(true);
     expect(text(failed.content)).toContain("compressed applies to legacy only");
     expect(text(failed.content)).not.toContain(privateKey);
+  });
+
+  it("reads r, s and z of a transaction input through MCP and names each hash type", async () => {
+    const client = await connectTestClient();
+    const { transaction, spent, r, publicKey } = transactionVectors.reusedNonce2012;
+    const legacy = await client.callTool({
+      name: "keys_transaction_signatures_extract",
+      arguments: { transaction, index: 0, spent: spent.slice(0, 1) },
+    });
+    expect(legacy.isError).not.toBe(true);
+    expect(text(legacy.content)).toBe(
+      [
+        "Input 0: 1 signature",
+        "1. ecdsa SIGHASH_ALL",
+        `   r: ${r}`,
+        "   s: 44e1ff2dfd8102cf7a47c21d5c9fd5701610d04953c6836596b4fe9dd2f53e3e",
+        "   z: c0e2d0a89a348de88fda08211c70d1d7e52ccef2eb9459911bf977d587784c6e",
+        `   key: ${publicKey}`,
+      ].join("\n"),
+    );
+
+    const multisig = await client.callTool({
+      name: "keys_transaction_signatures_extract",
+      arguments: {
+        transaction: transactionVectors.p2shP2wsh.transaction,
+        index: 0,
+        spent: transactionVectors.p2shP2wsh.spent,
+      },
+    });
+    expect(text(multisig.content).match(/^\d\. ecdsa .+$/gmu)).toEqual([
+      "1. ecdsa SIGHASH_ALL",
+      "2. ecdsa SIGHASH_NONE",
+      "3. ecdsa SIGHASH_SINGLE",
+      "4. ecdsa SIGHASH_ALL|ANYONECANPAY",
+      "5. ecdsa SIGHASH_NONE|ANYONECANPAY",
+      "6. ecdsa SIGHASH_SINGLE|ANYONECANPAY",
+    ]);
+
+    const [defaultInput] = transactionVectors.taproot.inputs.filter(
+      (input) => input.hashType === 0,
+    );
+    const schnorr = await client.callTool({
+      name: "keys_transaction_signatures_extract",
+      arguments: {
+        transaction: transactionVectors.taproot.signed,
+        index: defaultInput?.index,
+        spent: transactionVectors.taproot.spent,
+      },
+    });
+    expect(text(schnorr.content)).toContain("1. schnorr SIGHASH_DEFAULT");
+
+    for (const [args, error] of [
+      [{ transaction, index: 2, spent }, "Index must be an input of the transaction, 0 to 1"],
+      [{ transaction, index: 0, spent: [...spent, ...spent] }, "one spent output for each"],
+      [{ transaction: "0x00", index: 0, spent }, "Invalid arguments at /transaction"],
+      [{ transaction, index: 0, spent: [] }, "Invalid arguments at /spent"],
+      [{ transaction, index: 0, spent: [{ script: "", value: 1, extra: 1 }] }, "Invalid arguments"],
+      [{ transaction, index: 0.5, spent }, "Invalid arguments at /index"],
+    ] as const) {
+      const failed = await client.callTool({
+        name: "keys_transaction_signatures_extract",
+        arguments: args,
+      });
+      expect(failed.isError).toBe(true);
+      expect(text(failed.content)).toContain(error);
+    }
+  });
+
+  it("recovers a reused nonce key through MCP and answers with the public key alone", async () => {
+    const client = await connectTestClient();
+    const { r, first, second } = reusedNonceVector;
+    const signatures = [
+      { r, ...first },
+      { r, ...second },
+    ];
+    const recovered = await client.callTool({
+      name: "keys_secp256k1_nonce_recover",
+      arguments: { signatures },
+    });
+    expect(recovered.isError).not.toBe(true);
+    expect(text(recovered.content)).toBe(
+      [
+        "Recovered the private key of 03f973a0b87062c389d125d8199e803b832b6ac6bf7867a4f6cd87506060fc4c58: both signatures verify under it.",
+        "The key stays out of this answer; recoverReusedNonce from @agntn/keys/secp256k1 returns it with the nonce.",
+      ].join("\n"),
+    );
+    const everything = JSON.stringify(recovered);
+    expect(everything).not.toContain(reusedNonceVector.privateKey);
+    expect(everything).not.toContain(reusedNonceVector.nonce);
+
+    const matched = await client.callTool({
+      name: "keys_secp256k1_nonce_recover",
+      arguments: {
+        signatures,
+        publicKey: "03f973a0b87062c389d125d8199e803b832b6ac6bf7867a4f6cd87506060fc4c58",
+      },
+    });
+    expect(text(matched.content)).toContain("and it matches publicKey");
+
+    for (const [args, error] of [
+      [{ signatures: [signatures[0], { ...second, r: "01" }] }, "different r"],
+      [{ signatures: [signatures[0], { r, s: second.s, z: first.z }] }, "same digest"],
+      [{ signatures, type: "schnorr" }, "x-only public key"],
+      [{ signatures, publicKey: transactionVectors.p2wpkh.publicKey }, "does not match publicKey"],
+      [{ signatures: [signatures[0]] }, "Invalid arguments at /signatures"],
+      [{ signatures: [signatures[0], { ...signatures[1], k: "1" }] }, "Invalid arguments"],
+      [{ signatures, type: "dsa" }, "Invalid arguments at /type"],
+    ] as const) {
+      const failed = await client.callTool({
+        name: "keys_secp256k1_nonce_recover",
+        arguments: args,
+      });
+      expect(failed.isError).toBe(true);
+      expect(text(failed.content)).toContain(error);
+    }
   });
 
   it("refuses what keys_message_recover cannot read instead of reporting no match", async () => {

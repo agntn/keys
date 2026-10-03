@@ -20,6 +20,8 @@ import {
   bip39WordOrderVector,
   bip39WordRepairVectors,
   bip322Vectors,
+  reusedNonceVector,
+  transactionVectors,
 } from "./fixtures.ts";
 import { TOOL_NAMES } from "../src/tool-parameters.ts";
 
@@ -103,6 +105,17 @@ try {
       other: publicKeyEncodingVector.compressed,
     },
     /"point":"02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"/,
+  );
+
+  await call(
+    "keys_secp256k1_nonce_recover",
+    {
+      signatures: [
+        { r: reusedNonceVector.r, ...reusedNonceVector.first },
+        { r: reusedNonceVector.r, ...reusedNonceVector.second },
+      ],
+    },
+    /^Recovered the private key of 03f973a0b8\S+: both signatures verify under it\.\nThe key stays out/,
   );
 
   await call(
@@ -363,6 +376,17 @@ try {
     "keys_bip322_verify",
     bip322Vectors.unprefixed,
     /^Signature is valid \(simple, segwit\)/,
+  );
+  await call(
+    "keys_transaction_signatures_extract",
+    {
+      transaction: transactionVectors.reusedNonce2012.transaction,
+      index: 1,
+      spent: transactionVectors.reusedNonce2012.spent,
+    },
+    new RegExp(
+      `^Input 1: 1 signature\n1\\. ecdsa SIGHASH_ALL\n   r: ${transactionVectors.reusedNonce2012.r}\n`,
+    ),
   );
   await call("keys_bip44_parse", { path: "m/44h/60h/0h/0/3" }, /Address index: 3$/m);
   await call("keys_bip44_generate", { chain: "bitcoin", change: 1 }, /m\/44'\/0'\/0'\/1\/0/);

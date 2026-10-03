@@ -20,7 +20,7 @@ import {
   legacySighash,
   segwitSighash,
   taprootSighash,
-} from "./sighash.ts";
+} from "../transaction/sighash.ts";
 import { scriptPathMismatch, withoutAnnex } from "./taproot.ts";
 import {
   decodeTransaction,
@@ -30,7 +30,7 @@ import {
   type Transaction,
   type TransactionInput,
   type TransactionOutput,
-} from "./transaction.ts";
+} from "../transaction/transaction.ts";
 
 /** What a verifier concludes: BIP322's valid, invalid and inconclusive. */
 export type BIP322State = "valid" | "invalid" | "inconclusive";

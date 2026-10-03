@@ -28,6 +28,7 @@ import {
   publicKeyEncodingVector,
   secp256k1MathVectors,
   secp256k1TestVectors,
+  transactionVectors,
   curveVectors,
   slip132Vectors,
 } from "./fixtures.ts";
@@ -44,6 +45,7 @@ const EXPORTS = [
   ["@agntn/keys/bip44", "/dist/utils/bip44/index.mjs"],
   ["@agntn/keys/electrum", "/dist/utils/electrum/index.mjs"],
   ["@agntn/keys/secp256k1", "/dist/utils/secp256k1/index.mjs"],
+  ["@agntn/keys/transaction", "/dist/utils/transaction/index.mjs"],
   ["@agntn/keys/slip10", "/dist/utils/slip10/index.mjs"],
   ["@agntn/keys/store", "/dist/utils/store/index.mjs"],
   ["@agntn/keys/wif", "/dist/utils/wif/index.mjs"],
@@ -137,6 +139,7 @@ describe("Public secp256k1 exports", () => {
         "invertScalar",
         "liftX",
         "isOnCurve",
+        "recoverReusedNonce",
       ]),
     );
   });
@@ -211,6 +214,22 @@ describe("Public BIP322 exports", () => {
     expect(signed.startsWith("smp")).toBe(true);
     expect(new Set(Object.keys(bip322))).toEqual(new Set(["sign", "verify"]));
     expect(await import("@agntn/keys")).not.toHaveProperty("verify");
+  });
+});
+
+describe("Public transaction exports", () => {
+  it("reads the reused r of 2012 and recovers its key from the built package", async () => {
+    const transaction = await import("@agntn/keys/transaction");
+    const { recoverReusedNonce } = await import("@agntn/keys/secp256k1");
+    const { spent, r } = transactionVectors.reusedNonce2012;
+    const [a, b] = [0, 1].flatMap((index) =>
+      transaction.extractSignatures(transactionVectors.reusedNonce2012.transaction, index, spent),
+    );
+    expect([a?.r, b?.r]).toEqual([r, r]);
+    if (a === undefined || b === undefined) throw new Error("missing signature");
+    expect(recoverReusedNonce(a, b).publicKey).toMatch(/^0[23]dbd0c615/u);
+    expect(new Set(Object.keys(transaction))).toEqual(new Set(["extractSignatures"]));
+    expect(await import("@agntn/keys")).not.toHaveProperty("extractSignatures");
   });
 });
 
@@ -420,6 +439,7 @@ describe("Consumer bundles", () => {
     ["decrypt", "@agntn/keys/store"],
     ["decrypt", "@agntn/keys/bip38"],
     ["verify", "@agntn/keys/bip322"],
+    ["extractSignatures", "@agntn/keys/transaction"],
   ])(
     "leaves the chain registry and the Electrum list out of an app importing %s from %s",
     async (name, from) => {

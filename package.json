@@ -95,6 +95,10 @@
       "types": "./dist/utils/slip10/index.d.mts",
       "default": "./dist/utils/slip10/index.mjs"
     },
+    "./transaction": {
+      "types": "./dist/utils/transaction/index.d.mts",
+      "default": "./dist/utils/transaction/index.mjs"
+    },
     "./wif": {
       "types": "./dist/utils/wif/index.d.mts",
       "default": "./dist/utils/wif/index.mjs"

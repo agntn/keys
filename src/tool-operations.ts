@@ -37,8 +37,10 @@ import {
   liftX,
   multiplyPoint,
   negatePoint,
+  recoverReusedNonce,
   subtractPoints,
 } from "./utils/secp256k1/index.ts";
+import { extractSignatures, type InputSignature } from "./utils/transaction/index.ts";
 import * as weierstrass from "./utils/curve/index.ts";
 import type { AffinePoint, CurvePoint, WeierstrassCurve } from "./utils/curve/index.ts";
 import { describeInvalidMnemonic, normalizeMnemonic } from "./utils/hd.ts";
@@ -131,6 +133,14 @@ import {
   BIP322_SIGNING_TYPES,
   BIP322_SIGNATURE_SCHEMA_PATTERN,
   MAX_BIP322_SIGNATURE_LENGTH,
+  HEX_BYTES_SCHEMA_PATTERN,
+  MAX_INPUT_INDEX,
+  MAX_SPENT_OUTPUTS,
+  MAX_SPENT_SCRIPT_HEX_LENGTH,
+  MAX_SPENT_SCRIPTS_HEX_LENGTH,
+  MAX_TRANSACTION_HEX_LENGTH,
+  NONCE_SCALAR_SCHEMA_PATTERN,
+  NONCE_SIGNATURE_TYPES,
   type ToolChain,
   type ToolNetwork,
 } from "./tool-parameters.ts";
@@ -3022,6 +3032,208 @@ export function computeSecp256k1Point(
     details = { operation, point: compute(argument("point"), argument("other"), options) };
   }
   return { content: content(JSON.stringify(details)), details };
+}
+
+/** What the nonce tool answers; the private key stays in the library. */
+export interface RecoveredNonceDetails {
+  type: (typeof NONCE_SIGNATURE_TYPES)[number];
+  publicKey: string;
+}
+
+const NONCE_SCALAR = new RegExp(NONCE_SCALAR_SCHEMA_PATTERN, "u");
+const HEX_BYTES = new RegExp(HEX_BYTES_SCHEMA_PATTERN, "u");
+
+/**
+ * Reads an object argument, refusing any key the schema does not list.
+ * @param value - Raw argument
+ * @param name - Argument name for the error
+ * @param keys - Keys the schema lists
+ * @returns {Readonly<Record<string, unknown>>} The object
+ */
+function closedObject(
+  value: unknown,
+  name: string,
+  keys: readonly string[],
+): Readonly<Record<string, unknown>> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new TypeError(`${name} must be an object with ${keys.join(", ")}`);
+  }
+  if (Object.keys(value).some((key) => !keys.includes(key))) {
+    throw new TypeError(`${name} takes only ${keys.join(", ")}`);
+  }
+  return Object.fromEntries(Object.entries(value));
+}
+
+/**
+ * Reads an array argument with a length range.
+ * @param value - Raw argument
+ * @param name - Argument name for the error
+ * @param minimum - Fewest items
+ * @param maximum - Most items
+ * @returns {readonly unknown[]} The items
+ */
+function boundedArray(
+  value: unknown,
+  name: string,
+  minimum: number,
+  maximum: number,
+): readonly unknown[] {
+  if (!Array.isArray(value) || value.length < minimum || value.length > maximum) {
+    const count = minimum === maximum ? `${minimum}` : `${minimum} to ${maximum}`;
+    throw new RangeError(`${name} must be an array of ${count} items`);
+  }
+  return value;
+}
+
+/**
+ * Reads one signature of the nonce tool.
+ * @param value - Raw item
+ * @param position - Its place, for the error
+ * @returns {{ r: string; s: string; z: string }} Its hex parts
+ */
+function nonceSignature(value: unknown, position: number): { r: string; s: string; z: string } {
+  const item = closedObject(value, `signatures[${position}]`, ["r", "s", "z"]);
+  const [r, s, z] = ["r", "s", "z"].map((key) =>
+    hexArgument(item[key], `signatures[${position}].${key}`, NONCE_SCALAR, "1 to 64 hex digits"),
+  );
+  return { r: r ?? "", s: s ?? "", z: z ?? "" };
+}
+
+/**
+ * Recover the key behind two signatures that share a nonce and answer with its public key only.
+ * @param typeValue - ecdsa or schnorr, ecdsa when blank.
+ * @param signaturesValue - Two signatures with r, s and z.
+ * @param publicKeyValue - Optional key the result must match.
+ * @returns {ToolResult<RecoveredNonceDetails>} The public key both signatures verify under.
+ */
+export function recoverSecp256k1Nonce(
+  typeValue: unknown,
+  signaturesValue: unknown,
+  publicKeyValue?: unknown,
+): ToolResult<RecoveredNonceDetails> {
+  const type = isUnset(typeValue) ? "ecdsa" : oneOf(typeValue, "type", NONCE_SIGNATURE_TYPES);
+  const [first, second] = boundedArray(signaturesValue, "signatures", 2, 2).map((item, position) =>
+    nonceSignature(item, position),
+  );
+  const publicKey = isUnset(publicKeyValue)
+    ? undefined
+    : hexArgument(publicKeyValue, "Public key", PUBLIC_KEY_HEX, "SEC1 or x-only hex");
+  const recovered = recoverReusedNonce(
+    { type, ...(first ?? { r: "", s: "", z: "" }) },
+    { type, ...(second ?? { r: "", s: "", z: "" }) },
+    publicKey === undefined ? {} : { publicKey },
+  );
+  const lines = [
+    `Recovered the private key of ${recovered.publicKey}: both signatures verify under it${publicKey === undefined ? "" : ", and it matches publicKey"}.`,
+    "The key stays out of this answer; recoverReusedNonce from @agntn/keys/secp256k1 returns it with the nonce.",
+  ];
+  return {
+    content: content(lines.join("\n")),
+    details: { type, publicKey: recovered.publicKey },
+  };
+}
+
+/** What the transaction tool reads from one input. */
+export interface TransactionSignaturesDetails {
+  index: number;
+  signatures: InputSignature[];
+}
+
+const HASH_TYPE_NAMES: Readonly<Record<number, string>> = {
+  0: "SIGHASH_DEFAULT",
+  1: "SIGHASH_ALL",
+  2: "SIGHASH_NONE",
+  3: "SIGHASH_SINGLE",
+};
+
+/**
+ * Names a hash type byte.
+ * @param hashType - The byte
+ * @returns {string} Its name, with |ANYONECANPAY when that bit is set, or the hex of an unknown one
+ */
+function hashTypeName(hashType: number): string {
+  const base = hashType & 0x7f;
+  const name = Object.hasOwn(HASH_TYPE_NAMES, base) ? HASH_TYPE_NAMES[base] : undefined;
+  if (name === undefined) return `hash type 0x${hashType.toString(16).padStart(2, "0")}`;
+  return (hashType & 0x80) === 0 ? name : `${name}|ANYONECANPAY`;
+}
+
+/**
+ * Reads one spent output of the transaction tool.
+ * @param value - Raw item
+ * @param position - Its place, for the error
+ * @returns {{ script: string; value: number }} The script hex and the value
+ */
+function spentOutput(value: unknown, position: number): { script: string; value: number } {
+  const item = closedObject(value, `spent[${position}]`, ["script", "value"]);
+  const script = requiredString(item["script"], `spent[${position}].script`);
+  if (script.length > MAX_SPENT_SCRIPT_HEX_LENGTH || !HEX_BYTES.test(script)) {
+    throw new TypeError(
+      `spent[${position}].script must be hex without 0x, at most ${MAX_SPENT_SCRIPT_HEX_LENGTH} digits`,
+    );
+  }
+  const amount = optionalIndex(item["value"], `spent[${position}].value`, Number.MAX_SAFE_INTEGER);
+  if (amount === undefined) throw new TypeError(`spent[${position}].value must be satoshis`);
+  return { script, value: amount };
+}
+
+/**
+ * One signature as the transaction tool writes it.
+ * @param signature - The signature
+ * @param position - Its place in the input, from 1
+ * @returns {string} Its lines
+ */
+function signatureText(signature: Readonly<InputSignature>, position: number): string {
+  const key =
+    signature.publicKey ?? "none of the keys in the input or the spent script verifies it";
+  return [
+    `${position}. ${signature.type} ${hashTypeName(signature.hashType)}`,
+    `   r: ${signature.r}`,
+    `   s: ${signature.s}`,
+    `   z: ${signature.z}`,
+    `   key: ${key}`,
+  ].join("\n");
+}
+
+/**
+ * Read the signatures of one transaction input with the sighash each one signs.
+ * @param transactionValue - Raw signed transaction hex.
+ * @param indexValue - Input to read.
+ * @param spentValue - Outputs the input spends, one or one per input.
+ * @returns {ToolResult<TransactionSignaturesDetails>} r, s, z, hash type and key of each signature.
+ */
+export function extractTransactionSignatures(
+  transactionValue: unknown,
+  indexValue: unknown,
+  spentValue: unknown,
+): ToolResult<TransactionSignaturesDetails> {
+  const transaction = requiredString(transactionValue, "Transaction");
+  if (transaction.length > MAX_TRANSACTION_HEX_LENGTH || !HEX_BYTES.test(transaction)) {
+    throw new TypeError(
+      `Transaction must be hex without 0x, at most ${MAX_TRANSACTION_HEX_LENGTH} digits`,
+    );
+  }
+  const index = optionalIndex(indexValue, "Index", MAX_INPUT_INDEX);
+  if (index === undefined) throw new TypeError("Index must be the input to read");
+  const spent = boundedArray(spentValue, "spent", 1, MAX_SPENT_OUTPUTS).map((item, position) =>
+    spentOutput(item, position),
+  );
+  if (
+    spent.reduce((total, output) => total + output.script.length, 0) > MAX_SPENT_SCRIPTS_HEX_LENGTH
+  ) {
+    throw new RangeError(
+      `spent scripts together take at most ${MAX_SPENT_SCRIPTS_HEX_LENGTH} hex digits`,
+    );
+  }
+  const signatures = extractSignatures(transaction, index, spent);
+  const text =
+    signatures.length === 0
+      ? `Input ${index} carries no signature, or none this tool reads`
+      : [
+          `Input ${index}: ${signatures.length} signature${signatures.length === 1 ? "" : "s"}`,
+          ...signatures.map((signature, position) => signatureText(signature, position + 1)),
+        ].join("\n");
+  return { content: content(text), details: { index, signatures } };
 }
 
 /** A point as the curve tool writes it: decimal coordinates, or "infinity". */

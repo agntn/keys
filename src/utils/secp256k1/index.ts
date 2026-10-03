@@ -46,3 +46,5 @@ export {
   subtractScalars,
 } from "./math.ts";
 export type { LiftedPoints, Scalar } from "./math.ts";
+export { recoverReusedNonce } from "./nonce.ts";
+export type { NonceRecoveryOptions, NonceSignature, RecoveredNonceKey } from "./nonce.ts";
