@@ -302,7 +302,17 @@ describe("bip322 verify", () => {
         return serializeTransaction({ ...transaction, inputs }, true);
       });
     expect(verify(address, "mine", twoInputs("other")).state).toBe("invalid");
-    expect(verify(address, "mine", twoInputs("mine")).state).toBe("inconclusive");
+    expect(verify(address, "mine", twoInputs("mine")).reason).toBe(
+      "Transaction spends one output twice",
+    );
+    const extra = rewritten(sign("mine", key, "legacy"), (bytes) => {
+      const transaction = decodeTransaction(bytes);
+      const [first] = transaction.inputs;
+      if (first === undefined) throw new Error("to_sign lost its input");
+      const other = { ...first, txid: new Uint8Array(32).fill(9) };
+      return serializeTransaction({ ...transaction, inputs: [first, other] }, true);
+    });
+    expect(verify(address, "mine", extra).state).toBe("inconclusive");
   });
 
   it("refuses a full signature with a second output", () => {

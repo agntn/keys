@@ -25,6 +25,7 @@ import { scriptPathMismatch, withoutAnnex } from "./taproot.ts";
 import {
   decodeTransaction,
   decodeWitness,
+  serializeTransaction,
   transactionId,
   type Transaction,
   type TransactionInput,
@@ -100,8 +101,8 @@ function isLegacy(bytes: Uint8Array): boolean {
 }
 
 /**
- * Splits the variant prefix from the base64. Without one it reads as simple, or as Core's legacy
- * signature when the address is P2PKH.
+ * Splits the variant prefix from the base64; a prefix always wins. Without one it reads as simple,
+ * or as Core's legacy signature when the address is P2PKH.
  * @param signature - Signature text
  * @param legacyAddress - Whether the address is P2PKH
  * @returns {Decoded} Format and bytes, or why the text is not base64
@@ -499,8 +500,30 @@ function shapeOutcome(
   if (!hasToSignOutput(transaction.outputs)) {
     return invalid("Transaction must have one output paying nothing to OP_RETURN");
   }
+  const broken = contextFreeBreak(transaction);
+  if (broken !== undefined) return invalid(broken);
   if (transaction.inputs.length > 1) {
     return inconclusive("Extra inputs need the outputs they spend, as a proof of funds carries");
+  }
+  return undefined;
+}
+
+/** Largest transaction without witnesses that Core's `CheckTransaction` takes, in bytes. */
+const MAX_STRIPPED_SIZE = 1_000_000;
+
+/**
+ * Applies the input rules of Core's `CheckTransaction` that need no UTXO; `to_sign` pays one
+ * zero output, so the value rules hold already.
+ * @param transaction - `to_sign`
+ * @returns {string | undefined} The broken rule, undefined when all hold
+ */
+function contextFreeBreak(transaction: Readonly<Transaction>): string | undefined {
+  const outpoints = transaction.inputs.map((input) => `${input.txid.toHex()}:${input.vout}`);
+  if (new Set(outpoints).size !== outpoints.length) return "Transaction spends one output twice";
+  const nullPrevout = `${"00".repeat(32)}:${0xffffffff}`;
+  if (outpoints.includes(nullPrevout)) return "Transaction spends a null prevout";
+  if (serializeTransaction(transaction, false).length > MAX_STRIPPED_SIZE) {
+    return "Transaction is larger than a block allows";
   }
   return undefined;
 }
