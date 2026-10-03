@@ -52,6 +52,30 @@ describe("taproot sighash", () => {
   });
 });
 
+/* Two keys for scripts that hold a signature in their own script code, built on input 0 of the 2012 transaction. */
+const scriptKeys = [secp256k1TestVectors.privateKey, `${"00".repeat(31)}02`].map((key) =>
+  hex.decode(key),
+);
+const [keyA = "", keyB = ""] = scriptKeys.map((key) => hex.encode(secp256k1.getPublicKey(key)));
+const unsigned2012 = decodeTransaction(hex.decode(reusedNonce2012.transaction));
+
+/* A DER signature with SIGHASH_ALL over input 0 and the given script code, 71 bytes with its hash type. */
+const signInput = (scriptCode: string, key: Uint8Array | undefined): string => {
+  const digest = legacySighash(unsigned2012, 0, hex.decode(scriptCode), 1);
+  const compact = hex.encode(
+    secp256k1.sign(digest, key ?? new Uint8Array(32), { prehash: false, format: "compact" }),
+  );
+  return `30440220${compact.slice(0, 64)}0220${compact.slice(64)}01`;
+};
+
+/* The 2012 transaction with input 0 spending through the given scriptSig. */
+const withScriptSig = (scriptSig: string): string => {
+  const inputs = unsigned2012.inputs.map((input, index) =>
+    index === 0 ? { ...input, scriptSig: hex.decode(scriptSig) } : input,
+  );
+  return hex.encode(serializeTransaction({ ...unsigned2012, inputs }, false));
+};
+
 describe("pushOf", () => {
   it("pushes directly up to 75 bytes, then with the shortest OP_PUSHDATA", () => {
     const heads = [75, 76, 255, 256].map((length) =>
@@ -149,6 +173,36 @@ describe("extractSignatures", () => {
     const [signature] = extractSignatures(transaction, 0, spent);
     expect(signature?.z).toBe(hex.encode(digest));
     expect(signature?.publicKey).toBe(publicKeyCompressed);
+  });
+
+  it("drops only the signature OP_CHECKSIG checks from the script code", () => {
+    const checks = `21${keyA}ad21${keyB}ac`;
+    const first = signInput(`75${checks}`, scriptKeys[0]);
+    const script = `47${first}75${checks}`;
+    const second = signInput(script, scriptKeys[1]);
+    const transaction = withScriptSig(`47${second}47${first}`);
+    const signatures = extractSignatures(transaction, 0, [{ script, value: 130000 }]);
+    expect(signatures.map((signature) => signature.publicKey)).toEqual([keyB, keyA]);
+  });
+
+  it("drops every signature OP_CHECKMULTISIG takes from the script code", () => {
+    const multisig = `5121${keyA}21${keyB}52ae`;
+    const first = signInput(`75${multisig}`, scriptKeys[0]);
+    const script = `47${first}75${multisig}`;
+    const second = signInput(`75${multisig}`, scriptKeys[1]);
+    const transaction = withScriptSig(`0047${first}47${second}`);
+    const signatures = extractSignatures(transaction, 0, [{ script, value: 130000 }]);
+    expect(signatures.map((signature) => signature.publicKey)).toEqual([keyA, keyB]);
+  });
+
+  it("refuses a signature in a script whose checks delete it differently", () => {
+    const mixed = `21${keyA}ad5121${keyB}51ae`;
+    const first = signInput(`75${mixed}`, scriptKeys[0]);
+    const script = `47${first}75${mixed}`;
+    const transaction = withScriptSig(`0047${first}47${first}`);
+    expect(() => extractSignatures(transaction, 0, [{ script, value: 130000 }])).toThrow(
+      /depends on execution/u,
+    );
   });
 
   it("answers an unsigned input with no signatures", () => {

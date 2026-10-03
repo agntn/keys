@@ -52,6 +52,10 @@ interface SighashRules {
 
 const { Fn } = secp256k1.Point;
 const OP_CODESEPARATOR = 0xab;
+const OP_CHECKSIG = 0xac;
+const OP_CHECKSIGVERIFY = 0xad;
+const OP_CHECKMULTISIG = 0xae;
+const OP_CHECKMULTISIGVERIFY = 0xaf;
 const ANNEX_TAG = 0x50;
 const MAX_SATOSHIS = 0xffff_ffff_ffff_ffffn;
 
@@ -243,6 +247,31 @@ function findAndDelete(scriptCode: Uint8Array, signatures: readonly Uint8Array[]
 }
 
 /**
+ * Picks the signatures `FindAndDelete` drops before one is checked: itself under `OP_CHECKSIG`, all under `OP_CHECKMULTISIG`.
+ * @param scriptCode - Script code
+ * @param signatures - Signatures with their hash type bytes
+ * @returns {(signature: Uint8Array) => readonly Uint8Array[]} The signatures dropped for each one
+ * @throws {RangeError} When a signature sits in a script whose checks leave the choice to execution
+ */
+function deletedFor(
+  scriptCode: Uint8Array,
+  signatures: readonly Uint8Array[],
+): (signature: Uint8Array) => readonly Uint8Array[] {
+  const operations = scriptOperations(scriptCode);
+  const pushes = new Set(operations.map((operation) => operation.bytes.toHex()));
+  if (!signatures.some((signature) => pushes.has(pushOf(signature).toHex()))) return () => [];
+  const count = (opcodes: readonly number[]): number =>
+    operations.filter((operation) => opcodes.includes(operation.opcode)).length;
+  const multisig = count([OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY]);
+  if (multisig > 1 || (multisig === 1 && count([OP_CHECKSIG, OP_CHECKSIGVERIFY]) > 0)) {
+    throw new RangeError(
+      "A signature sits in a script with more than one OP_CHECKMULTISIG or with OP_CHECKSIG beside it, so what each one signs depends on execution, which is not run here",
+    );
+  }
+  return multisig === 1 ? () => signatures : (signature) => [signature];
+}
+
+/**
  * Refuses `OP_CODESEPARATOR`, whose signed part depends on which separator runs last.
  * @param scriptCode - Script code
  * @throws {RangeError} When one is there
@@ -272,18 +301,18 @@ function digestOf(rules: Readonly<SighashRules>, hashType: number): Uint8Array {
  * Reads every ECDSA signature among the items and computes its sighash.
  * @param items - Pushed items of the scriptSig or witness
  * @param keys - Candidate keys
- * @param rules - How to hash for them
+ * @param rulesOf - How to hash for each signature
  * @returns {InputSignature[]} The signatures in item order
  */
 function ecdsaSignatures(
   items: readonly Uint8Array[],
   keys: readonly Uint8Array[],
-  rules: Readonly<SighashRules>,
+  rulesOf: (signature: Uint8Array) => Readonly<SighashRules>,
 ): InputSignature[] {
   return items.flatMap((item) => {
     const parts = readEcdsa(item);
     if (parts === undefined) return [];
-    const z = digestOf(rules, parts.hashType);
+    const z = digestOf(rulesOf(item), parts.hashType);
     const publicKey = ecdsaSigner(parts.r, parts.s, z, keys);
     return [
       {
@@ -304,6 +333,7 @@ function ecdsaSignatures(
  * @param scriptCode - Script the signatures commit to
  * @param items - Pushed items that may hold signatures
  * @returns {InputSignature[]} The signatures
+ * @throws {RangeError} When the script holds `OP_CODESEPARATOR`, or a signature whose deletion depends on execution
  */
 function legacySignatures(
   spend: Readonly<Spend>,
@@ -313,8 +343,12 @@ function legacySignatures(
   assertNoCodeSeparator(scriptCode);
   const keys = publicKeys([...scriptPushes(spend.input.scriptSig), ...scriptPushes(scriptCode)]);
   const signatures = items.filter((item) => readEcdsa(item) !== undefined);
-  const signed = findAndDelete(scriptCode, signatures);
-  return ecdsaSignatures(items, keys, { spend, scriptCode: signed, segwit: false });
+  const deleted = deletedFor(scriptCode, signatures);
+  return ecdsaSignatures(items, keys, (signature) => ({
+    spend,
+    scriptCode: findAndDelete(scriptCode, deleted(signature)),
+    segwit: false,
+  }));
 }
 
 /**
@@ -332,7 +366,11 @@ function witnessSignatures(spend: Readonly<Spend>, program: Uint8Array): InputSi
       program,
       Uint8Array.of(0x88, 0xac),
     );
-    return ecdsaSignatures(witness, publicKeys(witness), { spend, scriptCode, segwit: true });
+    return ecdsaSignatures(witness, publicKeys(witness), () => ({
+      spend,
+      scriptCode,
+      segwit: true,
+    }));
   }
   const witnessScript = witness.at(-1);
   if (witnessScript === undefined) return [];
@@ -342,7 +380,7 @@ function witnessSignatures(spend: Readonly<Spend>, program: Uint8Array): InputSi
   assertNoCodeSeparator(witnessScript);
   const items = witness.slice(0, -1);
   const keys = publicKeys([...items, ...scriptPushes(witnessScript)]);
-  return ecdsaSignatures(items, keys, { spend, scriptCode: witnessScript, segwit: true });
+  return ecdsaSignatures(items, keys, () => ({ spend, scriptCode: witnessScript, segwit: true }));
 }
 
 /**
@@ -429,7 +467,8 @@ function taprootSignatures(spend: Readonly<Spend>, outputKey: Uint8Array): Input
  * @returns {InputSignature[]} Each signature in the order the input holds them, empty when none
  * @throws {TypeError} When a hex argument or a value is malformed
  * @throws {RangeError} When the transaction does not decode, the index or spent outputs do not
- *   fit it, or the input is a Taproot script path or a script with `OP_CODESEPARATOR`
+ *   fit it, or the input is a Taproot script path, a script with `OP_CODESEPARATOR` or a script
+ *   holding a signature that `OP_CHECKSIG` and `OP_CHECKMULTISIG` would delete differently
  */
 export function extractSignatures(
   transaction: string,
