@@ -16,6 +16,7 @@ import {
   type AffinePoint,
   type CurvePoint,
 } from "../../src/utils/curve/index.ts";
+import { invert, isPrime } from "../../src/utils/curve/field.ts";
 import { curveVectors } from "../fixtures.ts";
 
 const { paar, f23, secp256k1 } = curveVectors;
@@ -63,6 +64,32 @@ describe("Curve definition", () => {
   it("checks plain parameters too, not only curves from defineCurve", () => {
     expect(() => addPoints({ a: 2n, b: 2n, p: 21n }, base, base)).toThrow("p must be a prime");
     expect(addPoints({ a: 2n, b: 2n, p: 17n }, base, base)).toEqual(paarMultiples[1]);
+  });
+});
+
+describe("Curve field", () => {
+  it("agrees with trial division on every number below 20000", () => {
+    for (let n = 0; n < 20_000; n += 1) {
+      let prime = n > 1;
+      for (let divisor = 2; prime && divisor * divisor <= n; divisor += 1)
+        prime = n % divisor !== 0;
+      expect(isPrime(BigInt(n))).toBe(prime);
+    }
+  });
+
+  it("refuses composites that pass Miller-Rabin on every base up to 41", () => {
+    for (const p of [3317044064679887385961981n, 318665857834031151167461n, 3825123056546413051n]) {
+      expect(isPrime(p)).toBe(false);
+      expect(() => defineCurve({ a: 1n, b: 1n, p })).toThrow("p must be a prime above 3");
+    }
+    expect(isPrime((1n << 127n) - 1n)).toBe(true);
+    expect(isPrime((1n << 521n) - 1n)).toBe(true);
+    expect(isPrime(((1n << 61n) - 1n) ** 2n)).toBe(false);
+  });
+
+  it("refuses an inverse that does not exist instead of returning a wrong one", () => {
+    expect(invert(4n, 17n)).toBe(13n);
+    expect(() => invert(6n, 15n)).toThrow("p is not prime");
   });
 });
 
