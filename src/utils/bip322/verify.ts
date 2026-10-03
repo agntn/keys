@@ -66,7 +66,7 @@ type Outcome =
 
 /** A signature split from its prefix, or why it could not be read. */
 type Decoded =
-  | { readonly format: BIP322Format; readonly bytes: Uint8Array }
+  | { readonly format: BIP322Format; readonly bytes: Uint8Array; readonly prefixed: boolean }
   | { readonly format: BIP322Format; readonly reason: string };
 
 const PREFIXES: Readonly<Record<string, BIP322Format>> = {
@@ -113,8 +113,8 @@ function decodeSignature(signature: string): Decoded {
   } catch {
     return { format: named ?? "simple", reason: "Signature is not base64" };
   }
-  if (named !== undefined) return { format: named, bytes };
-  return { format: isLegacy(bytes) ? "legacy" : "simple", bytes };
+  if (named !== undefined) return { format: named, bytes, prefixed: true };
+  return { format: isLegacy(bytes) ? "legacy" : "simple", bytes, prefixed: false };
 }
 
 /**
@@ -412,8 +412,8 @@ function checkInput(transaction: Readonly<Transaction>, challenge: Readonly<Chal
 }
 
 /**
- * Builds `to_sign` from a simple signature. P2SH-P2WPKH gets the scriptSig its witness key implies,
- * as implementations from before the BIP was final sign it.
+ * Builds `to_sign` from a simple signature. An unprefixed one for P2SH-P2WPKH gets the scriptSig
+ * its witness key implies, as signers wrote it before the BIP was final.
  * @param spend - `to_spend`
  * @param challenge - The address
  * @param bytes - Serialized witness stack
@@ -505,10 +505,13 @@ function fullToSign(spend: Readonly<Transaction>, bytes: Uint8Array): Transactio
 function signingTransaction(
   spend: Readonly<Transaction>,
   challenge: Readonly<Challenge>,
-  decoded: Readonly<{ format: BIP322Format; bytes: Uint8Array }>,
+  decoded: Readonly<{ format: BIP322Format; bytes: Uint8Array; prefixed: boolean }>,
 ): Transaction | Outcome {
   if (decoded.format === "proof-of-funds") {
     return inconclusive("Proof of funds PSBTs are not read");
+  }
+  if (decoded.prefixed && decoded.format === "simple" && challenge.type === "p2sh") {
+    return invalid("An smp signature is for native SegWit; P2SH takes a full one");
   }
   return decoded.format === "full"
     ? fullToSign(spend, decoded.bytes)

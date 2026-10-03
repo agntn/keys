@@ -248,6 +248,17 @@ describe("bip322 verify", () => {
     );
   });
 
+  it("reads an unprefixed P2SH-P2WPKH witness as simple, but refuses it under smp", () => {
+    const key = secp256k1TestVectors.privateKey;
+    const address = new Bitcoin().getAddress(new Bitcoin().getKeyPublic(key), "p2sh");
+    const full = decodeTransaction(base64.decode(sign("nested", key, "p2sh").slice(3)));
+    const witness = base64.encode(encodeWitness(full.inputs[0]?.witness ?? []));
+    expect(verify(address, "nested", witness).state).toBe("valid");
+    expect(verify(address, "nested", `smp${witness}`).reason).toBe(
+      "An smp signature is for native SegWit; P2SH takes a full one",
+    );
+  });
+
   it("checks what input 0 spends before deferring extra inputs", () => {
     const key = secp256k1TestVectors.privateKey;
     const address = new Bitcoin().getAddress(new Bitcoin().getKeyPublic(key), "legacy");
