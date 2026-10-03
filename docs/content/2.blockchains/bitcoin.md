@@ -111,7 +111,7 @@ verify("bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l", "Hello World", "smpAkcwRAIg
 sign("Hello World", privateKey, "taproot"); // "smp..."
 ```
 
-Three answers, not two. `valid`, `invalid`, or `inconclusive` when only a script interpreter could tell. P2WPKH, Taproot key path, P2SH-P2WPKH and P2PKH get the full check. Multisig, P2WSH, Taproot script paths and proof of funds come back `inconclusive`, reason included. Never `valid` on a guess.
+Three answers, not two. `valid`, `invalid`, or `inconclusive` when only a script interpreter could tell. P2WPKH, Taproot key path, P2SH-P2WPKH and P2PKH get the full check. Multisig, P2WSH and Taproot script paths get their hashes checked. A script that doesn't match the address is `invalid`. One that matches still needs running, so `inconclusive`, reason included. Same for proof of funds. Never `valid` on a guess.
 
 The prefix names the format. `smp` is just the witness, `ful` the whole signed transaction. No prefix? It reads as simple, the way signers wrote it before the BIP was final. A P2PKH address also takes the old `signmessage` base64. `sign` writes `smp` for segwit and taproot, `ful` for p2sh and legacy. MCP and Pi call them `keys_bip322_verify` and `keys_bip322_sign`.
 

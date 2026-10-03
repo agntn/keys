@@ -663,7 +663,7 @@ export const bip322VerifyTool = defineTool({
   name: "keys_bip322_verify",
   title: "Verify BIP322",
   description:
-    "Verify a BIP322 signature of a message by a Bitcoin address, the proof SegWit and Taproot wallets give: simple (smp) and full (ful) for P2WPKH, P2TR key path, P2SH-P2WPKH and P2PKH, and signmessage's legacy base64 for P2PKH. Answers valid, invalid or inconclusive with the reason; P2WSH, Taproot script paths, other P2SH scripts and proof of funds come back inconclusive. A valid one names the key it checked against.",
+    "Verify a BIP322 signature of a message by a Bitcoin address, the proof SegWit and Taproot wallets give: simple (smp) and full (ful) for P2WPKH, P2TR key path, P2SH-P2WPKH and P2PKH, and signmessage's legacy base64 for P2PKH. Answers valid, invalid or inconclusive with the reason; P2WSH, Taproot script paths and other P2SH scripts get their hash commitments checked, then come back inconclusive, as does proof of funds. A valid one names the key it checked against.",
   effect: "read",
   input: BIP322_VERIFY_PARAMETERS,
   execute: async (params) =>

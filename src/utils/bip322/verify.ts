@@ -1,3 +1,4 @@
+import { sha256 } from "@agntn/hashes";
 import { schnorr } from "@noble/curves/secp256k1.js";
 import { equalBytes } from "@noble/curves/utils.js";
 import { Bitcoin } from "../../blockchains/bitcoin.ts";
@@ -20,6 +21,7 @@ import {
   segwitSighash,
   taprootSighash,
 } from "./sighash.ts";
+import { scriptPathMismatch, withoutAnnex } from "./taproot.ts";
 import {
   decodeTransaction,
   decodeWitness,
@@ -231,12 +233,14 @@ function checkSegwit(transaction: Readonly<Transaction>, challenge: Readonly<Cha
 }
 
 /**
- * Tells the redeem script of P2SH-P2WPKH: version 0 and a 20-byte program.
+ * Reads the program of a P2SH redeem script that wraps SegWit version 0.
  * @param redeem - Redeem script
- * @returns {boolean} True for `OP_0 <20 bytes>`
+ * @returns {Uint8Array | undefined} The 20 or 32-byte program, undefined for any other script
  */
-function isNestedKeyHash(redeem: Uint8Array): boolean {
-  return redeem.length === 22 && redeem[0] === 0 && redeem[1] === 20;
+function nestedProgram(redeem: Uint8Array): Uint8Array | undefined {
+  const length = redeem[1] ?? 0;
+  const wraps = redeem[0] === 0 && (length === 20 || length === 32) && redeem.length === length + 2;
+  return wraps ? redeem.subarray(2) : undefined;
 }
 
 /**
@@ -252,13 +256,51 @@ function checkNested(transaction: Readonly<Transaction>, challenge: Readonly<Cha
   if (redeem === undefined || !equalBytes(hash160(redeem), challenge.program)) {
     return invalid("scriptSig does not end with a redeem script the address hashes");
   }
-  if (!isNestedKeyHash(redeem)) {
-    return inconclusive("P2SH scripts other than P2WPKH need a script interpreter");
+  const nested = nestedProgram(redeem);
+  if (nested === undefined) {
+    return inconclusive("P2SH scripts other than wrapped SegWit need a script interpreter");
   }
   if (read.pushes.length !== 1) {
-    return invalid("P2SH-P2WPKH scriptSig must push just the redeem script");
+    return invalid("A wrapped SegWit scriptSig must push just the redeem script");
   }
-  return checkWitnessKeyHash(transaction, redeem.subarray(2));
+  return nested.length === 20
+    ? checkWitnessKeyHash(transaction, nested)
+    : checkWitnessScript(transaction, nested);
+}
+
+/**
+ * Checks what a P2WSH spend commits to: the last witness item hashes to the program.
+ * @param transaction - `to_sign`
+ * @param scriptHash - The 32-byte witness program
+ * @returns {Outcome} Invalid on a broken commitment, inconclusive otherwise
+ */
+function checkWitnessScript(transaction: Readonly<Transaction>, scriptHash: Uint8Array): Outcome {
+  const script = transaction.inputs[0]?.witness.at(-1);
+  if (script === undefined) return invalid("P2WSH witness is empty");
+  if (!equalBytes(sha256(script), scriptHash)) {
+    return invalid("Witness script does not hash to the address");
+  }
+  return inconclusive("P2WSH scripts need a script interpreter");
+}
+
+/**
+ * Checks the parts of a native SegWit spend that need no interpreter: an empty scriptSig, then
+ * the P2WSH commitment; a version past 1 stays inconclusive by the upgradeable rule.
+ * @param transaction - `to_sign`
+ * @param challenge - The P2WSH address or the later witness version
+ * @returns {Outcome} Invalid on a broken rule, inconclusive otherwise
+ */
+function checkWitnessProgram(
+  transaction: Readonly<Transaction>,
+  challenge: Readonly<Challenge>,
+): Outcome {
+  if ((transaction.inputs[0]?.scriptSig.length ?? 0) > 0) {
+    return invalid("A native SegWit input must have an empty scriptSig");
+  }
+  if (challenge.type === "p2wsh") return checkWitnessScript(transaction, challenge.program);
+  return inconclusive(
+    "Witness programs other than version 0 and Taproot are reserved for upgrades",
+  );
 }
 
 /**
@@ -294,19 +336,27 @@ function taprootHashType(signature: Uint8Array): number | undefined {
 }
 
 /**
- * Takes the one signature of a Taproot key path spend from the input.
+ * Takes the signature of a key path spend; a script path only gets its commitment checked.
  * @param input - First input of `to_sign`
+ * @param outputKey - x-only output key the address holds
  * @returns {Uint8Array | Outcome} The signature, or why the input is no key path spend
  */
-function keyPathSignature(input: Readonly<TransactionInput> | undefined): Uint8Array | Outcome {
+function keyPathSignature(
+  input: Readonly<TransactionInput> | undefined,
+  outputKey: Uint8Array,
+): Uint8Array | Outcome {
   if (input === undefined || input.scriptSig.length > 0) {
     return invalid("A native SegWit input must have an empty scriptSig");
   }
-  const [signature] = input.witness;
+  const stack = withoutAnnex(input.witness);
+  const [signature] = stack;
   if (signature === undefined) return invalid("Taproot witness is empty");
-  if (input.witness.length > 1) {
-    return inconclusive("Taproot script path spends and annexes need a script interpreter");
+  if (stack.length > 1) {
+    const mismatch = scriptPathMismatch(stack, outputKey);
+    if (mismatch !== undefined) return invalid(mismatch);
+    return inconclusive("Taproot script paths need a script interpreter");
   }
+  if (stack.length < input.witness.length) return inconclusive("Taproot annexes are not read");
   return signature;
 }
 
@@ -317,7 +367,7 @@ function keyPathSignature(input: Readonly<TransactionInput> | undefined): Uint8A
  * @returns {Outcome} The output key, or the rule the witness breaks
  */
 function checkTaproot(transaction: Readonly<Transaction>, challenge: Readonly<Challenge>): Outcome {
-  const signature = keyPathSignature(transaction.inputs[0]);
+  const signature = keyPathSignature(transaction.inputs[0], challenge.program);
   if (!(signature instanceof Uint8Array)) return signature;
   const hashType = taprootHashType(signature);
   if (hashType === undefined) return invalid("Signature must use SIGHASH_DEFAULT or SIGHASH_ALL");
@@ -345,10 +395,8 @@ function checkInput(transaction: Readonly<Transaction>, challenge: Readonly<Chal
       return checkSegwit(transaction, challenge);
     case "taproot":
       return checkTaproot(transaction, challenge);
-    case "p2wsh":
-      return inconclusive("P2WSH scripts need a script interpreter");
     default:
-      return inconclusive("SegWit versions past 1 are reserved for upgrades");
+      return checkWitnessProgram(transaction, challenge);
   }
 }
 

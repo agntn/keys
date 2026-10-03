@@ -2072,6 +2072,7 @@ export const bip322Vectors = {
   inconclusive: [
     {
       addressType: "p2wsh",
+      witness: true,
       address: "bc1qp0ahvfh83088w49k405szqgg4f3pptr7p2g06tdxfjcd40z4lh4q95lsz9",
       message: "This will be a p2wsh 3-of-3 multisig BIP 322 signed message",
       signature:
@@ -2079,6 +2080,7 @@ export const bip322Vectors = {
     },
     {
       addressType: "taproot",
+      witness: true,
       address: "bc1p6vffkx7vcyezrjq7pg9qqdjv7vmtanfhk8ukwsn4syejwmarmhxqp0rw5x",
       message: "AY2VOQOXYI5CN2EHZKLOX7ZI37",
       signature:
@@ -2086,10 +2088,19 @@ export const bip322Vectors = {
     },
     {
       addressType: "p2sh",
+      witness: false,
       address: "3Nye4j1GUFqCEBR3do2KEFZAs9oLe8NZ6X",
       message: "7OKFLKRXSP6J42VQOMSG7MVXEP",
       signature:
         "fulAgAAAAEvAyd4zsoz8gcVU5H19GLYokTAN5PxuKCBlEPjODJ86gAAAADaAEcwRAIgT6rcfxgCmG6b3DpzNV6UG0jiCQGclG9sfiSpV45HDXMCIGgtqjFBuJ7rbi+cgnG0TZiKZaxMk0KI+gQd0pHJfEYCAUgwRQIhANCvCLjGMuZMzH+nCEkNhWhR45T6QRYMLin8utpuF9r1AiBTjG2NLjkre7ec+HPg8UUhK1jL1vgq7YKjq5ROv+h07AFHUiEDhKjcb/Pv1/7AYutzOXwgec08wwD/VwiPm58Lc0xjohghAhycjpwdBuP33orQXAH1CAsrgSkuspxM2+FPQ4OCVhQWUq7gBwAAAQAAAAAAAAAAAWrgBwAA",
+    },
+    {
+      addressType: "p2sh",
+      witness: true,
+      address: "3PGZjFkYBL1m9WBWkWbCW5FEFTaS1Hj4EB",
+      message: "NQVRV3DJYLKBANM3OPTNBULEU3",
+      signature:
+        "fulAgAAAAABAVscdBvYDFN98A//Rt/fAWcN7mdM0x2yWzBjC33c7X5HAAAAACMiACDkkR/DseXy+GXBPtxHvHehUjHt+9XjRmZAgxuuomAC4eAHAAABAAAAAAAAAAABagQASDBFAiEA47YK5XeIGBMQC9bCfWb+IIfirIWlqAzQVc6E/lgBPZICIA0k/EO2t3YhqmYR5WdXUBGgAzR+IqgZ5/mxvj+4UoDTAUgwRQIhAPCIVZCSoIaOjY9BzYIXWEvbhpOl4JR88p/xYVoZObd6AiADyJXNqpDg/Lc2viPX14N2d0jQdEjamY4SmiU7GNbIOgFHUiED+4JBU/wACiE8VFbQF4DR8pKgz7+8X2+PHccTcGxVGdEhA9uIzp+4CB5QRgvrN1OXQbBmfW8kOd0cooPWMYJCHBCxUq7gBwAA",
     },
   ],
   invalid: [

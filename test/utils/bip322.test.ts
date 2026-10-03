@@ -35,6 +35,22 @@ const keyOf = (wif: string): string => decodeWIF(wif, { chain: "bitcoin" }).priv
 const rewritten = (signature: string, edit: (bytes: Uint8Array) => Uint8Array): string =>
   `ful${base64.encode(edit(base64.decode(signature.slice(3))))}`;
 
+/* The signature with the last byte of its last witness item flipped: the script or control block. */
+const flipLast = (signature: string): string => {
+  const prefix = signature.slice(0, 3);
+  const bytes = base64.decode(signature.slice(3));
+  if (prefix === "smp") {
+    const stack = decodeWitness(bytes);
+    const last = stack.at(-1) ?? new Uint8Array(0);
+    last[last.length - 1] = (last.at(-1) ?? 0) ^ 1;
+    return `smp${base64.encode(encodeWitness(stack))}`;
+  }
+  const transaction = decodeTransaction(bytes);
+  const last = transaction.inputs[0]?.witness.at(-1) ?? new Uint8Array(0);
+  last[last.length - 1] = (last.at(-1) ?? 0) ^ 1;
+  return `ful${base64.encode(serializeTransaction(transaction, true))}`;
+};
+
 describe("bip322 virtual transactions", () => {
   it.each(bip322Vectors.hashes)(
     "hashes $message and builds to_spend and to_sign as the BIP does",
@@ -147,9 +163,11 @@ describe("bip322 verify", () => {
 
   it.each(bip322Vectors.invalid)(
     "never accepts $description",
-    ({ address, message, signature }) => {
-      const { state, addressType } = verify(address, message, signature);
-      expect(state).toBe(addressType === "p2wsh" ? "inconclusive" : "invalid");
+    ({ description, address, message, signature }) => {
+      const { state } = verify(address, message, signature);
+      expect(state).toBe(
+        description.includes("message for valid simple p2wsh") ? "inconclusive" : "invalid",
+      );
     },
   );
 
@@ -189,10 +207,26 @@ describe("bip322 verify", () => {
     expect(verify(address, "future", "smpAA==")).toMatchObject({
       state: "inconclusive",
       addressType: "witness",
-      reason: "SegWit versions past 1 are reserved for upgrades",
+      reason: "Witness programs other than version 0 and Taproot are reserved for upgrades",
     });
     expect(() => verify(address, "future", "smpAA==", { network: "testnet" })).toThrow(TypeError);
   });
+
+  it("reads a version 1 program that is not 32 bytes as a later witness, not Taproot", () => {
+    const address = segwit.encode("bc", 1, new Uint8Array(20).fill(2));
+    expect(verify(address, "v1", "smpAA==")).toMatchObject({
+      state: "inconclusive",
+      addressType: "witness",
+    });
+  });
+
+  it.each(bip322Vectors.inconclusive.filter((vector) => vector.witness))(
+    "refuses a $addressType script spend whose commitment breaks",
+    ({ address, message, signature }) => {
+      const flipped = flipLast(signature);
+      expect(verify(address, message, flipped).state).toBe("invalid");
+    },
+  );
 
   it("checks what input 0 spends before deferring extra inputs", () => {
     const key = secp256k1TestVectors.privateKey;

@@ -61,19 +61,10 @@ export function witnessScript(version: number, program: Uint8Array): Uint8Array 
  * @throws {TypeError} When the address is not a valid address on that network
  */
 export function challengeOf(address: string, network: ChallengeNetwork): Challenge {
-  const future = futureWitness(address, network);
-  if (future !== undefined) return future;
+  const witness = witnessChallenge(address, network);
+  if (witness !== undefined) return witness;
   if (!new Bitcoin({ network }).validateAddress(address)) {
     throw new TypeError(`Address is not a valid bitcoin ${network} address`);
-  }
-  const hrp = network === "mainnet" ? "bc1" : "tb1";
-  if (address.toLowerCase().startsWith(hrp)) {
-    const { version, program } = segwit.decode(address);
-    return {
-      type: witnessType(version, program.length),
-      script: witnessScript(version, program),
-      program,
-    };
   }
   const hash = decodeBase58Check(address).subarray(1);
   if (/^[23]/u.test(address)) {
@@ -88,32 +79,33 @@ export function challengeOf(address: string, network: ChallengeNetwork): Challen
 }
 
 /**
- * Reads a BIP350 address of SegWit version 2 to 16, which the chain class refuses to validate.
+ * Reads a SegWit address of any version by the BIP350 rules, which `segwit.decode` enforces.
  * @param address - Bitcoin address
  * @param network - Network the address must belong to
- * @returns {Challenge | undefined} The challenge, undefined for any other address
+ * @returns {Challenge | undefined} The challenge, undefined for anything that is not one
  */
-function futureWitness(address: string, network: ChallengeNetwork): Challenge | undefined {
+function witnessChallenge(address: string, network: ChallengeNetwork): Challenge | undefined {
+  let decoded: ReturnType<typeof segwit.decode>;
   try {
-    const { prefix, version, program } = segwit.decode(address);
-    const hrp = network === "mainnet" ? "bc" : "tb";
-    if (prefix !== hrp || version < 2 || program.length < 2 || program.length > 40)
-      return undefined;
-    return { type: "witness", script: witnessScript(version, program), program };
+    decoded = segwit.decode(address);
   } catch {
     return undefined;
   }
+  const { prefix, version, program } = decoded;
+  if (prefix !== (network === "mainnet" ? "bc" : "tb")) return undefined;
+  const type = witnessType(version, program.length);
+  return { type, script: witnessScript(version, program), program };
 }
 
 /**
- * Names the output type of a witness program.
+ * Names the output type of a witness program; Taproot is version 1 with 32 bytes only.
  * @param version - Witness version
  * @param length - Program length in bytes
  * @returns {ChallengeType} segwit, p2wsh, taproot or witness
  */
 function witnessType(version: number, length: number): ChallengeType {
   if (version === 0) return length === 20 ? "segwit" : "p2wsh";
-  return version === 1 ? "taproot" : "witness";
+  return version === 1 && length === 32 ? "taproot" : "witness";
 }
 
 /**
