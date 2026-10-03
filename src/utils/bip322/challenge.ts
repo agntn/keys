@@ -61,6 +61,8 @@ export function witnessScript(version: number, program: Uint8Array): Uint8Array 
  * @throws {TypeError} When the address is not a valid address on that network
  */
 export function challengeOf(address: string, network: ChallengeNetwork): Challenge {
+  const future = futureWitness(address, network);
+  if (future !== undefined) return future;
   if (!new Bitcoin({ network }).validateAddress(address)) {
     throw new TypeError(`Address is not a valid bitcoin ${network} address`);
   }
@@ -83,6 +85,24 @@ export function challengeOf(address: string, network: ChallengeNetwork): Challen
     return { type: "p2sh", script, program: hash };
   }
   return { type: "legacy", script: p2pkhScript(hash), program: hash };
+}
+
+/**
+ * Reads a BIP350 address of SegWit version 2 to 16, which the chain class refuses to validate.
+ * @param address - Bitcoin address
+ * @param network - Network the address must belong to
+ * @returns {Challenge | undefined} The challenge, undefined for any other address
+ */
+function futureWitness(address: string, network: ChallengeNetwork): Challenge | undefined {
+  try {
+    const { prefix, version, program } = segwit.decode(address);
+    const hrp = network === "mainnet" ? "bc" : "tb";
+    if (prefix !== hrp || version < 2 || program.length < 2 || program.length > 40)
+      return undefined;
+    return { type: "witness", script: witnessScript(version, program), program };
+  } catch {
+    return undefined;
+  }
 }
 
 /**

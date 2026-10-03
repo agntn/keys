@@ -1,4 +1,5 @@
 import { base64 } from "@agntn/encodings/base64";
+import { segwit } from "@agntn/encodings/bech32";
 import { hex } from "@agntn/encodings/hex";
 import { schnorr, secp256k1 } from "@noble/curves/secp256k1.js";
 import { describe, expect, it } from "vite-plus/test";
@@ -181,6 +182,29 @@ describe("bip322 verify", () => {
       state: "inconclusive",
       reason: "to_sign version must be 0 or 2",
     });
+  });
+
+  it("answers inconclusive for a SegWit version past Taproot instead of throwing", () => {
+    const address = segwit.encode("bc", 2, new Uint8Array(32).fill(1));
+    expect(verify(address, "future", "smpAA==")).toMatchObject({
+      state: "inconclusive",
+      addressType: "witness",
+      reason: "SegWit versions past 1 are reserved for upgrades",
+    });
+    expect(() => verify(address, "future", "smpAA==", { network: "testnet" })).toThrow(TypeError);
+  });
+
+  it("checks what input 0 spends before deferring extra inputs", () => {
+    const key = secp256k1TestVectors.privateKey;
+    const address = new Bitcoin().getAddress(new Bitcoin().getKeyPublic(key), "legacy");
+    const twoInputs = (message: string): string =>
+      rewritten(sign(message, key, "legacy"), (bytes) => {
+        const transaction = decodeTransaction(bytes);
+        const inputs = [...transaction.inputs, ...transaction.inputs];
+        return serializeTransaction({ ...transaction, inputs }, true);
+      });
+    expect(verify(address, "mine", twoInputs("other")).state).toBe("invalid");
+    expect(verify(address, "mine", twoInputs("mine")).state).toBe("inconclusive");
   });
 
   it("refuses a full signature with a second output", () => {

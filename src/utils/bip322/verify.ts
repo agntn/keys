@@ -408,14 +408,14 @@ function shapeOutcome(
   spend: Readonly<Transaction>,
 ): Outcome | undefined {
   const [input] = transaction.inputs;
-  if (transaction.inputs.length > 1 || input === undefined) {
-    return inconclusive("Extra inputs need the outputs they spend, as a proof of funds carries");
-  }
-  if (!equalBytes(input.txid, transactionId(spend)) || input.vout !== 0) {
+  if (input === undefined || !equalBytes(input.txid, transactionId(spend)) || input.vout !== 0) {
     return invalid("Transaction does not spend to_spend of this message and address");
   }
   if (!hasToSignOutput(transaction.outputs)) {
     return invalid("Transaction must have one output paying nothing to OP_RETURN");
+  }
+  if (transaction.inputs.length > 1) {
+    return inconclusive("Extra inputs need the outputs they spend, as a proof of funds carries");
   }
   return undefined;
 }
