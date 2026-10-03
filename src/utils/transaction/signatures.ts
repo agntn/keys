@@ -52,8 +52,6 @@ interface SighashRules {
 
 const { Fn } = secp256k1.Point;
 const OP_CODESEPARATOR = 0xab;
-const OP_CHECKSIG = 0xac;
-const OP_CHECKSIGVERIFY = 0xad;
 const OP_CHECKMULTISIG = 0xae;
 const OP_CHECKMULTISIGVERIFY = 0xaf;
 const ANNEX_TAG = 0x50;
@@ -233,42 +231,40 @@ function ecdsaSigner(
 }
 
 /**
- * Drops pushes of the signatures from a legacy script code, as `FindAndDelete` does.
+ * Drops pushes of the signature from a legacy script code, as `FindAndDelete` does for `OP_CHECKSIG`.
  * @param scriptCode - Script code
- * @param signatures - Signatures with their hash type bytes
- * @returns {Uint8Array} The script code without them
+ * @param signature - Signature with its hash type byte
+ * @returns {Uint8Array} The script code without it
  */
-function findAndDelete(scriptCode: Uint8Array, signatures: readonly Uint8Array[]): Uint8Array {
-  const pushes = new Set(signatures.map((signature) => pushOf(signature).toHex()));
+function findAndDelete(scriptCode: Uint8Array, signature: Uint8Array): Uint8Array {
+  const push = pushOf(signature).toHex();
   const operations = scriptOperations(scriptCode);
   const read = operations.reduce((total, operation) => total + operation.bytes.length, 0);
-  const kept = operations.filter((operation) => !pushes.has(operation.bytes.toHex()));
+  const kept = operations.filter((operation) => operation.bytes.toHex() !== push);
   return concatBytes(...kept.map((operation) => operation.bytes), scriptCode.subarray(read));
 }
 
 /**
- * Picks the signatures `FindAndDelete` drops before one is checked: itself under `OP_CHECKSIG`, all under `OP_CHECKMULTISIG`.
+ * Refuses a signature pushed inside a script with `OP_CHECKMULTISIG`: `FindAndDelete` drops the operands it takes, and only execution tells which items those are.
  * @param scriptCode - Script code
  * @param signatures - Signatures with their hash type bytes
- * @returns {(signature: Uint8Array) => readonly Uint8Array[]} The signatures dropped for each one
- * @throws {RangeError} When a signature sits in a script whose checks leave the choice to execution
+ * @throws {RangeError} When one sits there
  */
-function deletedFor(
+function assertNoSignatureBesideMultisig(
   scriptCode: Uint8Array,
   signatures: readonly Uint8Array[],
-): (signature: Uint8Array) => readonly Uint8Array[] {
+): void {
   const operations = scriptOperations(scriptCode);
   const pushes = new Set(operations.map((operation) => operation.bytes.toHex()));
-  if (!signatures.some((signature) => pushes.has(pushOf(signature).toHex()))) return () => [];
-  const count = (opcodes: readonly number[]): number =>
-    operations.filter((operation) => opcodes.includes(operation.opcode)).length;
-  const multisig = count([OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY]);
-  if (multisig > 1 || (multisig === 1 && count([OP_CHECKSIG, OP_CHECKSIGVERIFY]) > 0)) {
+  const multisig = operations.some(
+    (operation) =>
+      operation.opcode === OP_CHECKMULTISIG || operation.opcode === OP_CHECKMULTISIGVERIFY,
+  );
+  if (multisig && signatures.some((signature) => pushes.has(pushOf(signature).toHex()))) {
     throw new RangeError(
-      "A signature sits in a script with more than one OP_CHECKMULTISIG or with OP_CHECKSIG beside it, so what each one signs depends on execution, which is not run here",
+      "A signature sits in a script with OP_CHECKMULTISIG, so which items it deletes depends on execution, which is not run here",
     );
   }
-  return multisig === 1 ? () => signatures : (signature) => [signature];
 }
 
 /**
@@ -333,7 +329,7 @@ function ecdsaSignatures(
  * @param scriptCode - Script the signatures commit to
  * @param items - Pushed items that may hold signatures
  * @returns {InputSignature[]} The signatures
- * @throws {RangeError} When the script holds `OP_CODESEPARATOR`, or a signature whose deletion depends on execution
+ * @throws {RangeError} When the script holds `OP_CODESEPARATOR`, or a signature beside `OP_CHECKMULTISIG`
  */
 function legacySignatures(
   spend: Readonly<Spend>,
@@ -343,10 +339,10 @@ function legacySignatures(
   assertNoCodeSeparator(scriptCode);
   const keys = publicKeys([...scriptPushes(spend.input.scriptSig), ...scriptPushes(scriptCode)]);
   const signatures = items.filter((item) => readEcdsa(item) !== undefined);
-  const deleted = deletedFor(scriptCode, signatures);
+  assertNoSignatureBesideMultisig(scriptCode, signatures);
   return ecdsaSignatures(items, keys, (signature) => ({
     spend,
-    scriptCode: findAndDelete(scriptCode, deleted(signature)),
+    scriptCode: findAndDelete(scriptCode, signature),
     segwit: false,
   }));
 }
@@ -468,7 +464,7 @@ function taprootSignatures(spend: Readonly<Spend>, outputKey: Uint8Array): Input
  * @throws {TypeError} When a hex argument or a value is malformed
  * @throws {RangeError} When the transaction does not decode, the index or spent outputs do not
  *   fit it, or the input is a Taproot script path, a script with `OP_CODESEPARATOR` or a script
- *   holding a signature that `OP_CHECKSIG` and `OP_CHECKMULTISIG` would delete differently
+ *   holding a signature beside `OP_CHECKMULTISIG`
  */
 export function extractSignatures(
   transaction: string,

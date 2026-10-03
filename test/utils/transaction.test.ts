@@ -185,21 +185,20 @@ describe("extractSignatures", () => {
     expect(signatures.map((signature) => signature.publicKey)).toEqual([keyB, keyA]);
   });
 
-  it("drops every signature OP_CHECKMULTISIG takes from the script code", () => {
-    const multisig = `5121${keyA}21${keyB}52ae`;
-    const first = signInput(`75${multisig}`, scriptKeys[0]);
-    const script = `47${first}75${multisig}`;
-    const second = signInput(`75${multisig}`, scriptKeys[1]);
+  it("reads a bare multisig whose script code holds no signature", () => {
+    const multisig = `5221${keyA}21${keyB}52ae`;
+    const [first, second] = scriptKeys.map((key) => signInput(multisig, key));
     const transaction = withScriptSig(`0047${first}47${second}`);
-    const signatures = extractSignatures(transaction, 0, [{ script, value: 130000 }]);
+    const signatures = extractSignatures(transaction, 0, [{ script: multisig, value: 130000 }]);
     expect(signatures.map((signature) => signature.publicKey)).toEqual([keyA, keyB]);
   });
 
-  it("refuses a signature in a script whose checks delete it differently", () => {
-    const mixed = `21${keyA}ad5121${keyB}51ae`;
-    const first = signInput(`75${mixed}`, scriptKeys[0]);
-    const script = `47${first}75${mixed}`;
-    const transaction = withScriptSig(`0047${first}47${first}`);
+  it("refuses a signature pushed beside OP_CHECKMULTISIG, whose operands only execution knows", () => {
+    const multisig = `5121${keyA}51ae`;
+    const extra = signInput(`75${multisig}`, scriptKeys[1]);
+    const script = `47${extra}75${multisig}`;
+    const real = signInput(script, scriptKeys[0]);
+    const transaction = withScriptSig(`0047${real}47${extra}`);
     expect(() => extractSignatures(transaction, 0, [{ script, value: 130000 }])).toThrow(
       /depends on execution/u,
     );
