@@ -138,6 +138,43 @@ recoverReusedNonce(first, second); // { privateKey, nonce, publicKey: "03dbd0c6.
 
 Schnorr leaks the same way. Pass `type: "schnorr"` and the x-only key. The key comes back only after both signatures verify under it, so no lucky false positives. Agents get `keys_transaction_signatures_extract` and `keys_secp256k1_nonce_recover`. The second one names the public key and keeps the private one to itself.
 
+## Multisig and other scripts
+
+One key, one address. Easy. But a 2-of-2? Or a bounty that publishes its `redeemScript`? Those pay to a script, not a key. `@agntn/keys/script` builds the script and hashes it into an address:
+
+```js
+import { address, multisig } from "@agntn/keys/script";
+
+const one = "0279be66...f81798"; // the public key of 1, the generator
+const two = "02c6047f...709ee5"; // the public key of 2
+
+const script = multisig(2, [one, two]); // OP_2 <one> <two> OP_2 OP_CHECKMULTISIG
+address(script, "p2wsh"); // "bc1qnwvyc7aw8m7acw3lpgs0lqdlaz0drls8luf72cs5nmn9f0kcghdse7d78q"
+address(script, "p2sh"); // "33RQmypKhD6f4tMquiR5a3C6dRT7eBpaiG"
+address(script, "p2sh-p2wsh"); // "3FN44kGaMLLdhxsFgedfBBzjwUtZNEA22T"
+```
+
+Order matters. Same keys, other order, other address. Pass `{ sorted: true }` and the keys line up by their bytes, as BIP67 and `sortedmulti` want. Any other script goes in as bytes. P2SH stops at 520 bytes, the witness types at 10,000. A bigger script throws. No address nobody can spend.
+
+### Descriptors
+
+Wallets export something else these days. `wsh(sortedmulti(2,[d34db33f/48h/0h/0h/2h]xpub.../0/*,...))#...` says it all in one line. Keys, scripts, path, checksum. `@agntn/keys/descriptor` reads it:
+
+```js
+import { checksum, parse } from "@agntn/keys/descriptor";
+
+const multisig = parse(`wsh(multi(2,${one},${two}))`);
+multisig.checksum; // "e7d75zev"
+multisig.derive(); // { script: Uint8Array, address: "bc1qnwvyc7..." }
+
+const wallet = parse("wpkh([d34db33f/84h/0h/0h]xpub6ERApfZw.../0/*)");
+wallet.derive(5).address; // the sixth receiving address
+```
+
+`pkh`, `wpkh`, `sh`, `wsh` and `tr`, nested the way Bitcoin Core nests them. `sh()` and `wsh()` take `pk`, `pkh`, `multi` and `sortedmulti`. A `tr()` tree takes `pk`, `pkh`, `multi_a` and `sortedmulti_a` leaves. Keys are hex, WIF, xpub or xprv, with an origin and steps. A wrong `#checksum` throws. `checksum()` writes one for a descriptor that has none. Does it match Core? The tests check it against the BIP test vectors and against `deriveaddresses`.
+
+Some things it won't do. Hardened steps after an xpub need the xprv. Multipath `<0;1>` isn't read, so write one descriptor per branch. Bare `pk()` and `multi()` have no address, so they're refused. Agents get `keys_script_address_get`, all three wrappers in one call, and `keys_descriptor_derive`, up to 100 addresses at a time. A WIF or xprv in there lands in the transcript, so keep those disposable.
+
 ## Where it lives
 
-`src/blockchains/bitcoin.ts` holds the network table and the preamble. The five formats, validation and purpose inference sit in `AbstractBitcoinBlockchain` in `src/utils/bitcoin.ts`, shared with Litecoin and Bitcoin Gold. Keys and message hashing come from `AbstractBitcoinMessageBlockchain` under it, which Bitcoin Cash, Bitcoin SV, Dash, Dogecoin, Zcash and eCash share too; Bitcoin SV, Dash and Dogecoin reach it through `AbstractBitcoinP2PKHBlockchain`, Bitcoin Cash and eCash through `AbstractCashAddrBlockchain`. The hashing and encoding helpers below that are `src/utils/address.ts` and `src/utils/encoding.ts`, shared with TRON and the custom chain example.
+`src/blockchains/bitcoin.ts` holds the network table and the preamble. The five formats, validation and purpose inference sit in `AbstractBitcoinBlockchain` in `src/utils/bitcoin.ts`, shared with Litecoin and Bitcoin Gold. Keys and message hashing come from `AbstractBitcoinMessageBlockchain` under it, which Bitcoin Cash, Bitcoin SV, Dash, Dogecoin, Zcash and eCash share too; Bitcoin SV, Dash and Dogecoin reach it through `AbstractBitcoinP2PKHBlockchain`, Bitcoin Cash and eCash through `AbstractCashAddrBlockchain`. The hashing and encoding helpers below that are `src/utils/address.ts` and `src/utils/encoding.ts`, shared with TRON and the custom chain example. Multisig and script addresses live in `src/utils/script/`, descriptors in `src/utils/descriptor/`.

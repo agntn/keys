@@ -190,6 +190,8 @@ Core's `signmessage` stops at P2PKH. A `bc1q` or `bc1p` address proves itself wi
 
 Same `r` on two signatures? Somebody reused a nonce, and the key falls right out. `extractSignatures` from `@agntn/keys/transaction` reads `r`, `s` and the sighash `z` of a transaction input. Legacy, SegWit and Taproot key path, every hash type. `recoverReusedNonce` from `@agntn/keys/secp256k1` takes two of those and hands back the key. Only after it verifies both, though. Agents get `keys_transaction_signatures_extract` and `keys_secp256k1_nonce_recover`, which names the public key and nothing more. More: [Bitcoin](https://keys.agntn.dev/blockchains/bitcoin).
 
+Not every prize sits behind one key. A 2-of-2 or a published `redeemScript` pays to a script. `multisig` and `address` from `@agntn/keys/script` give its P2SH, P2WSH or P2SH-P2WSH address, keys in order or sorted as BIP67 sorts them. Got a descriptor from a wallet export? `parse` from `@agntn/keys/descriptor` reads `pkh`, `wpkh`, `sh`, `wsh` and `tr`, checks the `#checksum` and derives any index. Agents get `keys_script_address_get` and `keys_descriptor_derive`. More: [Bitcoin](https://keys.agntn.dev/blockchains/bitcoin).
+
 ## ⛓️ Chains
 
 | Chain            | Curve              | Address Formats                      | Testnet |

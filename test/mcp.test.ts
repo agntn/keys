@@ -49,6 +49,8 @@ import {
   bip322Vectors,
   reusedNonceVector,
   transactionVectors,
+  descriptorVectors,
+  multisigVector,
 } from "./fixtures.ts";
 import Bitcoin from "../src/blockchains/bitcoin.ts";
 import { callTool, createMcpServer, toolListings } from "../src/mcp.ts";
@@ -2088,6 +2090,94 @@ describe("keys MCP server", () => {
       });
       expect(failed.isError).toBe(true);
       expect(text(failed.content)).toContain(error);
+    }
+  });
+
+  it("gives every address of a multisig or a script through MCP", async () => {
+    const client = await connectTestClient();
+    const multisig = await client.callTool({
+      name: "keys_script_address_get",
+      arguments: { threshold: 2, publicKeys: [...multisigVector.keys].reverse(), sorted: true },
+    });
+    expect(multisig.isError).not.toBe(true);
+    expect(text(multisig.content)).toBe(
+      [
+        `Script: ${multisigVector.script} (71 bytes)`,
+        `P2SH: ${multisigVector.mainnet.p2sh}`,
+        `P2WSH: ${multisigVector.mainnet.p2wsh}`,
+        `P2SH-P2WSH: ${multisigVector.mainnet["p2sh-p2wsh"]}`,
+      ].join("\n"),
+    );
+    const large = await client.callTool({
+      name: "keys_script_address_get",
+      arguments: { script: "51".repeat(521), network: "testnet" },
+    });
+    expect(text(large.content).split("\n")).toEqual([
+      "P2SH: none, P2SH takes a script of at most 520 bytes, this one is 521",
+      expect.stringMatching(/^P2WSH: tb1q/u),
+      expect.stringMatching(/^P2SH-P2WSH: 2/u),
+    ]);
+
+    for (const [args, error] of [
+      [{ script: multisigVector.script, publicKeys: multisigVector.keys }, "Pass either script"],
+      [{ threshold: 2 }, "Pass either script"],
+      [{ publicKeys: multisigVector.keys }, "publicKeys need a threshold"],
+      [
+        { threshold: 3, publicKeys: multisigVector.keys },
+        "threshold must be an integer from 1 to 2",
+      ],
+      [{ script: multisigVector.script, sorted: true }, "threshold and sorted go with publicKeys"],
+      [{ script: "0x51" }, "Invalid arguments at /script"],
+      [{ threshold: 1, publicKeys: ["02"] }, "Invalid arguments at /publicKeys/0"],
+    ] as const) {
+      const failed = await client.callTool({ name: "keys_script_address_get", arguments: args });
+      expect(failed.isError).toBe(true);
+      expect(text(failed.content)).toContain(error);
+    }
+  });
+
+  it("derives descriptor addresses and checksums through MCP without echoing a key", async () => {
+    const client = await connectTestClient();
+    const [plain, , , ranged] = descriptorVectors.core;
+    const single = await client.callTool({
+      name: "keys_descriptor_derive",
+      arguments: { descriptor: `${plain.descriptor}#${plain.checksum}` },
+    });
+    expect(single.isError).not.toBe(true);
+    expect(text(single.content)).toBe(
+      `Checksum: ${plain.checksum}, matches the one given\nAddress: ${plain.addresses[0]}`,
+    );
+    const range = await client.callTool({
+      name: "keys_descriptor_derive",
+      arguments: { descriptor: ranged.descriptor, index: ranged.first, count: 3 },
+    });
+    expect(text(range.content)).toBe(
+      [
+        `Checksum: ${ranged.checksum}`,
+        ...ranged.addresses.map((address, offset) => `Index ${ranged.first + offset}: ${address}`),
+      ].join("\n"),
+    );
+
+    const wif = "L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1";
+    const secret = await client.callTool({
+      name: "keys_descriptor_derive",
+      arguments: { descriptor: `wpkh(${wif})` },
+    });
+    expect(text(secret.content)).toContain("Address: bc1qngw83fg8dz0k749cg7k3emc7v98wy0c74dlrkd");
+    expect(JSON.stringify(secret)).not.toContain(wif);
+
+    for (const [args, error] of [
+      [{ descriptor: `${plain.descriptor}#qqqqqqqq` }, "does not match the descriptor"],
+      [{ descriptor: plain.descriptor, index: 1 }, "has no /* step; leave index and count out"],
+      [{ descriptor: ranged.descriptor, index: 2 ** 31 - 1, count: 2 }, "below 2^31"],
+      [{ descriptor: ranged.descriptor, count: 101 }, "Invalid arguments at /count"],
+      [{ descriptor: `pk(${multisigVector.keys[0]})` }, "pk() has no address here"],
+      [{ descriptor: `wpkh(${wif.slice(0, -1)}2)` }, "Key is not hex, a mainnet WIF"],
+    ] as const) {
+      const failed = await client.callTool({ name: "keys_descriptor_derive", arguments: args });
+      expect(failed.isError).toBe(true);
+      expect(text(failed.content)).toContain(error);
+      expect(text(failed.content)).not.toContain(wif.slice(0, -1));
     }
   });
 

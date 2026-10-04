@@ -35,6 +35,17 @@ function sortsFirst(left: Uint8Array, right: Uint8Array): boolean {
 }
 
 /**
+ * Hashes two nodes into their BIP341 branch, the smaller one first.
+ * @param left - One node
+ * @param right - The other node
+ * @returns {Uint8Array} The `TapBranch` hash
+ */
+export function tapBranch(left: Uint8Array, right: Uint8Array): Uint8Array {
+  const pair = sortsFirst(left, right) ? [left, right] : [right, left];
+  return taggedHash("TapBranch", concatBytes(...pair));
+}
+
+/**
  * Walks from the leaf hash up the control block path to the Merkle root.
  * @param control - Control block
  * @param leaf - `TapLeaf` hash of the script
@@ -43,9 +54,7 @@ function sortsFirst(left: Uint8Array, right: Uint8Array): boolean {
 function merkleRoot(control: Uint8Array, leaf: Uint8Array): Uint8Array {
   let node = leaf;
   for (let offset = CONTROL.base; offset < control.length; offset += CONTROL.node) {
-    const sibling = control.subarray(offset, offset + CONTROL.node);
-    const pair = sortsFirst(node, sibling) ? [node, sibling] : [sibling, node];
-    node = taggedHash("TapBranch", concatBytes(...pair));
+    node = tapBranch(node, control.subarray(offset, offset + CONTROL.node));
   }
   return node;
 }
@@ -63,10 +72,10 @@ function hasControlLength(control: Uint8Array): boolean {
 /**
  * Tweaks the internal key by the root into the output key, or undefined when the tweak breaks.
  * @param internal - x-only internal key
- * @param root - Merkle root of the script tree
+ * @param root - Merkle root of the script tree, empty for a key path only output
  * @returns {Uint8Array | undefined} The compressed output key
  */
-function tweakedKey(internal: Uint8Array, root: Uint8Array): Uint8Array | undefined {
+export function tweakedKey(internal: Uint8Array, root: Uint8Array): Uint8Array | undefined {
   try {
     const point = secp256k1.Point.fromBytes(concatBytes(Uint8Array.of(2), internal));
     const tweak = secp256k1.Point.Fn.fromBytes(taggedHash("TapTweak", concatBytes(internal, root)));
