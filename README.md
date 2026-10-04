@@ -264,6 +264,7 @@ Want a nineteenth? Extend `AbstractBlockchain`, or `AbstractEVMBlockchain` if it
 
 ```bash
 pnpm install
+pnpm --dir docs install   # the /mcp test borrows Zod and the toolkit from here
 pnpm dev          # vp test in watch mode
 pnpm lint         # builds first, then vp lint and vp fmt --check
 pnpm test:types   # tsc over the library and the type tests

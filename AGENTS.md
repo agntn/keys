@@ -91,6 +91,7 @@ keys/
 ## COMMANDS
 
 ```bash
+pnpm install && pnpm --dir docs install  # both: test/docs-mcp.test.ts loads Zod and the toolkit from docs/
 pnpm dev              # vp test in watch mode
 pnpm test             # lint + types + build + test:ext + vp test with coverage + MCP eval
 pnpm test:types       # tsc --noEmit --skipLibCheck, then the type tests
