@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@agntn/ciphers':
-        specifier: 0.5.0
-        version: 0.5.0(ai@7.0.87(zod@4.6.5))
+        specifier: 0.5.1
+        version: 0.5.1(ai@7.0.87(zod@4.6.5))
       '@agntn/encodings':
         specifier: 0.1.0
         version: 0.1.0(ai@7.0.87(zod@4.6.5))
@@ -72,8 +72,8 @@ importers:
 
 packages:
 
-  '@agntn/ciphers@0.5.0':
-    resolution: {integrity: sha512-Px6MM8BSKh0hujJVUCaTG1QWPuTfuL2anc9zw85W27fklDyoxD5BBvl6Ctusmg1Htb+oMfEg3oBw9p1pFqiYfw==}
+  '@agntn/ciphers@0.5.1':
+    resolution: {integrity: sha512-1FHujfihFk90ozjcv8J/e+7Y6xRcI4IGdSLGvVIsmF7cjt9312WZUeYeqToQbruoNakNKYwlvIzeZqx+iwbLMg==}
     engines: {node: '>=26'}
     hasBin: true
 
@@ -7664,7 +7664,7 @@ packages:
 
 snapshots:
 
-  '@agntn/ciphers@0.5.0(ai@7.0.87(zod@4.6.5))':
+  '@agntn/ciphers@0.5.1(ai@7.0.87(zod@4.6.5))':
     dependencies:
       '@agntn/hashes': 0.6.0(ai@7.0.87(zod@4.6.5))
       '@agntn/tools': 0.0.0(@modelcontextprotocol/server@2.2.0)(ai@7.0.87(zod@4.6.5))
