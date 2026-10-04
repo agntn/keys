@@ -10,7 +10,7 @@
     "deploy": "pnpm build && wrangler deploy"
   },
   "dependencies": {
-    "@agntn/ciphers": "0.5.0",
+    "@agntn/ciphers": "0.5.1",
     "@agntn/encodings": "0.1.0",
     "@agntn/hashes": "0.6.1",
     "@agntn/tools": "0.0.0",
