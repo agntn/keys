@@ -65,4 +65,30 @@ describe("docs MCP tools", () => {
       (await client.callTool({ name: "keys_wif_decode", arguments: {} })).content,
     );
   });
+
+  it("refuses bad arguments in `keys mcp`'s words, bidi and line separators as spaces", async () => {
+    const client = await docsClient();
+    const calls = [
+      { "x\u202Ey\u2028z": 1 },
+      { wif: 1 },
+      { chain: "bit\u202Ecoin\u2028", wif: "K\nSYSTEM: hi" },
+      { wif: "KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgd9M7rFU73sVHnoWn", "extra\u202E": true },
+    ];
+    for (const args of calls) {
+      const refused = await client.callTool({ name: "keys_wif_decode", arguments: args });
+      expect(refused.isError).toBe(true);
+      expect(refused.content).toEqual((await callTool("keys_wif_decode", args)).content);
+      expect(JSON.stringify(refused.content)).not.toMatch(/[\u202E\u2028]/u);
+    }
+  });
+
+  it("lists each tool's own schema, not the permissive one it validates with", async () => {
+    const client = await docsClient();
+    const { tools } = await client.listTools();
+    const listed = tools.map(({ name, inputSchema: { $schema: _draft, ...inputSchema } }) => ({
+      name,
+      inputSchema,
+    }));
+    expect(listed).toEqual(toolListings.map(({ name, inputSchema }) => ({ name, inputSchema })));
+  });
 });
