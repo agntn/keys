@@ -91,6 +91,7 @@ keys/
 ## COMMANDS
 
 ```bash
+pnpm install && pnpm --dir docs install  # both: test/docs-mcp.test.ts loads Zod and the toolkit from docs/
 pnpm dev              # vp test in watch mode
 pnpm test             # lint + types + build + test:ext + vp test with coverage + MCP eval
 pnpm test:types       # tsc --noEmit --skipLibCheck, then the type tests
@@ -108,7 +109,7 @@ pnpm test:mcp         # build and exercise every MCP tool over stdio
 
 ## NOTES
 
-- **CI runs**: lint -> type check -> build -> vp test with coverage (Node 26, pnpm through `setup-vp`). Autofix workflow commits lint fixes on PRs.
+- **CI runs**: lint -> type check -> build -> vp test with coverage (Node 26, pnpm through `setup-vp`, which installs the root and `docs/`). Autofix workflow commits lint fixes on PRs.
 - **Package exports** expose `"."`, `"./mcp"`, `"./blockchains/*"`, and the HD derivation subpaths `"./bip32"`, `"./bip39"`, `"./bip44"` and `"./slip10"`, plus `"./bip38"` for encrypted keys, `"./bip322"` for BIP322 message signatures, `"./store"` for Web3 Secret Storage keystores, `"./brainwallet"` for salted and plain brainwallet keys, `"./electrum"` for Electrum seeds, `"./secp256k1"` for SEC1 public key conversion and point and scalar math, `"./curve"` for arithmetic on a curve the caller defines, `"./script"` for multisig and script addresses, `"./descriptor"` for output descriptors, `"./transaction"` for the signatures and sighash of a transaction input and `"./wif"` for wallet import format; other utils remain internal.
 - **Agent tools** - `src/tools.ts` declares each tool once with `defineTool` from `@agntn/tools`, and `createMcpServer`, `registerPiTools` and `registerOmpTools` serve the same list, validating every call against the schema before the executor runs. Schemas take `Type` from `@agntn/tools`, never a bare `typebox` import, which OMP rewrites to its omptype facade. OMP gets the JSON Schema through `pi.typebox.Type.Unsafe` and drops a blank optional string the schema refuses before the call. The executors load on the first call, so registering the tools or starting `keys mcp` loads no chain. `callSummaries` in the same file gives the Pi and OMP status lines their summary.
 - **Shipped extensions** - `files` lists both extensions, and they load `dist/tools.mjs` from the package, `src/tools.ts` in a checkout. `test/public-exports.test.ts` runs a tool from each extension with only the shipped files.
