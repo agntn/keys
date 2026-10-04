@@ -63,7 +63,7 @@ function withoutOrigin(text: string): string {
       "Key origin must be [ and 8 hex characters, then /NUM or /NUMh steps, then ]",
     );
   }
-  for (const step of origin.slice(10, -1).split("/").slice(1)) readStep(step);
+  for (const step of origin.slice(9, -1).split("/").slice(1)) readStep(step);
   const rest = text.slice(origin.length);
   if (rest === "") throw new TypeError("Key origin has no key after it");
   if (rest.startsWith("[")) throw new TypeError("Key has more than one origin");

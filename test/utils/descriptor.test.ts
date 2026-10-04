@@ -89,6 +89,8 @@ describe("Descriptor outputs", () => {
     [`wpkh(${xpub}/<0;1>/*)`, "Multipath <a;b> steps are not supported"],
     [`wpkh(${g}/0)`, "Only extended keys take derivation steps"],
     [`wpkh([deadbeef][deadbeef]${g})`, "more than one origin"],
+    [`wpkh([deadbeef/2147483648]${g})`, "not a number below 2^31"],
+    [`wpkh([deadbeef/0h/2147483648]${g})`, "not a number below 2^31"],
     [`wpkh(${g})`.replace(")", ""), "opening bracket without its closing one"],
     [`wsh(pk(${g})))`, "closing bracket without its opening one"],
     [`wpkh(KzoAz5CanayRKex3fSLQ2BwJpN7U52gZvxMyk78nDMHuqrUxuSJZ)`, "Key is not hex, a mainnet WIF"],
