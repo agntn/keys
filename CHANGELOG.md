@@ -1,5 +1,42 @@
 # Changelog
 
+## v0.6.1
+
+[compare changes](https://github.com/agntn/keys/compare/v0.6.0...v0.6.1)
+
+### 🚀 Enhancements
+
+- **secp256k1:** Add point and scalar math ([#225](https://github.com/agntn/keys/pull/225))
+- **bip39:** Order words and expand prefixes ([#226](https://github.com/agntn/keys/pull/226))
+- **bip39:** Repair mistyped words ([#232](https://github.com/agntn/keys/pull/232))
+- Do arithmetic on curves you define ([#233](https://github.com/agntn/keys/pull/233))
+- Verify and sign BIP322 messages ([#235](https://github.com/agntn/keys/pull/235))
+- Recover keys from reused nonces ([#236](https://github.com/agntn/keys/pull/236))
+- Build addresses from scripts and descriptors ([#239](https://github.com/agntn/keys/pull/239))
+
+### 🔥 Performance
+
+- **electrum:** Stretch old seeds in place ([#222](https://github.com/agntn/keys/pull/222))
+
+### 🩹 Fixes
+
+- **docs:** Pin Workers Builds to Node.js 26 ([#224](https://github.com/agntn/keys/pull/224))
+- **chains:** Refuse ignored wallet options ([#230](https://github.com/agntn/keys/pull/230))
+
+### 💅 Refactors
+
+- Move most codecs to agntn/encodings ([#223](https://github.com/agntn/keys/pull/223))
+- Finish the move to agntn/encodings ([#231](https://github.com/agntn/keys/pull/231))
+
+### 📖 Documentation
+
+- Admit the keystore, fix the signer row ([#234](https://github.com/agntn/keys/pull/234))
+
+### ❤️ Contributors
+
+- Ori ([@oritwoen](https://github.com/oritwoen))
+- Aeitwoen ([@aeitwoen](https://github.com/aeitwoen))
+
 ## v0.6.0
 
 [compare changes](https://github.com/agntn/keys/compare/v0.5.1...v0.6.0)
