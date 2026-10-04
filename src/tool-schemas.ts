@@ -53,7 +53,12 @@ import {
   MAX_TRANSACTION_HEX_LENGTH,
   NONCE_SCALAR_SCHEMA_PATTERN,
   NONCE_SIGNATURE_TYPES,
+  MAX_DESCRIPTOR_ADDRESSES,
+  MAX_DESCRIPTOR_LENGTH,
+  MAX_SCRIPT_HEX_LENGTH,
+  SEC1_PUBLIC_KEY_SCHEMA_PATTERN,
 } from "./tool-parameters.ts";
+import { MAX_MULTISIG_KEYS } from "./utils/script/limits.ts";
 import { BIP39_LANGUAGES } from "./utils/bip39/languages.ts";
 import { MAX_FILTERED_PRIME } from "./utils/curve/group.ts";
 
@@ -1037,6 +1042,68 @@ export const BIP322_VERIFY_PARAMETERS = Type.Object(
       description:
         "BIP322 signature: smp (simple) or ful (full) and base64, unprefixed base64 read as simple, or signmessage's base64 for a P2PKH address",
     }),
+    network: networkArgument,
+  },
+  { additionalProperties: false },
+);
+
+export const GET_SCRIPT_ADDRESS_PARAMETERS = Type.Object(
+  {
+    script: Type.Optional(
+      Type.String({
+        minLength: 2,
+        maxLength: MAX_SCRIPT_HEX_LENGTH,
+        pattern: HEX_BYTES_SCHEMA_PATTERN,
+        description:
+          "Redeem or witness script as hex without 0x, such as a known redeemScript. Leave out to build a multisig from publicKeys",
+      }),
+    ),
+    threshold: Type.Optional(
+      Type.Integer({
+        minimum: 1,
+        maximum: MAX_MULTISIG_KEYS,
+        description: "Signatures the multisig needs, m of m-of-n; goes with publicKeys",
+      }),
+    ),
+    publicKeys: Type.Optional(
+      Type.Array(Type.String({ pattern: SEC1_PUBLIC_KEY_SCHEMA_PATTERN }), {
+        minItems: 1,
+        maxItems: MAX_MULTISIG_KEYS,
+        description: `Multisig keys as compressed or uncompressed SEC1 hex, 1 to ${MAX_MULTISIG_KEYS}, in script order unless sorted`,
+      }),
+    ),
+    sorted: Type.Optional(
+      Type.Boolean({
+        description: "Sort publicKeys by their bytes, as BIP67 and sortedmulti do. Default: false",
+      }),
+    ),
+    network: networkArgument,
+  },
+  { additionalProperties: false },
+);
+
+export const DERIVE_DESCRIPTOR_PARAMETERS = Type.Object(
+  {
+    descriptor: Type.String({
+      minLength: 1,
+      maxLength: MAX_DESCRIPTOR_LENGTH,
+      description:
+        "Output descriptor, with or without #checksum: pkh, wpkh, sh, wsh or tr. Keys are hex, WIF, xpub or xprv with /NUM and /NUMh steps and an optional final /*",
+    }),
+    index: Type.Optional(
+      Type.Integer({
+        minimum: 0,
+        maximum: 0x7fffffff,
+        description: "First index of a ranged descriptor, one with /*. Default: 0",
+      }),
+    ),
+    count: Type.Optional(
+      Type.Integer({
+        minimum: 1,
+        maximum: MAX_DESCRIPTOR_ADDRESSES,
+        description: `Addresses of a ranged descriptor from index on, up to ${MAX_DESCRIPTOR_ADDRESSES}. Default: 1`,
+      }),
+    ),
     network: networkArgument,
   },
   { additionalProperties: false },

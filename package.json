@@ -79,9 +79,17 @@
       "types": "./dist/utils/curve/index.d.mts",
       "default": "./dist/utils/curve/index.mjs"
     },
+    "./descriptor": {
+      "types": "./dist/utils/descriptor/index.d.mts",
+      "default": "./dist/utils/descriptor/index.mjs"
+    },
     "./electrum": {
       "types": "./dist/utils/electrum/index.d.mts",
       "default": "./dist/utils/electrum/index.mjs"
+    },
+    "./script": {
+      "types": "./dist/utils/script/index.d.mts",
+      "default": "./dist/utils/script/index.mjs"
     },
     "./secp256k1": {
       "types": "./dist/utils/secp256k1/index.d.mts",

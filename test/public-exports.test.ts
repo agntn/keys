@@ -29,6 +29,7 @@ import {
   secp256k1MathVectors,
   secp256k1TestVectors,
   transactionVectors,
+  multisigVector,
   curveVectors,
   slip132Vectors,
 } from "./fixtures.ts";
@@ -42,8 +43,10 @@ const EXPORTS = [
   ["@agntn/keys/bip39", "/dist/utils/bip39/index.mjs"],
   ["@agntn/keys/brainwallet", "/dist/utils/brainwallet/index.mjs"],
   ["@agntn/keys/curve", "/dist/utils/curve/index.mjs"],
+  ["@agntn/keys/descriptor", "/dist/utils/descriptor/index.mjs"],
   ["@agntn/keys/bip44", "/dist/utils/bip44/index.mjs"],
   ["@agntn/keys/electrum", "/dist/utils/electrum/index.mjs"],
+  ["@agntn/keys/script", "/dist/utils/script/index.mjs"],
   ["@agntn/keys/secp256k1", "/dist/utils/secp256k1/index.mjs"],
   ["@agntn/keys/transaction", "/dist/utils/transaction/index.mjs"],
   ["@agntn/keys/slip10", "/dist/utils/slip10/index.mjs"],
@@ -214,6 +217,31 @@ describe("Public BIP322 exports", () => {
     expect(signed.startsWith("smp")).toBe(true);
     expect(new Set(Object.keys(bip322))).toEqual(new Set(["sign", "verify"]));
     expect(await import("@agntn/keys")).not.toHaveProperty("verify");
+  });
+});
+
+describe("Public script and descriptor exports", () => {
+  it("builds the 2-of-2 of #192 both ways from the built package, outside the root", async () => {
+    const script = await import("@agntn/keys/script");
+    const descriptor = await import("@agntn/keys/descriptor");
+    const [g, double] = multisigVector.keys;
+    expect(script.address(script.multisig(2, [g, double]), "p2wsh")).toBe(
+      multisigVector.mainnet.p2wsh,
+    );
+    expect(descriptor.parse(`wsh(multi(2,${g},${double}))`).derive().address).toBe(
+      multisigVector.mainnet.p2wsh,
+    );
+    expect(new Set(Object.keys(script))).toEqual(
+      new Set([
+        "address",
+        "multisig",
+        "MAX_MULTISIG_KEYS",
+        "MAX_P2SH_SCRIPT_SIZE",
+        "MAX_P2WSH_SCRIPT_SIZE",
+      ]),
+    );
+    expect(new Set(Object.keys(descriptor))).toEqual(new Set(["checksum", "parse"]));
+    expect(await import("@agntn/keys")).not.toHaveProperty("multisig");
   });
 });
 
@@ -440,6 +468,8 @@ describe("Consumer bundles", () => {
     ["decrypt", "@agntn/keys/bip38"],
     ["verify", "@agntn/keys/bip322"],
     ["extractSignatures", "@agntn/keys/transaction"],
+    ["multisig", "@agntn/keys/script"],
+    ["parse", "@agntn/keys/descriptor"],
   ])(
     "leaves the chain registry and the Electrum list out of an app importing %s from %s",
     async (name, from) => {

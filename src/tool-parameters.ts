@@ -33,6 +33,8 @@ export const TOOL_NAMES = [
   "keys_bip39_words_repair",
   "keys_address_get",
   "keys_address_validate",
+  "keys_script_address_get",
+  "keys_descriptor_derive",
   "keys_message_sign",
   "keys_message_verify",
   "keys_message_recover",
@@ -309,3 +311,15 @@ export const MAX_INPUT_INDEX = MAX_SPENT_OUTPUTS - 1;
 
 /** JSON Schema pattern for whole bytes of hex. */
 export const HEX_BYTES_SCHEMA_PATTERN = "^(?:[0-9A-Fa-f]{2})*$";
+
+/** JSON Schema pattern for a compressed or uncompressed SEC1 secp256k1 key. */
+export const SEC1_PUBLIC_KEY_SCHEMA_PATTERN = "^(?:0[23][0-9A-Fa-f]{64}|04[0-9A-Fa-f]{128})$";
+
+/** Longest script `keys_script_address_get` hashes, 10,000 bytes as hex, the most P2WSH can run. */
+export const MAX_SCRIPT_HEX_LENGTH = 20_000;
+
+/** Longest descriptor `keys_descriptor_derive` reads, room for 20 xpubs with origins. */
+export const MAX_DESCRIPTOR_LENGTH = 16_384;
+
+/** Most addresses one `keys_descriptor_derive` call lists. */
+export const MAX_DESCRIPTOR_ADDRESSES = 100;

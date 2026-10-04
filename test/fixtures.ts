@@ -2425,3 +2425,177 @@ export const reusedNonceVector = {
     z: "3fc4ccfe745870e2c0d99f71f30ff0656c8dedd41cc1d7d3d376b0dbe685e2f3",
   },
 } as const;
+
+/** BIP 381 to 387 descriptors with scripts at indices 0 to 2; Core v31.1 checksums, addresses. */
+export const descriptorVectors = {
+  generator: "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+  double: "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+  bip: [
+    {
+      descriptor: "pkh([deadbeef/1/2'/3/4']L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)",
+      scripts: ["76a9149a1c78a507689f6f54b847ad1cef1e614ee23f1e88ac"],
+    },
+    {
+      descriptor:
+        "pkh(04a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd5b8dec5235a0fa8722476c7709c02559e3aa73aa03918ba2d492eea75abea235)",
+      scripts: ["76a914b5bd079c4d57cc7fc28ecf8213a6b791625b818388ac"],
+    },
+    {
+      descriptor: "sh(pk(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd))",
+      scripts: ["a9141857af51a5e516552b3086430fd8ce55f7c1a52487"],
+    },
+    {
+      descriptor: "sh(pkh(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd))",
+      scripts: ["a9141a31ad23bf49c247dd531a623c2ef57da3c400c587"],
+    },
+    {
+      descriptor:
+        "pkh([bd16bee5/2147483647h]xpub69H7F5dQzmVd3vPuLKtcXJziMEQByuDidnX3YdwgtNsecY5HRGtAAQC5mXTt4dsv9RzyjgDjAQs9VGVV6ydYCHnprc9vvaA5YtqWyL6hyds/0)",
+      scripts: ["76a914ebdc90806a9c4356c1c88e42216611e1cb4c1c1788ac"],
+    },
+    {
+      descriptor:
+        "wpkh([ffffffff/13']xpub69H7F5d8KSRgmmdJg2KhpAK8SR3DjMwAdkxj3ZuxV27CprR9LgpeyGmXUbC6wb7ERfvrnKZjXoUmmDznezpbZb7ap6r1D3tgFxHmwMkQTPH/1/2/*)",
+      scripts: [
+        "0014326b2249e3a25d5dc60935f044ee835d090ba859",
+        "0014af0bd98abc2f2cae66e36896a39ffe2d32984fb7",
+        "00141fa798efd1cbf95cebf912c031b8a4a6e9fb9f27",
+      ],
+    },
+    {
+      descriptor:
+        "sh(wpkh(xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi/10/20/30/40/*h))",
+      scripts: [
+        "a9149a4d9901d6af519b2a23d4a2f51650fcba87ce7b87",
+        "a914bed59fc0024fae941d6e20a3b44a109ae740129287",
+        "a9148483aa1116eb9c05c482a72bada4b1db24af654387",
+      ],
+    },
+    {
+      descriptor: "wsh(pkh(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd))",
+      scripts: ["0020338e023079b91c58571b20e602d7805fb808c22473cbc391a41b1bd3a192e75b"],
+    },
+    {
+      descriptor: "wsh(pk(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd))",
+      scripts: ["00202e271faa2325c199d25d22e1ead982e45b64eeb4f31e73dbdf41bd4b5fec23fa"],
+    },
+    {
+      descriptor:
+        "sh(wsh(pkh(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)))",
+      scripts: ["a914b61b92e2ca21bac1e72a3ab859a742982bea960a87"],
+    },
+    {
+      descriptor:
+        "sh(multi(2,[00000000/111'/222]xprvA1RpRA33e1JQ7ifknakTFpgNXPmW2YvmhqLQYMmrj4xJXXWYpDPS3xz7iAxn8L39njGVyuoseXzU6rcxFLJ8HFsTjSyQbLYnMpCqE2VbFWc,xprv9uPDJpEQgRQfDcW7BkF7eTya6RPxXeJCqCJGHuCJ4GiRVLzkTXBAJMu2qaMWPrS7AANYqdq6vcBcBUdJCVVFceUvJFjaPdGZ2y9WACViL4L/0))",
+      scripts: ["a91445a9a622a8b0a1269944be477640eedc447bbd8487"],
+    },
+    {
+      descriptor:
+        "wsh(multi(2,xprv9s21ZrQH143K31xYSDQpPDxsXRTUcvj2iNHm5NUtrGiGG5e2DtALGdso3pGz6ssrdK4PFmM8NSpSBHNqPqm55Qn3LqFtT2emdEXVYsCzC2U/2147483647'/0,xprv9vHkqa6EV4sPZHYqZznhT2NPtPCjKuDKGY38FBWLvgaDx45zo9WQRUT3dKYnjwih2yJD9mkrocEZXo1ex8G81dwSM1fwqWpWkeS3v86pgKt/1/2/*,xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi/10/20/30/40/*'))",
+      scripts: [
+        "0020b92623201f3bb7c3771d45b2ad1d0351ea8fbf8cfe0a0e570264e1075fa1948f",
+        "002036a08bbe4923af41cf4316817c93b8d37e2f635dd25cfff06bd50df6ae7ea203",
+        "0020a96e7ab4607ca6b261bfe3245ffda9c746b28d3f59e83d34820ec0e2b36c139c",
+      ],
+    },
+    {
+      descriptor:
+        "wsh(multi(20,KzoAz5CanayRKex3fSLQ2BwJpN7U52gZvxMyk78nDMHuqrUxuSJy,KwGNz6YCCQtYvFzMtrC6D3tKTKdBBboMrLTsjr2NYVBwapCkn7Mr,KxogYhiNfwxuswvXV66eFyKcCpm7dZ7TqHVqujHAVUjJxyivxQ9X,L2BUNduTSyZwZjwNHynQTF14mv2uz2NRq5n5sYWTb4FkkmqgEE9f,L1okJGHGn1kFjdXHKxXjwVVtmCMR2JA5QsbKCSpSb7ReQjezKeoD,KxDCNSST75HFPaW5QKpzHtAyaCQC7p9Vo3FYfi2u4dXD1vgMiboK,L5edQjFtnkcf5UWURn6UuuoFrabgDQUHdheKCziwN42aLwS3KizU,KzF8UWFcEC7BYTq8Go1xVimMkDmyNYVmXV5PV7RuDicvAocoPB8i,L3nHUboKG2w4VSJ5jYZ5CBM97oeK6YuKvfZxrefdShECcjEYKMWZ,KyjHo36dWkYhimKmVVmQTq3gERv3pnqA4xFCpvUgbGDJad7eS8WE,KwsfyHKRUTZPQtysN7M3tZ4GXTnuov5XRgjdF2XCG8faAPmFruRF,KzCUbGhN9LJhdeFfL9zQgTJMjqxdBKEekRGZX24hXdgCNCijkkap,KzgpMBwwsDLwkaC5UrmBgCYaBD2WgZ7PBoGYXR8KT7gCA9UTN5a3,KyBXTPy4T7YG4q9tcAM3LkvfRpD1ybHMvcJ2ehaWXaSqeGUxEdkP,KzJDe9iwJRPtKP2F2AoN6zBgzS7uiuAwhWCfGdNeYJ3PC1HNJ8M8,L1xbHrxynrqLKkoYc4qtoQPx6uy5qYXR5ZDYVYBSRmCV5piU3JG9,KzRedjSwMggebB3VufhbzpYJnvHfHe9kPJSjCU5QpJdAW3NSZxYS,Kyjtp5858xL7JfeV4PNRCKy2t6XvgqNNepArGY9F9F1SSPqNEMs3,L2D4RLHPiHBidkHS8ftx11jJk1hGFELvxh8LoxNQheaGT58dKenW,KyLPZdwY4td98bKkXqEXTEBX3vwEYTQo1yyLjX2jKXA63GBpmSjv))",
+      scripts: ["0020376bd8344b8b6ebe504ff85ef743eaa1aa9272178223bcb6887e9378efb341ac"],
+    },
+    {
+      descriptor: "tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)",
+      scripts: ["512077aab6e066f8a7419c5ab714c12c67d25007ed55a43cadcacb4d7a970a093f11"],
+    },
+    {
+      descriptor:
+        "tr(xprvA1RpRA33e1JQ7ifknakTFpgNXPmW2YvmhqLQYMmrj4xJXXWYpDPS3xz7iAxn8L39njGVyuoseXzU6rcxFLJ8HFsTjSyQbLYnMpCqE2VbFWc/0/*,pk(xprvA1RpRA33e1JQ7ifknakTFpgNXPmW2YvmhqLQYMmrj4xJXXWYpDPS3xz7iAxn8L39njGVyuoseXzU6rcxFLJ8HFsTjSyQbLYnMpCqE2VbFWc/1/*))",
+      scripts: [
+        "512078bc707124daa551b65af74de2ec128b7525e10f374dc67b64e00ce0ab8b3e12",
+        "512001f0a02a17808c20134b78faab80ef93ffba82261ccef0a2314f5d62b6438f11",
+        "512021024954fcec88237a9386fce80ef2ced5f1e91b422b26c59ccfc174c8d1ad25",
+      ],
+    },
+    {
+      descriptor:
+        "tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd,{pk(xprvA2JDeKCSNNZky6uBCviVfJSKyQ1mDYahRjijr5idH2WwLsEd4Hsb2Tyh8RfQMuPh7f7RtyzTtdrbdqqsunu5Mm3wDvUAKRHSC34sJ7in334/0),{{pk(xpub6ERApfZwUNrhLCkDtcHTcxd75RbzS1ed54G1LkBUHQVHQKqhMkhgbmJbZRkrgZw4koxb5JaHWkY4ALHY2grBGRjaDMzQLcgJvLJuZZvRcEL),pk(02df12b7035bdac8e3bab862a3a83d06ea6b17b6753d52edecba9be46f5d09e076)},pk(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)}})",
+      scripts: ["512071fff39599a7b78bc02623cbe814efebf1a404f5d8ad34ea80f213bd8943f574"],
+    },
+    {
+      descriptor:
+        "tr(50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0,sortedmulti_a(2,[00000000/111'/222]xprvA1RpRA33e1JQ7ifknakTFpgNXPmW2YvmhqLQYMmrj4xJXXWYpDPS3xz7iAxn8L39njGVyuoseXzU6rcxFLJ8HFsTjSyQbLYnMpCqE2VbFWc,xprv9uPDJpEQgRQfDcW7BkF7eTya6RPxXeJCqCJGHuCJ4GiRVLzkTXBAJMu2qaMWPrS7AANYqdq6vcBcBUdJCVVFceUvJFjaPdGZ2y9WACViL4L/0))",
+      scripts: ["512016fa6a6ba7e98c54b5bf43b3144912b78a61b60b02f6a74172b8dcb35b12bc30"],
+    },
+    {
+      descriptor:
+        "tr(50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0,sortedmulti_a(2,xpub6ERApfZwUNrhLCkDtcHTcxd75RbzS1ed54G1LkBUHQVHQKqhMkhgbmJbZRkrgZw4koxb5JaHWkY4ALHY2grBGRjaDMzQLcgJvLJuZZvRcEL/*,xpub68NZiKmJWnxxS6aaHmn81bvJeTESw724CRDs6HbuccFQN9Ku14VQrADWgqbhhTHBaohPX4CjNLf9fq9MYo6oDaPPLPxSb7gwQN3ih19Zm4Y/0/0/*))",
+      scripts: [
+        "5120abd47468515223f58a1a18edfde709a7a2aab2b696d59ecf8c34f0ba274ef772",
+        "5120fe62e7ed20705bd1d3678e072bc999acb014f07795fa02cb8f25a7aa787e8cbd",
+        "51201311093750f459039adaa2a5ed23b0f7a8ae2c2ffb07c5390ea37e2fb1050b41",
+      ],
+    },
+  ],
+  core: [
+    {
+      descriptor:
+        "wsh(multi(2,0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798,02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5))",
+      checksum: "e7d75zev",
+      addresses: ["bc1qnwvyc7aw8m7acw3lpgs0lqdlaz0drls8luf72cs5nmn9f0kcghdse7d78q"],
+    },
+    {
+      descriptor:
+        "tr(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798,{pk(02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5),pkh(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798)})",
+      checksum: "03sk89am",
+      addresses: ["bc1pwgupz6agmgdltvcz287xzqqfjjwdfffl33g0g4e5zf2lcvfhj9dsrcy5kf"],
+    },
+    {
+      descriptor:
+        "tr(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798,pkh(02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5))",
+      addresses: ["bc1pptw3pzy7xtj0fflss9rryyargekdy3cm4ya4vnnq5r9804c9erls70zeww"],
+    },
+    {
+      descriptor:
+        "wsh(sortedmulti(1,02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5,xpub6ERApfZwUNrhLCkDtcHTcxd75RbzS1ed54G1LkBUHQVHQKqhMkhgbmJbZRkrgZw4koxb5JaHWkY4ALHY2grBGRjaDMzQLcgJvLJuZZvRcEL/0/*))",
+      checksum: "r2fy2fzj",
+      first: 5,
+      addresses: [
+        "bc1q3aut6vqv60hdsm4pe2mvz3jf6yh65hnexkzcdw796mu7x0ntpc4q8fay6w",
+        "bc1q4a9q8r6whz8x20dxmcxvwn54l3fjfzkgtzq5km8x4zpep8x89lus07kwvh",
+        "bc1qf3svjksfgxe9lfv02ytts68u9exk7xztfng87p5vv0hjdlam75fq6al4eg",
+      ],
+    },
+    {
+      descriptor:
+        "tr(tpubD6NzVbkrYhZ4Y529GvCkRKDNJ6AAF8VptYbpg3GSbqTkUQnNi3cYTzzDtjPqfcoZdii14nQRPLt4A9LCHGUUzL6RC3z1ZPUdP1yCaAwR3nZ/2/*)",
+      network: "testnet",
+      checksum: "arkg57je",
+      addresses: [
+        "tb1p88p72aflunwmqdd7t5v3gqcjdapxpuexnmznuuchr86sxj0nx9mqe8la9q",
+        "tb1ppfrknfvxfhjdt69e9xe30jv4vns34xly27jrsgtm64ssvpynx26qee26nl",
+      ],
+    },
+  ],
+  /** The valid checksum of BIP380. */
+  checksum: { descriptor: "raw(deadbeef)", checksum: "89f8spxm" },
+} as const;
+
+/** The 2-of-2 of G and 2G from agntn/keys#192; Core v31.1 `decodescript` gives these addresses. */
+export const multisigVector = {
+  keys: [
+    "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+    "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+  ],
+  script:
+    "52210279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f817982102c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee552ae",
+  mainnet: {
+    p2sh: "33RQmypKhD6f4tMquiR5a3C6dRT7eBpaiG",
+    p2wsh: "bc1qnwvyc7aw8m7acw3lpgs0lqdlaz0drls8luf72cs5nmn9f0kcghdse7d78q",
+    "p2sh-p2wsh": "3FN44kGaMLLdhxsFgedfBBzjwUtZNEA22T",
+  },
+  testnet: {
+    p2sh: "2MtycqikMJfc1GfzPar2xBzBMqmfHSdGF9s",
+    p2wsh: "tb1qnwvyc7aw8m7acw3lpgs0lqdlaz0drls8luf72cs5nmn9f0kcghdswkm3a0",
+    "p2sh-p2wsh": "2N6vG8VCbxnqyukVoMnFXo8z19q6jCJiChQ",
+  },
+} as const;

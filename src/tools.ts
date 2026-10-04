@@ -11,6 +11,8 @@ import {
   CONVERT_PUBLIC_KEY_PARAMETERS,
   DECRYPT_STORE_PARAMETERS,
   DERIVE_BIP39_SEED_PARAMETERS,
+  DERIVE_DESCRIPTOR_PARAMETERS,
+  GET_SCRIPT_ADDRESS_PARAMETERS,
   RECOVER_BIP32_PARENT_PARAMETERS,
   SCAN_HD_WALLET_PARAMETERS,
   DECRYPT_BIP38_PARAMETERS,
@@ -590,6 +592,52 @@ export const addressValidateTool = defineTool({
     (await loadOperations()).validateAddress(params.chain, params.address, params.network),
 });
 
+export const scriptAddressGetTool = defineTool({
+  name: "keys_script_address_get",
+  title: "Get Script Address",
+  description:
+    "Get the Bitcoin addresses that pay to a script: P2SH, P2WSH and P2SH-P2WSH at once. Pass a redeem or witness script as hex, or build an m-of-n OP_CHECKMULTISIG from public keys, in the given order or sorted as BIP67 does. A script too large for a wrapper gets the reason in place of that address.",
+  snippet: "Use to check a multisig or a known redeemScript against a target address.",
+  guidelines: [
+    "Pass script, or publicKeys with threshold; sorted: true for BIP67 and sortedmulti",
+    "All three wrappers come back in one call, so compare the target against each",
+    "keys_descriptor_derive takes the same scripts written as sh(), wsh() or sh(wsh())",
+  ],
+  effect: "read",
+  input: GET_SCRIPT_ADDRESS_PARAMETERS,
+  execute: async (params) =>
+    (await loadOperations()).getScriptAddress(
+      params.script,
+      params.threshold,
+      params.publicKeys,
+      params.sorted,
+      params.network,
+    ),
+});
+
+export const descriptorDeriveTool = defineTool({
+  name: "keys_descriptor_derive",
+  title: "Derive Descriptor Addresses",
+  description:
+    "Derive Bitcoin addresses from an output descriptor as Core writes it: pkh, wpkh, sh(wpkh), sh and wsh over pk, pkh, multi and sortedmulti, and tr with a script tree of pk, pkh, multi_a and sortedmulti_a leaves. Checks the #checksum when the descriptor carries one and gives it either way. Keys are hex, WIF, xpub or xprv with key origins, derivation steps and a final /* for a range. A WIF or xprv enters the transcript, so use only public or disposable keys.",
+  snippet:
+    "Use to turn a wallet's descriptor into its addresses or to get a descriptor's checksum.",
+  guidelines: [
+    "A descriptor ending in /* is ranged: index picks the first child and count how many, 100 at most",
+    "Hardened steps after an xpub need the xprv; bare pk(), multi(), raw() and addr() are refused",
+    "Multipath <0;1> steps are not read; write one descriptor per branch",
+  ],
+  effect: "read",
+  input: DERIVE_DESCRIPTOR_PARAMETERS,
+  execute: async (params) =>
+    (await loadOperations()).deriveDescriptor(
+      params.descriptor,
+      params.index,
+      params.count,
+      params.network,
+    ),
+});
+
 export const messageSignTool = defineTool({
   name: "keys_message_sign",
   title: "Sign Message",
@@ -791,6 +839,8 @@ export const keysTools: readonly ToolDefinition[] = [
   bip39WordsRepairTool,
   addressGetTool,
   addressValidateTool,
+  scriptAddressGetTool,
+  descriptorDeriveTool,
   messageSignTool,
   messageVerifyTool,
   messageRecoverTool,
@@ -831,6 +881,13 @@ export const callSummaries: Readonly<
   keys_bip39_words_order: (args) => `${Array.isArray(args.words) ? args.words.length : 0} words`,
   keys_address_get: (args) => String(args.chain),
   keys_address_validate: (args) => String(args.address),
+  keys_script_address_get: (args) =>
+    Array.isArray(args.publicKeys) && args.publicKeys.length > 0
+      ? `${String(args.threshold)}-of-${args.publicKeys.length}`
+      : "script",
+  keys_descriptor_derive: (args) =>
+    /^[a-z]+/u.exec(typeof args.descriptor === "string" ? args.descriptor : "")?.[0] ??
+    "descriptor",
   keys_message_sign: (args) => preview(args.message),
   keys_message_verify: (args) => preview(args.message),
   keys_message_recover: (args) =>

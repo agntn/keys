@@ -36,6 +36,8 @@ import {
   storeVectors,
   reusedNonceVector,
   transactionVectors,
+  descriptorVectors,
+  multisigVector,
 } from "./fixtures.ts";
 import keysExtension from "../packages/pi/extensions/keys.ts";
 import { keysTools } from "../src/tools.ts";
@@ -276,6 +278,36 @@ describe("keys Pi extension", () => {
       ],
     ] as const) {
       await expect(skipSchema(extract)("tx", bad)).rejects.toThrow(message);
+    }
+  });
+  it("checks the script and descriptor arguments without the schema", async () => {
+    const tools = await registerTools();
+    const script = tools.get("keys_script_address_get");
+    const descriptor = tools.get("keys_descriptor_derive");
+    if (!script || !descriptor) throw new Error("Missing script or descriptor tool");
+    const { keys } = multisigVector;
+    await expect(
+      skipSchema(script)("script", { script: "", threshold: 2, publicKeys: keys }),
+    ).resolves.toMatchObject({ details: { addresses: { p2wsh: multisigVector.mainnet.p2wsh } } });
+    for (const [bad, message] of [
+      [{ script: "0x51" }, "Script must be hex without 0x"],
+      [{ script: "5".repeat(20_002) }, "at most 20000 digits"],
+      [{ threshold: 1, publicKeys: [...keys, "02"] }, "publicKeys must be 1 to 20"],
+      [{ threshold: 1, publicKeys: Array.from({ length: 21 }, () => keys[0]) }, "1 to 20"],
+      [{ threshold: 1.5, publicKeys: keys }, "threshold must be an integer from 1 to 2"],
+      [{ threshold: 1, publicKeys: keys, sorted: "yes" }, "sorted must be a boolean"],
+      [{ threshold: 1, publicKeys: keys, network: "regtest" }, "Unsupported network"],
+    ] as const) {
+      await expect(skipSchema(script)("script", bad)).rejects.toThrow(message);
+    }
+    const ranged = descriptorVectors.core[3];
+    for (const [bad, message] of [
+      [{ descriptor: "" }, "Descriptor must be 1 to 16384 characters"],
+      [{ descriptor: "x".repeat(16_385) }, "Descriptor must be 1 to 16384 characters"],
+      [{ descriptor: ranged.descriptor, count: 0 }, "count must be an integer from 1 to 100"],
+      [{ descriptor: ranged.descriptor, index: -1 }, "index must be an integer between 0"],
+    ] as const) {
+      await expect(skipSchema(descriptor)("descriptor", bad)).rejects.toThrow(message);
     }
   });
   it("derives disposable BIP39 seeds without echoing the input", async () => {

@@ -22,6 +22,8 @@ import {
   bip322Vectors,
   reusedNonceVector,
   transactionVectors,
+  descriptorVectors,
+  multisigVector,
 } from "./fixtures.ts";
 import { TOOL_NAMES } from "../src/tool-parameters.ts";
 
@@ -387,6 +389,16 @@ try {
     new RegExp(
       `^Input 1: 1 signature\n1\\. ecdsa SIGHASH_ALL\n   r: ${transactionVectors.reusedNonce2012.r}\n`,
     ),
+  );
+  await call(
+    "keys_script_address_get",
+    { threshold: 2, publicKeys: multisigVector.keys },
+    new RegExp(`^P2WSH: ${multisigVector.mainnet.p2wsh}$`, "m"),
+  );
+  await call(
+    "keys_descriptor_derive",
+    { descriptor: descriptorVectors.core[3].descriptor, index: 5 },
+    new RegExp(`^Index 5: ${descriptorVectors.core[3].addresses[0]}$`, "m"),
   );
   await call("keys_bip44_parse", { path: "m/44h/60h/0h/0/3" }, /Address index: 3$/m);
   await call("keys_bip44_generate", { chain: "bitcoin", change: 1 }, /m\/44'\/0'\/0'\/1\/0/);

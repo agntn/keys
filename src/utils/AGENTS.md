@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP322, BIP39, BIP44, brainwallet, curve, Electrum, secp256k1, SLIP-10, store, transaction and WIF are public package subpaths; other utilities are internal. Every hash comes from `@agntn/hashes`, hex goes through the native `Uint8Array.fromHex` and `toHex`.
+Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP322, BIP39, BIP44, brainwallet, curve, descriptor, Electrum, script, secp256k1, SLIP-10, store, transaction and WIF are public package subpaths; other utilities are internal. Every hash comes from `@agntn/hashes`, hex goes through the native `Uint8Array.fromHex` and `toHex`.
 
 ## STRUCTURE
 
@@ -38,7 +38,9 @@ Shared cryptographic primitives and encoding utilities. BIP32, BIP38, BIP322, BI
 | `bip44/`       | Derivation paths              | `BIP44` coin types, `BIP44Change`, `getPath`, `parse`; `getBIP32Path` and `getHardenedPath` for the chain shapes stay internal in `paths.ts`                                                                                                   |
 | `brainwallet/` | Brainwallet keys              | `derive`: scrypt or PBKDF2, then SHA-256 of the output bytes or their hex; plain SHA-256 or keccak256; WarpWallet                                                                                                                              |
 | `curve/`       | Curves the caller defines     | `defineCurve`, point math and `isOnCurve` from `arithmetic.ts`; `countPoints`, `listPoints`, `pointOrder`, `discreteLog` and their `MAX_*` limits from `group.ts`; `field.ts` stays internal                                                   |
+| `descriptor/`  | Output descriptors            | `parse` reads `pkh`, `wpkh`, `sh`, `wsh` and `tr` with a script tree, checks the checksum and derives each index; `checksum` computes one. Key expressions stay internal in `keys.ts`                                                          |
 | `electrum/`    | Electrum seeds                | `inspect` names the version, `deriveSeed` seeds standard and SegWit, `deriveOld*` walk an old one; the normalizer and word list stay internal                                                                                                  |
+| `script/`      | Scripts paid to by hash       | `multisig` builds m-of-n `OP_CHECKMULTISIG`, sorted or not; `address` writes P2SH, P2WSH or P2SH-P2WSH. Network bytes and push helpers stay internal for `descriptor/`                                                                         |
 | `secp256k1/`   | SEC1 public keys, curve math  | `convertPublicKey`; point math and `liftX`, `isOnCurve`, scalars mod n from `math.ts`; `recoverReusedNonce` from `nonce.ts`; key generation, signing and key errors stay internal                                                              |
 | `slip10/`      | ED25519 HD derivation         | `getMasterKeyFromSeed`, `deriveHDKey`                                                                                                                                                                                                          |
 | `store/`       | Keystore files                | `decrypt`, `encrypt` and `inspect` for Web3 Secret Storage v3 keystores; `KeystorePasswordError` for a wrong password                                                                                                                          |
