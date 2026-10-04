@@ -25,7 +25,7 @@ docs/
 ├── server/routes/sitemap.xml.ts   # Docus sitemap plus the Vue pages
 ├── server/mcp/index.ts            # the Docus MCP handler at /mcp, named and versioned like `keys mcp`
 ├── server/mcp/tools/              # one file per key tool, each `keysMcpTool("<name>")`
-├── server/utils/keys-mcp.ts       # a tool from `@agntn/keys/mcp`: its entry in `toolListings` and `callTool`, the TypeBox schema read into Zod
+├── server/utils/keys-mcp.ts       # a tool from `@agntn/keys/mcp`: its entry in `toolListings` and `callTool` behind a Zod schema that lets any object through
 └── app/pages/keyspace.vue         # explorer, own route outside the docs layout
 ```
 
@@ -53,7 +53,7 @@ Three resolution traps, all because the repo root is its own pnpm workspace:
 
 ## MCP
 
-`@agntn/keys/mcp` is a second alias, for `../src/mcp.ts`. A file in `server/mcp/tools/` names one tool and nothing else: `keysMcpTool()` takes the name, prose and annotations from `toolListings` and runs `callTool()` from there, so a tool changed in `src/` changes here without an edit. A new tool in `src/tools.ts` needs one more file here, and `test/docs-mcp.test.ts` fails until it has one. `@nuxtjs/mcp-toolkit` wants Zod, so its schema is `z.fromJSONSchema()` over the TypeBox one, passed as the whole object so an unknown key is refused instead of stripped. A schema error reads in Zod's words. Every other answer is the text `keys mcp` gives. A call with no `arguments` at all reaches Zod as `undefined`, so `keysMcpTool()` wraps the schema's `run` to read it as `{}` first, the way stdio does.
+`@agntn/keys/mcp` is a second alias, for `../src/mcp.ts`. A file in `server/mcp/tools/` names one tool and nothing else: `keysMcpTool()` takes the name, prose and annotations from `toolListings` and runs `callTool()` from there, so a tool changed in `src/` changes here without an edit. A new tool in `src/tools.ts` needs one more file here, and `test/docs-mcp.test.ts` fails until it has one. `@nuxtjs/mcp-toolkit` wants Zod and validates with it before the handler runs. A Zod error quotes the client's keys as they came, bidi overrides and line separators included, and reads differently from `keys mcp` (#240). So the Zod schema is `z.looseObject({})`, which passes any object, and its `_zod.toJSONSchema` hook returns the wire schema from `toolListings`, so `tools/list` still shows the real one. `callTool` then checks the arguments the way stdio does, and every answer, refusals included, is the text `keys mcp` gives, through `sanitizeLine`. A call with no `arguments` at all reaches Zod as `undefined`, so `keysMcpTool()` wraps the schema's `run` to read it as `{}` first, the way stdio does.
 
 On the `cloudflare_module` preset the toolkit hands its server to `createMcpHandler` from `agents`, which tells an SDK v1 server apart with `instanceof`. pnpm installs one copy of `@modelcontextprotocol/sdk` per `zod` peer it resolves, so the toolkit and `agents` can each get their own and every request fails with "createMcpHandler received an unsupported server". `nitro.alias` points every import of the SDK at the copy in `docs/node_modules`. Keep it until both resolve the same one. `@agntn/ciphers`, `@agntn/tools` and `@modelcontextprotocol/server` are dependencies here for `src/mcp.ts`, pinned to the root's versions and deduped like the others; `@modelcontextprotocol/sdk` stays for the toolkit and `agents`. They run on the worker only, so they stay out of `optimizeDeps`. The library writes bigint literals, so `nitro.esbuild` targets es2022.
 

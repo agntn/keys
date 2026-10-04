@@ -7,11 +7,7 @@ import {
 import { z } from "zod";
 
 /**
- * One keys tool for the Docus MCP server, served beside `list-pages` and `get-page`. The name,
- * prose, annotations and executor are the ones `keys mcp` lists. The toolkit takes Zod only, so
- * the shared TypeBox schema is read back through its JSON Schema and keeps every limit it declares.
- * The SDK gets the whole object, not its shape: a shape comes back as a plain `z.object()`, which
- * strips a key the tool does not take, so a misspelled option would be dropped without a word.
+ * A `keys mcp` tool for Docus: its own schema in `tools/list`, its own checks on the call.
  *
  * @param {string} name - The tool's name, such as `keys_address_get`.
  * @returns {McpToolDefinitionListItem} The tool definition for `server/mcp/tools/`.
@@ -21,7 +17,9 @@ export function keysMcpTool(name: string): McpToolDefinitionListItem {
   if (listing === undefined) {
     throw new Error(`Unknown keys tool: ${name}`);
   }
-  const schema = z.fromJSONSchema(listing.inputSchema as z.core.JSONSchema.JSONSchema);
+  /** Any object passes Zod, so `callTool` refuses a bad one in `keys mcp`'s words, sanitized. */
+  const schema = z.looseObject({});
+  schema._zod.toJSONSchema = () => ({ ...listing.inputSchema });
   /** The SDK hands Zod a missing `arguments` untouched, so read it as the `{}` stdio gets. */
   const run = schema._zod.run.bind(schema._zod);
   schema._zod.run = (payload, context) =>
