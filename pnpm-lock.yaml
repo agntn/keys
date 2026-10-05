@@ -31,8 +31,8 @@ importers:
         specifier: 0.1.0
         version: 0.1.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
       '@agntn/hashes':
-        specifier: 0.6.2
-        version: 0.6.2(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
+        specifier: 0.6.3
+        version: 0.6.3(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
       '@agntn/tools':
         specifier: 0.0.0
         version: 0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
@@ -159,8 +159,8 @@ packages:
       ai:
         optional: true
 
-  '@agntn/hashes@0.6.2':
-    resolution: {integrity: sha512-rxIHJwqGF/Q3J1qFcUGtfYUsPFCy7/CdANlAIirdrf6NQURTirclc32PPe5E10WcIiIsI5xKxxVVkbu+CTIfzg==}
+  '@agntn/hashes@0.6.3':
+    resolution: {integrity: sha512-/0GejNXPCrSQGge/BoQ5iu2h+hUn9XXEDx/hhrSWKV1RYAuImWtx4WDDnn3LCLIAFzFTPK40RkNhbROExjZxkw==}
     engines: {node: '>=26'}
     hasBin: true
     peerDependencies:
@@ -3541,7 +3541,7 @@ snapshots:
       '@earendil-works/pi-coding-agent': 0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3)
       '@oh-my-pi/pi-coding-agent': 18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
 
-  '@agntn/hashes@0.6.2(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))':
+  '@agntn/hashes@0.6.3(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))':
     dependencies:
       '@agntn/tools': 0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
       '@modelcontextprotocol/server': 2.2.0
