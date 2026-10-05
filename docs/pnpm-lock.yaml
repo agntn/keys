@@ -9,14 +9,14 @@ importers:
   .:
     dependencies:
       '@agntn/ciphers':
-        specifier: 0.5.1
-        version: 0.5.1(ai@7.0.87(zod@4.6.5))
+        specifier: 0.5.2
+        version: 0.5.2(ai@7.0.87(zod@4.6.5))
       '@agntn/encodings':
         specifier: 0.1.0
         version: 0.1.0(ai@7.0.87(zod@4.6.5))
       '@agntn/hashes':
-        specifier: 0.6.1
-        version: 0.6.1(ai@7.0.87(zod@4.6.5))
+        specifier: 0.6.2
+        version: 0.6.2(ai@7.0.87(zod@4.6.5))
       '@agntn/tools':
         specifier: 0.0.0
         version: 0.0.0(@modelcontextprotocol/server@2.2.0)(ai@7.0.87(zod@4.6.5))
@@ -72,8 +72,8 @@ importers:
 
 packages:
 
-  '@agntn/ciphers@0.5.1':
-    resolution: {integrity: sha512-1FHujfihFk90ozjcv8J/e+7Y6xRcI4IGdSLGvVIsmF7cjt9312WZUeYeqToQbruoNakNKYwlvIzeZqx+iwbLMg==}
+  '@agntn/ciphers@0.5.2':
+    resolution: {integrity: sha512-1jhGkxPv/OHho4oOyvJMu5cvd0gGwJMKVoHUjodb0+AlXvumD11p1ammD1fRWnvFDDhT4AsRuAW819E6U51MbA==}
     engines: {node: '>=26'}
     hasBin: true
 
@@ -111,6 +111,22 @@ packages:
 
   '@agntn/hashes@0.6.1':
     resolution: {integrity: sha512-pakVYxcaOtVUTU9cfssc8S3c5kr7R5w7EhIBKJdhdNkvMeMOs4gU9zCJUamyXbKSvZcI9EYHUFcXWqapVNyW1A==}
+    engines: {node: '>=26'}
+    hasBin: true
+    peerDependencies:
+      '@earendil-works/pi-coding-agent': '>=0.87.1 <1'
+      '@oh-my-pi/pi-coding-agent': '>=18.4.2 <19'
+      ai: '>=7.0.0'
+    peerDependenciesMeta:
+      '@earendil-works/pi-coding-agent':
+        optional: true
+      '@oh-my-pi/pi-coding-agent':
+        optional: true
+      ai:
+        optional: true
+
+  '@agntn/hashes@0.6.2':
+    resolution: {integrity: sha512-rxIHJwqGF/Q3J1qFcUGtfYUsPFCy7/CdANlAIirdrf6NQURTirclc32PPe5E10WcIiIsI5xKxxVVkbu+CTIfzg==}
     engines: {node: '>=26'}
     hasBin: true
     peerDependencies:
@@ -7664,7 +7680,7 @@ packages:
 
 snapshots:
 
-  '@agntn/ciphers@0.5.1(ai@7.0.87(zod@4.6.5))':
+  '@agntn/ciphers@0.5.2(ai@7.0.87(zod@4.6.5))':
     dependencies:
       '@agntn/hashes': 0.6.0(ai@7.0.87(zod@4.6.5))
       '@agntn/tools': 0.0.0(@modelcontextprotocol/server@2.2.0)(ai@7.0.87(zod@4.6.5))
@@ -7695,6 +7711,14 @@ snapshots:
       ai: 7.0.87(zod@4.6.5)
 
   '@agntn/hashes@0.6.1(ai@7.0.87(zod@4.6.5))':
+    dependencies:
+      '@agntn/tools': 0.0.0(@modelcontextprotocol/server@2.2.0)(ai@7.0.87(zod@4.6.5))
+      '@modelcontextprotocol/server': 2.2.0
+      citty: 0.2.2
+    optionalDependencies:
+      ai: 7.0.87(zod@4.6.5)
+
+  '@agntn/hashes@0.6.2(ai@7.0.87(zod@4.6.5))':
     dependencies:
       '@agntn/tools': 0.0.0(@modelcontextprotocol/server@2.2.0)(ai@7.0.87(zod@4.6.5))
       '@modelcontextprotocol/server': 2.2.0
