@@ -10,9 +10,9 @@
     "deploy": "pnpm build && wrangler deploy"
   },
   "dependencies": {
-    "@agntn/ciphers": "0.5.1",
+    "@agntn/ciphers": "0.5.2",
     "@agntn/encodings": "0.1.0",
-    "@agntn/hashes": "0.6.1",
+    "@agntn/hashes": "0.6.2",
     "@agntn/tools": "0.0.0",
     "@modelcontextprotocol/sdk": "1.30.1",
     "@modelcontextprotocol/server": "2.2.0",
