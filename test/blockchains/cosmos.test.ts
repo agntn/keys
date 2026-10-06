@@ -137,6 +137,11 @@ describe("Cosmos", () => {
       expect(result.details.address).toBe(address);
     });
 
+    it("take the longest address the SDK takes", async () => {
+      const longest = bech32.encode("cosmos", new Uint8Array(255), 1023);
+      expect((await validateAddress("cosmos", longest)).details.valid).toBe(true);
+    });
+
     it("keep the prefix when they look for the address on the other network", async () => {
       const result = await validateAddress("cosmos", address, undefined, "osmo");
       expect(result.content[0]?.text).toBe(`${address} is not a valid cosmos address`);

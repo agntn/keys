@@ -150,7 +150,7 @@ describe("keys Pi extension", () => {
       [{ ...args, allowInvalidChecksum: "yes" }, "allowInvalidChecksum must be a boolean"],
       [{ ...args, mnemonic: "a ".repeat(2049) }, "Mnemonic must not exceed 4096 characters"],
       [{ ...args, mnemonic: "   " }, "Mnemonic must not be empty"],
-      [{ ...args, address: "1".repeat(257) }, "Address must be 1 to 256 characters"],
+      [{ ...args, address: "1".repeat(1024) }, "Address must be 1 to 1023 characters"],
       [{ ...args, passphrase: 7 }, "Passphrase must be a string"],
     ] as const) {
       await expect(skipSchema(tool)("scan", bad)).rejects.toThrow(message);
@@ -652,15 +652,15 @@ describe("keys Pi extension", () => {
   it("refuses an overlong address even when Pi skips the schema", async () => {
     const tool = (await registerTools()).get("keys_address_validate");
     if (!tool) throw new Error("Missing address validation tool");
-    const longest = { chain: "bitcoin", address: "1".repeat(256) };
-    const longer = { chain: "bitcoin", address: "1".repeat(257) };
+    const longest = { chain: "bitcoin", address: "1".repeat(1023) };
+    const longer = { chain: "bitcoin", address: "1".repeat(1024) };
     expect(Value.Check(tool.parameters, longest)).toBe(true);
     expect(Value.Check(tool.parameters, longer)).toBe(false);
     await expect(tool.execute("validate", longest)).resolves.toMatchObject({
       details: { valid: false },
     });
     await expect(skipSchema(tool)("validate", longer)).rejects.toThrow(
-      "Address must not exceed 256 characters",
+      "Address must not exceed 1023 characters",
     );
   });
 
