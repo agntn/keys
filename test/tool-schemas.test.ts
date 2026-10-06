@@ -54,7 +54,7 @@ describe("MCP and Pi tool parameters", () => {
       "publicKey",
       `0x${ed25519Key}`,
     ],
-    ["keys_address_validate", { chain: "bitcoin", address: "a" }, "address", "a".repeat(257)],
+    ["keys_address_validate", { chain: "bitcoin", address: "a" }, "address", "a".repeat(1024)],
     ["keys_message_sign", { chain: "bitcoin", message: "", privateKey }, "chain", ""],
     [
       "keys_message_verify",

@@ -128,8 +128,8 @@ export const SCAN_ACCOUNTS = { default: 3, maximum: 10 } as const;
 /** Address indices the wallet scan walks by default and at most; 20 is the BIP44 gap limit. */
 export const SCAN_INDICES = { default: 20, maximum: 100 } as const;
 
-/** Maximum address length the address validation tool checks. */
-export const MAX_ADDRESS_LENGTH = 256;
+/** Longest address the tools take: the bech32 limit Cosmos SDK decodes under, 255 payload bytes. */
+export const MAX_ADDRESS_LENGTH = 1023;
 
 /** Maximum EIP-712 typed data JSON length the recover tool hashes, in characters. */
 export const MAX_TYPED_DATA_LENGTH = 16_384;
@@ -159,6 +159,7 @@ export const TOOL_CHAINS = [
   "cardano",
   "xrpl",
   "near",
+  "cosmos",
 ] as const;
 
 /** Blockchain name accepted by the tool surfaces. */
@@ -206,6 +207,7 @@ export const TOOL_ADDRESS_TYPES_BY_CHAIN: Readonly<Record<ToolChain, readonly st
   cardano: CARDANO_ADDRESS_TYPES,
   xrpl: XRPL_ADDRESS_TYPES,
   near: [],
+  cosmos: [],
 };
 
 /** Native WIF chains exposed by both agent transports. */

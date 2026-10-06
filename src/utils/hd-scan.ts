@@ -122,6 +122,7 @@ const CHAIN_SCHEMES: Readonly<Record<string, readonly ScanScheme[]>> = {
     { name: "bip44", path: "m/44'/397'/{index}'" },
     { name: "ledger", path: "m/44'/397'/0'/0'/{index}'" },
   ],
+  cosmos: [{ name: "bip44", path: "m/44'/118'/{account}'/0/{index}" }],
 };
 
 /** UTXO chains, whose testnet wallets take coin type 1. */

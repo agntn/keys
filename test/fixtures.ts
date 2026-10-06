@@ -593,6 +593,48 @@ export const nearTestVectors = {
 } as const;
 
 /**
+ * BIP39 wallets from @cosmjs/amino 0.39.0 under three prefixes. The signature is its `signAmino`
+ * over `makeADR36AminoSignDoc` from @keplr-wallet/cosmos 0.13.41, and `verifyADR36Amino` accepts it.
+ */
+export const cosmosTestVectors = {
+  wallets: [
+    [
+      "m/44'/118'/0'/0/0",
+      "c4a48e2fce1481cd3294b4490f6678090ea98d3d0e5cd984558ab0968741b104",
+      "024f4e2ad99c34d60b9ba6283c9431a8418af8673212961f97a77b6377fcd05b62",
+      "cosmos19rl4cm2hmr8afy4kldpxz3fka4jguq0auqdal4",
+      "osmo19rl4cm2hmr8afy4kldpxz3fka4jguq0a5m7df8",
+      "celestia19rl4cm2hmr8afy4kldpxz3fka4jguq0ad2ud9c",
+    ],
+    [
+      "m/44'/118'/0'/0/1",
+      "c9ba8e1818baf4ceb063420dcedc7a482056a1580e4dbe797af3484aff7b8651",
+      "03a9a0776157f1dee1fe2d65628747059a8796de9a379f3015c4dcf483f64840a6",
+      "cosmos1jrkmdcwgq94uaamx6zax2luewlhf7u4kucx3kz",
+      "osmo1jrkmdcwgq94uaamx6zax2luewlhf7u4k5r4pqs",
+      "celestia1jrkmdcwgq94uaamx6zax2luewlhf7u4kdjhpv0",
+    ],
+    [
+      "m/44'/118'/1'/0/0",
+      "3992639e9c460fa71cde7fba107fb9d344ee312293a307fbf9d086e1d535742c",
+      "02b74657437c7b173c2f4e442f1c863b24857fa97283385c5ec172ff63ff18b7be",
+      "cosmos1tehv5km5e9y706rc2gzk9yyun9dljjjnvyt3u0",
+      "osmo1tehv5km5e9y706rc2gzk9yyun9dljjjnylcp2a",
+      "celestia1tehv5km5e9y706rc2gzk9yyun9dljjjnaw6pxz",
+    ],
+  ],
+  /** `secp256k1TestVectors.publicKeyCompressed` as cosmjs `pubkeyToAddress` writes it. */
+  fixtureAddress: "cosmos17lhf4defwy62pnx8du74p62daut53rev66jw7a",
+  /** `toBech32` from @cosmjs/encoding over the bytes 1, 2, 3 and on: 32, 21 and none of them. */
+  contractAddress: "cosmos1qypqxpq9qcrsszg2pvxq6rs0zqg3yyc5z5tpwxqergd3c8g7rusqqlvp8l",
+  shortAddress: "cosmos1qypqxpq9qcrsszg2pvxq6rs0zqg3yyc5z56fjcee",
+  emptyAddress: "cosmos1550dq7",
+  message: "cosmos me",
+  signature:
+    "01eb03d69c0e8ca0147939c00975c1078fbff0c3978848671fde7224ded0924556492b91ec2a8882181ef7b75c33b6f3e1d56b5512e3052abcbbdb0f44b3fbfb",
+} as const;
+
+/**
  * Disposable key 1 through @stellar/stellar-sdk 17.1.0: SEP-53 `signMessage` digests and
  * signatures. The HD rows are SEP-0005 test case 1, the SDK derives the same keys.
  */

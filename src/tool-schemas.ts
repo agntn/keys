@@ -61,6 +61,7 @@ import {
   SEC1_PUBLIC_KEY_SCHEMA_PATTERN,
 } from "./tool-parameters.ts";
 import { MAX_MULTISIG_KEYS } from "./utils/script/limits.ts";
+import { COSMOS_PREFIX_PATTERN } from "./utils/cosmos-prefix.ts";
 import { BIP39_LANGUAGES } from "./utils/bip39/languages.ts";
 import { MAX_FILTERED_PRIME } from "./utils/curve/group.ts";
 
@@ -593,6 +594,13 @@ const networkArgument = Type.Optional(
   }),
 );
 
+const prefixArgument = Type.Optional(
+  Type.String({
+    description: "cosmos only: bech32 prefix of the chain, such as osmo. Default: cosmos",
+    pattern: COSMOS_PREFIX_PATTERN,
+  }),
+);
+
 const addressTypeArgument = Type.Optional(
   Type.String({
     description: "Chain-specific address type, such as segwit, taproot, stake, or secp256k1",
@@ -601,7 +609,12 @@ const addressTypeArgument = Type.Optional(
 );
 
 export const GENERATE_WALLET_PARAMETERS = Type.Object(
-  { chain: chainArgument, network: networkArgument, addressType: addressTypeArgument },
+  {
+    chain: chainArgument,
+    network: networkArgument,
+    addressType: addressTypeArgument,
+    prefix: prefixArgument,
+  },
   { additionalProperties: false },
 );
 
@@ -615,6 +628,7 @@ export const DERIVE_WALLET_PARAMETERS = Type.Object(
     }),
     addressType: addressTypeArgument,
     network: networkArgument,
+    prefix: prefixArgument,
     compressed: Type.Optional(
       Type.Boolean({
         description:
@@ -656,6 +670,7 @@ export const DERIVE_HD_WALLET_PARAMETERS = Type.Object(
     ),
     addressType: addressTypeArgument,
     network: networkArgument,
+    prefix: prefixArgument,
   },
   { additionalProperties: false },
 );
@@ -703,6 +718,7 @@ export const SCAN_HD_WALLET_PARAMETERS = Type.Object(
       }),
     ),
     network: networkArgument,
+    prefix: prefixArgument,
   },
   { additionalProperties: false },
 );
@@ -724,6 +740,7 @@ export const DERIVE_XPUB_WALLET_PARAMETERS = Type.Object(
     }),
     addressType: addressTypeArgument,
     network: networkArgument,
+    prefix: prefixArgument,
   },
   { additionalProperties: false },
 );
@@ -912,6 +929,7 @@ export const GET_ADDRESS_PARAMETERS = Type.Object(
     }),
     addressType: addressTypeArgument,
     network: networkArgument,
+    prefix: prefixArgument,
   },
   { additionalProperties: false },
 );
@@ -925,6 +943,7 @@ export const VALIDATE_ADDRESS_PARAMETERS = Type.Object(
       maxLength: MAX_ADDRESS_LENGTH,
     }),
     network: networkArgument,
+    prefix: prefixArgument,
   },
   { additionalProperties: false },
 );
@@ -938,6 +957,7 @@ export const SIGN_MESSAGE_PARAMETERS = Type.Object(
       description: "Private key as 64 hex characters without 0x",
     }),
     network: networkArgument,
+    prefix: prefixArgument,
     recovered: Type.Optional(
       Type.Boolean({
         description:
@@ -963,6 +983,7 @@ export const VERIFY_MESSAGE_PARAMETERS = Type.Object(
         "Public key as hex without 0x: 32-byte ed25519 (on near also ed25519: and base58), or compressed or uncompressed SEC1 secp256k1",
     }),
     network: networkArgument,
+    prefix: prefixArgument,
   },
   { additionalProperties: false },
 );

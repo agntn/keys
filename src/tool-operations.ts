@@ -579,10 +579,26 @@ function addressTypeLines(addressType: string | undefined): string[] {
   return addressType === undefined ? [] : [`Address type: ${addressType}`];
 }
 
+/**
+ * Reads the bech32 prefix, which only cosmos takes; blank counts as left out.
+ * @param chain - Chain the call loads.
+ * @param value - Prefix as the host passed it.
+ * @returns {string | undefined} The prefix, or undefined for the chain's default.
+ * @throws {RangeError} When a prefix comes with any other chain.
+ */
+function parsePrefix(chain: ToolChain, value: unknown): string | undefined {
+  const prefix = optionalName(value, "Prefix");
+  if (prefix !== undefined && chain !== "cosmos") {
+    throw new RangeError(`prefix picks a Cosmos SDK chain on cosmos. Leave it out on ${chain}`);
+  }
+  return prefix;
+}
+
 async function getBlockchain(
   chainValue: unknown,
   networkValue?: unknown,
   addressTypeValue?: unknown,
+  prefixValue?: unknown,
 ): Promise<{ readonly blockchain: AbstractBlockchain; readonly addressType: string | undefined }> {
   const name = requiredString(chainValue, "Chain").toLowerCase();
   const chain = TOOL_CHAINS.find((candidate) => candidate === name);
@@ -593,7 +609,11 @@ async function getBlockchain(
   }
   const network = parseNetwork(networkValue);
   const addressType = parseAddressType(chain, addressTypeValue);
-  return { blockchain: useBlockchain(await blockchains[chain]({ network })()), addressType };
+  const prefix = parsePrefix(chain, prefixValue);
+  return {
+    blockchain: useBlockchain(await blockchains[chain]({ network, prefix })()),
+    addressType,
+  };
 }
 
 /**
@@ -601,17 +621,20 @@ async function getBlockchain(
  * @param chainValue - Blockchain name.
  * @param networkValue - Optional network name.
  * @param addressTypeValue - Optional chain-specific address type.
+ * @param prefixValue - Optional bech32 prefix, cosmos only.
  * @returns {Promise<ToolResult<GeneratedWalletDetails | undefined>>} Generated key and address material.
  */
 export async function generateWallet(
   chainValue: unknown,
   networkValue?: unknown,
   addressTypeValue?: unknown,
+  prefixValue?: unknown,
 ): Promise<ToolResult<GeneratedWalletDetails | undefined>> {
   const { blockchain, addressType } = await getBlockchain(
     chainValue,
     networkValue,
     addressTypeValue,
+    prefixValue,
   );
   const wallet = blockchain.generateWallet({}, addressType);
   const details = {
@@ -657,6 +680,7 @@ function walletCompressed(value: unknown): boolean | undefined {
  * @param addressTypeValue - Optional chain-specific address type.
  * @param networkValue - Optional network name.
  * @param compressedValue - Optional secp256k1 public key form, compressed by default.
+ * @param prefixValue - Optional bech32 prefix, cosmos only.
  * @returns {Promise<ToolResult<DerivedWalletDetails>>} Derived public wallet material.
  */
 export async function deriveWallet(
@@ -665,11 +689,13 @@ export async function deriveWallet(
   addressTypeValue?: unknown,
   networkValue?: unknown,
   compressedValue?: unknown,
+  prefixValue?: unknown,
 ): Promise<ToolResult<DerivedWalletDetails>> {
   const { blockchain, addressType } = await getBlockchain(
     chainValue,
     networkValue,
     addressTypeValue,
+    prefixValue,
   );
   const compressed = walletCompressed(compressedValue);
   const options = compressed === undefined ? {} : { compressed };
@@ -739,6 +765,7 @@ function mnemonicOrEntropy(
  * @param allowInvalidChecksumValue - Accept a checksum failure for a public puzzle, default false.
  * @param languageValue - Optional official BIP39 language key.
  * @param entropyValue - BIP39 entropy as hex, encoded with the selected list in place of a mnemonic.
+ * @param prefixValue - Optional bech32 prefix, cosmos only.
  * @returns {Promise<ToolResult<DerivedWalletDetails>>} Derived public wallet material.
  */
 export async function deriveHdWallet(
@@ -751,6 +778,7 @@ export async function deriveHdWallet(
   allowInvalidChecksumValue?: unknown,
   languageValue?: unknown,
   entropyValue?: unknown,
+  prefixValue?: unknown,
 ): Promise<ToolResult<DerivedWalletDetails>> {
   if (allowInvalidChecksumValue !== undefined && typeof allowInvalidChecksumValue !== "boolean") {
     throw new TypeError("allowInvalidChecksum must be a boolean");
@@ -764,6 +792,7 @@ export async function deriveHdWallet(
     chainValue,
     networkValue,
     addressTypeValue,
+    prefixValue,
   );
   const passphrase = optionalString(passphraseValue, "BIP39 passphrase");
   const language = parseBIP39Language(languageValue);
@@ -1131,6 +1160,7 @@ function scanText(details: Readonly<ScannedWalletDetails>): string {
  * @param allowInvalidChecksumValue - Scan BIP39 words that fail only the checksum, default false
  * @param accountsValue - Accounts from 0, default 3
  * @param indicesValue - Address indices from 0, default 20
+ * @param prefixValue - Optional bech32 prefix, cosmos only
  * @returns {Promise<ToolResult<ScannedWalletDetails>>} The match, or every scheme tried
  */
 export async function scanHdWallet(
@@ -1143,6 +1173,7 @@ export async function scanHdWallet(
   allowInvalidChecksumValue?: unknown,
   accountsValue?: unknown,
   indicesValue?: unknown,
+  prefixValue?: unknown,
 ): Promise<ToolResult<ScannedWalletDetails>> {
   const args = scanArguments({
     mnemonic: mnemonicValue,
@@ -1152,7 +1183,7 @@ export async function scanHdWallet(
     accounts: accountsValue,
     indices: indicesValue,
   });
-  const { blockchain } = await getBlockchain(chainValue, networkValue);
+  const { blockchain } = await getBlockchain(chainValue, networkValue, undefined, prefixValue);
   const schemes = scanSchemes(blockchain.name, blockchain.network);
   if (schemes === undefined) {
     throw new RangeError(
@@ -1203,6 +1234,7 @@ export interface DerivedXpubWalletDetails {
  * @param pathValue - Normal levels below the key, such as `m/0/0`.
  * @param addressTypeValue - Optional address type that wins over the one the prefix stands for.
  * @param networkValue - Optional network name.
+ * @param prefixValue - Optional bech32 prefix, cosmos only.
  * @returns {Promise<ToolResult<DerivedXpubWalletDetails>>} Public key and address at the path.
  */
 export async function deriveXpubWallet(
@@ -1211,6 +1243,7 @@ export async function deriveXpubWallet(
   pathValue: unknown,
   addressTypeValue?: unknown,
   networkValue?: unknown,
+  prefixValue?: unknown,
 ): Promise<ToolResult<DerivedXpubWalletDetails>> {
   const extendedKey = requiredString(extendedKeyValue, "Extended key");
   const path = requiredString(pathValue, "Derivation path");
@@ -1219,6 +1252,7 @@ export async function deriveXpubWallet(
     chainValue,
     networkValue,
     addressTypeValue,
+    prefixValue,
   );
   const wallet = blockchain.deriveXpubWallet(extendedKey, path, addressType);
   const details = {
@@ -2338,6 +2372,7 @@ export async function recoverMnemonicWord(
  * @param publicKeyValue - Public key as hexadecimal text.
  * @param addressTypeValue - Optional chain-specific address type.
  * @param networkValue - Optional network name.
+ * @param prefixValue - Optional bech32 prefix, cosmos only.
  * @returns {Promise<ToolResult<AddressDetails>>} Derived address.
  */
 export async function getAddress(
@@ -2345,11 +2380,13 @@ export async function getAddress(
   publicKeyValue: unknown,
   addressTypeValue?: unknown,
   networkValue?: unknown,
+  prefixValue?: unknown,
 ): Promise<ToolResult<AddressDetails>> {
   const { blockchain, addressType } = await getBlockchain(
     chainValue,
     networkValue,
     addressTypeValue,
+    prefixValue,
   );
   const publicKey = chainPublicKey(publicKeyValue, blockchain.name);
   const type = addressType ?? blockchain.defaultAddressType;
@@ -2370,14 +2407,16 @@ export async function getAddress(
  * @param chainValue - Blockchain name.
  * @param addressValue - Address to validate.
  * @param networkValue - Optional network name.
+ * @param prefixValue - Optional bech32 prefix, cosmos only.
  * @returns {Promise<ToolResult<AddressValidationDetails>>} Address format verdict.
  */
 export async function validateAddress(
   chainValue: unknown,
   addressValue: unknown,
   networkValue?: unknown,
+  prefixValue?: unknown,
 ): Promise<ToolResult<AddressValidationDetails>> {
-  const { blockchain } = await getBlockchain(chainValue, networkValue);
+  const { blockchain } = await getBlockchain(chainValue, networkValue, undefined, prefixValue);
   const address = requiredString(addressValue, "Address");
   if (Array.from(address).length > MAX_ADDRESS_LENGTH) {
     throw new RangeError(`Address must not exceed ${MAX_ADDRESS_LENGTH} characters`);
@@ -2386,7 +2425,7 @@ export async function validateAddress(
   const renderedAddress = sanitizeToolText(address);
   const otherNetwork = valid
     ? undefined
-    : await otherNetworkOf(chainValue, blockchain.network, address);
+    : await otherNetworkOf(chainValue, blockchain.network, address, prefixValue);
   return {
     content: content(
       valid
@@ -2405,16 +2444,18 @@ export async function validateAddress(
  * @param chainValue - Blockchain name, already accepted by `getBlockchain`.
  * @param network - Network the address failed on.
  * @param address - Address that failed.
+ * @param prefixValue - Bech32 prefix the first check used, cosmos only.
  * @returns {Promise<ToolNetwork | undefined>} The other network, when the address passes there.
  */
 async function otherNetworkOf(
   chainValue: unknown,
   network: string,
   address: string,
+  prefixValue: unknown,
 ): Promise<ToolNetwork | undefined> {
   const other = TOOL_NETWORKS.find((candidate) => candidate !== network);
   if (other === undefined) return undefined;
-  const { blockchain } = await getBlockchain(chainValue, other);
+  const { blockchain } = await getBlockchain(chainValue, other, undefined, prefixValue);
   return blockchain.validateAddress(address) ? other : undefined;
 }
 
@@ -2425,6 +2466,7 @@ async function otherNetworkOf(
  * @param privateKeyValue - Private key as hexadecimal text.
  * @param networkValue - Optional network name.
  * @param recoveredValue - Append the recovery byte as `v`, default false.
+ * @param prefixValue - Optional bech32 prefix, cosmos only.
  * @returns {Promise<ToolResult<SignatureDetails>>} Generated signature.
  */
 export async function signMessage(
@@ -2433,12 +2475,13 @@ export async function signMessage(
   privateKeyValue: unknown,
   networkValue?: unknown,
   recoveredValue?: unknown,
+  prefixValue?: unknown,
 ): Promise<ToolResult<SignatureDetails>> {
   if (recoveredValue !== undefined && typeof recoveredValue !== "boolean") {
     throw new TypeError("recovered must be a boolean");
   }
   const recovered = recoveredValue ?? false;
-  const { blockchain } = await getBlockchain(chainValue, networkValue);
+  const { blockchain } = await getBlockchain(chainValue, networkValue, undefined, prefixValue);
   const message = requiredString(messageValue, "Message");
   const privateKey = hexArgument(
     privateKeyValue,
@@ -2483,6 +2526,7 @@ function assertReadableSignature(
  * @param signatureValue - Signature as hexadecimal text.
  * @param publicKeyValue - Public key as hexadecimal text.
  * @param networkValue - Optional network name.
+ * @param prefixValue - Optional bech32 prefix, cosmos only.
  * @returns {Promise<ToolResult<SignatureVerificationDetails>>} Signature verdict.
  */
 export async function verifyMessage(
@@ -2491,8 +2535,9 @@ export async function verifyMessage(
   signatureValue: unknown,
   publicKeyValue: unknown,
   networkValue?: unknown,
+  prefixValue?: unknown,
 ): Promise<ToolResult<SignatureVerificationDetails>> {
-  const { blockchain } = await getBlockchain(chainValue, networkValue);
+  const { blockchain } = await getBlockchain(chainValue, networkValue, undefined, prefixValue);
   const message = requiredString(messageValue, "Message");
   const signatureText = requiredString(signatureValue, "Signature");
   const core = CORE_SIGNATURE.test(signatureText);
@@ -2513,6 +2558,9 @@ export async function verifyMessage(
   };
 }
 
+/** Bech32 as an encoder writes it: a BIP-173 prefix without uppercase, `1`, then the data. */
+const BECH32_WRITTEN = /^[\x21-\x40\x5B-\x7E]{1,83}1[02-9ac-hj-np-z]{6,}$/u;
+
 /**
  * Compare a written address with a typed one: bech32 and CashAddr ignore case, base58 doesn't.
  * @param written - Address from `getAddress`
@@ -2522,7 +2570,7 @@ export async function verifyMessage(
 function sameAddress(written: string, given: string): boolean {
   if (written === given) return true;
   if (written.startsWith("0x")) return written.toLowerCase() === given.toLowerCase();
-  if (!written.includes(":") && !/^[a-z]+1[02-9ac-hj-np-z]+$/u.test(written)) return false;
+  if (!written.includes(":") && !BECH32_WRITTEN.test(written)) return false;
   const lower = given.toLowerCase();
   return lower === written || lower === written.slice(written.indexOf(":") + 1);
 }

@@ -144,6 +144,13 @@ export const landingStaticRows: readonly AddressRow[] = [
     format: "implicit",
     address: "4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29",
   },
+  {
+    id: "atom",
+    chain: "Cosmos",
+    curve: "secp256k1",
+    format: "bech32",
+    address: "cosmos1w508d6qejxtdg4y5r3zarvary0c5xw7k6ah60c",
+  },
 ];
 
 export const LANDING_IDS: ReadonlySet<string> = new Set(landingStaticRows.map((row) => row.id));

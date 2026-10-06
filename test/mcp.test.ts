@@ -27,6 +27,7 @@ import {
   eCashTestVectors,
   xrplTestVectors,
   nearTestVectors,
+  cosmosTestVectors,
   dogecoinTestVectors,
   decredTestVectors,
   stellarTestVectors,
@@ -1822,6 +1823,69 @@ describe("keys MCP server", () => {
     expect(text(scan.content)).toContain(`Path: ${ledgerPath}`);
   });
 
+  it("takes a Cosmos prefix on cosmos and nowhere else", async () => {
+    const client = await connectTestClient();
+    const [[path, , publicKey, , osmoAddress], , [scanPath, , , , , scanAddress]] =
+      cosmosTestVectors.wallets;
+    const derived = await client.callTool({
+      name: "keys_hd_wallet_derive",
+      arguments: { chain: "cosmos", mnemonic: bip39TestVectors.mnemonic, path, prefix: "osmo" },
+    });
+    expect(text(derived.content)).toContain(`Address: ${osmoAddress}`);
+
+    const address = await client.callTool({
+      name: "keys_address_get",
+      arguments: { chain: "cosmos", publicKey },
+    });
+    expect(text(address.content)).toBe(`Address: ${cosmosTestVectors.wallets[0][3]}`);
+
+    const elsewhere = await client.callTool({
+      name: "keys_address_get",
+      arguments: { chain: "bitcoin", publicKey, prefix: "osmo" },
+    });
+    expect(elsewhere.isError).toBe(true);
+    expect(text(elsewhere.content)).toContain("Leave it out on bitcoin");
+
+    const validated = await client.callTool({
+      name: "keys_address_validate",
+      arguments: { chain: "cosmos", address: osmoAddress },
+    });
+    expect(text(validated.content)).toBe(`${osmoAddress} is not a valid cosmos address`);
+
+    const signed = await client.callTool({
+      name: "keys_message_sign",
+      arguments: {
+        chain: "cosmos",
+        message: cosmosTestVectors.message,
+        privateKey: cosmosTestVectors.wallets[0][1],
+      },
+    });
+    expect(text(signed.content)).toContain(cosmosTestVectors.signature);
+
+    const verified = await client.callTool({
+      name: "keys_message_verify",
+      arguments: {
+        chain: "cosmos",
+        message: cosmosTestVectors.message,
+        signature: cosmosTestVectors.signature,
+        publicKey,
+      },
+    });
+    expect(text(verified.content)).toBe("Signature is valid");
+
+    const scan = await client.callTool({
+      name: "keys_hd_wallet_scan",
+      arguments: {
+        chain: "cosmos",
+        mnemonic: bip39TestVectors.mnemonic,
+        address: scanAddress,
+        prefix: "celestia",
+      },
+    });
+    expect(text(scan.content)).toContain("Match: bip44,");
+    expect(text(scan.content)).toContain(`Path: ${scanPath}`);
+  });
+
   it("derives Decred through the MCP schema and executor", async () => {
     const client = await connectTestClient();
     const response = await client.callTool({
@@ -2571,6 +2635,7 @@ describe("keys MCP server", () => {
       ["aptos", "m/44'/637'/0'/0'/0'"],
       ["sui", "m/44'/784'/0'/0'/0'"],
       ["near", "m/44'/397'/0'"],
+      ["cosmos", "m/44'/118'/0'/0/0"],
     ]) {
       const generated = await client.callTool({
         name: "keys_bip44_generate",

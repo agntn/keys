@@ -234,7 +234,7 @@ export const walletGenerateTool = defineTool({
     "Generate a disposable private key, public key, and address for a supported blockchain. The plaintext private key enters the transcript, so never use the result for real funds.",
   snippet: "Use to create a new wallet with keys and address for Bitcoin, Ethereum, Solana, etc.",
   guidelines: [
-    "Provide a chain name (bitcoin, bitcoincash, bitcoingold, bitcoinsv, litecoin, dash, decred, dogecoin, zcash, ecash, ethereum, base, solana, stellar, aptos, tron, sui, cardano, xrpl, near)",
+    "Provide a chain name (bitcoin, bitcoincash, bitcoingold, bitcoinsv, litecoin, dash, decred, dogecoin, zcash, ecash, ethereum, base, solana, stellar, aptos, tron, sui, cardano, xrpl, near, cosmos)",
     "Optionally specify network (mainnet/testnet) and address type",
     "Bitcoin and Litecoin address types: legacy, p2sh, segwit, p2wsh, taproot",
     "Bitcoin Gold address types: legacy, p2sh, segwit, p2wsh; it never activated taproot",
@@ -252,7 +252,12 @@ export const walletGenerateTool = defineTool({
   idempotent: false,
   input: GENERATE_WALLET_PARAMETERS,
   execute: async (params) =>
-    (await loadOperations()).generateWallet(params.chain, params.network, params.addressType),
+    (await loadOperations()).generateWallet(
+      params.chain,
+      params.network,
+      params.addressType,
+      params.prefix,
+    ),
 });
 
 export const walletDeriveTool = defineTool({
@@ -278,6 +283,7 @@ export const walletDeriveTool = defineTool({
       params.addressType,
       params.network,
       params.compressed,
+      params.prefix,
     ),
 });
 
@@ -291,7 +297,7 @@ export const hdWalletDeriveTool = defineTool({
     "Provide a chain, a BIP39 mnemonic or its hex entropy, and a full derivation path",
     "Pass entropy directly instead of calling keys_bip39_entropy_encode first",
     "keys_hd_wallet_derive accepts an explicit BIP39 language; omission means english, not automatic detection",
-    "Common paths: Bitcoin m/44'/0'/0'/0/0 (legacy), m/49'/0'/0'/0/0 (p2sh), m/84'/0'/0'/0/0 (segwit), m/86'/0'/0'/0/0 (taproot); Bitcoin Cash m/44'/145'/0'/0/0; Bitcoin Gold m/44'/156'/0'/0/0 or m/84'/156'/0'/0/0 (segwit); Bitcoin SV m/44'/236'/0'/0/0, or m/44'/0'/0'/0/0 for ElectrumSV; Dash m/44'/5'/0'/0/0; Dogecoin m/44'/3'/0'/0/0; Zcash m/44'/133'/0'/0/0; eCash m/44'/899'/0'/0/0, or m/44'/1899'/0'/0/0 for Cashtab and m/44'/145'/0'/0/0 for wallets from before the split; Ethereum m/44'/60'/0'/0/0; Solana m/44'/501'/0'/0'; Stellar m/44'/148'/0'; Aptos m/44'/637'/0'/0'/0'; Sui m/44'/784'/0'/0'/0'; XRPL m/44'/144'/0'/0/0, secp256k1 only; NEAR m/44'/397'/0'",
+    "Common paths: Bitcoin m/44'/0'/0'/0/0 (legacy), m/49'/0'/0'/0/0 (p2sh), m/84'/0'/0'/0/0 (segwit), m/86'/0'/0'/0/0 (taproot); Bitcoin Cash m/44'/145'/0'/0/0; Bitcoin Gold m/44'/156'/0'/0/0 or m/84'/156'/0'/0/0 (segwit); Bitcoin SV m/44'/236'/0'/0/0, or m/44'/0'/0'/0/0 for ElectrumSV; Dash m/44'/5'/0'/0/0; Dogecoin m/44'/3'/0'/0/0; Zcash m/44'/133'/0'/0/0; eCash m/44'/899'/0'/0/0, or m/44'/1899'/0'/0/0 for Cashtab and m/44'/145'/0'/0/0 for wallets from before the split; Ethereum m/44'/60'/0'/0/0; Solana m/44'/501'/0'/0'; Stellar m/44'/148'/0'; Aptos m/44'/637'/0'/0'/0'; Sui m/44'/784'/0'/0'/0'; XRPL m/44'/144'/0'/0/0, secp256k1 only; NEAR m/44'/397'/0'; Cosmos m/44'/118'/0'/0/0, prefix picking the chain",
     "Bitcoin, Bitcoin Gold and Litecoin pick the address type from the path purpose unless addressType is set",
     "Optionally pass a BIP39 passphrase, a network, or an address type",
     "For public puzzles, allowInvalidChecksum=true accepts a checksum failure with a warning, but still requires words from the selected list and BIP39 word counts",
@@ -315,6 +321,7 @@ export const hdWalletDeriveTool = defineTool({
       params.allowInvalidChecksum,
       params.language,
       params.entropy,
+      params.prefix,
     ),
 });
 
@@ -346,6 +353,7 @@ export const hdWalletScanTool = defineTool({
       params.allowInvalidChecksum,
       params.accounts,
       params.indices,
+      params.prefix,
     ),
 });
 
@@ -371,6 +379,7 @@ export const xpubWalletDeriveTool = defineTool({
       params.path,
       params.addressType,
       params.network,
+      params.prefix,
     ),
 });
 
@@ -575,6 +584,7 @@ export const addressGetTool = defineTool({
       params.publicKey,
       params.addressType,
       params.network,
+      params.prefix,
     ),
 });
 
@@ -588,11 +598,17 @@ export const addressValidateTool = defineTool({
     "Returns true/false",
     "Zcash checks transparent t1, t3 and tex1 addresses; shielded and unified ones come back invalid",
     "NEAR checks implicit accounts; named ones like alice.near come back invalid, since no key derives them",
+    "cosmos checks the prefix too: osmo1... is invalid unless prefix is osmo",
   ],
   effect: "read",
   input: VALIDATE_ADDRESS_PARAMETERS,
   execute: async (params) =>
-    (await loadOperations()).validateAddress(params.chain, params.address, params.network),
+    (await loadOperations()).validateAddress(
+      params.chain,
+      params.address,
+      params.network,
+      params.prefix,
+    ),
 });
 
 export const scriptAddressGetTool = defineTool({
@@ -654,6 +670,7 @@ export const messageSignTool = defineTool({
     "Ethereum/Base use EIP-191 prefix",
     "xrpl signs like ripple-keypairs: DER over SHA-512Half of the message",
     "near signs the raw bytes; a NEP-413 wallet signature wraps a nonce and recipient first and won't match",
+    "cosmos signs like Keplr's signArbitrary (ADR-036), with the signer's address under prefix inside the signed doc",
     "Pass recovered on Ethereum, Base or TRON for 65-byte r||s||v, what ethers and TronWeb need",
     "Pass recovered on the Bitcoin family or decred for signmessage's base64, which a wallet verifies against an address",
   ],
@@ -667,6 +684,7 @@ export const messageSignTool = defineTool({
       params.privateKey,
       params.network,
       params.recovered,
+      params.prefix,
     ),
 });
 
@@ -690,6 +708,7 @@ export const messageVerifyTool = defineTool({
       params.signature,
       params.publicKey,
       params.network,
+      params.prefix,
     ),
 });
 

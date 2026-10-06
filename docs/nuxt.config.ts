@@ -20,6 +20,7 @@ const libraryDependencies = [
 /** Every subpath src/ imports, dynamic ones too, so dev bundles them up front, not on demand. */
 const libraryEntries = [
   "@agntn/encodings/base32",
+  "@agntn/encodings/base64",
   "@agntn/encodings/base58",
   "@agntn/encodings/bech32",
   "@agntn/hashes",
@@ -133,6 +134,7 @@ export default defineNuxtConfig({
         "simple-icons:npm",
         "token:ada",
         "token:apt",
+        "token:atom",
         "token:base",
         "token:bch",
         "token:bsv",
