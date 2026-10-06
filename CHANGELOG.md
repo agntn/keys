@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.6.2
+
+[compare changes](https://github.com/agntn/keys/compare/v0.6.1...v0.6.2)
+
+### 🚀 Enhancements
+
+- Add the XRP Ledger, family seeds and all ([#254](https://github.com/agntn/keys/pull/254))
+- Add NEAR implicit accounts ([#257](https://github.com/agntn/keys/pull/257))
+
+### 🩹 Fixes
+
+- **docs:** Let /mcp take a call with no arguments ([#241](https://github.com/agntn/keys/pull/241))
+- **docs:** Make /mcp say no like keys mcp does ([#242](https://github.com/agntn/keys/pull/242))
+
+### ❤️ Contributors
+
+- Aeitwoen ([@aeitwoen](https://github.com/aeitwoen))
+
 ## v0.6.1
 
 [compare changes](https://github.com/agntn/keys/compare/v0.6.0...v0.6.1)
