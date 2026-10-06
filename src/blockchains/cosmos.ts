@@ -19,8 +19,11 @@ const DEFAULT_PREFIX = "cosmos";
 
 const PREFIX = new RegExp(COSMOS_PREFIX_PATTERN, "u");
 
-/** Account addresses hash a key to 20 bytes; module, contract and ICA addresses take 32. */
-const ADDRESS_LENGTHS: ReadonlySet<number> = new Set([20, 32]);
+/** Most bytes an address may carry, `MaxAddrLen` in the SDK's default address verifier. */
+const MAX_ADDRESS_BYTES = 255;
+
+/** Longest bech32 string the SDK decodes, the limit its `DecodeAndConvert` passes. */
+const MAX_BECH32_LENGTH = 1023;
 
 /**
  * The ADR-036 sign doc Keplr's `signArbitrary` signs: amino JSON with sorted keys and zeroed fields.
@@ -86,14 +89,14 @@ export class Cosmos extends AbstractBlockchain {
   }
 
   /**
-   * Checks the checksum, the prefix of this instance and a 20 or 32 byte payload.
+   * Checks the checksum, the prefix of this instance and a payload the SDK's default verifier takes.
    * @param address - The address to check
    * @returns {boolean} Whether a Cosmos SDK chain with this prefix takes it
    */
   override validateAddress(address: string): boolean {
     try {
-      const { prefix, bytes } = bech32.decode(address);
-      return prefix === this.prefix && ADDRESS_LENGTHS.has(bytes.length);
+      const { prefix, bytes } = bech32.decode(address, MAX_BECH32_LENGTH);
+      return prefix === this.prefix && bytes.length > 0 && bytes.length <= MAX_ADDRESS_BYTES;
     } catch {
       return false;
     }

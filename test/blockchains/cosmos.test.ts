@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { bech32 } from "@agntn/encodings/bech32";
 import { bip39TestVectors, cosmosTestVectors, secp256k1TestVectors } from "../fixtures";
 import Cosmos from "../../src/blockchains/cosmos";
 import { useBlockchain } from "../../src/blockchain";
 import { blockchains } from "../../src/_blockchains";
-import { getAddress } from "../../src/tool-operations.ts";
+import { getAddress, validateAddress } from "../../src/tool-operations.ts";
 
 describe("Cosmos", () => {
   const blockchain = useBlockchain(new Cosmos());
@@ -65,17 +66,22 @@ describe("Cosmos", () => {
   });
 
   describe("Address validation", () => {
-    it("accepts account and 32 byte contract addresses under its prefix", () => {
+    it("accepts any payload the SDK's default verifier takes under its prefix", () => {
       expect(blockchain.validateAddress(address)).toBe(true);
       expect(blockchain.validateAddress(address.toUpperCase())).toBe(true);
       expect(blockchain.validateAddress(vector.contractAddress)).toBe(true);
+      expect(blockchain.validateAddress(vector.shortAddress)).toBe(true);
+      expect(blockchain.validateAddress(bech32.encode("cosmos", new Uint8Array(255), 1023))).toBe(
+        true,
+      );
       expect(osmosis.validateAddress(osmoAddress)).toBe(true);
     });
 
     it.each([
       ["another chain's prefix", osmoAddress],
       ["a broken checksum", `${address.slice(0, -1)}5`],
-      ["21 bytes of payload", vector.shortAddress],
+      ["no payload at all", vector.emptyAddress],
+      ["256 bytes of payload", bech32.encode("cosmos", new Uint8Array(256), 1023)],
       ["mixed case", `${address.slice(0, 10)}${address.slice(10).toUpperCase()}`],
       ["an empty string", ""],
     ])("rejects %s", (_label, candidate) => {
@@ -129,6 +135,11 @@ describe("Cosmos", () => {
     it("read a blank prefix as left out", async () => {
       const result = await getAddress("cosmos", publicKey, undefined, undefined, " ");
       expect(result.details.address).toBe(address);
+    });
+
+    it("keep the prefix when they look for the address on the other network", async () => {
+      const result = await validateAddress("cosmos", address, undefined, "osmo");
+      expect(result.content[0]?.text).toBe(`${address} is not a valid cosmos address`);
     });
 
     it("say what a bad prefix looks like", async () => {

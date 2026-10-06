@@ -2425,7 +2425,7 @@ export async function validateAddress(
   const renderedAddress = sanitizeToolText(address);
   const otherNetwork = valid
     ? undefined
-    : await otherNetworkOf(chainValue, blockchain.network, address);
+    : await otherNetworkOf(chainValue, blockchain.network, address, prefixValue);
   return {
     content: content(
       valid
@@ -2444,16 +2444,18 @@ export async function validateAddress(
  * @param chainValue - Blockchain name, already accepted by `getBlockchain`.
  * @param network - Network the address failed on.
  * @param address - Address that failed.
+ * @param prefixValue - Bech32 prefix the first check used, cosmos only.
  * @returns {Promise<ToolNetwork | undefined>} The other network, when the address passes there.
  */
 async function otherNetworkOf(
   chainValue: unknown,
   network: string,
   address: string,
+  prefixValue: unknown,
 ): Promise<ToolNetwork | undefined> {
   const other = TOOL_NETWORKS.find((candidate) => candidate !== network);
   if (other === undefined) return undefined;
-  const { blockchain } = await getBlockchain(chainValue, other);
+  const { blockchain } = await getBlockchain(chainValue, other, undefined, prefixValue);
   return blockchain.validateAddress(address) ? other : undefined;
 }
 

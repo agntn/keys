@@ -46,7 +46,7 @@ An uncompressed key works too. It gets compressed before hashing, because Cosmos
 
 The one the chain's explorer shows. `cosmos` for the Hub, `osmo` for Osmosis, `stars` for Stargaze, and plain `celestia`, `juno` or `akash`. A lowercase letter, then letters and digits. Anything else throws when you load the chain. Better a typo fails there than three steps later, as an address nobody can use.
 
-`validateAddress` checks the prefix too. An `osmo1...` address is `false` for `cosmos`, good checksum or not. Accounts are 20 bytes. Contracts, modules and interchain accounts get 32, and those pass too.
+`validateAddress` checks the prefix too. An `osmo1...` address is `false` for `cosmos`, good checksum or not. Accounts are 20 bytes and contracts get 32, but the SDK's own check takes anything from 1 to 255. So does this one.
 
 ```js
 cosmosChain.validateAddress("cosmos1w508d6qejxtdg4y5r3zarvary0c5xw7k6ah60c"); // true

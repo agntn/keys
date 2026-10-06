@@ -625,9 +625,10 @@ export const cosmosTestVectors = {
   ],
   /** `secp256k1TestVectors.publicKeyCompressed` as cosmjs `pubkeyToAddress` writes it. */
   fixtureAddress: "cosmos17lhf4defwy62pnx8du74p62daut53rev66jw7a",
-  /** `toBech32` from @cosmjs/encoding over the bytes 1, 2, 3 and on, 32 and 21 of them. */
+  /** `toBech32` from @cosmjs/encoding over the bytes 1, 2, 3 and on: 32, 21 and none of them. */
   contractAddress: "cosmos1qypqxpq9qcrsszg2pvxq6rs0zqg3yyc5z5tpwxqergd3c8g7rusqqlvp8l",
   shortAddress: "cosmos1qypqxpq9qcrsszg2pvxq6rs0zqg3yyc5z56fjcee",
+  emptyAddress: "cosmos1550dq7",
   message: "cosmos me",
   signature:
     "01eb03d69c0e8ca0147939c00975c1078fbff0c3978848671fde7224ded0924556492b91ec2a8882181ef7b75c33b6f3e1d56b5512e3052abcbbdb0f44b3fbfb",
