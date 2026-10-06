@@ -222,6 +222,20 @@ Not every prize sits behind one key. A 2-of-2 or a published `redeemScript` pays
 
 Decred and Cardano throw on `deriveHDWallet`, on purpose, `deriveWallet` with a private key works on both. Sui is ed25519 unless you ask for secp256k1. The XRP Ledger goes the other way, secp256k1 unless you ask or its `sEd...` seed does. NEAR doesn't even encode: the account is the public key in hex, and `getAddress` reads NEAR's own `ed25519:` form too. Cosmos takes a `prefix` next to `network`, so `blockchains.cosmos({ prefix: "celestia" })()` writes Celestia addresses. Testnet is a constructor option, `blockchains.bitcoin({ network: "testnet" })()` and your segwit addresses start with `tb1q`. Chain pages with prefixes and testnets: [Blockchains](https://keys.agntn.dev/blockchains).
 
+## 💻 Terminal
+
+```bash
+npx @agntn/keys wallet-derive --chain bitcoin --private-key 0000000000000000000000000000000000000000000000000000000000000001
+```
+
+```
+Address type: legacy
+Public key: 0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798
+Address: 1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH
+```
+
+Every agent tool is a command too. `keys_wallet_derive` is `keys wallet-derive`, `keys_bip39_inspect` is `keys bip39-inspect`. Where do the flags come from? The tool schema, through `runCli` of [`@agntn/tools`](https://tools.agntn.dev/guide/cli). So `--help` can't drift from what MCP lists. You read what a model reads, and `--json` prints the details. Yes, that's private key 1, the most famous throwaway in Bitcoin. A real key typed here lands in your shell history. Throwaway keys only.
+
 ## 🤖 Agents
 
 ```bash

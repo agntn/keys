@@ -3,53 +3,72 @@
 import { existsSync } from "node:fs";
 import { sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineCommand, runMain } from "citty";
-import type McpCommand from "./commands/mcp.ts";
+import { runCli } from "@agntn/tools/cli";
+import type { createMcpServer } from "./mcp.ts";
+import { keysTools } from "./tools.ts";
 import { version } from "./version.ts";
 
-/** The same file from `src/cli.ts` and `dist/cli.mjs`; the npm package leaves `src/commands` out. */
-const sourceMcpCommand = new URL("../src/commands/mcp.ts", import.meta.url);
-const sourceMcpCommandPath = fileURLToPath(sourceMcpCommand);
+/** The same file from `src/cli.ts` and `dist/cli.mjs`; the npm package ships only `dist`. */
+const sourceMcp = new URL("../src/mcp.ts", import.meta.url);
+const sourceMcpPath = fileURLToPath(sourceMcp);
 
 /**
  * Narrows the module a runtime URL import returned, which TypeScript types as `any`.
  * @param value - The imported module namespace.
- * @returns {value is { default: typeof McpCommand }} Whether it exports a default command.
+ * @returns {value is { createMcpServer: typeof createMcpServer }} Whether it exports the server.
  */
-function isCommandModule(value: unknown): value is { default: typeof McpCommand } {
-  return typeof value === "object" && value !== null && "default" in value;
+function isMcpModule(value: unknown): value is { createMcpServer: typeof createMcpServer } {
+  return typeof value === "object" && value !== null && "createMcpServer" in value;
 }
 
 /**
- * Loads the MCP command. A built bin inside a checkout runs the live source, as the Pi and
- * OMP extensions do, so a local server needs a restart after a change instead of `pnpm build`.
- * Node refuses to strip types under `node_modules`, so a git install that ships `src` keeps
- * the bundle too. `KEYS_DIST=1` keeps it everywhere, for tests of the packed output.
- * @returns {Promise<typeof McpCommand>} The citty command that starts the stdio server.
+ * A checkout serves the live source; `node_modules` and `KEYS_DIST=1` keep the bundle.
+ * @param argv - Every argument after the bin.
+ * @returns {boolean} Whether the line is a bare `mcp` and the source is there to serve.
  */
-async function loadMcpCommand(): Promise<typeof McpCommand> {
-  const fromSource =
-    !import.meta.url.endsWith(".ts") &&
-    process.env.KEYS_DIST !== "1" &&
-    !sourceMcpCommandPath.includes(`${sep}node_modules${sep}`) &&
-    existsSync(sourceMcpCommandPath);
-  if (!fromSource) return (await import("./commands/mcp.ts")).default;
-  const module: unknown = await import(sourceMcpCommand.href);
-  if (!isCommandModule(module)) {
-    throw new TypeError(`${sourceMcpCommandPath} has no default command`);
-  }
-  return module.default;
+function servesSource(argv: readonly string[]): boolean {
+  return (
+    argv.length === 1 &&
+    argv[0] === "mcp" &&
+    process.env["KEYS_DIST"] !== "1" &&
+    !sourceMcpPath.includes(`${sep}node_modules${sep}`) &&
+    existsSync(sourceMcpPath)
+  );
 }
 
-const main = defineCommand({
-  meta: {
-    name: "keys",
-    version,
-    description: "Blockchain key, address, mnemonic, and signing tools",
-  },
-  subCommands: {
-    mcp: loadMcpCommand,
-  },
-});
+/**
+ * Serves `src/mcp.ts` over stdio. The URL is built at runtime, so the bundler leaves `src` out.
+ * @returns {Promise<void>} Once the server is connected.
+ */
+async function serveSource(): Promise<void> {
+  const module: unknown = await import(sourceMcp.href);
+  if (!isMcpModule(module)) throw new TypeError(`${sourceMcpPath} has no createMcpServer`);
+  const { StdioServerTransport } = await import("@modelcontextprotocol/server/stdio");
+  await module.createMcpServer().connect(new StdioServerTransport());
+}
 
-await runMain(main);
+/**
+ * Every refusal the executors make is an `Error` whose message is meant for the caller.
+ * @param error - What a command threw.
+ * @returns {boolean} Whether it prints as one line instead of a stack trace.
+ */
+function isRefusal(error: unknown): boolean {
+  return error instanceof Error;
+}
+
+const argv = process.argv.slice(2);
+if (servesSource(argv)) {
+  await serveSource();
+} else {
+  await runCli(
+    {
+      name: "keys",
+      version,
+      description: "Blockchain key, address, mnemonic, and signing tools",
+      tools: keysTools,
+      mcp: true,
+      expected: isRefusal,
+    },
+    argv,
+  );
+}
