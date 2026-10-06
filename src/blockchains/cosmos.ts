@@ -59,7 +59,7 @@ export class Cosmos extends AbstractBlockchain {
     const prefix = options?.prefix ?? DEFAULT_PREFIX;
     if (!PREFIX.test(prefix)) {
       throw new RangeError(
-        "A Cosmos prefix is a lowercase letter and up to 29 more letters or digits, like osmo or celestia",
+        "A Cosmos prefix is 1 to 83 printable ASCII characters without uppercase, like osmo or fren-1",
       );
     }
     this.prefix = prefix;
@@ -85,7 +85,8 @@ export class Cosmos extends AbstractBlockchain {
    */
   override getAddress(keyPublic: string, type?: AddressType): string {
     this.refuseAddressType(type);
-    return bech32.encode(this.prefix, hash160(decodePublicPoint(keyPublic).toBytes(true)));
+    const hash = hash160(decodePublicPoint(keyPublic).toBytes(true));
+    return bech32.encode(this.prefix, hash, MAX_BECH32_LENGTH);
   }
 
   /**

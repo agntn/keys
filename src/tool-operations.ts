@@ -2558,6 +2558,9 @@ export async function verifyMessage(
   };
 }
 
+/** Bech32 as an encoder writes it: a BIP-173 prefix without uppercase, `1`, then the data. */
+const BECH32_WRITTEN = /^[\x21-\x40\x5B-\x7E]{1,83}1[02-9ac-hj-np-z]{6,}$/u;
+
 /**
  * Compare a written address with a typed one: bech32 and CashAddr ignore case, base58 doesn't.
  * @param written - Address from `getAddress`
@@ -2567,7 +2570,7 @@ export async function verifyMessage(
 function sameAddress(written: string, given: string): boolean {
   if (written === given) return true;
   if (written.startsWith("0x")) return written.toLowerCase() === given.toLowerCase();
-  if (!written.includes(":") && !/^[a-z]+1[02-9ac-hj-np-z]+$/u.test(written)) return false;
+  if (!written.includes(":") && !BECH32_WRITTEN.test(written)) return false;
   const lower = given.toLowerCase();
   return lower === written || lower === written.slice(written.indexOf(":") + 1);
 }

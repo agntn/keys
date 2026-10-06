@@ -1,2 +1,2 @@
-/** A bech32 prefix as Cosmos SDK chains write it, `osmo` or `celestia`, never a mixed case one. */
-export const COSMOS_PREFIX_PATTERN = "^[a-z][a-z0-9]{0,29}$";
+/** A BIP-173 bech32 prefix: up to 83 printable ASCII characters, lowercase as encoders write it. */
+export const COSMOS_PREFIX_PATTERN = "^[\\x21-\\x40\\x5B-\\x7E]{1,83}$";

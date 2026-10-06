@@ -5,7 +5,7 @@ import { bip39TestVectors, cosmosTestVectors, secp256k1TestVectors } from "../fi
 import Cosmos from "../../src/blockchains/cosmos";
 import { useBlockchain } from "../../src/blockchain";
 import { blockchains } from "../../src/_blockchains";
-import { getAddress, validateAddress } from "../../src/tool-operations.ts";
+import { getAddress, scanHdWallet, validateAddress } from "../../src/tool-operations.ts";
 
 describe("Cosmos", () => {
   const blockchain = useBlockchain(new Cosmos());
@@ -41,12 +41,19 @@ describe("Cosmos", () => {
       expect(new Cosmos({ network: "testnet" }).getAddress(publicKey)).toBe(address);
     });
 
-    it.each([["Osmo"], [""], ["1cosmos"], ["cosmos-hub"], ["a".repeat(31)]])(
+    it.each([["Osmo"], [""], ["os mo"], ["ü"], ["x".repeat(84)]])(
       "refuses the prefix %j",
       (prefix) => {
         expect(() => new Cosmos({ prefix })).toThrow(RangeError);
       },
     );
+
+    it("takes any prefix BIP-173 allows, punctuation and digits included", () => {
+      for (const prefix of ["fren-1", "c4e", "x".repeat(83)]) {
+        const chain = new Cosmos({ prefix });
+        expect(chain.validateAddress(chain.getAddress(publicKey))).toBe(true);
+      }
+    });
 
     it("has one address format", () => {
       expect(() => blockchain.getAddress(publicKey, "segwit")).toThrow(RangeError);
@@ -147,9 +154,26 @@ describe("Cosmos", () => {
       expect(result.content[0]?.text).toBe(`${address} is not a valid cosmos address`);
     });
 
+    it("find an uppercase address under a prefix with a digit", async () => {
+      const c4e = new Cosmos({ prefix: "c4e" }).getAddress(publicKey).toUpperCase();
+      const result = await scanHdWallet(
+        "cosmos",
+        bip39TestVectors.mnemonic,
+        c4e,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        1,
+        "c4e",
+      );
+      expect(result.details.found).toBe(true);
+    });
+
     it("say what a bad prefix looks like", async () => {
       await expect(getAddress("cosmos", publicKey, undefined, undefined, "Osmo")).rejects.toThrow(
-        /lowercase letter/,
+        /printable ASCII/,
       );
       await expect(getAddress("ethereum", publicKey, undefined, undefined, "osmo")).rejects.toThrow(
         "Leave it out on ethereum",

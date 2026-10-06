@@ -44,7 +44,7 @@ An uncompressed key works too. It gets compressed before hashing, because Cosmos
 
 ## Which prefix?
 
-The one the chain's explorer shows. `cosmos` for the Hub, `osmo` for Osmosis, `stars` for Stargaze, and plain `celestia`, `juno` or `akash`. A lowercase letter, then letters and digits. Anything else throws when you load the chain. Better a typo fails there than three steps later, as an address nobody can use.
+The one the chain's explorer shows. `cosmos` for the Hub, `osmo` for Osmosis, `stars` for Stargaze, and plain `celestia`, `juno` or `akash`. Bech32 takes up to 83 printable ASCII characters, so `fren-1` and `c4e` work too, as long as they're lowercase. Anything else throws when you load the chain. Better a typo fails there than three steps later, as an address nobody can use.
 
 `validateAddress` checks the prefix too. An `osmo1...` address is `false` for `cosmos`, good checksum or not. Accounts are 20 bytes and contracts get 32, but the SDK's own check takes anything from 1 to 255. So does this one.
 
