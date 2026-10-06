@@ -137,6 +137,13 @@ export const landingStaticRows: readonly AddressRow[] = [
     format: "classic",
     address: "rBgGZ9tc4him9KBzD8fKFiQz3fSZpaSwMH",
   },
+  {
+    id: "near",
+    chain: "NEAR",
+    curve: "ed25519",
+    format: "implicit",
+    address: "4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29",
+  },
 ];
 
 export const LANDING_IDS: ReadonlySet<string> = new Set(landingStaticRows.map((row) => row.id));

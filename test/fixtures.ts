@@ -563,6 +563,36 @@ export const xrplTestVectors = {
 } as const;
 
 /**
+ * BIP39 reference wallets from near-seed-phrase 0.2.1, the last at the near-ledger-js default path.
+ * The signature is tweetnacl 1.0.3 over the message bytes with the first key.
+ */
+export const nearTestVectors = {
+  wallets: [
+    [
+      "m/44'/397'/0'",
+      "0c158d858a52316667d03d1d04aad51b3b542cd705215810629b78c501492fba",
+      "5510e2b44cae6eb807e3e0e45d579dda058c274abcba15e5cb84636f5d1ee412",
+      "ed25519:6j4b6zUaty6fD1awqcGCCU9JYGCWYUgdJhQrzfZhqE25",
+    ],
+    [
+      "m/44'/397'/1'",
+      "a20b5f6c6f2148bc42fe70cbfa5c367e95672c8bcffddfe4feb1f326dac40e4a",
+      "3b93b03253b9715213ec314eb50ecc99d25602ccb5b059f91f51d24710d54326",
+      "ed25519:51ZftJ8qPN8mJ3oqgQb3fqPbotQVZfTC4mxLgwz34FTK",
+    ],
+    [
+      "m/44'/397'/0'/0'/1'",
+      "f91834d6b845460fe0e9929bff2fbf564b6a9e4b0453af77c0141220ab519942",
+      "c571e33e2e36c2c728d617ea77a88e2320c8697eac8b463adfc0128b96825cbf",
+      "ed25519:EHk3HArKPRpX7564aTMD7VJdbQRoWA9JvJaEvbta2iSz",
+    ],
+  ],
+  message: "near me",
+  signature:
+    "5d5bac2d9f2457d2f3de4b2d1d8e82cec5b3f079cc629fdddcba5ddf259963ff007ae06716761d7c7722728c8502d0df2839dc115702d1068a254806f4db3203",
+} as const;
+
+/**
  * Disposable key 1 through @stellar/stellar-sdk 17.1.0: SEP-53 `signMessage` digests and
  * signatures. The HD rows are SEP-0005 test case 1, the SDK derives the same keys.
  */

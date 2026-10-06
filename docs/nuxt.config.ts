@@ -148,6 +148,7 @@ export default defineNuxtConfig({
         "token:trx",
         "token:xec",
         "token:xlm",
+        "token:near",
         "token:xrp",
         "token:zec",
         "vscode-icons:file-type-js",

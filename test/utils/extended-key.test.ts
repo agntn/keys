@@ -136,7 +136,7 @@ describe("extended public key derivation", () => {
     );
   });
 
-  it.each(["solana", "stellar", "aptos", "cardano", "sui", "decred"] as const)(
+  it.each(["solana", "stellar", "aptos", "near", "cardano", "sui", "decred"] as const)(
     "refuses %s, which has no standard secp256k1 extended public key",
     async (name) => {
       const chain: AbstractBlockchain = await blockchains[name]()();

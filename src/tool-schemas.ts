@@ -18,6 +18,7 @@ import {
   PRIVATE_KEY_SCHEMA_PATTERN,
   WALLET_SECRET_SCHEMA_PATTERN,
   PUBLIC_KEY_SCHEMA_PATTERN,
+  CHAIN_PUBLIC_KEY_SCHEMA_PATTERN,
   RECOVERABLE_SIGNATURE_SCHEMA_PATTERN,
   DIGEST_SCHEMA_PATTERN,
   MESSAGE_SIGNATURE_SCHEMA_PATTERN,
@@ -905,9 +906,9 @@ export const GET_ADDRESS_PARAMETERS = Type.Object(
   {
     chain: chainArgument,
     publicKey: Type.String({
-      pattern: PUBLIC_KEY_SCHEMA_PATTERN,
+      pattern: CHAIN_PUBLIC_KEY_SCHEMA_PATTERN,
       description:
-        "Public key as hex without 0x: 32-byte ed25519 (on xrpl also its ED form), or compressed or uncompressed SEC1 secp256k1",
+        "Public key as hex without 0x: 32-byte ed25519 (on xrpl also its ED form, on near also ed25519: and base58), or compressed or uncompressed SEC1 secp256k1",
     }),
     addressType: addressTypeArgument,
     network: networkArgument,
@@ -957,9 +958,9 @@ export const VERIFY_MESSAGE_PARAMETERS = Type.Object(
         "Signature as hex without 0x: 64 bytes, or 65 with the recovery byte; DER on xrpl secp256k1, as ripple-keypairs signs. The Bitcoin family and decred also take signmessage's base64",
     }),
     publicKey: Type.String({
-      pattern: PUBLIC_KEY_SCHEMA_PATTERN,
+      pattern: CHAIN_PUBLIC_KEY_SCHEMA_PATTERN,
       description:
-        "Public key as hex without 0x: 32-byte ed25519, or compressed or uncompressed SEC1 secp256k1",
+        "Public key as hex without 0x: 32-byte ed25519 (on near also ed25519: and base58), or compressed or uncompressed SEC1 secp256k1",
     }),
     network: networkArgument,
   },

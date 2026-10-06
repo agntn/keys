@@ -158,6 +158,7 @@ export const TOOL_CHAINS = [
   "sui",
   "cardano",
   "xrpl",
+  "near",
 ] as const;
 
 /** Blockchain name accepted by the tool surfaces. */
@@ -204,6 +205,7 @@ export const TOOL_ADDRESS_TYPES_BY_CHAIN: Readonly<Record<ToolChain, readonly st
   sui: SUI_ADDRESS_TYPES,
   cardano: CARDANO_ADDRESS_TYPES,
   xrpl: XRPL_ADDRESS_TYPES,
+  near: [],
 };
 
 /** Native WIF chains exposed by both agent transports. */
@@ -275,6 +277,10 @@ export const WALLET_SECRET_SCHEMA_PATTERN = "^(?:[0-9A-Fa-f]{64}|s[1-9A-HJ-NP-Za
  */
 export const PUBLIC_KEY_SCHEMA_PATTERN =
   "^(?:(?:[Ee][Dd])?[0-9A-Fa-f]{64}|0[23][0-9A-Fa-f]{64}|04[0-9A-Fa-f]{128})$";
+
+/** JSON Schema pattern for the key an address or a signature reads, NEAR's `ed25519:` form too. */
+export const CHAIN_PUBLIC_KEY_SCHEMA_PATTERN =
+  "^(?:(?:[Ee][Dd])?[0-9A-Fa-f]{64}|0[23][0-9A-Fa-f]{64}|04[0-9A-Fa-f]{128}|ed25519:[1-9A-HJ-NP-Za-km-z]{32,44})$";
 
 /** JSON Schema pattern for a 64-byte `r||s` or ed25519 signature, or 65 bytes with the recovery byte. */
 export const SIGNATURE_SCHEMA_PATTERN = "^[0-9A-Fa-f]{128}(?:[0-9A-Fa-f]{2})?$";

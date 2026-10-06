@@ -26,6 +26,7 @@ import {
   zcashTestVectors,
   eCashTestVectors,
   xrplTestVectors,
+  nearTestVectors,
   dogecoinTestVectors,
   decredTestVectors,
   stellarTestVectors,
@@ -1778,6 +1779,49 @@ describe("keys MCP server", () => {
     expect(text(hd.content)).toContain(`Address: ${hdAddress}`);
   });
 
+  it("reads NEAR keys as NEAR prints them and finds the Ledger account", async () => {
+    const client = await connectTestClient();
+    const [[, , publicKey, nearKey], , [ledgerPath, , ledgerAccount]] = nearTestVectors.wallets;
+    const account = await client.callTool({
+      name: "keys_address_get",
+      arguments: { chain: "near", publicKey: nearKey },
+    });
+    expect(text(account.content)).toBe(`Address: ${publicKey}`);
+
+    const elsewhere = await client.callTool({
+      name: "keys_address_get",
+      arguments: { chain: "solana", publicKey: nearKey },
+    });
+    expect(elsewhere.isError).toBe(true);
+    expect(text(elsewhere.content)).toContain(
+      "is how NEAR writes a key. Give solana the key in hex",
+    );
+
+    const verified = await client.callTool({
+      name: "keys_message_verify",
+      arguments: {
+        chain: "near",
+        message: nearTestVectors.message,
+        signature: nearTestVectors.signature,
+        publicKey: nearKey,
+      },
+    });
+    expect(text(verified.content)).toBe("Signature is valid");
+
+    const named = await client.callTool({
+      name: "keys_address_validate",
+      arguments: { chain: "near", address: "alice.near" },
+    });
+    expect(text(named.content)).toBe("alice.near is not a valid near address");
+
+    const scan = await client.callTool({
+      name: "keys_hd_wallet_scan",
+      arguments: { chain: "near", mnemonic: bip39TestVectors.mnemonic, address: ledgerAccount },
+    });
+    expect(text(scan.content)).toContain("Match: ledger,");
+    expect(text(scan.content)).toContain(`Path: ${ledgerPath}`);
+  });
+
   it("derives Decred through the MCP schema and executor", async () => {
     const client = await connectTestClient();
     const response = await client.callTool({
@@ -2526,6 +2570,7 @@ describe("keys MCP server", () => {
       ["stellar", "m/44'/148'/0'"],
       ["aptos", "m/44'/637'/0'/0'/0'"],
       ["sui", "m/44'/784'/0'/0'/0'"],
+      ["near", "m/44'/397'/0'"],
     ]) {
       const generated = await client.callTool({
         name: "keys_bip44_generate",

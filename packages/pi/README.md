@@ -1,6 +1,6 @@
 # @agntn/keys: Pi extension
 
-Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as agent tools for key generation, brainwallets, WIF conversion, BIP38 inspection and decryption, keystore files, BIP39 generation, entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, TRON, SUI, Cardano and the XRP Ledger.
+Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as agent tools for key generation, brainwallets, WIF conversion, BIP38 inspection and decryption, keystore files, BIP39 generation, entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, TRON, SUI, Cardano, the XRP Ledger and NEAR.
 
 > [!WARNING]
 > **This extension is experimental.** The package name, public API, provider model, CLI flags, and tool surfaces may change before the first stable release. Pin exact versions if you build on it now.
