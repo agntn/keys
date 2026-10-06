@@ -20,6 +20,7 @@ import {
   dashTestVectors,
   zcashTestVectors,
   eCashTestVectors,
+  xrplTestVectors,
   dogecoinTestVectors,
   decredTestVectors,
   stellarTestVectors,
@@ -782,6 +783,17 @@ describe("keys Pi extension", () => {
     expect(JSON.stringify(result.content)).toContain(`Address: ${address}`);
   });
 
+  it("derives XRPL from a family seed through the registered Pi tool", async () => {
+    const tool = (await registerTools()).get("keys_wallet_derive");
+    if (!tool) throw new Error("keys_wallet_derive was not registered");
+    const { seed, address } = xrplTestVectors.seeds.ed25519;
+    const args = { chain: "xrpl", privateKey: seed };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    const result = await tool.execute("xrpl", args);
+    expect(JSON.stringify(result.content)).toContain(`Address: ${address}`);
+    expect(JSON.stringify(result.content)).toContain("Address type: ed25519");
+  });
+
   it("derives Decred through the registered Pi tool", async () => {
     const tool = (await registerTools()).get("keys_wallet_derive");
     if (!tool) throw new Error("keys_wallet_derive was not registered");
@@ -819,7 +831,7 @@ describe("keys Pi extension", () => {
       [
         "keys_message_verify",
         { chain: "ethereum", message, signature: `0x${signature}`, publicKey },
-        "Signature must be 64 or 65 bytes of hex without 0x",
+        "Signature must be 64 or 65 bytes of hex, or DER on xrpl, without 0x",
       ],
       [
         "keys_message_verify",

@@ -483,6 +483,86 @@ export const suiTestVectors = {
 } as const;
 
 /**
+ * XRP Ledger vectors from ripple-keypairs 3.1.0 and xrpl 5.3.0. `master` is the genesis account
+ * of the passphrase `masterpassphrase`; the other seeds carry the entropy 00 to 0f.
+ */
+export const xrplTestVectors = {
+  seeds: {
+    master: {
+      seed: "snoPBrXtMeMyMHUVTgbuqAfg1SUTb",
+      privateKey: "1acaaedece405b2a958212629e16f2eb46b153eee94cdd350fdeff52795525b7",
+      publicKey: "0330e7fc9d56bb25d6893ba3f317ae5bcf33b3291bd63db32654a313222f7fd020",
+      address: "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    },
+    secp256k1: {
+      seed: "sp6JdwovBCsiwnMhXuvZGZtPUoGVj",
+      privateKey: "baa795362c6e48b9722325d0dcbd5a1e2cd4935c6cb12816daec50f87487bf84",
+      publicKey: "0257cf4f3929f535518d624292d62ace47e9da563d7dfa7ea4c6bc24258ab467b7",
+      address: "rU2k1U7W1xToQrFQW8gyWiXQFqVkJwrSn9",
+    },
+    ed25519: {
+      seed: "sEdSJHdnVumf99WfaHTnU8DaQkx5Q4n",
+      privateKey: "daa295beed4e2ee94c24015b56af626b4f21ef9f44f2b3d40fc41c90900a6bf1",
+      publicKey: "ed951bf8b3b7c8aa4bc1b91790fc1b3ff7155cd729c2e6f038a93f5f3b9035dd85",
+      address: "rGMTQpyhaDwWTqmw4dcYHj5NPJhtWNhtRW",
+    },
+  },
+  /** The same seeds read under the other scheme, as `deriveKeypair` does with an algorithm. */
+  crossed: {
+    secp256k1AsEd25519: {
+      seed: "sp6JdwovBCsiwnMhXuvZGZtPUoGVj",
+      privateKey: "daa295beed4e2ee94c24015b56af626b4f21ef9f44f2b3d40fc41c90900a6bf1",
+      publicKey: "ed951bf8b3b7c8aa4bc1b91790fc1b3ff7155cd729c2e6f038a93f5f3b9035dd85",
+      address: "rGMTQpyhaDwWTqmw4dcYHj5NPJhtWNhtRW",
+    },
+    ed25519AsSecp256k1: {
+      seed: "sEdSJHdnVumf99WfaHTnU8DaQkx5Q4n",
+      privateKey: "baa795362c6e48b9722325d0dcbd5a1e2cd4935c6cb12816daec50f87487bf84",
+      publicKey: "0257cf4f3929f535518d624292d62ace47e9da563d7dfa7ea4c6bc24258ab467b7",
+      address: "rU2k1U7W1xToQrFQW8gyWiXQFqVkJwrSn9",
+    },
+  },
+  secp256k1: {
+    privateKey: secp256k1TestVectors.privateKey,
+    publicKey: "030947751e3022ecf3016be03ec77ab0ce3c2662b4843898cb068d74f698ccc8ad",
+    address: "rPbAjuQPsy9EsZ8bbW7vuehzFgkQuSbgDn",
+  },
+  ed25519: {
+    privateKey: ed25519TestVectors.privateKey,
+    publicKey: "edd75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
+    address: "rGoMvPW8NFU9vkcAQVuFj9buMLjxhxRsVS",
+  },
+  /** `sign` from ripple-keypairs over the UTF-8 of the message: DER on secp256k1, raw ed25519. */
+  message: "Hello, XRPL!",
+  signatures: {
+    secp256k1:
+      "3044022046dd48c3be34085bcb8d7be30b9ffb606b76b0e57e68b4ad29055da6d97f19e0022079b9fd73393c0c58c548fb8beaf56fc0c9dad212eb570db757d77891b35974a8",
+    ed25519:
+      "9868a85b8b76eba315c116ab5fe9213ad00e0b873dc9c7fd596362eabe02ecb14534dcf32ca886fae54558a8a78b80e73d8fe7e36c4a0de4297ea08c407dd800",
+  },
+  /** Path, public key and address of `bip39TestVectors.mnemonic` through `Wallet.fromMnemonic`. */
+  hd: [
+    [
+      "m/44'/144'/0'/0/0",
+      "031d68bc1a142e6766b2bdfb006ccfe135ef2e0e2e94abb5cf5c9ab6104776fbae",
+      "rHsMGQEkVNJmpGWs8XUBoTBiAAbwxZN5v3",
+    ],
+    [
+      "m/44'/144'/0'/0/1",
+      "038bf420b5271ada2d7479358ff98a29954cf18dc25155184aead05796da737e89",
+      "r3AgF9mMBFtaLhKcg96weMhbbEFLZ3mx17",
+    ],
+    [
+      "m/44'/144'/1'/0/0",
+      "03ac5dad4e5953653175bf01d566788a3c4c1d101dfc5144a541244b0c68e10446",
+      "rNAB7uPziNwZAkdzyeo6xRA9pKTsJxZ6td",
+    ],
+  ],
+  /** X-address of `secp256k1.address`, a format `validateAddress` leaves to the classic one. */
+  xAddress: "XVjUbnJUzL9Vb5zXMPdoFURPqGtaRzBkr5DuJfResXEzcKh",
+} as const;
+
+/**
  * Disposable key 1 through @stellar/stellar-sdk 17.1.0: SEP-53 `signMessage` digests and
  * signatures. The HD rows are SEP-0005 test case 1, the SDK derives the same keys.
  */

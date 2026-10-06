@@ -72,7 +72,7 @@ export default defineNuxtConfig({
     domain: "https://keys.agntn.dev",
     title: "@agntn/keys",
     description:
-      "Keys to addresses to signatures on eighteen chains from a mnemonic or from nothing at all",
+      "Keys to addresses to signatures on a whole pile of chains from a mnemonic or from nothing at all",
     sections: [
       {
         title: "MCP Server",
@@ -92,7 +92,8 @@ export default defineNuxtConfig({
           {
             title: "Keyspace",
             href: "https://keys.agntn.dev/keyspace",
-            description: "Walk secp256k1 private keys in the browser and derive addresses for eighteen chains",
+            description:
+              "Walk secp256k1 private keys in the browser and derive addresses for every chain in the package",
           },
         ],
       },
@@ -147,6 +148,7 @@ export default defineNuxtConfig({
         "token:trx",
         "token:xec",
         "token:xlm",
+        "token:xrp",
         "token:zec",
         "vscode-icons:file-type-js",
         "vscode-icons:file-type-json",
@@ -176,7 +178,7 @@ export default defineNuxtConfig({
   },
   ogImage: {
     defaults: {
-      alt: "@agntn/keys. Keys to addresses to signatures on eighteen chains",
+      alt: "@agntn/keys. Keys to addresses to signatures on a whole pile of chains",
     },
   },
   nitro: {

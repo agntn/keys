@@ -130,6 +130,13 @@ export const landingStaticRows: readonly AddressRow[] = [
     format: "enterprise",
     address: "addr1v8qvqahau6y67jdq0kfm9dy0hjmgv4u962nmk9pslsl7ryq5mvnl7",
   },
+  {
+    id: "xrp",
+    chain: "XRP Ledger",
+    curve: "secp256k1",
+    format: "classic",
+    address: "rBgGZ9tc4him9KBzD8fKFiQz3fSZpaSwMH",
+  },
 ];
 
 export const LANDING_IDS: ReadonlySet<string> = new Set(landingStaticRows.map((row) => row.id));

@@ -26,6 +26,7 @@ const NAV_ICONS: Record<string, string> = {
   "/blockchains/sui": "i-token-sui",
   "/blockchains/aptos": "i-token-apt",
   "/blockchains/tron": "i-token-trx",
+  "/blockchains/xrpl": "i-token-xrp",
   "/keyspace": "i-lucide-key",
 };
 

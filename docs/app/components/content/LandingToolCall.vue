@@ -22,6 +22,7 @@ const SECP = [
   { row: "eth", chain: "ethereum" },
   { row: "base", chain: "base" },
   { row: "tron", chain: "tron" },
+  { row: "xrp", chain: "xrpl" },
 ] as const;
 
 const current = computed(() => SECP[props.tick % SECP.length]!);

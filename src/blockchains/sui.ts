@@ -1,8 +1,8 @@
 import { blake2b } from "@agntn/hashes";
 import { concatBytes } from "../utils/bytes.ts";
-import { AbstractBlockchain } from "../blockchain.ts";
 import { addSchemeByte, createPrefixedAddress, validateAddressHex } from "../utils/address.ts";
 import { BIP44Change, getBIP32Path, getHardenedPath } from "../utils/bip44/paths.ts";
+import { AbstractDualCurveBlockchain } from "../utils/dual-curve.ts";
 import { decodeKeyPublic, generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
 import { convertPublicKey } from "../utils/secp256k1/index.ts";
 import { generateKeyPublic as getSecp256k1KeyPublic } from "../utils/secp256k1/keys.ts";
@@ -12,7 +12,7 @@ import {
   signMessage,
   verifyMessage,
 } from "../utils/signing.ts";
-import type { AddressType, HDWalletOptions, KeyOptions, Wallet } from "../types.ts";
+import type { AddressType, KeyOptions } from "../types.ts";
 
 const CURVES = ["ed25519", "secp256k1"] as const;
 const SIGNATURE_SCHEME_FLAGS = {
@@ -55,36 +55,11 @@ function hashPersonalMessage(message: string | Uint8Array): Uint8Array {
   return blake2b(concatBytes(PERSONAL_MESSAGE_INTENT, encodeUleb128(bytes.length), bytes), 32);
 }
 
-/**
- * Lets the address type name the signature scheme, so one argument drives key, address, and curve.
- * @param options - Key options that may already carry a scheme
- * @param addressType - Scheme given as the address type, if any
- * @returns {{ scheme: string | undefined; keyOptions: HDWalletOptions | undefined }} The scheme to use and options carrying it
- */
-function withScheme(
-  options: HDWalletOptions | undefined,
-  addressType?: AddressType,
-): { readonly scheme: string | undefined; readonly keyOptions: HDWalletOptions | undefined } {
-  if (addressType === undefined) {
-    return { scheme: options?.scheme, keyOptions: options };
-  }
-  return { scheme: addressType, keyOptions: { ...options, scheme: addressType } };
-}
-
 /** Sui blockchain implementation. */
-export class Sui extends AbstractBlockchain {
+export class Sui extends AbstractDualCurveBlockchain {
   override readonly name = "sui";
   override readonly curve = CURVES;
   override readonly bip44 = 784;
-
-  override deriveWallet(
-    keyPrivate: string,
-    options?: KeyOptions,
-    addressType?: AddressType,
-  ): Wallet {
-    const { scheme, keyOptions } = withScheme(options, addressType);
-    return super.deriveWallet(keyPrivate, keyOptions, scheme);
-  }
 
   /**
    * The Sui SDK walks `m/44'/784'/account'/change'/index'` for ed25519 and
@@ -105,21 +80,6 @@ export class Sui extends AbstractBlockchain {
       return getBIP32Path(SECP256K1_PURPOSE, this.bip44, account, change, addressIndex);
     }
     return getHardenedPath(this.bip44, [account, change, addressIndex]);
-  }
-
-  override deriveHDWallet(
-    mnemonic: string,
-    path: string,
-    options?: HDWalletOptions,
-    addressType?: AddressType,
-  ): Wallet {
-    const { scheme, keyOptions } = withScheme(options, addressType);
-    return super.deriveHDWallet(mnemonic, path, keyOptions, scheme);
-  }
-
-  override generateWallet(options?: KeyOptions, addressType?: AddressType): Wallet {
-    const { scheme, keyOptions } = withScheme(options, addressType);
-    return super.generateWallet(keyOptions, scheme);
   }
 
   override getKeyPublic(keyPrivate: string, options?: KeyOptions): string {

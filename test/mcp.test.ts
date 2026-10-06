@@ -25,6 +25,7 @@ import {
   dashTestVectors,
   zcashTestVectors,
   eCashTestVectors,
+  xrplTestVectors,
   dogecoinTestVectors,
   decredTestVectors,
   stellarTestVectors,
@@ -1722,6 +1723,59 @@ describe("keys MCP server", () => {
       arguments: { chain: "ecash" },
     });
     expect(text(path.content)).toContain("m/44'/899'/0'/0/0");
+  });
+
+  it("derives XRPL from family seeds and checks its DER signatures through MCP", async () => {
+    const client = await connectTestClient();
+    const { master, ed25519 } = xrplTestVectors.seeds;
+    for (const seed of [master, ed25519]) {
+      const response = await client.callTool({
+        name: "keys_wallet_derive",
+        arguments: { chain: "xrpl", privateKey: seed.seed },
+      });
+      expect(response.isError).not.toBe(true);
+      expect(text(response.content)).toContain(`Address: ${seed.address}`);
+      expect(text(response.content)).not.toContain(seed.privateKey);
+    }
+
+    const elsewhere = await client.callTool({
+      name: "keys_wallet_derive",
+      arguments: { chain: "solana", privateKey: master.seed },
+    });
+    expect(elsewhere.isError).toBe(true);
+    expect(text(elsewhere.content)).toContain("solana has no seed string of its own");
+
+    const { publicKey, address } = xrplTestVectors.ed25519;
+    const typed = await client.callTool({
+      name: "keys_address_get",
+      arguments: { chain: "xrpl", publicKey, addressType: "ed25519" },
+    });
+    expect(text(typed.content)).toContain(`Address: ${address}`);
+    const untyped = await client.callTool({
+      name: "keys_address_get",
+      arguments: { chain: "xrpl", publicKey },
+    });
+    expect(untyped.isError).toBe(true);
+    expect(text(untyped.content)).toContain("pass ed25519 as the address type");
+
+    const { message, signatures, secp256k1 } = xrplTestVectors;
+    const verified = await client.callTool({
+      name: "keys_message_verify",
+      arguments: {
+        chain: "xrpl",
+        message,
+        signature: signatures.secp256k1,
+        publicKey: secp256k1.publicKey,
+      },
+    });
+    expect(text(verified.content)).toBe("Signature is valid");
+
+    const [[path, , hdAddress]] = xrplTestVectors.hd;
+    const hd = await client.callTool({
+      name: "keys_hd_wallet_derive",
+      arguments: { chain: "xrpl", mnemonic: bip39TestVectors.mnemonic, path },
+    });
+    expect(text(hd.content)).toContain(`Address: ${hdAddress}`);
   });
 
   it("derives Decred through the MCP schema and executor", async () => {

@@ -31,6 +31,7 @@ export const CHAINS: readonly ChainEntry[] = [
   { driver: "aptos", label: "Aptos", curve: "ed25519", icon: "i-token-apt", row: "aptos", blurb: "SHA3-256 over the key and a scheme byte, 0x hex out." },
   { driver: "sui", label: "Sui", curve: "ed25519 · secp256k1", icon: "i-token-sui", row: "sui-ed25519", blurb: "Both curves on one chain. Blake2b over a flag byte and the key." },
   { driver: "cardano", label: "Cardano", curve: "ed25519", icon: "i-token-ada", row: "ada-enterprise", blurb: "Base, enterprise and stake addresses in bech32. No mnemonic derivation, on purpose." },
+  { driver: "xrpl", label: "XRP Ledger", curve: "secp256k1 · ed25519", icon: "i-token-xrp", row: "xrp", blurb: "Family seeds, both curves, and Bitcoin's base58 shuffled until every account starts with `r`." },
 ].map((entry) => ({ ...entry, to: `/blockchains/${entry.driver}` }));
 
 /**
