@@ -12,7 +12,9 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
+import { commandName } from "@agntn/tools/cli";
 import { beforeAll, describe, expect, it } from "vite-plus/test";
+import { keysTools } from "../src/tools.ts";
 
 const execFileAsync = promisify(execFile);
 const root = resolve(import.meta.dirname, "..");
@@ -24,6 +26,7 @@ interface BinRun {
   readonly code: number;
   readonly modules: readonly string[];
   readonly packages: readonly string[];
+  readonly stderr: string;
   readonly stdout: string;
 }
 
@@ -112,7 +115,13 @@ async function runBin(
   );
   const modules = loadedModules(stderr);
   const packages = modules.map(packageOf).filter((name) => name !== undefined);
-  return { code, modules, packages: [...new Set(packages)], stdout };
+  return {
+    code,
+    modules,
+    packages: [...new Set(packages)],
+    stderr: stderr.replace(/\n@loaded .*\n$/u, ""),
+    stdout,
+  };
 }
 
 describe("keys usage paths", () => {
@@ -123,19 +132,39 @@ describe("keys usage paths", () => {
   });
 
   it.each([
-    { args: ["--help"], code: 0 },
-    { args: ["-h"], code: 0 },
-    { args: ["mcp", "--help"], code: 0 },
-    { args: ["no-such-command"], code: 1 },
-  ])("keys $args prints the usage without the server stack", async ({ args, code }) => {
+    { args: ["--help"], code: 0, usage: "USAGE keys <command> [OPTIONS]" },
+    { args: ["-h"], code: 0, usage: "USAGE keys <command> [OPTIONS]" },
+    { args: ["mcp", "--help"], code: 0, usage: "USAGE keys mcp" },
+    { args: ["address-get", "--help"], code: 0, usage: "USAGE keys address-get [OPTIONS]" },
+    { args: ["no-such-command"], code: 1, usage: "" },
+  ])("keys $args prints the usage without the server stack", async ({ args, code, usage }) => {
     const run = await runBin(args);
     expect(run.code).toBe(code);
-    expect(run.stdout).toMatch(/USAGE.*keys mcp/u);
-    expect(run.packages).toContain("citty");
-    expect(run.packages).not.toContain("@modelcontextprotocol/sdk");
-    expect(run.packages).not.toContain("typebox");
+    expect(run.stdout).toContain(usage);
+    expect(run.packages).not.toContain("@modelcontextprotocol/server");
     expect(run.packages).not.toContain("@noble/curves");
     expect(run.packages).not.toContain("@scure/bip39");
+  });
+
+  it("keys lists one command per tool next to mcp", async () => {
+    const { stdout } = await runBin(["--help"]);
+    for (const tool of keysTools) expect(stdout).toContain(`  ${commandName(tool)} `);
+    expect(stdout).toMatch(/^ {2}mcp {2,}Run the keys MCP server over stdio$/mu);
+  });
+
+  it("keys runs a tool with flags from its schema and refuses a bad one in one line", async () => {
+    const key = ["--chain", "bitcoin", "--private-key", "00".repeat(31) + "01"];
+    const text = await runBin(["wallet-derive", ...key]);
+    const json = await runBin(["wallet-derive", ...key, "--json"]);
+    const refused = await runBin(["wallet-derive", "--chain", "bitcoin", "--private-key", "zz"]);
+
+    expect(text.code).toBe(0);
+    expect(text.stdout).toContain("Address: 1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH");
+    expect(JSON.parse(json.stdout)).toMatchObject({
+      address: "1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH",
+    });
+    expect(refused).toMatchObject({ code: 1, stdout: "" });
+    expect(refused.stderr).toMatch(/^Invalid arguments at \/privateKey: [^\n]*\n$/u);
   });
 
   it("keys mcp loads the server stack once it runs and the executors on the first call", async () => {

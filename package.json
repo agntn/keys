@@ -146,12 +146,11 @@
     "@agntn/ciphers": "0.5.2",
     "@agntn/encodings": "0.1.0",
     "@agntn/hashes": "0.6.3",
-    "@agntn/tools": "0.0.0",
+    "@agntn/tools": "0.2.0",
     "@modelcontextprotocol/server": "2.2.0",
     "@noble/curves": "2.4.0",
     "@scure/bip32": "2.4.0",
     "@scure/bip39": "2.4.0",
-    "citty": "0.2.2",
     "micro-key-producer": "0.10.2"
   },
   "devDependencies": {
