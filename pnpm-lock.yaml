@@ -26,16 +26,16 @@ importers:
     dependencies:
       '@agntn/ciphers':
         specifier: 0.5.2
-        version: 0.5.2(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
+        version: 0.5.2(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
       '@agntn/encodings':
         specifier: 0.1.0
-        version: 0.1.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
+        version: 0.1.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
       '@agntn/hashes':
         specifier: 0.6.3
-        version: 0.6.3(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
+        version: 0.6.3(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
       '@agntn/tools':
         specifier: 0.0.0
-        version: 0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
+        version: 0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
       '@modelcontextprotocol/server':
         specifier: 2.2.0
         version: 2.2.0
@@ -71,8 +71,8 @@ importers:
         specifier: 1.30.1
         version: 1.30.1(supports-color@7.2.0)(zod@4.4.3)
       '@oh-my-pi/pi-coding-agent':
-        specifier: 18.4.2
-        version: 18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+        specifier: 18.4.12
+        version: 18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
       '@types/node':
         specifier: 26.4.1
         version: 26.4.1
@@ -758,34 +758,34 @@ packages:
     resolution: {integrity: sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA==}
     engines: {node: '>= 20.19.0'}
 
-  '@oh-my-pi/omp-stats@18.4.2':
-    resolution: {integrity: sha512-UrLc6TZnP0jSRyim8fWfgiHxVl6OlhbzXG73eeYaVAI1L6kdcFcg4kFJByKzXfal/66VMKcPkXjeHBrzSpa4qw==}
+  '@oh-my-pi/omp-stats@18.4.12':
+    resolution: {integrity: sha512-K91X9WqXc0NwEIxgoAVcQDn+x13LP5P6b2d1nveApzvPcwcYO+FVgs9gr5duK+H9wftKjjgbgRVEGtuyhn7yGQ==}
     engines: {bun: '>=1.3.14'}
     hasBin: true
 
-  '@oh-my-pi/omptype@18.4.2':
-    resolution: {integrity: sha512-6JJI5cv+SMQ9ea4oDG3cpdkEWhcGlG1U19/7fdUUivYDprJ/IgFVnH5BuTWJdk/DJkgiORyeeSDdbVh/3b7riA==}
+  '@oh-my-pi/omptype@18.4.12':
+    resolution: {integrity: sha512-q5QouToaZ7l6C3MSKp0yrr3fMayTWeS950H3Te03OKIEM2x/c1EXUjFgfEBb8V7GbTVAEYVDcmtSXrLpUxMUEA==}
     engines: {bun: '>=1.3.14', node: '>=20'}
 
-  '@oh-my-pi/pi-agent-core@18.4.2':
-    resolution: {integrity: sha512-BAOtAIzogiSnB6Q2HRuNVyAWJ9t9v0Ls12j+7Eu/uubNncaMH2ur+cCqV4jfk9AvcKuuqrN7Xpz44wOnSzLwxw==}
+  '@oh-my-pi/pi-agent-core@18.4.12':
+    resolution: {integrity: sha512-4phzjgb9sbhHw72U8nCdarCReEFqDyoOpm79vzAb//sRWTBUo/TWNx34Rt03sSby1QNWy/ExjTsWnl2fM20TjQ==}
     engines: {bun: '>=1.3.14'}
 
-  '@oh-my-pi/pi-ai@18.4.2':
-    resolution: {integrity: sha512-uYJUMxJ9SEbgUDWWnjDxzzhPdP7SWlpKGP55DPBV7NOFMRwkth/MQn6pt1xp5Haw53YELQBzaIbLylzPdz6ZFg==}
+  '@oh-my-pi/pi-ai@18.4.12':
+    resolution: {integrity: sha512-o5ED+YbxFj4PZ34botoL8ThiEjfNitbqMObBTfbgFdtow+uAZWlRRZ9MHPHR9uZiYrOdLCMjt8l72ga+UBoUfA==}
     engines: {bun: '>=1.3.14'}
 
-  '@oh-my-pi/pi-catalog@18.4.2':
-    resolution: {integrity: sha512-Xbxax3x1cV8Pjb3ZDX2wOSrFSuhRU98PBC7Pr8QKmlJ2TbWGuGCkZFBOY3ySNqo3+dUtvpwbg3v/O3ih3t+46A==}
+  '@oh-my-pi/pi-catalog@18.4.12':
+    resolution: {integrity: sha512-RJCryq49wO2zoJ9BMyV4TV9lq1lPLpOnO+iHtqu8hoT0YdiM+JYN7+iG44FJVF0cAHMnY5hpFyYXyuU5g6N2lA==}
     engines: {bun: '>=1.3.14'}
 
-  '@oh-my-pi/pi-coding-agent@18.4.2':
-    resolution: {integrity: sha512-1NA/75YYLQmQl7U0nnArFPlOgitK7Iv/kyDxzAG05wGkrA5a/v01i0w5UEcvIpRxRVtLVjExmel/zzv88/WZxQ==}
+  '@oh-my-pi/pi-coding-agent@18.4.12':
+    resolution: {integrity: sha512-1jVJXxwHT5fm/0UsliP/tQ4qx7GGOI9n64rdQZMcWyiWpjZO8U/e4xdcyJuzLGLXFO4mMVO44f9sEyWXqrZ0jQ==}
     engines: {bun: '>=1.3.14'}
     hasBin: true
 
-  '@oh-my-pi/pi-mnemopi@18.4.2':
-    resolution: {integrity: sha512-qb3d+nAvIDBYxxfMAGI+Tsqkaflp6fJW5XI+q37JRGvVsNENX0sVyAy/5aB1tZv7+YbUzKyvywJRXukQUH0G2w==}
+  '@oh-my-pi/pi-mnemopi@18.4.12':
+    resolution: {integrity: sha512-g05n6Ncb68svlhNddAUg+hlF3uxqg8HYX/vH1eODwpnzMiV6b2RfYKkWZs6O+1oAyKlqPKleFdhSxgW/iSMV9A==}
     engines: {bun: '>=1.3.14'}
     hasBin: true
     peerDependencies:
@@ -797,60 +797,60 @@ packages:
       onnxruntime-node:
         optional: true
 
-  '@oh-my-pi/pi-natives-darwin-arm64@18.4.2':
-    resolution: {integrity: sha512-hbSw2b24TL1/dKA9zvZKhMItGggTy39xsT6qP4Wx4ok96XejVn8PCksNWxKnFogxuCU591/rryzmYUhoP5qRBg==}
+  '@oh-my-pi/pi-natives-darwin-arm64@18.4.12':
+    resolution: {integrity: sha512-tub6EWayLV4fsvZ45aVP2UuwFidEbVfgHsdxgphq2uINYxvuIsUo0qRcJRLCxeTluV37v0ItpK5xNi2N1ABjJA==}
     engines: {bun: '>=1.3.14'}
     cpu: [arm64]
     os: [darwin]
 
-  '@oh-my-pi/pi-natives-darwin-x64@18.4.2':
-    resolution: {integrity: sha512-6r+p/IMO6GWSgizProG1nttwqEnCGx82P/S++HP0wvLYljTQh6Rr6jRXQx8VIBosU07Q7wXoB+5pS16K1xWoJA==}
+  '@oh-my-pi/pi-natives-darwin-x64@18.4.12':
+    resolution: {integrity: sha512-CLXGKXeN2+Bf/EJ/VXNmXuq0BXvPnfiqxa1OTFfePrDJe7o5T11P39gm62g6o+V2duaEOhTAgm4U4FFYFdEQiw==}
     engines: {bun: '>=1.3.14'}
     cpu: [x64]
     os: [darwin]
 
-  '@oh-my-pi/pi-natives-linux-arm64@18.4.2':
-    resolution: {integrity: sha512-bo+qrBN21/qn3jp2Fu7Ohvo/cIWfcMHfGHIikpR10+FbdG/cLCWDsE84U9LM980zjkvp0kpkw6s4mRmQckG9kA==}
+  '@oh-my-pi/pi-natives-linux-arm64@18.4.12':
+    resolution: {integrity: sha512-ezgc4uTCJLlT+qbLw1gUXDl+UPuc36oEcfZguBb1UORzIQNjwmSoL7GG9NbcWwrqAjUv7118McXX8QXLQxM1bg==}
     engines: {bun: '>=1.3.14'}
     cpu: [arm64]
     os: [linux]
 
-  '@oh-my-pi/pi-natives-linux-x64@18.4.2':
-    resolution: {integrity: sha512-TJ1u8eRyOmV7kdP7Olv98DeVjoJ0LomE2TGJ1hm2KXXn39u5YPoX1Yo6Re/Nzp2gxn2YwG5U8HOqC/3LMPAiPw==}
+  '@oh-my-pi/pi-natives-linux-x64@18.4.12':
+    resolution: {integrity: sha512-DRzKJZVzkOS/eqCjEAtoHfYgBdZTO0b7lRlrZ/zbJAIU5J8584A6Pfc5LuSU9nJhOEtzBurQtdV2qDLHcvcRcw==}
     engines: {bun: '>=1.3.14'}
     cpu: [x64]
     os: [linux]
 
-  '@oh-my-pi/pi-natives-win32-arm64@18.4.2':
-    resolution: {integrity: sha512-6+9QvcUI+proaw6x1t3ZXhwHBlcZD1qJRaXu+CuJAGq6C6uYyJLBlUCutuWEaZarxT4p4PFKjeTG/X9RluXdkQ==}
+  '@oh-my-pi/pi-natives-win32-arm64@18.4.12':
+    resolution: {integrity: sha512-HyFnLsTPBUlLDZMGJRhBs4B73y1lIC4u9saM4vVRbns02Yu4B10ZOBrjpxoYADKOt554w8LQTPoiDhyaFtRjfg==}
     engines: {bun: '>=1.3.14'}
     cpu: [arm64]
     os: [win32]
 
-  '@oh-my-pi/pi-natives-win32-x64@18.4.2':
-    resolution: {integrity: sha512-IMJptqaFwlb/ky0073lihE/qsN+013M/UuThYaKJrMCpCX8W3oh2Q3xQgqTdfDr7YDPqMYAF23CW9X3h4FNkmg==}
+  '@oh-my-pi/pi-natives-win32-x64@18.4.12':
+    resolution: {integrity: sha512-MC7D080Er1UtkVGWULQcMLcMAqfsgBbE1ugMzC9IrsWMs6Z017Xa1RDxqR48FC5tveVNH5NF97oT1weM3GDS9A==}
     engines: {bun: '>=1.3.14'}
     cpu: [x64]
     os: [win32]
 
-  '@oh-my-pi/pi-natives@18.4.2':
-    resolution: {integrity: sha512-ghGpEtawKJRoqhrgG4d9kb088Ti83R3ZZzGFBzuL66sx87F1mhQ/T6Yt6ULEtdcIWVWvwPgkZ+excLdLyABAtg==}
+  '@oh-my-pi/pi-natives@18.4.12':
+    resolution: {integrity: sha512-Uy9i/ITQfAcDjQlpxR6jjzrbZrG9gqcfagQaL+crsy7ZoShvpcvoOcBry2pvQl+TyjWFbdGp2DkIw79lb2uslA==}
     engines: {bun: '>=1.3.14'}
 
-  '@oh-my-pi/pi-tui@18.4.2':
-    resolution: {integrity: sha512-OJiKi2x9254z5qEDdegvEM4ol6aUkOUUxaQ2egisNBTgkyXarIIpaUOl278y1+lq8mWyy9iUWUBUz7S4qtmGbQ==}
+  '@oh-my-pi/pi-tui@18.4.12':
+    resolution: {integrity: sha512-qTQTSJ6bOeaGY/mrAyyefIfmdETuJg15Drj1UGkDnbHtmIiHNSyOExtt/vE7UwPdjZ6bQmTO30oOi0WWTUNDIg==}
     engines: {bun: '>=1.3.14'}
 
-  '@oh-my-pi/pi-utils@18.4.2':
-    resolution: {integrity: sha512-lYy7KtbvPuIJVjDEasI5pfBjGzOB6heeowvuX24mBGXvje7O1MJtHj7DUq4jRzNGG3qZO78SCXh1zHfldW/cXg==}
+  '@oh-my-pi/pi-utils@18.4.12':
+    resolution: {integrity: sha512-Q5MY8adVkd62OgneqFpSxK3MWWm8kFvNQ/LBsF04g/Rrt19MH/7LbdNLq5KhiD1L2V3k5cGoBi1Ja3Axw3Fn/A==}
     engines: {bun: '>=1.3.14'}
 
-  '@oh-my-pi/pi-wire@18.4.2':
-    resolution: {integrity: sha512-bnX5D4JYZIsyDTTrW9jV+kO0M5DJtnW7OYRnuXpe7u7PmGN/F8/Qtznc6gHnjwfL9RAFqOf1+1/oweyRuBSqmQ==}
+  '@oh-my-pi/pi-wire@18.4.12':
+    resolution: {integrity: sha512-8tI4nS7/gGr/SZ7AmBjHp03lm0q1NqUoThdPRxn7gxcwezz5QVSdhD1lRfon87zmLBIFWfe9RrOxgtVgFuyAOg==}
     engines: {bun: '>=1.3.14'}
 
-  '@oh-my-pi/snapcompact@18.4.2':
-    resolution: {integrity: sha512-gnHyvtMoJyv2OxzCrML4gMylpfzmfSlHWihFVuJI8bRSv8V8F7Bl8Sn6zhW1A9lzGXCVFXsAy5yfCTZoSPAX1w==}
+  '@oh-my-pi/snapcompact@18.4.12':
+    resolution: {integrity: sha512-9ONy7S0q5oQOGZUiToZgtj1Taq24cB5q+CvlBcujffEk9Ptg+CIMvZYlCyX7kX74VPXj8/w2EoQ8x9pgxvp4Zg==}
     engines: {bun: '>=1.3.14'}
 
   '@opentelemetry/api-logs@0.220.0':
@@ -3500,10 +3500,10 @@ packages:
 
 snapshots:
 
-  '@agntn/ciphers@0.5.2(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))':
+  '@agntn/ciphers@0.5.2(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))':
     dependencies:
-      '@agntn/hashes': 0.6.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
-      '@agntn/tools': 0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
+      '@agntn/hashes': 0.6.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
+      '@agntn/tools': 0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
       '@modelcontextprotocol/server': 2.2.0
       citty: 0.2.2
       consola: 3.4.2
@@ -3512,43 +3512,43 @@ snapshots:
       - '@oh-my-pi/pi-coding-agent'
       - ai
 
-  '@agntn/encodings@0.1.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))':
+  '@agntn/encodings@0.1.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))':
     dependencies:
-      '@agntn/hashes': 0.6.1(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
-      '@agntn/tools': 0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
+      '@agntn/hashes': 0.6.1(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
+      '@agntn/tools': 0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
       '@modelcontextprotocol/server': 2.2.0
       citty: 0.2.2
       consola: 3.4.2
     optionalDependencies:
       '@earendil-works/pi-coding-agent': 0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3)
-      '@oh-my-pi/pi-coding-agent': 18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      '@oh-my-pi/pi-coding-agent': 18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
 
-  '@agntn/hashes@0.6.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))':
+  '@agntn/hashes@0.6.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))':
     dependencies:
-      '@agntn/tools': 0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
+      '@agntn/tools': 0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
       '@modelcontextprotocol/server': 2.2.0
       citty: 0.2.2
     optionalDependencies:
       '@earendil-works/pi-coding-agent': 0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3)
-      '@oh-my-pi/pi-coding-agent': 18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      '@oh-my-pi/pi-coding-agent': 18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
 
-  '@agntn/hashes@0.6.1(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))':
+  '@agntn/hashes@0.6.1(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))':
     dependencies:
-      '@agntn/tools': 0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
+      '@agntn/tools': 0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
       '@modelcontextprotocol/server': 2.2.0
       citty: 0.2.2
     optionalDependencies:
       '@earendil-works/pi-coding-agent': 0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3)
-      '@oh-my-pi/pi-coding-agent': 18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      '@oh-my-pi/pi-coding-agent': 18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
 
-  '@agntn/hashes@0.6.3(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))':
+  '@agntn/hashes@0.6.3(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))':
     dependencies:
-      '@agntn/tools': 0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
+      '@agntn/tools': 0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
       '@modelcontextprotocol/server': 2.2.0
       citty: 0.2.2
     optionalDependencies:
       '@earendil-works/pi-coding-agent': 0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3)
-      '@oh-my-pi/pi-coding-agent': 18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      '@oh-my-pi/pi-coding-agent': 18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
 
   '@agntn/ox@0.1.0(oxfmt@0.68.0(vite-plus@0.3.3(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(@vitest/coverage-v8@4.1.11)(bufferutil@4.1.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(utf-8-validate@6.0.6)(yaml@2.9.0)))(oxlint-tsgolint@7.0.2001)(oxlint@1.83.0(oxlint-tsgolint@7.0.2001)(vite-plus@0.3.3(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(@vitest/coverage-v8@4.1.11)(bufferutil@4.1.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(utf-8-validate@6.0.6)(yaml@2.9.0)))':
     dependencies:
@@ -3556,11 +3556,11 @@ snapshots:
       oxlint: 1.83.0(oxlint-tsgolint@7.0.2001)(vite-plus@0.3.3(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(@vitest/coverage-v8@4.1.11)(bufferutil@4.1.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(utf-8-validate@6.0.6)(yaml@2.9.0))
       oxlint-tsgolint: 7.0.2001
 
-  '@agntn/tools@0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))':
+  '@agntn/tools@0.0.0(@earendil-works/pi-coding-agent@0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))':
     optionalDependencies:
       '@earendil-works/pi-coding-agent': 0.87.1(@modelcontextprotocol/sdk@1.30.1(supports-color@7.2.0)(zod@4.4.3))(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3)
       '@modelcontextprotocol/server': 2.2.0
-      '@oh-my-pi/pi-coding-agent': 18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      '@oh-my-pi/pi-coding-agent': 18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
 
   '@anthropic-ai/sdk@0.124.0(zod@4.4.3)':
     dependencies:
@@ -4177,54 +4177,54 @@ snapshots:
 
   '@noble/hashes@2.4.0': {}
 
-  '@oh-my-pi/omp-stats@18.4.2':
+  '@oh-my-pi/omp-stats@18.4.12':
     dependencies:
-      '@oh-my-pi/pi-ai': 18.4.2
-      '@oh-my-pi/pi-catalog': 18.4.2
-      '@oh-my-pi/pi-utils': 18.4.2
+      '@oh-my-pi/pi-ai': 18.4.12
+      '@oh-my-pi/pi-catalog': 18.4.12
+      '@oh-my-pi/pi-utils': 18.4.12
       lucide-react: 1.48.0(react@19.2.7)
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
 
-  '@oh-my-pi/omptype@18.4.2': {}
+  '@oh-my-pi/omptype@18.4.12': {}
 
-  '@oh-my-pi/pi-agent-core@18.4.2':
+  '@oh-my-pi/pi-agent-core@18.4.12':
     dependencies:
-      '@oh-my-pi/pi-ai': 18.4.2
-      '@oh-my-pi/pi-catalog': 18.4.2
-      '@oh-my-pi/pi-natives': 18.4.2
-      '@oh-my-pi/pi-utils': 18.4.2
-      '@oh-my-pi/pi-wire': 18.4.2
-      '@oh-my-pi/snapcompact': 18.4.2
+      '@oh-my-pi/pi-ai': 18.4.12
+      '@oh-my-pi/pi-catalog': 18.4.12
+      '@oh-my-pi/pi-natives': 18.4.12
+      '@oh-my-pi/pi-utils': 18.4.12
+      '@oh-my-pi/pi-wire': 18.4.12
+      '@oh-my-pi/snapcompact': 18.4.12
       '@opentelemetry/api': 1.9.1
 
-  '@oh-my-pi/pi-ai@18.4.2':
+  '@oh-my-pi/pi-ai@18.4.12':
     dependencies:
-      '@oh-my-pi/omptype': 18.4.2
-      '@oh-my-pi/pi-catalog': 18.4.2
-      '@oh-my-pi/pi-natives': 18.4.2
-      '@oh-my-pi/pi-utils': 18.4.2
-      '@oh-my-pi/pi-wire': 18.4.2
+      '@oh-my-pi/omptype': 18.4.12
+      '@oh-my-pi/pi-catalog': 18.4.12
+      '@oh-my-pi/pi-natives': 18.4.12
+      '@oh-my-pi/pi-utils': 18.4.12
+      '@oh-my-pi/pi-wire': 18.4.12
 
-  '@oh-my-pi/pi-catalog@18.4.2':
+  '@oh-my-pi/pi-catalog@18.4.12':
     dependencies:
-      '@oh-my-pi/omptype': 18.4.2
-      '@oh-my-pi/pi-utils': 18.4.2
+      '@oh-my-pi/omptype': 18.4.12
+      '@oh-my-pi/pi-utils': 18.4.12
 
-  '@oh-my-pi/pi-coding-agent@18.4.2(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)':
+  '@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)':
     dependencies:
       '@babel/parser': 7.29.8
-      '@oh-my-pi/omp-stats': 18.4.2
-      '@oh-my-pi/omptype': 18.4.2
-      '@oh-my-pi/pi-agent-core': 18.4.2
-      '@oh-my-pi/pi-ai': 18.4.2
-      '@oh-my-pi/pi-catalog': 18.4.2
-      '@oh-my-pi/pi-mnemopi': 18.4.2
-      '@oh-my-pi/pi-natives': 18.4.2
-      '@oh-my-pi/pi-tui': 18.4.2
-      '@oh-my-pi/pi-utils': 18.4.2
-      '@oh-my-pi/pi-wire': 18.4.2
-      '@oh-my-pi/snapcompact': 18.4.2
+      '@oh-my-pi/omp-stats': 18.4.12
+      '@oh-my-pi/omptype': 18.4.12
+      '@oh-my-pi/pi-agent-core': 18.4.12
+      '@oh-my-pi/pi-ai': 18.4.12
+      '@oh-my-pi/pi-catalog': 18.4.12
+      '@oh-my-pi/pi-mnemopi': 18.4.12
+      '@oh-my-pi/pi-natives': 18.4.12
+      '@oh-my-pi/pi-tui': 18.4.12
+      '@oh-my-pi/pi-utils': 18.4.12
+      '@oh-my-pi/pi-wire': 18.4.12
+      '@oh-my-pi/snapcompact': 18.4.12
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/api-logs': 0.220.0
       '@opentelemetry/context-async-hooks': 2.11.0(@opentelemetry/api@1.9.1)
@@ -4250,64 +4250,64 @@ snapshots:
       - utf-8-validate
       - yauzl
 
-  '@oh-my-pi/pi-mnemopi@18.4.2':
+  '@oh-my-pi/pi-mnemopi@18.4.12':
     dependencies:
-      '@oh-my-pi/pi-ai': 18.4.2
-      '@oh-my-pi/pi-catalog': 18.4.2
-      '@oh-my-pi/pi-natives': 18.4.2
-      '@oh-my-pi/pi-utils': 18.4.2
+      '@oh-my-pi/pi-ai': 18.4.12
+      '@oh-my-pi/pi-catalog': 18.4.12
+      '@oh-my-pi/pi-natives': 18.4.12
+      '@oh-my-pi/pi-utils': 18.4.12
 
-  '@oh-my-pi/pi-natives-darwin-arm64@18.4.2':
+  '@oh-my-pi/pi-natives-darwin-arm64@18.4.12':
     optional: true
 
-  '@oh-my-pi/pi-natives-darwin-x64@18.4.2':
+  '@oh-my-pi/pi-natives-darwin-x64@18.4.12':
     optional: true
 
-  '@oh-my-pi/pi-natives-linux-arm64@18.4.2':
+  '@oh-my-pi/pi-natives-linux-arm64@18.4.12':
     optional: true
 
-  '@oh-my-pi/pi-natives-linux-x64@18.4.2':
+  '@oh-my-pi/pi-natives-linux-x64@18.4.12':
     optional: true
 
-  '@oh-my-pi/pi-natives-win32-arm64@18.4.2':
+  '@oh-my-pi/pi-natives-win32-arm64@18.4.12':
     optional: true
 
-  '@oh-my-pi/pi-natives-win32-x64@18.4.2':
+  '@oh-my-pi/pi-natives-win32-x64@18.4.12':
     optional: true
 
-  '@oh-my-pi/pi-natives@18.4.2':
+  '@oh-my-pi/pi-natives@18.4.12':
     optionalDependencies:
-      '@oh-my-pi/pi-natives-darwin-arm64': 18.4.2
-      '@oh-my-pi/pi-natives-darwin-x64': 18.4.2
-      '@oh-my-pi/pi-natives-linux-arm64': 18.4.2
-      '@oh-my-pi/pi-natives-linux-x64': 18.4.2
-      '@oh-my-pi/pi-natives-win32-arm64': 18.4.2
-      '@oh-my-pi/pi-natives-win32-x64': 18.4.2
+      '@oh-my-pi/pi-natives-darwin-arm64': 18.4.12
+      '@oh-my-pi/pi-natives-darwin-x64': 18.4.12
+      '@oh-my-pi/pi-natives-linux-arm64': 18.4.12
+      '@oh-my-pi/pi-natives-linux-x64': 18.4.12
+      '@oh-my-pi/pi-natives-win32-arm64': 18.4.12
+      '@oh-my-pi/pi-natives-win32-x64': 18.4.12
 
-  '@oh-my-pi/pi-tui@18.4.2':
+  '@oh-my-pi/pi-tui@18.4.12':
     dependencies:
-      '@oh-my-pi/omptype': 18.4.2
-      '@oh-my-pi/pi-agent-core': 18.4.2
-      '@oh-my-pi/pi-ai': 18.4.2
-      '@oh-my-pi/pi-catalog': 18.4.2
-      '@oh-my-pi/pi-natives': 18.4.2
-      '@oh-my-pi/pi-utils': 18.4.2
-      '@oh-my-pi/pi-wire': 18.4.2
-      '@oh-my-pi/snapcompact': 18.4.2
+      '@oh-my-pi/omptype': 18.4.12
+      '@oh-my-pi/pi-agent-core': 18.4.12
+      '@oh-my-pi/pi-ai': 18.4.12
+      '@oh-my-pi/pi-catalog': 18.4.12
+      '@oh-my-pi/pi-natives': 18.4.12
+      '@oh-my-pi/pi-utils': 18.4.12
+      '@oh-my-pi/pi-wire': 18.4.12
+      '@oh-my-pi/snapcompact': 18.4.12
 
-  '@oh-my-pi/pi-utils@18.4.2':
+  '@oh-my-pi/pi-utils@18.4.12':
     dependencies:
-      '@oh-my-pi/pi-natives': 18.4.2
+      '@oh-my-pi/pi-natives': 18.4.12
 
-  '@oh-my-pi/pi-wire@18.4.2': {}
+  '@oh-my-pi/pi-wire@18.4.12': {}
 
-  '@oh-my-pi/snapcompact@18.4.2':
+  '@oh-my-pi/snapcompact@18.4.12':
     dependencies:
-      '@oh-my-pi/pi-ai': 18.4.2
-      '@oh-my-pi/pi-catalog': 18.4.2
-      '@oh-my-pi/pi-natives': 18.4.2
-      '@oh-my-pi/pi-utils': 18.4.2
-      '@oh-my-pi/pi-wire': 18.4.2
+      '@oh-my-pi/pi-ai': 18.4.12
+      '@oh-my-pi/pi-catalog': 18.4.12
+      '@oh-my-pi/pi-natives': 18.4.12
+      '@oh-my-pi/pi-utils': 18.4.12
+      '@oh-my-pi/pi-wire': 18.4.12
 
   '@opentelemetry/api-logs@0.220.0':
     dependencies:

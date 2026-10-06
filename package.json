@@ -158,7 +158,7 @@
     "@earendil-works/pi-tui": "0.87.1",
     "@modelcontextprotocol/client": "2.2.0",
     "@modelcontextprotocol/sdk": "1.30.1",
-    "@oh-my-pi/pi-coding-agent": "18.4.2",
+    "@oh-my-pi/pi-coding-agent": "18.4.12",
     "@types/node": "26.4.1",
     "@vitest/coverage-v8": "4.1.11",
     "changelogen": "0.6.2",
