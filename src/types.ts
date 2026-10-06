@@ -274,6 +274,11 @@ export interface Blockchain extends BlockchainImplementation {
   deriveXpubWallet?: (extendedKey: string, path: string, addressType?: string) => XpubWallet;
 
   /**
+   * Derives a wallet from a chain's own seed string, such as an XRPL family seed (`s...`).
+   */
+  deriveSeedWallet?: (seed: string, options?: KeyOptions, addressType?: string) => Wallet;
+
+  /**
    * Generates a complete wallet (private key, public key, and address)
    * This is a convenience function that combines generateKeys and getAddress
    */

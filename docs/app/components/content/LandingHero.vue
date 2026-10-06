@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { version } from "../../../../package.json";
 import { CHAINS } from "../../utils/chains";
-import { TOOL_COUNT } from "../../utils/tools";
+import { TOOL_COUNT, spellOut } from "../../utils/tools";
 import type { AddressRow } from "../../utils/derive";
 import type { Pipeline } from "../../utils/landing";
 
@@ -36,7 +36,8 @@ const { copied, copy } = useCopied();
 
       <h1 class="hero-title">One key. <span>Every chain.</span></h1>
       <p class="hero-lead">
-        Key generation, address derivation and message signing for eighteen blockchains, typed and
+        Key generation, address derivation and message signing for
+        {{ spellOut(CHAINS.length).toLowerCase() }} blockchains, typed and
         built on noble, scure and our own hashes. One interface in TypeScript, the same tools
         over MCP, Pi and OMP, and nothing ever leaves the process.
       </p>

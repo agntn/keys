@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { version } from "../../../package.json";
 import { CHAINS } from "../utils/chains";
+import { spellOut } from "../utils/tools";
 
 definePageMeta({ layout: "default" });
 
 const title = "Keyspace";
 const description =
-  "Walk secp256k1 private keys in the browser and derive addresses for eighteen chains. Nothing is stored or sent.";
+  `Walk secp256k1 private keys in the browser and derive addresses for ${spellOut(CHAINS.length).toLowerCase()} chains. Nothing is stored or sent.`;
 
 useSeo({ title, description, type: "article" });
 

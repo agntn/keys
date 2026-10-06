@@ -157,6 +157,7 @@ export const TOOL_CHAINS = [
   "tron",
   "sui",
   "cardano",
+  "xrpl",
 ] as const;
 
 /** Blockchain name accepted by the tool surfaces. */
@@ -172,6 +173,8 @@ const BITCOIN_ADDRESS_TYPES = ["legacy", "p2sh", "segwit", "p2wsh", "taproot"] a
 const CARDANO_ADDRESS_TYPES = ["payment", "stake", "enterprise"] as const;
 /** Signature schemes Sui takes as its address type. */
 export const SUI_ADDRESS_TYPES = ["ed25519", "secp256k1"] as const;
+/** Signature schemes the XRP Ledger takes as its address type, its default first. */
+const XRPL_ADDRESS_TYPES = ["secp256k1", "ed25519"] as const;
 
 /** Every address type exposed by the tool surfaces. */
 export const TOOL_ADDRESS_TYPES = [
@@ -200,6 +203,7 @@ export const TOOL_ADDRESS_TYPES_BY_CHAIN: Readonly<Record<ToolChain, readonly st
   tron: [],
   sui: SUI_ADDRESS_TYPES,
   cardano: CARDANO_ADDRESS_TYPES,
+  xrpl: XRPL_ADDRESS_TYPES,
 };
 
 /** Native WIF chains exposed by both agent transports. */
@@ -259,12 +263,24 @@ export const XPUB_PATH_SCHEMA_PATTERN = "^m(/[0-9]+)+$";
 /** JSON Schema pattern for a 32-byte private key, the one size every supported chain signs with. */
 export const PRIVATE_KEY_SCHEMA_PATTERN = "^[0-9A-Fa-f]{64}$";
 
-/** JSON Schema pattern for a 32-byte ed25519 key or a compressed or uncompressed SEC1 secp256k1 key. */
+/** JSON Schema pattern for an XRPL family seed: `s...` for secp256k1, `sEd...` for ed25519. */
+export const FAMILY_SEED_SCHEMA_PATTERN = "^s[1-9A-HJ-NP-Za-km-z]{28,30}$";
+
+/** JSON Schema pattern for the secret a wallet is derived from: a private key, or a family seed. */
+export const WALLET_SECRET_SCHEMA_PATTERN = "^(?:[0-9A-Fa-f]{64}|s[1-9A-HJ-NP-Za-km-z]{28,30})$";
+
+/**
+ * JSON Schema pattern for a 32-byte ed25519 key, XRPL's 33-byte `ED` form of one, or a compressed
+ * or uncompressed SEC1 secp256k1 key.
+ */
 export const PUBLIC_KEY_SCHEMA_PATTERN =
-  "^(?:[0-9A-Fa-f]{64}|0[23][0-9A-Fa-f]{64}|04[0-9A-Fa-f]{128})$";
+  "^(?:(?:[Ee][Dd])?[0-9A-Fa-f]{64}|0[23][0-9A-Fa-f]{64}|04[0-9A-Fa-f]{128})$";
 
 /** JSON Schema pattern for a 64-byte `r||s` or ed25519 signature, or 65 bytes with the recovery byte. */
 export const SIGNATURE_SCHEMA_PATTERN = "^[0-9A-Fa-f]{128}(?:[0-9A-Fa-f]{2})?$";
+
+/** JSON Schema pattern for a DER secp256k1 signature, the form XRPL signs messages in. */
+export const DER_SIGNATURE_SCHEMA_PATTERN = "^30(?:[0-9A-Fa-f]{2}){7,71}$";
 
 /** JSON Schema pattern for Core's base64 signature: 65 bytes are 87 characters and one `=`. */
 export const CORE_SIGNATURE_SCHEMA_PATTERN = "^[A-Za-z0-9+/]{87}=$";
@@ -277,7 +293,7 @@ export const DIGEST_SCHEMA_PATTERN = "^[0-9A-Fa-f]{64}$";
 
 /** JSON Schema pattern for a signature the verify tool reads: hex as above, or Core's base64. */
 export const MESSAGE_SIGNATURE_SCHEMA_PATTERN =
-  "^(?:[0-9A-Fa-f]{128}(?:[0-9A-Fa-f]{2})?|[A-Za-z0-9+/]{87}=)$";
+  "^(?:[0-9A-Fa-f]{128}(?:[0-9A-Fa-f]{2})?|30(?:[0-9A-Fa-f]{2}){7,71}|[A-Za-z0-9+/]{87}=)$";
 
 /** Address types `keys_bip322_sign` writes for. */
 export const BIP322_SIGNING_TYPES = ["legacy", "p2sh", "segwit", "taproot"] as const;

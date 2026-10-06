@@ -225,6 +225,20 @@ export abstract class AbstractBlockchain implements Blockchain {
   }
 
   /**
+   * Derives a wallet from the chain's own seed string, which only the XRP Ledger has: its family
+   * seed (`s...`). Every other chain takes a private key or BIP39 words instead.
+   * @param _seed - The seed string
+   * @param _options - Key options of the wallet
+   * @param _addressType - Address type to write
+   * @returns {Wallet} The wallet behind the seed
+   */
+  deriveSeedWallet(_seed: string, _options?: KeyOptions, _addressType?: AddressType): Wallet {
+    throw new Error(
+      `${this.name} has no seed string of its own; pass a private key, or BIP39 words to deriveHDWallet`,
+    );
+  }
+
+  /**
    * Extended public key prefixes this chain takes on its network. Wallets export BIP32 keys
    * of every secp256k1 chain as `xpub`, and `tpub` on testnet; Bitcoin adds SLIP-0132's.
    * @returns {ExtendedKeyFormats} Accepted prefixes and the address type each stands for

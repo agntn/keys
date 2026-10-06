@@ -45,6 +45,7 @@ export type ExplorerChains = {
   readonly aptos: AbstractBlockchain;
   readonly sui: AbstractBlockchain;
   readonly cardano: AbstractBlockchain;
+  readonly xrpl: AbstractBlockchain;
 };
 
 /** Constructs every explorer chain. Client only in the app, nothing here runs on the server. */
@@ -70,6 +71,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     aptos,
     sui,
     cardano,
+    xrpl,
   ] = await Promise.all([
     load("bitcoin"),
     load("bitcoincash"),
@@ -89,6 +91,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     load("aptos"),
     load("sui"),
     load("cardano"),
+    load("xrpl"),
   ]);
   return {
     bitcoin,
@@ -109,6 +112,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     aptos,
     sui,
     cardano,
+    xrpl,
   };
 }
 
@@ -136,6 +140,7 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
     aptos,
     sui,
     cardano,
+    xrpl,
   } = chains;
 
   return {
@@ -210,6 +215,17 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
         "enterprise",
       ),
       addressRow(cardano, hex, "ada-stake", "Cardano", "ed25519", "stake", undefined, "stake"),
+      addressRow(xrpl, hex, "xrp", "XRP Ledger", "secp256k1", "classic"),
+      addressRow(
+        xrpl,
+        hex,
+        "xrp-ed25519",
+        "XRP Ledger",
+        "ed25519",
+        "classic",
+        { scheme: "ed25519" },
+        "ed25519",
+      ),
     ],
   };
 }

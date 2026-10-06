@@ -27,7 +27,7 @@ const { hex, decimal, rows, pipeline, hd, ready, paused, tick, changedBytes, ste
       :checks="[
         'Both curves from @noble, nothing else underneath',
         'Legacy, SegWit, Taproot, EIP-55, base58check, bech32',
-        'Same 32 bytes, eighteen chains, derived in this tab',
+        `Same 32 bytes, ${spellOut(CHAINS.length).toLowerCase()} chains, derived in this tab`,
       ]"
     >
       A private key is an integer. Multiply it by the generator, hash the result, encode the hash,

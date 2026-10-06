@@ -16,6 +16,7 @@ import {
   DERIVATION_PATH_SCHEMA_PATTERN,
   XPUB_PATH_SCHEMA_PATTERN,
   PRIVATE_KEY_SCHEMA_PATTERN,
+  WALLET_SECRET_SCHEMA_PATTERN,
   PUBLIC_KEY_SCHEMA_PATTERN,
   RECOVERABLE_SIGNATURE_SCHEMA_PATTERN,
   DIGEST_SCHEMA_PATTERN,
@@ -607,15 +608,16 @@ export const DERIVE_WALLET_PARAMETERS = Type.Object(
   {
     chain: chainArgument,
     privateKey: Type.String({
-      pattern: PRIVATE_KEY_SCHEMA_PATTERN,
-      description: "Private key as 64 hex characters without 0x",
+      pattern: WALLET_SECRET_SCHEMA_PATTERN,
+      description:
+        "Private key as 64 hex characters without 0x. On xrpl also a family seed: s... for secp256k1, sEd... for ed25519",
     }),
     addressType: addressTypeArgument,
     network: networkArgument,
     compressed: Type.Optional(
       Type.Boolean({
         description:
-          "secp256k1 only: SEC1 form of the public key, which a legacy address hashes. Old wallets and brainwallets wrote uncompressed. ethereum, base and tron hash the uncompressed key and refuse true, sui refuses false. Default: true",
+          "secp256k1 only: SEC1 form of the public key, which a legacy address hashes. Old wallets and brainwallets wrote uncompressed. ethereum, base and tron hash the uncompressed key and refuse true, sui and xrpl refuse false. Default: true",
       }),
     ),
   },
@@ -905,7 +907,7 @@ export const GET_ADDRESS_PARAMETERS = Type.Object(
     publicKey: Type.String({
       pattern: PUBLIC_KEY_SCHEMA_PATTERN,
       description:
-        "Public key as hex without 0x: 32-byte ed25519, or compressed or uncompressed SEC1 secp256k1",
+        "Public key as hex without 0x: 32-byte ed25519 (on xrpl also its ED form), or compressed or uncompressed SEC1 secp256k1",
     }),
     addressType: addressTypeArgument,
     network: networkArgument,
@@ -952,7 +954,7 @@ export const VERIFY_MESSAGE_PARAMETERS = Type.Object(
     signature: Type.String({
       pattern: MESSAGE_SIGNATURE_SCHEMA_PATTERN,
       description:
-        "Signature as hex without 0x: 64 bytes, or 65 with the recovery byte. The Bitcoin family and decred also take signmessage's base64",
+        "Signature as hex without 0x: 64 bytes, or 65 with the recovery byte; DER on xrpl secp256k1, as ripple-keypairs signs. The Bitcoin family and decred also take signmessage's base64",
     }),
     publicKey: Type.String({
       pattern: PUBLIC_KEY_SCHEMA_PATTERN,
@@ -1143,7 +1145,8 @@ export const BIP44_GENERATE_PARAMETERS = Type.Object(
     ),
     addressType: Type.Optional(
       Type.String({
-        description: "Signature scheme on Sui, ed25519 or secp256k1. Default: ed25519",
+        description:
+          "Signature scheme on Sui, ed25519 or secp256k1. Default: ed25519. xrpl paths are secp256k1 only",
         enum: SUI_ADDRESS_TYPES,
       }),
     ),

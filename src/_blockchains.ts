@@ -60,4 +60,5 @@ export const blockchains = {
   ethereum: lazy("ethereum", () => import("./blockchains/ethereum.ts")),
   base: lazy("base", () => import("./blockchains/base.ts")),
   cardano: lazy("cardano", () => import("./blockchains/cardano.ts")),
+  xrpl: lazy("xrpl", () => import("./blockchains/xrpl.ts")),
 };

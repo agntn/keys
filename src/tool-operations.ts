@@ -124,6 +124,8 @@ import {
   KDF_COST_LIMITS,
   TOOL_WIF_CHAINS,
   PRIVATE_KEY_SCHEMA_PATTERN,
+  FAMILY_SEED_SCHEMA_PATTERN,
+  DER_SIGNATURE_SCHEMA_PATTERN,
   PUBLIC_KEY_SCHEMA_PATTERN,
   CORE_SIGNATURE_SCHEMA_PATTERN,
   RECOVERABLE_SIGNATURE_SCHEMA_PATTERN,
@@ -423,6 +425,8 @@ function requiredString(value: unknown, name: string): string {
 const PRIVATE_KEY_HEX = new RegExp(PRIVATE_KEY_SCHEMA_PATTERN, "u");
 const PUBLIC_KEY_HEX = new RegExp(PUBLIC_KEY_SCHEMA_PATTERN, "u");
 const SIGNATURE_HEX = new RegExp(SIGNATURE_SCHEMA_PATTERN, "u");
+const DER_SIGNATURE = new RegExp(DER_SIGNATURE_SCHEMA_PATTERN, "u");
+const FAMILY_SEED = new RegExp(FAMILY_SEED_SCHEMA_PATTERN, "u");
 const CORE_SIGNATURE = new RegExp(CORE_SIGNATURE_SCHEMA_PATTERN, "u");
 const RECOVERABLE_SIGNATURE = new RegExp(RECOVERABLE_SIGNATURE_SCHEMA_PATTERN, "u");
 const DIGEST_HEX = new RegExp(DIGEST_SCHEMA_PATTERN, "u");
@@ -644,17 +648,20 @@ export async function deriveWallet(
     addressTypeValue,
   );
   const compressed = walletCompressed(compressedValue);
-  const privateKey = hexArgument(
-    privateKeyValue,
-    "Private key",
-    PRIVATE_KEY_HEX,
-    "64 hex characters",
-  );
-  const wallet = blockchain.deriveWallet(
-    privateKey,
-    compressed === undefined ? {} : { compressed },
-    addressType,
-  );
+  const options = compressed === undefined ? {} : { compressed };
+  const secret = requiredString(privateKeyValue, "Private key");
+  const wallet = FAMILY_SEED.test(secret)
+    ? blockchain.deriveSeedWallet(secret, options, addressType)
+    : blockchain.deriveWallet(
+        hexArgument(
+          secret,
+          "Private key",
+          PRIVATE_KEY_HEX,
+          "64 hex characters, or on xrpl a family seed (s...),",
+        ),
+        options,
+        addressType,
+      );
   const details = {
     chain: blockchain.name,
     network: blockchain.network,
@@ -2324,7 +2331,7 @@ export async function getAddress(
     publicKeyValue,
     "Public key",
     PUBLIC_KEY_HEX,
-    "a 32-byte ed25519 or SEC1 secp256k1 key in hex",
+    "a 32-byte ed25519 key, XRPL's ED form of one, or a SEC1 secp256k1 key in hex",
   );
   const type = addressType ?? blockchain.defaultAddressType;
   const address = blockchain.getAddress(publicKey, type);
@@ -2472,12 +2479,17 @@ export async function verifyMessage(
   const core = CORE_SIGNATURE.test(signatureText);
   const signature = core
     ? signatureText
-    : hexArgument(signatureText, "Signature", SIGNATURE_HEX, "64 or 65 bytes of hex");
+    : hexArgument(
+        signatureText,
+        "Signature",
+        DER_SIGNATURE.test(signatureText) ? DER_SIGNATURE : SIGNATURE_HEX,
+        "64 or 65 bytes of hex, or DER on xrpl,",
+      );
   const publicKey = hexArgument(
     publicKeyValue,
     "Public key",
     PUBLIC_KEY_HEX,
-    "a 32-byte ed25519 or SEC1 secp256k1 key in hex",
+    "a 32-byte ed25519 key, XRPL's ED form of one, or a SEC1 secp256k1 key in hex",
   );
   if (core) assertReadableSignature(blockchain, message, signature);
   const valid = blockchain.verifyMessage(message, signature, publicKey);

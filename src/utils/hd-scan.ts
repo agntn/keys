@@ -117,6 +117,7 @@ const CHAIN_SCHEMES: Readonly<Record<string, readonly ScanScheme[]>> = {
     { name: "bip44", path: "m/44'/784'/{index}'/0'/0'", addressType: "ed25519" },
     { name: "bip54", path: "m/54'/784'/{index}'/0/0", addressType: "secp256k1" },
   ],
+  xrpl: [{ name: "bip44", path: "m/44'/144'/{account}'/0/{index}" }],
 };
 
 /** UTXO chains, whose testnet wallets take coin type 1. */
