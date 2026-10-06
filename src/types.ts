@@ -137,6 +137,8 @@ export type NetworkType = string;
  */
 export interface Options {
   readonly network?: NetworkType;
+  /** Bech32 prefix of a Cosmos SDK chain, such as `osmo`; `cosmos` by default, other chains ignore it. */
+  readonly prefix?: string;
   // Add more common options as needed
 }
 

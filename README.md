@@ -21,15 +21,16 @@ The docs live at [keys.agntn.dev](https://keys.agntn.dev), keyspace explorer inc
 
 ## ✨ Features
 
-- ⛓️ **A pile of chains, one interface.** Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, Cardano, Sui, TRON, the XRP Ledger and NEAR, each a class with the same methods on it.
+- ⛓️ **A pile of chains, one interface.** Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, Cardano, Sui, TRON, the XRP Ledger, NEAR and Cosmos, each a class with the same methods on it.
 - 🧬 **Two curves.** secp256k1 and ed25519, and Sui and the XRP Ledger will take either.
+- 🌌 **Every Cosmos chain in one class.** `blockchains.cosmos({ prefix: "osmo" })()` and the Hub's key comes out as an Osmosis address. Same key, same path, only the letters before the `1` change.
 - 🌊 **XRP family seeds.** Paste an `s...` or `sEd...` secret into `deriveSeedWallet` and get the wallet rippled would, genesis account included.
 - 🏠 **Bitcoin the way Bitcoin wants it.** Legacy, P2SH, segwit, P2WSH and taproot, testnet included, and the purpose level of your path picks the type for you.
 - 🌱 **Mnemonic in, wallet out.** BIP39 into BIP32 on secp256k1 and SLIP-10 on ed25519, passphrase optional.
 - 👀 **An xpub is enough to watch.** Hand over an account's xpub, ypub or zpub and get the address at `m/0/5`, no secret anywhere in the call.
 - 🧩 **Puzzle mnemonics are welcome.** Wrong checksum? Derive anyway and get a warning with the wallet, or ask which words would make it valid.
 - 🌍 **All ten BIP39 word lists.** Look a word up in Italian, generate in Japanese with the ideographic spaces, map indices from base 0 or base 1.
-- ✍️ **Signing on both curves.** Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash and eCash hash the message the way Core does, EVM chains the way ethers does, TRON the way TronWeb's `signMessageV2` does, Sui the way the Sui SDK's `signPersonalMessage` does on either curve, Stellar the way the Stellar SDK's `signMessage` does under SEP-53, the XRP Ledger the way ripple-keypairs does, DER on secp256k1, and Solana, Aptos, Cardano and NEAR sign the raw bytes. By default you get 64 bytes of compact `r||s` hex.
+- ✍️ **Signing on both curves.** Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash and eCash hash the message the way Core does, EVM chains the way ethers does, TRON the way TronWeb's `signMessageV2` does, Sui the way the Sui SDK's `signPersonalMessage` does on either curve, Stellar the way the Stellar SDK's `signMessage` does under SEP-53, the XRP Ledger the way ripple-keypairs does, DER on secp256k1, Cosmos the way Keplr's `signArbitrary` does under ADR-036, and Solana, Aptos, Cardano and NEAR sign the raw bytes. By default you get 64 bytes of compact `r||s` hex.
 - 🔁 **The signer rides along.** `{ recovered: true }` gives 65 bytes of `r||s||v` on Ethereum, Base and TRON, and the base64 `bitcoin-cli signmessage` prints on the Bitcoin family and Decred. Skip it on Ethereum and ethers reads your 64 bytes as EIP-2098 compact, then answers with the wrong address instead of an error.
 - 🔌 **Loads one chain at a time.** `blockchains.solana()()` imports Solana and nothing else, so a Bitcoin tool never pays for Cardano.
 - 🤖 **Tools for your agent.** MCP over stdio, MCP over HTTP from [keys.agntn.dev/mcp](https://keys.agntn.dev/guide#remote-mcp) and a Pi extension run the same code, and a generated mnemonic comes back with a note that it's in the transcript now.
@@ -217,8 +218,9 @@ Not every prize sits behind one key. A 2-of-2 or a published `redeemScript` pays
 | **TRON**         | secp256k1          | base58check                          | ✅      |
 | **XRP Ledger**   | secp256k1, ed25519 | classic `r` address (base58)         | -       |
 | **NEAR**         | ed25519            | implicit account (hex)               | -       |
+| **Cosmos**       | secp256k1          | bech32 under any prefix              | -       |
 
-Decred and Cardano throw on `deriveHDWallet`, on purpose, `deriveWallet` with a private key works on both. Sui is ed25519 unless you ask for secp256k1. The XRP Ledger goes the other way, secp256k1 unless you ask or its `sEd...` seed does. NEAR doesn't even encode: the account is the public key in hex, and `getAddress` reads NEAR's own `ed25519:` form too. Testnet is a constructor option, `blockchains.bitcoin({ network: "testnet" })()` and your segwit addresses start with `tb1q`. Chain pages with prefixes and testnets: [Blockchains](https://keys.agntn.dev/blockchains).
+Decred and Cardano throw on `deriveHDWallet`, on purpose, `deriveWallet` with a private key works on both. Sui is ed25519 unless you ask for secp256k1. The XRP Ledger goes the other way, secp256k1 unless you ask or its `sEd...` seed does. NEAR doesn't even encode: the account is the public key in hex, and `getAddress` reads NEAR's own `ed25519:` form too. Cosmos takes a `prefix` next to `network`, so `blockchains.cosmos({ prefix: "celestia" })()` writes Celestia addresses. Testnet is a constructor option, `blockchains.bitcoin({ network: "testnet" })()` and your segwit addresses start with `tb1q`. Chain pages with prefixes and testnets: [Blockchains](https://keys.agntn.dev/blockchains).
 
 ## 🤖 Agents
 

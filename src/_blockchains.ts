@@ -62,4 +62,5 @@ export const blockchains = {
   cardano: lazy("cardano", () => import("./blockchains/cardano.ts")),
   xrpl: lazy("xrpl", () => import("./blockchains/xrpl.ts")),
   near: lazy("near", () => import("./blockchains/near.ts")),
+  cosmos: lazy("cosmos", () => import("./blockchains/cosmos.ts")),
 };

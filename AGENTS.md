@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-TypeScript library providing a unified interface for key generation, address derivation, wallet creation, and message signing across Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, Cardano, SUI, TRON, the XRP Ledger and NEAR. Curves and HD derivation come from @noble/@scure, every hash from @agntn/hashes, base encodings from @agntn/encodings, AES from @agntn/ciphers. Nothing in the package is audited or meant for production, real funds or sensitive data.
+TypeScript library providing a unified interface for key generation, address derivation, wallet creation, and message signing across Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, Cardano, SUI, TRON, the XRP Ledger, NEAR and Cosmos SDK chains. Curves and HD derivation come from @noble/@scure, every hash from @agntn/hashes, base encodings from @agntn/encodings, AES from @agntn/ciphers. Nothing in the package is audited or meant for production, real funds or sensitive data.
 
 ## STRUCTURE
 

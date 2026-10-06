@@ -159,6 +159,7 @@ export const TOOL_CHAINS = [
   "cardano",
   "xrpl",
   "near",
+  "cosmos",
 ] as const;
 
 /** Blockchain name accepted by the tool surfaces. */
@@ -206,6 +207,7 @@ export const TOOL_ADDRESS_TYPES_BY_CHAIN: Readonly<Record<ToolChain, readonly st
   cardano: CARDANO_ADDRESS_TYPES,
   xrpl: XRPL_ADDRESS_TYPES,
   near: [],
+  cosmos: [],
 };
 
 /** Native WIF chains exposed by both agent transports. */
