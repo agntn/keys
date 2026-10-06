@@ -42,6 +42,7 @@ export const BIP44 = {
   TRON: 195,
   APTOS: 637,
   SUI: 784,
+  NEAR: 397,
 } as const;
 
 /**

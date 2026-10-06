@@ -11,6 +11,7 @@ import Stellar from "../../src/blockchains/stellar";
 import Aptos from "../../src/blockchains/aptos";
 import Sui from "../../src/blockchains/sui";
 import Cardano from "../../src/blockchains/cardano";
+import Near from "../../src/blockchains/near";
 
 describe("BIP44 Path Generation", () => {
   test("should generate correct BIP44 path for Bitcoin", () => {
@@ -231,6 +232,7 @@ describe("Blockchain Path Integration", () => {
     ["aptos", new Aptos(), "m/44'/637'/0'/0'/0'"],
     ["sui", new Sui(), "m/44'/784'/0'/0'/0'"],
     ["cardano", new Cardano(), "m/1852'/1815'/0'/0/0"],
+    ["near", new Near(), "m/44'/397'/0'"],
   ])("should generate the path %s wallets use", (_name, chain, expected) => {
     expect(getBlockchainPath(useBlockchain(chain))).toBe(expected);
   });

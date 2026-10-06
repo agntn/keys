@@ -13,7 +13,7 @@ Lazy-loaded class modules. Each file exports a named concrete class and the same
 | **CashAddr**         | bitcoincash, ecash               | Bitcoin's digest; Bitcoin Cash keeps Bitcoin's preamble, eCash has its own | secp256k1 via `utils/secp256k1`   |
 | **P2PKH only**       | bitcoinsv, dash, dogecoin, zcash | Bitcoin's digest; Dash, Dogecoin and Zcash own preambles                   | secp256k1 via `utils/secp256k1`   |
 | **secp256k1 custom** | tron                             | `hashWithPreamble` (TIP-191 preamble + keccak256)                          | secp256k1 via `utils/secp256k1`   |
-| **ed25519**          | solana, aptos, cardano           | `ed25519SignMessage` (raw, no prehash)                                     | ed25519 via `utils/ed25519`       |
+| **ed25519**          | solana, aptos, cardano, near     | `ed25519SignMessage` (raw, no prehash)                                     | ed25519 via `utils/ed25519`       |
 | **ed25519 custom**   | stellar                          | SEP-53 digest (prefix + SHA-256), signed raw                               | ed25519 via `utils/ed25519`       |
 | **dual-curve**       | sui, xrpl                        | Sui's `PersonalMessage` digest; XRPL DER over SHA-512Half, ed25519 raw     | Sui ed25519 first, XRPL secp256k1 |
 
@@ -53,7 +53,8 @@ Decred uses `AbstractBlockchain` directly: ECDSA P2PKH with BLAKE-256, not Bitco
 - **HD wallets** - `deriveHDWallet` on the base class walks BIP32 or SLIP-10 by curve; Bitcoin, Litecoin and Bitcoin Gold infer the address type from the path purpose, Sui takes the curve from the scheme, Cardano throws because CIP-1852 derives differently
 - **Extended public keys** - `deriveXpubWallet` on the base class walks normal levels below an `xpub` (`tpub` on testnet) on secp256k1 chains. `AbstractBitcoinBlockchain` adds SLIP-0132 `ypub`/`zpub` with the type each stands for, Litecoin its `Ltub`/`Mtub`/`ttub`. Decred throws like its `deriveHDWallet`
 - **XRP Ledger** - `XRPL` writes ed25519 keys in XRPL's `ED` form and reads the curve from the key when `getAddress` gets no type. `deriveSeedWallet` takes a family seed (`s...`/`sEd...`) through rippled's root and intermediate scalars; the base class throws for every other chain. BIP39 and its path are secp256k1 only, as in xrpl.js, and signatures are ripple-keypairs' DER over SHA-512Half
-- **Derivation paths** - `getDerivationPath` is BIP44 on the base class; Solana, Stellar and Aptos override it with the hardened SLIP-10 shape their wallets use, cut at each chain's depth; Sui hardens only the ed25519 path and walks BIP32 `m/54'/784'/account'/change/index` on secp256k1; Cardano writes CIP-1852, `m/1852'/1815'/account'/role/index` with the role and index plain
+- **NEAR** - `Near` writes the implicit account, the public key in lowercase hex, and validates only that shape, since no key derives a named or ETH-implicit account. `getAddress` and `verifyMessage` also read NEAR's `ed25519:` and base58 key; the tool executors take that form on `near` only
+- **Derivation paths** - `getDerivationPath` is BIP44 on the base class; Solana, Stellar, Aptos and NEAR override it with the hardened SLIP-10 shape their wallets use, cut at each chain's depth; Sui hardens only the ed25519 path and walks BIP32 `m/54'/784'/account'/change/index` on secp256k1; Cardano writes CIP-1852, `m/1852'/1815'/account'/role/index` with the role and index plain
 
 ## COMPLEXITY
 
@@ -63,6 +64,6 @@ Decred uses `AbstractBlockchain` directly: ECDSA P2PKH with BLAKE-256, not Bitco
 - **SUI** - dual-curve support with scheme-based dispatch
 - **XRP Ledger** - family seeds, XRPL's own base58 alphabet and DER signatures
 - **TRON** - custom Keccak and Base58Check encoding
-- **Solana and Aptos** - straightforward single-curve subclasses
+- **Solana, Aptos and NEAR** - straightforward single-curve subclasses
 - **Stellar** - StrKey base32 with a CRC16-XModem checksum; `M` and `C` StrKeys validate, only `G` is produced
 - **Ethereum and Base** - minimal `AbstractEVMBlockchain` subclasses

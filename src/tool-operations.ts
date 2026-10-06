@@ -127,6 +127,7 @@ import {
   FAMILY_SEED_SCHEMA_PATTERN,
   DER_SIGNATURE_SCHEMA_PATTERN,
   PUBLIC_KEY_SCHEMA_PATTERN,
+  CHAIN_PUBLIC_KEY_SCHEMA_PATTERN,
   CORE_SIGNATURE_SCHEMA_PATTERN,
   RECOVERABLE_SIGNATURE_SCHEMA_PATTERN,
   DIGEST_SCHEMA_PATTERN,
@@ -424,6 +425,7 @@ function requiredString(value: unknown, name: string): string {
 
 const PRIVATE_KEY_HEX = new RegExp(PRIVATE_KEY_SCHEMA_PATTERN, "u");
 const PUBLIC_KEY_HEX = new RegExp(PUBLIC_KEY_SCHEMA_PATTERN, "u");
+const CHAIN_PUBLIC_KEY = new RegExp(CHAIN_PUBLIC_KEY_SCHEMA_PATTERN, "u");
 const SIGNATURE_HEX = new RegExp(SIGNATURE_SCHEMA_PATTERN, "u");
 const DER_SIGNATURE = new RegExp(DER_SIGNATURE_SCHEMA_PATTERN, "u");
 const FAMILY_SEED = new RegExp(FAMILY_SEED_SCHEMA_PATTERN, "u");
@@ -449,6 +451,28 @@ function hexArgument(
   const text = requiredString(value, name);
   if (!pattern.test(text)) throw new TypeError(`${name} must be ${shape} without 0x`);
   return text;
+}
+
+/**
+ * Reads the key for an address or a signature check, the `ed25519:` form on near only.
+ * @param value - Argument as the host passed it.
+ * @param chain - Name of the chain that reads the key.
+ * @returns {string} The key as given.
+ * @throws {TypeError} On a bad shape, or the `ed25519:` form on another chain.
+ */
+function chainPublicKey(value: unknown, chain: string): string {
+  const publicKey = hexArgument(
+    value,
+    "Public key",
+    CHAIN_PUBLIC_KEY,
+    "a 32-byte ed25519 key, XRPL's ED form of one, NEAR's ed25519: form, or a SEC1 secp256k1 key in hex",
+  );
+  if (chain !== "near" && publicKey.startsWith("ed25519:")) {
+    throw new TypeError(
+      `ed25519: and base58 is how NEAR writes a key. Give ${chain} the key in hex`,
+    );
+  }
+  return publicKey;
 }
 
 function optionalString(value: unknown, name: string): string | undefined {
@@ -2327,12 +2351,7 @@ export async function getAddress(
     networkValue,
     addressTypeValue,
   );
-  const publicKey = hexArgument(
-    publicKeyValue,
-    "Public key",
-    PUBLIC_KEY_HEX,
-    "a 32-byte ed25519 key, XRPL's ED form of one, or a SEC1 secp256k1 key in hex",
-  );
+  const publicKey = chainPublicKey(publicKeyValue, blockchain.name);
   const type = addressType ?? blockchain.defaultAddressType;
   const address = blockchain.getAddress(publicKey, type);
   return {
@@ -2485,12 +2504,7 @@ export async function verifyMessage(
         DER_SIGNATURE.test(signatureText) ? DER_SIGNATURE : SIGNATURE_HEX,
         "64 or 65 bytes of hex, or DER on xrpl,",
       );
-  const publicKey = hexArgument(
-    publicKeyValue,
-    "Public key",
-    PUBLIC_KEY_HEX,
-    "a 32-byte ed25519 key, XRPL's ED form of one, or a SEC1 secp256k1 key in hex",
-  );
+  const publicKey = chainPublicKey(publicKeyValue, blockchain.name);
   if (core) assertReadableSignature(blockchain, message, signature);
   const valid = blockchain.verifyMessage(message, signature, publicKey);
   return {

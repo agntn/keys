@@ -46,6 +46,7 @@ export type ExplorerChains = {
   readonly sui: AbstractBlockchain;
   readonly cardano: AbstractBlockchain;
   readonly xrpl: AbstractBlockchain;
+  readonly near: AbstractBlockchain;
 };
 
 /** Constructs every explorer chain. Client only in the app, nothing here runs on the server. */
@@ -72,6 +73,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     sui,
     cardano,
     xrpl,
+    near,
   ] = await Promise.all([
     load("bitcoin"),
     load("bitcoincash"),
@@ -92,6 +94,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     load("sui"),
     load("cardano"),
     load("xrpl"),
+    load("near"),
   ]);
   return {
     bitcoin,
@@ -113,6 +116,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     sui,
     cardano,
     xrpl,
+    near,
   };
 }
 
@@ -141,6 +145,7 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
     sui,
     cardano,
     xrpl,
+    near,
   } = chains;
 
   return {
@@ -226,6 +231,7 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
         { scheme: "ed25519" },
         "ed25519",
       ),
+      addressRow(near, hex, "near", "NEAR", "ed25519", "implicit"),
     ],
   };
 }
