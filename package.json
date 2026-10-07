@@ -144,6 +144,7 @@
   },
   "dependencies": {
     "@agntn/ciphers": "0.5.2",
+    "@agntn/curves": "0.1.1",
     "@agntn/encodings": "0.1.0",
     "@agntn/hashes": "0.6.3",
     "@agntn/tools": "0.2.0",

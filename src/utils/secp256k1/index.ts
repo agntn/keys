@@ -44,7 +44,7 @@ export {
   negatePoint,
   subtractPoints,
   subtractScalars,
-} from "./math.ts";
-export type { LiftedPoints, Scalar } from "./math.ts";
+} from "@agntn/curves/secp256k1";
+export type { LiftedPoints, Scalar } from "@agntn/curves/secp256k1";
 export { recoverReusedNonce } from "./nonce.ts";
 export type { NonceRecoveryOptions, NonceSignature, RecoveredNonceKey } from "./nonce.ts";

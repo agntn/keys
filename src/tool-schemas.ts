@@ -1,4 +1,4 @@
-import { Type, type TObject, type TOptional, type TString } from "@agntn/tools";
+import { Type, type TString } from "@agntn/tools";
 import {
   TOOL_CHAINS,
   TOOL_ADDRESS_TYPES,
@@ -39,11 +39,6 @@ import {
   MAX_BRAINWALLET_INPUT_LENGTH,
   MAX_SCRYPT_BLOCKS,
   KDF_COST_LIMITS,
-  SECP256K1_POINT_OPERATIONS,
-  CURVE_OPERATIONS,
-  MAX_CURVE_INTEGER_LENGTH,
-  MAX_CURVE_POINTS_SHOWN,
-  DEFAULT_CURVE_POINTS_SHOWN,
   BIP322_SIGNING_TYPES,
   BIP322_SIGNATURE_SCHEMA_PATTERN,
   MAX_BIP322_SIGNATURE_LENGTH,
@@ -63,7 +58,6 @@ import {
 import { MAX_MULTISIG_KEYS } from "./utils/script/limits.ts";
 import { COSMOS_PREFIX_PATTERN } from "./utils/cosmos-prefix.ts";
 import { BIP39_LANGUAGES } from "./utils/bip39/languages.ts";
-import { MAX_FILTERED_PRIME } from "./utils/curve/group.ts";
 
 /** The default list is English. Language is never inferred. */
 export const BIP39_LANGUAGE_PARAMETER = Type.Optional(
@@ -210,58 +204,6 @@ export const CONVERT_PUBLIC_KEY_PARAMETERS = Type.Object(
 );
 
 /**
- * SEC1 point argument of the point tool.
- * @param description - The operations that take it
- * @returns {TOptional<TString>} The optional argument
- */
-function sec1Point(description: string): TOptional<TString> {
-  return Type.Optional(
-    Type.String({
-      maxLength: 130,
-      pattern: "^(?:0[23][0-9A-Fa-f]{64}|04[0-9A-Fa-f]{128})?$",
-      description: `${description}. Compressed or uncompressed SEC1 hex, without 0x`,
-    }),
-  );
-}
-
-/** Shared MCP and Pi schema for point arithmetic on secp256k1. */
-export const COMPUTE_SECP256K1_POINT_PARAMETERS = Type.Object(
-  {
-    operation: Type.String({
-      enum: [...SECP256K1_POINT_OPERATIONS],
-      description:
-        "add and subtract take point and other, negate takes point, multiply takes point and scalar, lift takes x, check takes point and answers whether it lies on the curve",
-    }),
-    point: sec1Point("Every operation but lift, required there"),
-    other: sec1Point(
-      "add and subtract only, required there: the point added to point or subtracted from it",
-    ),
-    scalar: Type.Optional(
-      Type.String({
-        maxLength: 64,
-        pattern: "^[0-9A-Fa-f]{0,64}$",
-        description:
-          "multiply only, required there: 1 to n - 1 as hex without 0x. It enters the transcript, so pass a public tweak or a disposable key",
-      }),
-    ),
-    x: Type.Optional(
-      Type.String({
-        maxLength: 64,
-        pattern: "^(?:[0-9A-Fa-f]{64})?$",
-        description:
-          "lift only, required there: x coordinate as 64 hex digits. The even point is the full key of a BIP340 x-only key",
-      }),
-    ),
-    compressed: Type.Optional(
-      Type.Boolean({
-        description: "Output SEC1 encoding, for every operation but check. Default: true",
-      }),
-    ),
-  },
-  { additionalProperties: false },
-);
-
-/**
  * r, s or z of a signature for the nonce tool.
  * @param description - What the value is
  * @returns {TString} The schema
@@ -337,77 +279,6 @@ export const EXTRACT_TRANSACTION_SIGNATURES_PARAMETERS = Type.Object(
         maxItems: MAX_SPENT_OUTPUTS,
         description: `The output this input spends, or one per input in order. A Taproot input needs every one unless it signs with ANYONECANPAY; SegWit inputs need the value. All scripts together take at most ${MAX_SPENT_SCRIPTS_HEX_LENGTH} hex digits`,
       },
-    ),
-  },
-  { additionalProperties: false },
-);
-
-const CURVE_INTEGER_PATTERN = "-?(?:0[xX][0-9A-Fa-f]+|[0-9]+)";
-
-/**
- * Integer argument of the curve tool, decimal or 0x hex.
- * @param description - What the integer is
- * @returns {TString} The argument
- */
-function curveInteger(description: string): TString {
-  return Type.String({
-    maxLength: MAX_CURVE_INTEGER_LENGTH,
-    pattern: `^${CURVE_INTEGER_PATTERN}$`,
-    description: `${description}. Decimal, or hex with 0x`,
-  });
-}
-
-/**
- * Point argument of the curve tool.
- * @param description - The operations that take it
- * @returns {TOptional<TObject<{ x: TString; y: TString }>>} The optional argument
- */
-function curvePoint(description: string): TOptional<TObject<{ x: TString; y: TString }>> {
-  return Type.Optional(
-    Type.Object(
-      { x: curveInteger("x, from 0 to p - 1"), y: curveInteger("y, from 0 to p - 1") },
-      {
-        additionalProperties: false,
-        description: `${description}. A finite point; the point at infinity comes back as "infinity" and does not go in`,
-      },
-    ),
-  );
-}
-
-/** Shared MCP and Pi schema for arithmetic on a short Weierstrass curve the caller defines. */
-export const COMPUTE_CURVE_PARAMETERS = Type.Object(
-  {
-    operation: Type.String({
-      enum: [...CURVE_OPERATIONS],
-      description:
-        "add takes point and other, double, negate and order take point, multiply takes point and scalar, check takes point and answers whether it lies on the curve, count counts the points, points lists them, log takes point as the base and other as the target",
-    }),
-    a: curveInteger("a in y^2 = x^3 + ax + b, reduced mod p, so -3 works"),
-    b: curveInteger("b in y^2 = x^3 + ax + b, reduced mod p"),
-    p: curveInteger("The field prime, above 3"),
-    point: curvePoint("Every operation but count and points, required there; the base for log"),
-    other: curvePoint("add and log only, required there; the target for log"),
-    scalar: Type.Optional(
-      Type.String({
-        maxLength: MAX_CURVE_INTEGER_LENGTH,
-        pattern: `^(?:${CURVE_INTEGER_PATTERN})?$`,
-        description:
-          "multiply only, required there: any integer, decimal or hex with 0x. A negative one multiplies the negation",
-      }),
-    ),
-    order: Type.Optional(
-      Type.String({
-        maxLength: MAX_CURVE_INTEGER_LENGTH,
-        pattern: `^(?:${CURVE_INTEGER_PATTERN})?$`,
-        description: `points only: list just the points of exactly this order, 1 or more. Takes p up to ${MAX_FILTERED_PRIME}`,
-      }),
-    ),
-    limit: Type.Optional(
-      Type.Integer({
-        minimum: 1,
-        maximum: MAX_CURVE_POINTS_SHOWN,
-        description: `points only: most points to list, from 1 to ${MAX_CURVE_POINTS_SHOWN}. Default: ${DEFAULT_CURVE_POINTS_SHOWN}`,
-      }),
     ),
   },
   { additionalProperties: false },
