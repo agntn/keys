@@ -23,7 +23,7 @@ docs/
 ├── public/                        # favicon.svg and the files cut from it, site.webmanifest, fonts/
 ├── shiki-theme.ts                 # code block theme, every colour a `--shiki-token-*` variable from app.css
 ├── server/routes/sitemap.xml.ts   # Docus sitemap plus the Vue pages
-├── server/mcp/index.ts            # the Docus MCP handler at /mcp, named and versioned like `keys mcp`
+├── server/mcp/index.ts            # the Docus MCP handler at /mcp, introduced like `keys mcp` by `src/server-info.ts`
 ├── server/mcp/tools/              # one file per key tool, each `keysMcpTool("<name>")`
 ├── server/utils/keys-mcp.ts       # a tool from `@agntn/keys/mcp`: its entry in `toolListings` and `callTool` behind a Zod schema that lets any object through
 └── app/pages/keyspace.vue         # explorer, own route outside the docs layout
@@ -69,7 +69,7 @@ The landing renders before the library loads, so `app/utils/landing.ts` records 
 
 - `seo.schema` in `app/app.config.ts` emits the landing JSON-LD: `WebSite`, the agntn `Organization` as publisher, and a free `SoftwareApplication` with `sameAs` on GitHub and npm. Docs pages get `Article` plus `BreadcrumbList` from Docus on their own.
 - `app/pages/keyspace.vue` sits outside `content/`, so it calls `useSeo` and `defineOgImage("Docs", props, { alt })` itself, `server/routes/sitemap.xml.ts` appends it to the Docus sitemap and `llms.sections` in `nuxt.config.ts` lists it for `llms.txt`. A new page under `app/pages/` needs all three or crawlers and agents never see it.
-- Docus links `/favicon.ico` without shipping one. `public/favicon.svg` is the source, the PNGs and the `.ico` are cut from it with ImageMagick (`magick -background none favicon.svg -resize 512x512 icon-512.png`, `-define icon:auto-resize=48,32,16 favicon.ico`), `app.head` in `nuxt.config.ts` links them with the manifest, theme colours, `og:locale` and `author`.
+- Docus links `/favicon.ico` without shipping one. `public/favicon.svg` is the source, the PNGs and the `.ico` are cut from it with ImageMagick (`magick -background none favicon.svg -resize 512x512 icon-512.png`, `-define icon:auto-resize=48,32,16 favicon.ico`), `app.head` in `nuxt.config.ts` links them with the manifest, theme colours, `og:locale` and `author`. Both MCP servers show `favicon.svg` and `icon-512.png` as their icons, so `test/mcp.test.ts` fails when either goes missing.
 - Audit on `.output/public/*.html` with grep for `<meta`, `<link rel="canonical"` and `"@type"`, not by impression.
 
 ## OG images
