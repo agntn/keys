@@ -73,7 +73,7 @@ import {
 import { getBlockchainPath, useBlockchain, type AbstractBlockchain } from "./blockchain.ts";
 import { blockchains } from "./_blockchains.ts";
 import { parse as parseBIP44Path } from "./utils/bip44/index.ts";
-import type { Curve, MessageSigner } from "./types.ts";
+import type { Curve, MessageSigner, Options } from "./types.ts";
 import { hashTypedData, type TypedData } from "./utils/eip712.ts";
 import {
   entropyHashAlgorithms,
@@ -390,6 +390,29 @@ function assertIndexRange(indices: readonly number[], indexBase: 0 | 1): void {
 const BIP39_WORD_PATTERN = /^[\p{L}\p{M}]+$/u;
 const DERIVATION_PATH_PATTERN = /^m(?:\/\d+['h]?)+$/u;
 
+/** Substrate junctions as `keys_hd_wallet_derive` takes them on polkadot, `m` for the root key. */
+const SUBSTRATE_PATH_PATTERN = /^(?:m|(?:\/\/?[^/]+)+)$/u;
+
+/**
+ * Refuses a path the chain cannot walk: BIP32 everywhere but polkadot, Substrate junctions there.
+ * @param chain - Name of the loaded chain
+ * @param path - Derivation path as given
+ * @throws {TypeError} When the path has the wrong shape for the chain
+ */
+function assertHdWalletPath(chain: string, path: string): void {
+  if (chain !== "polkadot") {
+    if (!DERIVATION_PATH_PATTERN.test(path)) {
+      throw new TypeError("Derivation path must look like m/84'/0'/0'/0/0");
+    }
+    return;
+  }
+  if (!SUBSTRATE_PATH_PATTERN.test(path)) {
+    throw new TypeError(
+      "Derivation path on polkadot is hard junctions such as //polkadot//0, or m for the root key",
+    );
+  }
+}
+
 /**
  * Removes terminal and line control bytes from text crossing an agent boundary.
  * @param text - Text to sanitize.
@@ -564,19 +587,30 @@ function addressTypeLines(addressType: string | undefined): string[] {
   return addressType === undefined ? [] : [`Address type: ${addressType}`];
 }
 
+/** An SS58 prefix as the tools take it: a decimal number, no sign or leading zero. */
+const SS58_PREFIX_TEXT = /^(?:0|[1-9]\d{0,4})$/u;
+
 /**
- * Reads the bech32 prefix, which only cosmos takes; blank counts as left out.
+ * Reads the prefix into the options of the chain that takes one: the bech32 prefix on cosmos, the
+ * SS58 network number on polkadot. Blank counts as left out.
  * @param chain - Chain the call loads.
  * @param value - Prefix as the host passed it.
- * @returns {string | undefined} The prefix, or undefined for the chain's default.
- * @throws {RangeError} When a prefix comes with any other chain.
+ * @returns {Pick<Options, "prefix" | "ss58Prefix">} The chain's option, empty for its default.
+ * @throws {RangeError} When a prefix comes with any other chain, or polkadot gets no number.
  */
-function parsePrefix(chain: ToolChain, value: unknown): string | undefined {
+function parsePrefix(chain: ToolChain, value: unknown): Pick<Options, "prefix" | "ss58Prefix"> {
   const prefix = optionalName(value, "Prefix");
-  if (prefix !== undefined && chain !== "cosmos") {
-    throw new RangeError(`prefix picks a Cosmos SDK chain on cosmos. Leave it out on ${chain}`);
+  if (prefix === undefined) return {};
+  if (chain === "cosmos") return { prefix };
+  if (chain !== "polkadot") {
+    throw new RangeError(
+      `prefix picks a Cosmos SDK chain on cosmos and an SS58 network on polkadot. Leave it out on ${chain}`,
+    );
   }
-  return prefix;
+  if (!SS58_PREFIX_TEXT.test(prefix)) {
+    throw new RangeError("prefix on polkadot is the SS58 network number, such as 2 for Kusama");
+  }
+  return { ss58Prefix: Number(prefix) };
 }
 
 async function getBlockchain(
@@ -596,7 +630,7 @@ async function getBlockchain(
   const addressType = parseAddressType(chain, addressTypeValue);
   const prefix = parsePrefix(chain, prefixValue);
   return {
-    blockchain: useBlockchain(await blockchains[chain]({ network, prefix })()),
+    blockchain: useBlockchain(await blockchains[chain]({ network, ...prefix })()),
     addressType,
   };
 }
@@ -606,7 +640,7 @@ async function getBlockchain(
  * @param chainValue - Blockchain name.
  * @param networkValue - Optional network name.
  * @param addressTypeValue - Optional chain-specific address type.
- * @param prefixValue - Optional bech32 prefix, cosmos only.
+ * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot.
  * @returns {Promise<ToolResult<GeneratedWalletDetails | undefined>>} Generated key and address material.
  */
 export async function generateWallet(
@@ -665,7 +699,7 @@ function walletCompressed(value: unknown): boolean | undefined {
  * @param addressTypeValue - Optional chain-specific address type.
  * @param networkValue - Optional network name.
  * @param compressedValue - Optional secp256k1 public key form, compressed by default.
- * @param prefixValue - Optional bech32 prefix, cosmos only.
+ * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot.
  * @returns {Promise<ToolResult<DerivedWalletDetails>>} Derived public wallet material.
  */
 export async function deriveWallet(
@@ -750,7 +784,7 @@ function mnemonicOrEntropy(
  * @param allowInvalidChecksumValue - Accept a checksum failure for a public puzzle, default false.
  * @param languageValue - Optional official BIP39 language key.
  * @param entropyValue - BIP39 entropy as hex, encoded with the selected list in place of a mnemonic.
- * @param prefixValue - Optional bech32 prefix, cosmos only.
+ * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot.
  * @returns {Promise<ToolResult<DerivedWalletDetails>>} Derived public wallet material.
  */
 export async function deriveHdWallet(
@@ -770,15 +804,13 @@ export async function deriveHdWallet(
   }
   const allowInvalidChecksum = allowInvalidChecksumValue ?? false;
   const path = requiredString(pathValue, "Derivation path");
-  if (!DERIVATION_PATH_PATTERN.test(path)) {
-    throw new TypeError("Derivation path must look like m/84'/0'/0'/0/0");
-  }
   const { blockchain, addressType } = await getBlockchain(
     chainValue,
     networkValue,
     addressTypeValue,
     prefixValue,
   );
+  assertHdWalletPath(blockchain.name, path);
   const passphrase = optionalString(passphraseValue, "BIP39 passphrase");
   const language = parseBIP39Language(languageValue);
   const wordlist = await loadBIP39Wordlist(language);
@@ -1145,7 +1177,7 @@ function scanText(details: Readonly<ScannedWalletDetails>): string {
  * @param allowInvalidChecksumValue - Scan BIP39 words that fail only the checksum, default false
  * @param accountsValue - Accounts from 0, default 3
  * @param indicesValue - Address indices from 0, default 20
- * @param prefixValue - Optional bech32 prefix, cosmos only
+ * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot
  * @returns {Promise<ToolResult<ScannedWalletDetails>>} The match, or every scheme tried
  */
 export async function scanHdWallet(
@@ -1172,7 +1204,9 @@ export async function scanHdWallet(
   const schemes = scanSchemes(blockchain.name, blockchain.network);
   if (schemes === undefined) {
     throw new RangeError(
-      `${blockchain.name} has no wallet paths to scan: its HD derivation is not supported`,
+      blockchain.name === "polkadot"
+        ? "polkadot has no wallet paths to scan: wallets name their own junctions, so derive each one with keys_hd_wallet_derive"
+        : `${blockchain.name} has no wallet paths to scan: its HD derivation is not supported`,
     );
   }
   if (!blockchain.validateAddress(args.address)) {
@@ -1219,7 +1253,7 @@ export interface DerivedXpubWalletDetails {
  * @param pathValue - Normal levels below the key, such as `m/0/0`.
  * @param addressTypeValue - Optional address type that wins over the one the prefix stands for.
  * @param networkValue - Optional network name.
- * @param prefixValue - Optional bech32 prefix, cosmos only.
+ * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot.
  * @returns {Promise<ToolResult<DerivedXpubWalletDetails>>} Public key and address at the path.
  */
 export async function deriveXpubWallet(
@@ -2357,7 +2391,7 @@ export async function recoverMnemonicWord(
  * @param publicKeyValue - Public key as hexadecimal text.
  * @param addressTypeValue - Optional chain-specific address type.
  * @param networkValue - Optional network name.
- * @param prefixValue - Optional bech32 prefix, cosmos only.
+ * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot.
  * @returns {Promise<ToolResult<AddressDetails>>} Derived address.
  */
 export async function getAddress(
@@ -2392,7 +2426,7 @@ export async function getAddress(
  * @param chainValue - Blockchain name.
  * @param addressValue - Address to validate.
  * @param networkValue - Optional network name.
- * @param prefixValue - Optional bech32 prefix, cosmos only.
+ * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot.
  * @returns {Promise<ToolResult<AddressValidationDetails>>} Address format verdict.
  */
 export async function validateAddress(
@@ -2429,7 +2463,7 @@ export async function validateAddress(
  * @param chainValue - Blockchain name, already accepted by `getBlockchain`.
  * @param network - Network the address failed on.
  * @param address - Address that failed.
- * @param prefixValue - Bech32 prefix the first check used, cosmos only.
+ * @param prefixValue - Prefix the first check used, cosmos and polkadot only.
  * @returns {Promise<ToolNetwork | undefined>} The other network, when the address passes there.
  */
 async function otherNetworkOf(
@@ -2451,7 +2485,7 @@ async function otherNetworkOf(
  * @param privateKeyValue - Private key as hexadecimal text.
  * @param networkValue - Optional network name.
  * @param recoveredValue - Append the recovery byte as `v`, default false.
- * @param prefixValue - Optional bech32 prefix, cosmos only.
+ * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot.
  * @returns {Promise<ToolResult<SignatureDetails>>} Generated signature.
  */
 export async function signMessage(
@@ -2511,7 +2545,7 @@ function assertReadableSignature(
  * @param signatureValue - Signature as hexadecimal text.
  * @param publicKeyValue - Public key as hexadecimal text.
  * @param networkValue - Optional network name.
- * @param prefixValue - Optional bech32 prefix, cosmos only.
+ * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot.
  * @returns {Promise<ToolResult<SignatureVerificationDetails>>} Signature verdict.
  */
 export async function verifyMessage(

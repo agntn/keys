@@ -122,6 +122,7 @@ export const TOOL_CHAINS = [
   "xrpl",
   "near",
   "cosmos",
+  "polkadot",
 ] as const;
 
 /** Blockchain name accepted by the tool surfaces. */
@@ -170,6 +171,7 @@ export const TOOL_ADDRESS_TYPES_BY_CHAIN: Readonly<Record<ToolChain, readonly st
   xrpl: XRPL_ADDRESS_TYPES,
   near: [],
   cosmos: [],
+  polkadot: [],
 };
 
 /** Native WIF chains exposed by both agent transports. */
@@ -222,6 +224,9 @@ export const BIP39_WORD_SCHEMA_PATTERN = "^\\S+$";
 
 /** JSON Schema pattern for an absolute derivation path, hardened levels marked with `'` or `h`. */
 export const DERIVATION_PATH_SCHEMA_PATTERN = "^m(/[0-9]+['h]?)+$";
+
+/** JSON Schema pattern for an HD wallet path: BIP32, or Substrate junctions and `m` on polkadot. */
+export const HD_WALLET_PATH_SCHEMA_PATTERN = "^(?:m(?:/[0-9]+['h]?)*|(?://?[^/]+)+)$";
 
 /** JSON Schema pattern for normal levels below an xpub; hardened ones need the private key. */
 export const XPUB_PATH_SCHEMA_PATTERN = "^m(/[0-9]+)+$";

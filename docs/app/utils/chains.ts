@@ -34,6 +34,7 @@ export const CHAINS: readonly ChainEntry[] = [
   { driver: "xrpl", label: "XRP Ledger", curve: "secp256k1 · ed25519", icon: "i-token-xrp", row: "xrp", blurb: "Family seeds, both curves, and Bitcoin's base58 shuffled until every account starts with `r`." },
   { driver: "near", label: "NEAR", curve: "ed25519", icon: "i-token-near", row: "near", blurb: "The account is the public key in hex. No hash, no checksum, not even base58." },
   { driver: "cosmos", label: "Cosmos", curve: "secp256k1", icon: "i-token-atom", row: "atom", blurb: "One driver for the Hub, Osmosis, Celestia and the rest. Same key, same path, only the letters before the `1` disagree." },
+  { driver: "polkadot", label: "Polkadot", curve: "ed25519", icon: "i-token-dot", row: "dot", blurb: "SS58 under any network prefix, Kusama included. ed25519 for now, sr25519 is still waiting its turn." },
 ].map((entry) => ({ ...entry, to: `/blockchains/${entry.driver}` }));
 
 /**
