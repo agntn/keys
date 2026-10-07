@@ -16,6 +16,7 @@ Lazy-loaded class modules. Each file exports a named concrete class and the same
 | **bech32 prefix**    | cosmos                           | ADR-036 sign doc + SHA-256, as Keplr's `signArbitrary`                     | secp256k1 via `utils/secp256k1`   |
 | **ed25519**          | solana, aptos, cardano, near     | `ed25519SignMessage` (raw, no prehash)                                     | ed25519 via `utils/ed25519`       |
 | **ed25519 custom**   | stellar                          | SEP-53 digest (prefix + SHA-256), signed raw                               | ed25519 via `utils/ed25519`       |
+| **Substrate**        | polkadot                         | ed25519 over the message wrapped in `<Bytes>`, as polkadot.js `signRaw`    | mini secret + `//hard` junctions  |
 | **dual-curve**       | sui, xrpl                        | Sui's `PersonalMessage` digest; XRPL DER over SHA-512Half, ed25519 raw     | Sui ed25519 first, XRPL secp256k1 |
 
 Decred uses `AbstractBlockchain` directly: ECDSA P2PKH with BLAKE-256, not Bitcoin address hashing or EVM signing. Its HD method throws because standard BIP32 does not preserve Decred's legacy derivation.
@@ -56,6 +57,7 @@ Decred uses `AbstractBlockchain` directly: ECDSA P2PKH with BLAKE-256, not Bitco
 - **XRP Ledger** - `XRPL` writes ed25519 keys in XRPL's `ED` form and reads the curve from the key when `getAddress` gets no type. `deriveSeedWallet` takes a family seed (`s...`/`sEd...`) through rippled's root and intermediate scalars; the base class throws for every other chain. BIP39 and its path are secp256k1 only, as in xrpl.js, and signatures are ripple-keypairs' DER over SHA-512Half
 - **NEAR** - `Near` writes the implicit account, the public key in lowercase hex, and validates only that shape, since no key derives a named or ETH-implicit account. `getAddress` and `verifyMessage` also read NEAR's `ed25519:` and base58 key; the tool executors take that form on `near` only
 - **Cosmos** - `Cosmos` covers every Cosmos SDK chain on coin type 118: bech32 over hash160 of the compressed key, under the `prefix` constructor option (`cosmos` by default, `Options.prefix`; any lowercase BIP-173 prefix, pattern in `utils/cosmos-prefix.ts`). Validation wants that prefix and 1 to 255 bytes, as the SDK's default `VerifyAddressFormat` does. ADR-036 puts the signer address in the signed doc, so a signature checks only under the prefix it was made for. The tool executors take `prefix` on `cosmos` only
+- **Polkadot** - `Polkadot` writes ed25519 accounts as SS58 (`utils/ss58.ts`) under the `ss58Prefix` constructor option: 0 by default, 42 on testnet, any of 0 to 16383 but the reserved 46 and 47. `deriveHDWallet` follows subkey and polkadot.js through `utils/substrate.ts`: PBKDF2 over the BIP39 entropy to the mini secret, then hard junctions, the passphrase standing in for `///password`. It refuses soft junctions, which need sr25519, and the junctions the two read apart (`0x` hex, numbers past u64). `verifyMessage` also takes a signature over the raw message, like `signatureVerify`. The tool executors read `prefix` as the SS58 number on `polkadot` only. sr25519 waits on `@agntn/curves`
 - **Derivation paths** - `getDerivationPath` is BIP44 on the base class; Solana, Stellar, Aptos and NEAR override it with the hardened SLIP-10 shape their wallets use, cut at each chain's depth; Sui hardens only the ed25519 path and walks BIP32 `m/54'/784'/account'/change/index` on secp256k1; Cardano writes CIP-1852, `m/1852'/1815'/account'/role/index` with the role and index plain
 
 ## COMPLEXITY
@@ -67,5 +69,6 @@ Decred uses `AbstractBlockchain` directly: ECDSA P2PKH with BLAKE-256, not Bitco
 - **XRP Ledger** - family seeds, XRPL's own base58 alphabet and DER signatures
 - **TRON** - custom Keccak and Base58Check encoding
 - **Solana, Aptos and NEAR** - straightforward single-curve subclasses
+- **Polkadot** - SS58 with a one or two byte prefix and a blake2b-512 checksum; Substrate junctions with SCALE encoded chain codes
 - **Stellar** - StrKey base32 with a CRC16-XModem checksum; `M` and `C` StrKeys validate, only `G` is produced
 - **Ethereum and Base** - minimal `AbstractEVMBlockchain` subclasses

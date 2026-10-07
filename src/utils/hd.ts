@@ -93,6 +93,42 @@ function assertDerivationInput(allowInvalidChecksum: unknown, wordlist: unknown)
 }
 
 /**
+ * Reads the entropy back out of word indices, dropping the checksum bits without checking them.
+ * @param words - NFKD normalized words, every one in the list
+ * @param wordlist - BIP39 word list the words come from
+ * @returns {Uint8Array} The 16 to 32 entropy bytes
+ */
+function wordsToEntropy(words: readonly string[], wordlist: readonly string[]): Uint8Array {
+  let bits = 0n;
+  for (const word of words) bits = (bits << 11n) | BigInt(wordlist.indexOf(word));
+  const checksumBits = words.length / 3;
+  const bytes = (words.length * 11 - checksumBits) / 8;
+  return Uint8Array.fromHex((bits >> BigInt(checksumBits)).toString(16).padStart(bytes * 2, "0"));
+}
+
+/**
+ * Reads the entropy behind a BIP39 mnemonic, which Substrate derives from instead of the seed.
+ * @param mnemonic - BIP39 words from `wordlist`, never repaired to satisfy a checksum
+ * @param allowInvalidChecksum - Accept only checksum failures when explicitly true
+ * @param wordlist - BIP39 word list the words come from, English by default
+ * @returns {{ entropy: Uint8Array; checksumValid: boolean }} Entropy bytes and actual checksum verdict
+ */
+export function deriveMnemonicEntropy(
+  mnemonic: string,
+  allowInvalidChecksum = false,
+  wordlist: readonly string[] = englishWordlist,
+): { readonly entropy: Uint8Array; readonly checksumValid: boolean } {
+  assertDerivationInput(allowInvalidChecksum, wordlist);
+  const normalizedMnemonic = normalizeMnemonic(mnemonic);
+  const inspection = inspectBIP39Mnemonic(normalizedMnemonic, wordlist);
+  if (inspection.checksumValid === null || (!inspection.valid && !allowInvalidChecksum)) {
+    throw new Error(describeRejectedMnemonic(normalizedMnemonic, inspection, wordlist));
+  }
+  const words = normalizedMnemonic.normalize("NFKD").split(" ");
+  return { entropy: wordsToEntropy(words, wordlist), checksumValid: inspection.valid };
+}
+
+/**
  * Walks a BIP39 mnemonic down a path: BIP32 for secp256k1, SLIP-10 for ed25519.
  * @param mnemonic - BIP39 words from `wordlist`, never repaired to satisfy a checksum
  * @param path - Derivation path such as `m/84'/0'/0'/0/0`, or `m/84h/0h/0h/0/0` as descriptors write it

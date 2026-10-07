@@ -14,6 +14,7 @@ import {
   BIP39_ENTROPY_SCHEMA_PATTERN,
   BIP39_WORD_SCHEMA_PATTERN,
   DERIVATION_PATH_SCHEMA_PATTERN,
+  HD_WALLET_PATH_SCHEMA_PATTERN,
   XPUB_PATH_SCHEMA_PATTERN,
   PRIVATE_KEY_SCHEMA_PATTERN,
   WALLET_SECRET_SCHEMA_PATTERN,
@@ -467,7 +468,8 @@ const networkArgument = Type.Optional(
 
 const prefixArgument = Type.Optional(
   Type.String({
-    description: "cosmos only: bech32 prefix of the chain, such as osmo. Default: cosmos",
+    description:
+      "cosmos: bech32 prefix of the chain, such as osmo. Default: cosmos. polkadot: SS58 network number, such as 2 for Kusama. Default: 0, 42 on testnet",
     pattern: COSMOS_PREFIX_PATTERN,
   }),
 );
@@ -529,10 +531,16 @@ export const DERIVE_HD_WALLET_PARAMETERS = Type.Object(
     ),
     language: BIP39_LANGUAGE_PARAMETER,
     path: Type.String({
-      description: "Derivation path such as m/84'/0'/0'/0/0",
-      pattern: DERIVATION_PATH_SCHEMA_PATTERN,
+      description:
+        "Derivation path such as m/84'/0'/0'/0/0; on polkadot hard junctions such as //polkadot//0, or m for the root key",
+      pattern: HD_WALLET_PATH_SCHEMA_PATTERN,
     }),
-    passphrase: Type.Optional(Type.String({ description: "BIP39 passphrase. Default: empty" })),
+    passphrase: Type.Optional(
+      Type.String({
+        description:
+          "BIP39 passphrase, the ///password of a Substrate URI on polkadot. Default: empty",
+      }),
+    ),
     allowInvalidChecksum: Type.Optional(
       Type.Boolean({
         description:

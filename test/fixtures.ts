@@ -635,6 +635,64 @@ export const cosmosTestVectors = {
 } as const;
 
 /**
+ * Accounts by @polkadot/keyring 14.0.3, ed25519 over `bip39TestVectors.mnemonic`, SS58 0, 2 and 42.
+ * Signatures: `pair.sign` with `ed25519TestVectors.privateKey`, over `u8aWrapBytes` and raw bytes.
+ */
+export const polkadotTestVectors = {
+  wallets: [
+    [
+      "m",
+      "9125f505bdef2cb5825b9931769316d3e2f22150786489a04f39b434ec9fb294",
+      "14HKDhPM8fr6JB9yk9TGZTsBUdk8WJq1AiMbi1YAzUarv1Jp",
+      "FrdjgU9uFbYcHxuZDDKKGQ2mc2icg63YbTrwNpmvBmqUojH",
+      "5FM25N8HGtacre9TnWQGRK32d1kUp1Gs6Dd7YiYpSPZLjmj6",
+    ],
+    [
+      "//polkadot//0",
+      "9dfc8b8d14658a3bb2c29486ab05756bbd5ae97dbe2d59cfae97e7b1b8f8c8a1",
+      "14a9YHn5Mast138yujPzW3NKQw83fZS2gN2QQPmsZAf5NC8U",
+      "G9U4Grt8AdLK9wuioA3FquAhuQdmvh54F8fdm4UUsr3vunF",
+      "5FdrPxX1VocQZW8Tx6LzMtYAZK8PyFstbsHvF6nX15dZBm9V",
+    ],
+    [
+      "//0",
+      "ae2e7e24f9c4e876543384bcae70564d0f71ddb3c4c1a038073ef85d5b8dc972",
+      "14wP9JdKnjMX4TNGnURuCUgZk27tvjFAEoo7mTyJLLNsqeJp",
+      "GWhfHi8ZK6yNaBCbYBwxHDR2zQV36WCcguNzqFuG3ZrQN4Z",
+      "5G15zyNFvx63cvMkpqNu4KrQtQ8FERh2AK4dcAywnFMMf5nB",
+    ],
+    [
+      "//1",
+      "5b845af7928306776b5317741e9fec44741ee56f837fd92c51a05c5ddbb0f1b0",
+      "134zgAZhE51E5FPYiu3ncedPL1PmoGRHFzQHCoP2sYsgerQ1",
+      "EeKC9eVzekgPNCUXxoqNTAEcygMudgKdsWYSAfdoG4fDcT9",
+      "5E8hXqJdNHjkdiP2mFznUVoEUPQ86xs9BVfo3WPgKTrAUPcA",
+    ],
+    [
+      `//${"x".repeat(40)}`,
+      "5e7eff08792065f0bda465fea7070cea92a4e284e8b6e3a0cc6240226a918ba4",
+      "138uEAMvQiU5HSw5zVpueEBmvQsJeTGmwkeFqpMDMKVixr5D",
+      "EiDk9SjBJDXbZk1oZaxQ2idDP9tkpXpKdkX5BdpH2ghXdAE",
+      "5ECc5q6rYwCbquva2rmuW5Md4nsex9idsFumgXMroEUCnepW",
+    ],
+  ],
+  rootSeed: "4ed8d4b17698ddeaa1f1559f152f87b5d472f725ca86d341bd0276f1b61197e2",
+  passphrasePublicKey: "80e6e21d267e282fa99aa8c3395baad684f265d52079b7b70e335818fbbf7c40",
+  /** `ed25519TestVectors.publicKey` under the prefixes 0, 2, 42 and 16383. */
+  fixtureAddresses: [
+    [0, "15sND1xy2556eoAx6eGV6zkURiPJ9T9qJ8XMDHsYTuZezp7f"],
+    [2, "HSgj13mnepYxuysui2XroHKigftFpQsg1dcSfA9PckdZJW4"],
+    [42, "5Gw54ghuAHodDGAS91DUxqvKa6PeT9bhDdns3ztBupY8pSyn"],
+    [16_383, "yNaCRxx8uFM7AMC4JC63m7Z3Me46RXfLrAK3ZYc4FCJHChaHn"],
+  ],
+  message: "polkadot me",
+  signature:
+    "ec1243a0b17815594d3861eaba1466f16d5bd4abcc98d896e929d34bbb8e74a6f0118ddf2acf8a3e380e354afe4b36e227a62b333f186ac114ccf1ce9ae4bb0a",
+  rawSignature:
+    "0ab7805c530acb020497cbabcdf76502645f5b3fb0a59a7bbda82e92fd24e98f67850719842c6b0bf366aeea4e0547ebce848e58c3a4a40c1b3ccf2bffe2a50d",
+} as const;
+
+/**
  * Disposable key 1 through @stellar/stellar-sdk 17.1.0: SEP-53 `signMessage` digests and
  * signatures. The HD rows are SEP-0005 test case 1, the SDK derives the same keys.
  */

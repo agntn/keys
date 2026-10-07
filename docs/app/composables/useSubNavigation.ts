@@ -29,6 +29,7 @@ const NAV_ICONS: Record<string, string> = {
   "/blockchains/xrpl": "i-token-xrp",
   "/blockchains/near": "i-token-near",
   "/blockchains/cosmos": "i-token-atom",
+  "/blockchains/polkadot": "i-token-dot",
   "/keyspace": "i-lucide-key",
 };
 

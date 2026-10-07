@@ -48,6 +48,7 @@ export type ExplorerChains = {
   readonly xrpl: AbstractBlockchain;
   readonly near: AbstractBlockchain;
   readonly cosmos: AbstractBlockchain;
+  readonly polkadot: AbstractBlockchain;
 };
 
 /** Constructs every explorer chain. Client only in the app, nothing here runs on the server. */
@@ -76,6 +77,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     xrpl,
     near,
     cosmos,
+    polkadot,
   ] = await Promise.all([
     load("bitcoin"),
     load("bitcoincash"),
@@ -98,6 +100,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     load("xrpl"),
     load("near"),
     load("cosmos"),
+    load("polkadot"),
   ]);
   return {
     bitcoin,
@@ -121,6 +124,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     xrpl,
     near,
     cosmos,
+    polkadot,
   };
 }
 
@@ -151,6 +155,7 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
     xrpl,
     near,
     cosmos,
+    polkadot,
   } = chains;
 
   return {
@@ -238,6 +243,7 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
       ),
       addressRow(near, hex, "near", "NEAR", "ed25519", "implicit"),
       addressRow(cosmos, hex, "atom", "Cosmos", "secp256k1", "bech32"),
+      addressRow(polkadot, hex, "dot", "Polkadot", "ed25519", "ss58"),
     ],
   };
 }

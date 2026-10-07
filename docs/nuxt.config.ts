@@ -144,6 +144,7 @@ export default defineNuxtConfig({
         "token:btg",
         "token:dash",
         "token:dcr",
+        "token:dot",
         "token:doge",
         "token:eth",
         "token:ltc",
