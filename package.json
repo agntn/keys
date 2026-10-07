@@ -147,7 +147,7 @@
     "@agntn/curves": "0.1.1",
     "@agntn/encodings": "0.1.0",
     "@agntn/hashes": "0.6.3",
-    "@agntn/tools": "0.2.0",
+    "@agntn/tools": "0.2.1",
     "@modelcontextprotocol/server": "2.2.0",
     "@noble/curves": "2.4.0",
     "@scure/bip32": "2.4.0",

@@ -10,7 +10,7 @@ Core package source plus the MCP and CLI entry points. Blockchain implementation
 - `tool-operations.ts`: executors independent of a particular host, with their own boundary checks.
 - `tool-schemas.ts`: TypeBox parameter schemas, built with `Type` from `@agntn/tools`. Limits and portable patterns live in `tool-parameters.ts`.
 - `mcp.ts`: `createMcpServer()` through `@agntn/tools/mcp`, plus `toolListings` and `callTool()` for the docs server at `/mcp`, which answer like `keys mcp`.
-- `cli.ts`: the `keys` bin, `runCli` from `@agntn/tools/cli` over `keysTools` with `mcp: true`. Every tool is a command and its flags come from the schema, so nothing here repeats an argument. A `cli` hint on `defineTool` changes how a tool reads on the line. Built into `dist/cli.mjs`, a bare `keys mcp` serves `src/mcp.ts` in a checkout (see the MCP transport note in the root `AGENTS.md`). stdout of `mcp` is reserved for JSON-RPC.
+- `cli.ts`: the `keys` bin, `runCli` from `@agntn/tools/cli` over `keysTools` with `mcp: true`. Every tool is a command and its flags come from the schema, so nothing here repeats an argument. A `cli` hint on `defineTool` changes how a tool reads on the line. Built into `dist/cli.mjs`, a bare `keys mcp` serves `createMcpServer`, from `src/mcp.ts` in a checkout and from the bundle elsewhere (see the MCP transport note in the root `AGENTS.md`). stdout of `mcp` is reserved for JSON-RPC.
 
 ## Constraints
 

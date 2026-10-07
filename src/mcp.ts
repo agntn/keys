@@ -5,8 +5,8 @@ import {
   toolAnnotations,
 } from "@agntn/tools/mcp";
 import type { CallToolResult, Server, Tool } from "@modelcontextprotocol/server";
+import { serverInfo } from "./server-info.ts";
 import { keysTools } from "./tools.ts";
-import { version } from "./version.ts";
 
 /** The `tools/list` entries, in order, shared by `keys mcp` and the MCP server of the docs site. */
 export const toolListings: readonly Tool[] = keysTools.map((tool) => ({
@@ -50,5 +50,5 @@ export async function callTool(
  * @returns {Server} Unconnected MCP server.
  */
 export function createMcpServer(): Server {
-  return createToolServer({ name: "keys", version }, keysTools);
+  return createToolServer(serverInfo, keysTools);
 }

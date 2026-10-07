@@ -3,6 +3,7 @@
 import { Client } from "@modelcontextprotocol/client";
 import { getDefaultEnvironment, StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import {
   electrumOldVectors,
   electrumVectors,
@@ -25,6 +26,7 @@ import {
   descriptorVectors,
   multisigVector,
 } from "./fixtures.ts";
+import { serverInfo } from "../src/server-info.ts";
 import { TOOL_NAMES } from "../src/tool-parameters.ts";
 
 const server = path.resolve(import.meta.dirname, "../dist/cli.mjs");
@@ -89,6 +91,9 @@ async function call(name, args, expected) {
 await client.connect(transport);
 
 try {
+  if (!isDeepStrictEqual(client.getServerVersion(), serverInfo))
+    throw new Error(`The bundle introduces itself as ${JSON.stringify(client.getServerVersion())}`);
+
   const listed = await client.listTools();
   if (listed.tools.length !== TOOL_NAMES.length)
     throw new Error(`Expected ${TOOL_NAMES.length} tools, got ${listed.tools.length}`);

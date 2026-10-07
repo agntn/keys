@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { base64 } from "@agntn/encodings/base64";
@@ -56,6 +56,7 @@ import {
 } from "./fixtures.ts";
 import Bitcoin from "../src/blockchains/bitcoin.ts";
 import { callTool, createMcpServer, toolListings } from "../src/mcp.ts";
+import { serverInfo } from "../src/server-info.ts";
 import {
   TOOL_ADDRESS_TYPES_BY_CHAIN,
   TOOL_CHAINS,
@@ -88,6 +89,16 @@ afterEach(async () => {
 });
 
 describe("keys MCP server", () => {
+  it("introduces itself with a description and icons the site serves", async () => {
+    const client = await connectTestClient();
+
+    expect(client.getServerVersion()).toEqual(serverInfo);
+    for (const icon of serverInfo.icons) {
+      const file = new URL(`../docs/public${new URL(icon.src).pathname}`, import.meta.url);
+      expect(existsSync(file), icon.src).toBe(true);
+    }
+  });
+
   it.each([1, 12, 24, 100])("labels both indices once for a %i-word lookup", async (size) => {
     const client = await connectTestClient();
     const words = Array.from({ length: size }, (_, index) => (index % 2 === 0 ? "ZOO" : "eleven"));
