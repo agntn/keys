@@ -31,14 +31,8 @@ import {
   type ScanTried,
 } from "./utils/hd-scan.ts";
 import {
-  addPoints,
   convertPublicKey as convertSecp256k1PublicKey,
-  isOnCurve,
-  liftX,
-  multiplyPoint,
-  negatePoint,
   recoverReusedNonce,
-  subtractPoints,
 } from "./utils/secp256k1/index.ts";
 import { extractSignatures, type InputSignature } from "./utils/transaction/index.ts";
 import {
@@ -48,8 +42,6 @@ import {
   type ScriptAddressType,
 } from "./utils/script/index.ts";
 import { parse as parseDescriptor, type DescriptorOutput } from "./utils/descriptor/index.ts";
-import * as weierstrass from "./utils/curve/index.ts";
-import type { AffinePoint, CurvePoint, WeierstrassCurve } from "./utils/curve/index.ts";
 import { describeInvalidMnemonic, normalizeMnemonic } from "./utils/hd.ts";
 import {
   encode as encodeWIF,
@@ -133,13 +125,6 @@ import {
   DIGEST_SCHEMA_PATTERN,
   MAX_TYPED_DATA_LENGTH,
   SIGNATURE_SCHEMA_PATTERN,
-  SECP256K1_POINT_OPERATIONS,
-  type Secp256k1PointOperation,
-  CURVE_OPERATIONS,
-  type CurveOperation,
-  MAX_CURVE_INTEGER_LENGTH,
-  MAX_CURVE_POINTS_SHOWN,
-  DEFAULT_CURVE_POINTS_SHOWN,
   BIP322_SIGNING_TYPES,
   BIP322_SIGNATURE_SCHEMA_PATTERN,
   MAX_BIP322_SIGNATURE_LENGTH,
@@ -3302,61 +3287,6 @@ export function convertPublicKey(
   return { content: content(JSON.stringify(details)), details };
 }
 
-/** What the point tool computes, by operation. */
-export type Secp256k1PointDetails =
-  | { operation: Exclude<Secp256k1PointOperation, "lift" | "check">; point: string }
-  | { operation: "lift"; even: string; odd: string }
-  | { operation: "check"; onCurve: boolean };
-
-/** The arguments each point operation takes, so no argument drops silently. */
-const SECP256K1_POINT_ARGUMENTS: Readonly<Record<Secp256k1PointOperation, readonly string[]>> = {
-  add: ["point", "other", "compressed"],
-  subtract: ["point", "other", "compressed"],
-  negate: ["point", "compressed"],
-  multiply: ["point", "scalar", "compressed"],
-  lift: ["x", "compressed"],
-  check: ["point"],
-};
-
-/**
- * Add, subtract, negate or multiply public secp256k1 points, lift an x or check a point.
- * @param args - Tool arguments, the operation and the ones it takes
- * @returns {ToolResult<Secp256k1PointDetails>} The resulting point, both lifted points or the verdict
- */
-export function computeSecp256k1Point(
-  args: Readonly<Record<string, unknown>>,
-): ToolResult<Secp256k1PointDetails> {
-  const operation = oneOf(args["operation"], "operation", SECP256K1_POINT_OPERATIONS);
-  const taken = SECP256K1_POINT_ARGUMENTS[operation];
-  const foreign = ["point", "other", "scalar", "x", "compressed"].filter(
-    (name) => !taken.includes(name) && !isUnset(args[name]),
-  );
-  if (foreign.length > 0) {
-    throw new RangeError(`${operation} does not take ${foreign.join(", ")}`);
-  }
-  const argument = (name: string): string => {
-    if (isUnset(args[name])) throw new TypeError(`${operation} needs ${name}`);
-    return requiredString(args[name], name);
-  };
-  const compressed = args["compressed"] ?? true;
-  if (typeof compressed !== "boolean") throw new TypeError("Compressed must be a boolean");
-  const options = { compressed };
-  let details: Secp256k1PointDetails;
-  if (operation === "check") {
-    details = { operation, onCurve: isOnCurve(argument("point")) };
-  } else if (operation === "lift") {
-    details = { operation, ...liftX(argument("x"), options) };
-  } else if (operation === "negate") {
-    details = { operation, point: negatePoint(argument("point"), options) };
-  } else if (operation === "multiply") {
-    details = { operation, point: multiplyPoint(argument("point"), argument("scalar"), options) };
-  } else {
-    const compute = operation === "add" ? addPoints : subtractPoints;
-    details = { operation, point: compute(argument("point"), argument("other"), options) };
-  }
-  return { content: content(JSON.stringify(details)), details };
-}
-
 /** What the nonce tool answers; the private key stays in the library. */
 export interface RecoveredNonceDetails {
   type: (typeof NONCE_SIGNATURE_TYPES)[number];
@@ -3557,204 +3487,6 @@ export function extractTransactionSignatures(
           ...signatures.map((signature, position) => signatureText(signature, position + 1)),
         ].join("\n");
   return { content: content(text), details: { index, signatures } };
-}
-
-/** A point as the curve tool writes it: decimal coordinates, or "infinity". */
-export type CurvePointText = { x: string; y: string } | "infinity";
-
-/** What the curve tool computes, by operation. */
-export type CurveDetails =
-  | { operation: "add" | "double" | "negate" | "multiply"; point: CurvePointText }
-  | { operation: "check"; onCurve: boolean }
-  | { operation: "order"; order: string }
-  | { operation: "count"; count: string }
-  | { operation: "points"; total: string; points: CurvePointText[]; truncated: boolean }
-  | { operation: "log"; order: string; scalar: string | null };
-
-/** The optional arguments each curve operation takes, so no argument drops silently. */
-const CURVE_ARGUMENTS: Readonly<Record<CurveOperation, readonly string[]>> = {
-  add: ["point", "other"],
-  double: ["point"],
-  negate: ["point"],
-  multiply: ["point", "scalar"],
-  check: ["point"],
-  order: ["point"],
-  count: [],
-  points: ["order", "limit"],
-  log: ["point", "other"],
-};
-
-const CURVE_INTEGER = /^-?(?:0x[0-9a-f]+|[0-9]+)$/iu;
-
-/**
- * Read an integer the curve tool takes as decimal or 0x hex, with an optional minus sign.
- * @param value - Raw argument
- * @param name - What the error calls it
- * @returns {bigint} The integer
- */
-function curveInteger(value: unknown, name: string): bigint {
-  const text = requiredString(value, name);
-  if (text.length > MAX_CURVE_INTEGER_LENGTH || !CURVE_INTEGER.test(text)) {
-    throw new RangeError(`${name} must be an integer, decimal or hex with 0x`);
-  }
-  const negative = text.startsWith("-");
-  const magnitude = BigInt(negative ? text.slice(1) : text);
-  return negative ? -magnitude : magnitude;
-}
-
-/**
- * Read a point argument of an operation that needs it.
- * @param args - Tool arguments
- * @param operation - The operation, for the error
- * @param name - point or other
- * @returns {AffinePoint} The point, not yet checked against the curve
- */
-function curvePointArgument(
-  args: Readonly<Record<string, unknown>>,
-  operation: CurveOperation,
-  name: string,
-): AffinePoint {
-  const value = args[name];
-  if (value === undefined) throw new TypeError(`${operation} needs ${name}`);
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new TypeError(`${name} must be an object with x and y`);
-  }
-  const extra = Object.keys(value).filter((key) => key !== "x" && key !== "y");
-  if (extra.length > 0) throw new RangeError(`${name} takes only x and y`);
-  const coordinate = (key: string): unknown =>
-    Object.hasOwn(value, key) ? Reflect.get(value, key) : undefined;
-  return {
-    x: curveInteger(coordinate("x"), `${name}.x`),
-    y: curveInteger(coordinate("y"), `${name}.y`),
-  };
-}
-
-/**
- * Write a point for the tool result.
- * @param point - A point, or null for infinity
- * @returns {CurvePointText} Decimal coordinates, or "infinity"
- */
-function curvePointText(point: Readonly<CurvePoint>): CurvePointText {
-  return point === null ? "infinity" : { x: point.x.toString(), y: point.y.toString() };
-}
-
-/**
- * List points, at most the limit of them, and say how many there are.
- * @param curve - A checked curve
- * @param args - Tool arguments
- * @returns {CurveDetails} The points listed, their total and whether the list stops short
- */
-function listCurvePoints(
-  curve: Readonly<WeierstrassCurve>,
-  args: Readonly<Record<string, unknown>>,
-): CurveDetails {
-  const order = isUnset(args["order"]) ? undefined : curveInteger(args["order"], "order");
-  const limit = scanCount(args["limit"], "limit", {
-    default: DEFAULT_CURVE_POINTS_SHOWN,
-    maximum: MAX_CURVE_POINTS_SHOWN,
-  });
-  const listed = weierstrass.listPoints(curve, order === undefined ? { limit } : { order });
-  const total = order === undefined ? weierstrass.countPoints(curve) - 1n : BigInt(listed.length);
-  return {
-    operation: "points",
-    total: total.toString(),
-    points: listed.slice(0, limit).map(curvePointText),
-    truncated: total > BigInt(limit),
-  };
-}
-
-/**
- * Find a discrete log and name the order it was searched in.
- * @param curve - A checked curve
- * @param args - Tool arguments
- * @returns {CurveDetails} The order of the base and k, or null when the target is no multiple
- */
-function findCurveLog(
-  curve: Readonly<WeierstrassCurve>,
-  args: Readonly<Record<string, unknown>>,
-): CurveDetails {
-  const base = curvePointArgument(args, "log", "point");
-  const target = curvePointArgument(args, "log", "other");
-  const scalar = weierstrass.discreteLog(curve, base, target);
-  return {
-    operation: "log",
-    order: weierstrass.pointOrder(curve, base).toString(),
-    scalar: scalar === undefined ? null : scalar.toString(),
-  };
-}
-
-/** How each operation turns a checked curve and the arguments into its result. */
-const CURVE_COMPUTATIONS: Readonly<
-  Record<
-    CurveOperation,
-    (curve: Readonly<WeierstrassCurve>, args: Readonly<Record<string, unknown>>) => CurveDetails
-  >
-> = {
-  add: (curve, args) => ({
-    operation: "add",
-    point: curvePointText(
-      weierstrass.addPoints(
-        curve,
-        curvePointArgument(args, "add", "point"),
-        curvePointArgument(args, "add", "other"),
-      ),
-    ),
-  }),
-  double: (curve, args) => ({
-    operation: "double",
-    point: curvePointText(
-      weierstrass.doublePoint(curve, curvePointArgument(args, "double", "point")),
-    ),
-  }),
-  negate: (curve, args) => ({
-    operation: "negate",
-    point: curvePointText(
-      weierstrass.negatePoint(curve, curvePointArgument(args, "negate", "point")),
-    ),
-  }),
-  multiply: (curve, args) => {
-    const point = curvePointArgument(args, "multiply", "point");
-    if (isUnset(args["scalar"])) throw new TypeError("multiply needs scalar");
-    const scalar = curveInteger(args["scalar"], "scalar");
-    return {
-      operation: "multiply",
-      point: curvePointText(weierstrass.multiplyPoint(curve, point, scalar)),
-    };
-  },
-  check: (curve, args) => ({
-    operation: "check",
-    onCurve: weierstrass.isOnCurve(curve, curvePointArgument(args, "check", "point")),
-  }),
-  order: (curve, args) => ({
-    operation: "order",
-    order: weierstrass.pointOrder(curve, curvePointArgument(args, "order", "point")).toString(),
-  }),
-  count: (curve) => ({ operation: "count", count: weierstrass.countPoints(curve).toString() }),
-  points: listCurvePoints,
-  log: findCurveLog,
-};
-
-/**
- * Do arithmetic on a short Weierstrass curve the caller defines: points, orders, counts and logs.
- * @param args - Tool arguments: the operation, a, b, p and the ones the operation takes
- * @returns {ToolResult<CurveDetails>} The result of the operation
- */
-export function computeCurve(args: Readonly<Record<string, unknown>>): ToolResult<CurveDetails> {
-  const operation = oneOf(args["operation"], "operation", CURVE_OPERATIONS);
-  const taken = CURVE_ARGUMENTS[operation];
-  const foreign = ["point", "other", "scalar", "order", "limit"].filter(
-    (name) => !taken.includes(name) && !isUnset(args[name]),
-  );
-  if (foreign.length > 0) {
-    throw new RangeError(`${operation} does not take ${foreign.join(", ")}`);
-  }
-  const curve = weierstrass.defineCurve({
-    a: curveInteger(args["a"], "a"),
-    b: curveInteger(args["b"], "b"),
-    p: curveInteger(args["p"], "p"),
-  });
-  const details = CURVE_COMPUTATIONS[operation](curve, args);
-  return { content: content(JSON.stringify(details)), details };
 }
 
 /**

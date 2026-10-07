@@ -1451,82 +1451,16 @@ export const publicKeyEncodingVector = {
     "483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8",
 };
 
-/** Multiples of G as SEC1 hex and scalars mod n, the usual published secp256k1 constants. */
+/** G, its negation and 2G as SEC1 hex, the usual published secp256k1 constants. */
 export const secp256k1MathVectors = {
   g: publicKeyEncodingVector.compressed,
   minusG: "0379be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
   twoG: "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
-  threeG: "02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9",
-  threeGUncompressed:
-    "04f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9" +
-    "388f7b0f632de8140fe337e62a37f3566500a99934c2231b6cb9fd7584b8e672",
-  orderMinusOne: "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140",
-  inverseOfTwo: "7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a1",
-  /** No point of the curve has x = 5. */
-  xWithoutPoint: "0000000000000000000000000000000000000000000000000000000000000005",
 };
 
-/**
- * Textbook curves: y^2 = x^3 + 2x + 2 over F17 with the multiples of (5, 1) from Paar and Pelzl,
- * Understanding Cryptography, chapter 9, and y^2 = x^3 + x + 1 over F23.
- */
+/** y^2 = x^3 + 2x + 2 over F17, where (5, 1) has order 19, from Paar and Pelzl, chapter 9. */
 export const curveVectors = {
-  paar: {
-    a: 2n,
-    b: 2n,
-    p: 17n,
-    order: 19n,
-    multiples: [
-      [5n, 1n],
-      [6n, 3n],
-      [10n, 6n],
-      [3n, 1n],
-      [9n, 16n],
-      [16n, 13n],
-      [0n, 6n],
-      [13n, 7n],
-      [7n, 6n],
-      [7n, 11n],
-      [13n, 10n],
-      [0n, 11n],
-      [16n, 4n],
-      [9n, 1n],
-      [3n, 16n],
-      [10n, 11n],
-      [6n, 14n],
-      [5n, 16n],
-    ],
-  },
-  f23: {
-    a: 1n,
-    b: 1n,
-    p: 23n,
-    count: 28n,
-    /** The one point with y = 0, so its double is infinity. */
-    orderTwo: { x: 4n, y: 0n },
-    orderSeven: [
-      [5n, 4n],
-      [5n, 19n],
-      [13n, 7n],
-      [13n, 16n],
-      [17n, 3n],
-      [17n, 20n],
-    ],
-  },
-  /** secp256k1 given as a, b and p, with G and 3G from `secp256k1MathVectors`. */
-  secp256k1: {
-    a: 0n,
-    b: 7n,
-    p: 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2fn,
-    g: {
-      x: 0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798n,
-      y: 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8n,
-    },
-    threeG: {
-      x: 0xf9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9n,
-      y: 0x388f7b0f632de8140fe337e62a37f3566500a99934c2231b6cb9fd7584b8e672n,
-    },
-  },
+  paar: { a: 2n, b: 2n, p: 17n, order: 19n },
 } as const;
 
 /** Electrum 9da4c342 tests/test_mnemonic.py; addresses checked with Electrum 4.8.1. */

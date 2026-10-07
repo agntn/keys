@@ -100,16 +100,6 @@ try {
   );
 
   await call(
-    "keys_secp256k1_point_compute",
-    {
-      operation: "add",
-      point: publicKeyEncodingVector.compressed,
-      other: publicKeyEncodingVector.compressed,
-    },
-    /"point":"02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5"/,
-  );
-
-  await call(
     "keys_secp256k1_nonce_recover",
     {
       signatures: [
@@ -118,12 +108,6 @@ try {
       ],
     },
     /^Recovered the private key of 03f973a0b8\S+: both signatures verify under it\.\nThe key stays out/,
-  );
-
-  await call(
-    "keys_curve_compute",
-    { operation: "order", a: "2", b: "2", p: "17", point: { x: "5", y: "1" } },
-    /"order":"19"/,
   );
 
   await call(

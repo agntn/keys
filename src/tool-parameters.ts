@@ -9,9 +9,7 @@ export const TOOL_NAMES = [
   "keys_brainwallet_derive",
   "keys_bip39_seed_derive",
   "keys_secp256k1_public_key_convert",
-  "keys_secp256k1_point_compute",
   "keys_secp256k1_nonce_recover",
-  "keys_curve_compute",
   "keys_wif_encode",
   "keys_wif_decode",
   "keys_bip38_inspect",
@@ -46,42 +44,6 @@ export const TOOL_NAMES = [
 ] as const;
 
 export type ToolName = (typeof TOOL_NAMES)[number];
-
-/** What `keys_secp256k1_point_compute` does with public points. */
-export const SECP256K1_POINT_OPERATIONS = [
-  "add",
-  "subtract",
-  "negate",
-  "multiply",
-  "lift",
-  "check",
-] as const;
-
-export type Secp256k1PointOperation = (typeof SECP256K1_POINT_OPERATIONS)[number];
-
-/** What `keys_curve_compute` does on a curve the caller defines. */
-export const CURVE_OPERATIONS = [
-  "add",
-  "double",
-  "negate",
-  "multiply",
-  "check",
-  "order",
-  "count",
-  "points",
-  "log",
-] as const;
-
-export type CurveOperation = (typeof CURVE_OPERATIONS)[number];
-
-/** Longest integer `keys_curve_compute` reads, enough for a 512-bit decimal with a sign. */
-export const MAX_CURVE_INTEGER_LENGTH = 160;
-
-/** Most points one `points` call lists. */
-export const MAX_CURVE_POINTS_SHOWN = 1000;
-
-/** Points a `points` call lists when it names no limit. */
-export const DEFAULT_CURVE_POINTS_SHOWN = 100;
 
 /** Maximum text length accepted by the BIP39 seed tool. */
 export const MAX_BIP39_SEED_INPUT_LENGTH = 4096;

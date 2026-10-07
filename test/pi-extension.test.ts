@@ -12,7 +12,6 @@ import {
   bip39WordRepairVectors,
   electrumVectors,
   publicKeyEncodingVector,
-  secp256k1MathVectors,
   litecoinTestVectors,
   bitcoinCashTestVectors,
   bitcoinGoldTestVectors,
@@ -177,58 +176,6 @@ describe("keys Pi extension", () => {
     ] as const) {
       await expect(skipSchema(tool)("parent", bad)).rejects.toThrow(message);
     }
-  });
-  it("computes secp256k1 points with the shared executor and checks its arguments without the schema", async () => {
-    const tool = (await registerTools()).get("keys_secp256k1_point_compute");
-    if (!tool) throw new Error("Missing secp256k1 point tool");
-    const { g, twoG } = secp256k1MathVectors;
-    const args = { operation: "add", point: g, other: g };
-    expect(Value.Check(tool.parameters, args)).toBe(true);
-    expect(Value.Check(tool.parameters, { ...args, operation: "double" })).toBe(false);
-    await expect(tool.execute("point", args)).resolves.toMatchObject({
-      details: { operation: "add", point: twoG },
-    });
-    for (const [bad, message] of [
-      [{ ...args, operation: "double" }, "operation must be one of"],
-      [{ ...args, other: 2 }, "other must be a string"],
-      [{ ...args, compressed: "no" }, "Compressed must be a boolean"],
-      [{ ...args, x: g.slice(2) }, "add does not take x"],
-      [{ operation: "lift", x: `0x${g.slice(4)}` }, "x must be 64 hex digits"],
-      [{ operation: "multiply", point: g, scalar: "0x03" }, "Scalar must be hex"],
-    ] as const) {
-      await expect(skipSchema(tool)("point", bad)).rejects.toThrow(message);
-    }
-  });
-  it("computes on a curve the caller defines and checks its arguments without the schema", async () => {
-    const tool = (await registerTools()).get("keys_curve_compute");
-    if (!tool) throw new Error("Missing curve tool");
-    const args = { operation: "double", a: "2", b: "2", p: "17", point: { x: "5", y: "1" } };
-    expect(Value.Check(tool.parameters, args)).toBe(true);
-    expect(Value.Check(tool.parameters, { ...args, point: { x: "5", y: "1", z: "1" } })).toBe(
-      false,
-    );
-    await expect(tool.execute("curve", args)).resolves.toMatchObject({
-      details: { operation: "double", point: { x: "6", y: "3" } },
-    });
-    for (const [bad, message] of [
-      [{ ...args, operation: "subtract" }, "operation must be one of"],
-      [{ ...args, p: 17 }, "p must be a string"],
-      [{ ...args, a: "1e3" }, "a must be an integer"],
-      [{ ...args, a: "9".repeat(161) }, "a must be an integer"],
-      [{ ...args, point: [5, 1] }, "point must be an object with x and y"],
-      [{ ...args, point: { x: "5", y: "1", z: "1" } }, "point takes only x and y"],
-      [{ ...args, point: { x: "5" } }, "point.y must be a string"],
-      [{ ...args, scalar: "2" }, "double does not take scalar"],
-      [{ ...args, operation: "points", point: undefined, limit: 1001 }, "limit must be"],
-      [{ ...args, operation: "points", point: undefined, limit: 0.5 }, "limit must be"],
-      [{ ...args, operation: "points", point: undefined, limit: -5 }, "limit must be"],
-      [{ ...args, operation: "points", point: undefined, limit: 0 }, "limit must be"],
-    ] as const) {
-      await expect(skipSchema(tool)("curve", bad)).rejects.toThrow(message);
-    }
-    await expect(
-      skipSchema(tool)("curve", { ...args, operation: "points", point: undefined }),
-    ).resolves.toMatchObject({ details: { total: "18", truncated: false } });
   });
   it("checks the nonce and transaction arguments without the schema", async () => {
     const tools = await registerTools();

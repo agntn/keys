@@ -11,6 +11,9 @@ importers:
       '@agntn/ciphers':
         specifier: 0.5.2
         version: 0.5.2(ai@7.0.87(zod@4.6.5))
+      '@agntn/curves':
+        specifier: 0.1.1
+        version: 0.1.1(ai@7.0.87(zod@4.6.5))
       '@agntn/encodings':
         specifier: 0.1.0
         version: 0.1.0(ai@7.0.87(zod@4.6.5))
@@ -76,6 +79,22 @@ packages:
     resolution: {integrity: sha512-1jhGkxPv/OHho4oOyvJMu5cvd0gGwJMKVoHUjodb0+AlXvumD11p1ammD1fRWnvFDDhT4AsRuAW819E6U51MbA==}
     engines: {node: '>=26'}
     hasBin: true
+
+  '@agntn/curves@0.1.1':
+    resolution: {integrity: sha512-KjSeXg1USIy0u4mlos0bvD6GmSJfuuPv9MraVB6R4iUnEicetmI73q5DIaxO/VIJZQZ+rHzxKWVWprZ3BG2vuA==}
+    engines: {node: '>=26'}
+    hasBin: true
+    peerDependencies:
+      '@earendil-works/pi-coding-agent': '>=0.84.2 <2'
+      '@oh-my-pi/pi-coding-agent': '>=18.0.0 <19'
+      ai: '>=7.0.0'
+    peerDependenciesMeta:
+      '@earendil-works/pi-coding-agent':
+        optional: true
+      '@oh-my-pi/pi-coding-agent':
+        optional: true
+      ai:
+        optional: true
 
   '@agntn/encodings@0.1.0':
     resolution: {integrity: sha512-kPCR2TxPtpt+2CIRlAYHq8V7LwneVBMAp/0geftLkgKcselVI+EYm6dsL1YnZbqw6Cqtl+vHO6u7T5eZ9TTNDQ==}
@@ -7712,6 +7731,18 @@ snapshots:
       - '@earendil-works/pi-coding-agent'
       - '@oh-my-pi/pi-coding-agent'
       - ai
+
+  '@agntn/curves@0.1.1(ai@7.0.87(zod@4.6.5))':
+    dependencies:
+      '@agntn/tools': 0.2.0(@modelcontextprotocol/server@2.2.0)(ai@7.0.87(zod@4.6.5))
+      '@modelcontextprotocol/server': 2.2.0
+      citty: 0.2.2
+      consola: 3.4.2
+      scule: 1.3.0
+    optionalDependencies:
+      ai: 7.0.87(zod@4.6.5)
+    transitivePeerDependencies:
+      - h3-mcp
 
   '@agntn/encodings@0.1.0(ai@7.0.87(zod@4.6.5))':
     dependencies:

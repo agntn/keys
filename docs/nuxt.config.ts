@@ -7,6 +7,7 @@ const librarySource = resolve(import.meta.dirname, "../src");
 /** Runtime deps under src/index.ts and src/mcp.ts, installed here so they resolve from docs/node_modules. */
 const libraryDependencies = [
   "@agntn/ciphers",
+  "@agntn/curves",
   "@agntn/encodings",
   "@agntn/hashes",
   "@agntn/tools",
@@ -19,6 +20,7 @@ const libraryDependencies = [
 
 /** Every subpath src/ imports, dynamic ones too, so dev bundles them up front, not on demand. */
 const libraryEntries = [
+  "@agntn/curves/secp256k1",
   "@agntn/encodings/base32",
   "@agntn/encodings/base64",
   "@agntn/encodings/base58",
