@@ -613,11 +613,30 @@ function parsePrefix(chain: ToolChain, value: unknown): Pick<Options, "prefix" |
   return { ss58Prefix: Number(prefix) };
 }
 
+/**
+ * Reads the coin type a Cosmos SDK chain's path walks in place of the one its prefix stands for.
+ * @param chain - Chain the call loads.
+ * @param value - Coin type as the host passed it.
+ * @returns {Pick<Options, "coinType">} The option, empty when left out.
+ * @throws {RangeError} When it comes with any chain but cosmos, or is no coin type.
+ */
+function parseCoinType(chain: ToolChain, value: unknown): Pick<Options, "coinType"> {
+  const coinType = optionalIndex(value, "coinType");
+  if (coinType === undefined) return {};
+  if (chain !== "cosmos") {
+    throw new RangeError(
+      `coinType picks the path of a Cosmos SDK chain. ${chain} has its own, so leave it out`,
+    );
+  }
+  return { coinType };
+}
+
 async function getBlockchain(
   chainValue: unknown,
   networkValue?: unknown,
   addressTypeValue?: unknown,
   prefixValue?: unknown,
+  coinTypeValue?: unknown,
 ): Promise<{ readonly blockchain: AbstractBlockchain; readonly addressType: string | undefined }> {
   const name = requiredString(chainValue, "Chain").toLowerCase();
   const chain = TOOL_CHAINS.find((candidate) => candidate === name);
@@ -629,8 +648,9 @@ async function getBlockchain(
   const network = parseNetwork(networkValue);
   const addressType = parseAddressType(chain, addressTypeValue);
   const prefix = parsePrefix(chain, prefixValue);
+  const coinType = parseCoinType(chain, coinTypeValue);
   return {
-    blockchain: useBlockchain(await blockchains[chain]({ network, ...prefix })()),
+    blockchain: useBlockchain(await blockchains[chain]({ network, ...prefix, ...coinType })()),
     addressType,
   };
 }
@@ -1178,6 +1198,7 @@ function scanText(details: Readonly<ScannedWalletDetails>): string {
  * @param accountsValue - Accounts from 0, default 3
  * @param indicesValue - Address indices from 0, default 20
  * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot
+ * @param coinTypeValue - Optional coin type on cosmos, in place of the one prefix stands for
  * @returns {Promise<ToolResult<ScannedWalletDetails>>} The match, or every scheme tried
  */
 export async function scanHdWallet(
@@ -1191,6 +1212,7 @@ export async function scanHdWallet(
   accountsValue?: unknown,
   indicesValue?: unknown,
   prefixValue?: unknown,
+  coinTypeValue?: unknown,
 ): Promise<ToolResult<ScannedWalletDetails>> {
   const args = scanArguments({
     mnemonic: mnemonicValue,
@@ -1200,8 +1222,14 @@ export async function scanHdWallet(
     accounts: accountsValue,
     indices: indicesValue,
   });
-  const { blockchain } = await getBlockchain(chainValue, networkValue, undefined, prefixValue);
-  const schemes = scanSchemes(blockchain.name, blockchain.network);
+  const { blockchain } = await getBlockchain(
+    chainValue,
+    networkValue,
+    undefined,
+    prefixValue,
+    coinTypeValue,
+  );
+  const schemes = scanSchemes(blockchain.name, blockchain.network, blockchain.coinType);
   if (schemes === undefined) {
     throw new RangeError(
       blockchain.name === "polkadot"
@@ -3201,6 +3229,8 @@ export function parseBip44Path(pathValue: unknown): ToolResult<BIP44PathDetails>
  * @param addressIndexValue - Address index.
  * @param addressTypeValue - Signature scheme on Sui, ed25519 by default.
  * @param networkValue - Network, which picks the coin type on the UTXO chains.
+ * @param prefixValue - Bech32 prefix on cosmos, which picks the coin type there.
+ * @param coinTypeValue - Coin type on cosmos, in place of the one prefix stands for.
  * @returns {Promise<ToolResult<BIP44PathDetails>>} The generated path.
  */
 export async function generateBip44Path(
@@ -3210,6 +3240,8 @@ export async function generateBip44Path(
   addressIndexValue?: unknown,
   addressTypeValue?: unknown,
   networkValue?: unknown,
+  prefixValue?: unknown,
+  coinTypeValue?: unknown,
 ): Promise<ToolResult<BIP44PathDetails>> {
   const account = optionalIndex(accountValue, "Account") ?? 0;
   const change = optionalIndex(changeValue, "Change") ?? 0;
@@ -3218,6 +3250,8 @@ export async function generateBip44Path(
     chainValue,
     networkValue,
     addressTypeValue,
+    prefixValue,
+    coinTypeValue,
   );
   if (addressType !== undefined && !Array.isArray(blockchain.curve)) {
     throw new RangeError(`addressType names a scheme, and ${blockchain.name} has one curve`);

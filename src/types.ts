@@ -139,6 +139,8 @@ export interface Options {
   readonly network?: NetworkType;
   /** Bech32 prefix of a Cosmos SDK chain, such as `osmo`; `cosmos` by default, other chains ignore it. */
   readonly prefix?: string;
+  /** SLIP-0044 coin type of a Cosmos SDK path; the registry's for the prefix, else 118. */
+  readonly coinType?: number;
   /** SS58 network prefix of a Polkadot address: 0 Polkadot, 2 Kusama, 42 any Substrate chain. */
   readonly ss58Prefix?: number;
   // Add more common options as needed

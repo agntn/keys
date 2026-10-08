@@ -23,7 +23,7 @@ The docs live at [keys.agntn.dev](https://keys.agntn.dev), keyspace explorer inc
 
 - ⛓️ **A pile of chains, one interface.** Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, Cardano, Sui, TRON, the XRP Ledger, NEAR, Cosmos and Polkadot, each a class with the same methods on it.
 - 🧬 **Two curves.** secp256k1 and ed25519, and Sui and the XRP Ledger will take either.
-- 🌌 **Every Cosmos chain in one class.** `blockchains.cosmos({ prefix: "osmo" })()` and the Hub's key comes out as an Osmosis address. Same key, same path, only the letters before the `1` change.
+- 🌌 **Every Cosmos chain in one class.** `blockchains.cosmos({ prefix: "osmo" })()` and the Hub's key comes out as an Osmosis address. Say `terra` and the path moves to Terra's coin type 330 as well, so nobody has to remember it.
 - 🟣 **Polkadot, Kusama, any Substrate chain.** SS58 under the network number you pick, and BIP39 words walk `//hard` junctions like subkey does. ed25519 for now, sr25519 is next in line.
 - 🌊 **XRP family seeds.** Paste an `s...` or `sEd...` secret into `deriveSeedWallet` and get the wallet rippled would, genesis account included.
 - 🏠 **Bitcoin the way Bitcoin wants it.** Legacy, P2SH, segwit, P2WSH and taproot, testnet included, and the purpose level of your path picks the type for you.
@@ -220,7 +220,7 @@ Not every prize sits behind one key. A 2-of-2 or a published `redeemScript` pays
 | **Cosmos**       | secp256k1          | bech32 under any prefix              | -       |
 | **Polkadot**     | ed25519            | SS58 under any network prefix        | ✅      |
 
-Decred and Cardano throw on `deriveHDWallet`, on purpose, `deriveWallet` with a private key works on both. Sui is ed25519 unless you ask for secp256k1. The XRP Ledger goes the other way, secp256k1 unless you ask or its `sEd...` seed does. NEAR doesn't even encode: the account is the public key in hex, and `getAddress` reads NEAR's own `ed25519:` form too. Cosmos takes a `prefix` next to `network`, so `blockchains.cosmos({ prefix: "celestia" })()` writes Celestia addresses. Polkadot takes `ss58Prefix`, 2 for Kusama, and its testnet is the generic 42. Testnet is a constructor option, `blockchains.bitcoin({ network: "testnet" })()` and your segwit addresses start with `tb1q`. Chain pages with prefixes and testnets: [Blockchains](https://keys.agntn.dev/blockchains).
+Decred and Cardano throw on `deriveHDWallet`, on purpose, `deriveWallet` with a private key works on both. Sui is ed25519 unless you ask for secp256k1. The XRP Ledger goes the other way, secp256k1 unless you ask or its `sEd...` seed does. NEAR doesn't even encode: the account is the public key in hex, and `getAddress` reads NEAR's own `ed25519:` form too. Cosmos takes a `prefix` next to `network`, so `blockchains.cosmos({ prefix: "celestia" })()` writes Celestia addresses, and `coinType` for a wallet that left the chain's own path. Polkadot takes `ss58Prefix`, 2 for Kusama, and its testnet is the generic 42. Testnet is a constructor option, `blockchains.bitcoin({ network: "testnet" })()` and your segwit addresses start with `tb1q`. Chain pages with prefixes and testnets: [Blockchains](https://keys.agntn.dev/blockchains).
 
 ## 💻 Terminal
 

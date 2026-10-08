@@ -42,6 +42,14 @@ describe("wallet scan schemes", () => {
     expect(scanSchemes("ethereum", "testnet")).toEqual(scanSchemes("ethereum", "mainnet"));
   });
 
+  it("walks the coin type of the loaded Cosmos chain and ignores it elsewhere", () => {
+    expect(scanSchemes("cosmos", "mainnet", 330)).toEqual([
+      { name: "bip44", path: "m/44'/330'/{account}'/0/{index}" },
+    ]);
+    expect(scanSchemes("cosmos", "mainnet")?.[0]?.path).toBe("m/44'/118'/{account}'/0/{index}");
+    expect(scanSchemes("ethereum", "mainnet", 330)).toEqual(scanSchemes("ethereum", "mainnet"));
+  });
+
   it("walks each path once under one name on every chain and network", () => {
     for (const chain of TOOL_CHAINS) {
       for (const network of ["mainnet", "testnet"]) {

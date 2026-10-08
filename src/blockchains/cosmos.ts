@@ -4,6 +4,7 @@ import { AbstractBlockchain } from "../blockchain.ts";
 import { hash160 } from "../utils/address.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { COSMOS_PREFIX_PATTERN } from "../utils/cosmos-prefix.ts";
+import { HARDENED_OFFSET } from "../utils/hd-index.ts";
 import { decodePublicPoint } from "../utils/secp256k1/decode.ts";
 import { generateKeyPublic } from "../utils/secp256k1/keys.ts";
 import {
@@ -19,11 +20,54 @@ const DEFAULT_PREFIX = "cosmos";
 
 const PREFIX = new RegExp(COSMOS_PREFIX_PATTERN, "u");
 
+/**
+ * The `slip44` that cosmos/chain-registry gives each mainnet prefix, where it isn't 118. Chains on
+ * Ethereum style keys stay out, since no coin type fixes their hash. Last synced 2026-10-08.
+ */
+const COIN_TYPES: Readonly<Record<string, number>> = {
+  agoric: 564,
+  axm: 546,
+  band: 494,
+  bitsong: 639,
+  bluzelle: 483,
+  core: 990,
+  cro: 394,
+  desmos: 852,
+  dh: 10111,
+  "did:com:": 701,
+  firma: 7777777,
+  fury: 459,
+  gonka: 1200,
+  hippo: 0,
+  kava: 459,
+  link: 438,
+  lum: 880,
+  maya: 931,
+  panacea: 371,
+  pb: 505,
+  secret: 529,
+  star: 234,
+  taketitan: 1179993421,
+  terra: 330,
+  thor: 931,
+  und: 5555,
+  vdl: 370,
+};
+
 /** Most bytes an address may carry, `MaxAddrLen` in the SDK's default address verifier. */
 const MAX_ADDRESS_BYTES = 255;
 
 /** Longest bech32 string the SDK decodes, the limit its `DecodeAndConvert` passes. */
 const MAX_BECH32_LENGTH = 1023;
+
+/**
+ * Looks the prefix up in the registry table, with an own-key check so `constructor` stays a prefix.
+ * @param prefix - Bech32 prefix of the chain
+ * @returns {number} Its coin type, or the Hub's 118 for a prefix the table doesn't list
+ */
+function knownCoinType(prefix: string): number {
+  return Object.hasOwn(COIN_TYPES, prefix) ? (COIN_TYPES[prefix] ?? BIP44.COSMOS) : BIP44.COSMOS;
+}
 
 /**
  * The ADR-036 sign doc Keplr's `signArbitrary` signs: amino JSON with sorted keys and zeroed fields.
@@ -46,13 +90,14 @@ function signDoc(signer: string, message: string | Uint8Array): Uint8Array {
   return new TextEncoder().encode(JSON.stringify(doc));
 }
 
-/** Cosmos SDK chains, one class for all of them: same keys and path, only the prefix moves. */
+/** Cosmos SDK chains in one class: same keys, the prefix moves and the coin type follows it. */
 export class Cosmos extends AbstractBlockchain {
   override readonly name = "cosmos";
   override readonly curve: Curve = "secp256k1";
   override readonly bip44 = BIP44.COSMOS;
   /** Human readable part every address of this instance carries. */
   readonly prefix: string;
+  private readonly chainCoinType: number;
 
   constructor(options?: Options) {
     super(options);
@@ -63,6 +108,19 @@ export class Cosmos extends AbstractBlockchain {
       );
     }
     this.prefix = prefix;
+    const coinType = options?.coinType ?? knownCoinType(prefix);
+    if (!Number.isInteger(coinType) || coinType < 0 || coinType >= HARDENED_OFFSET) {
+      throw new RangeError("A coin type is an integer from 0 to 2147483647, like 330 for Terra");
+    }
+    this.chainCoinType = coinType;
+  }
+
+  /**
+   * The coin type passed in, else the one the chain registry gives this prefix, else the Hub's 118.
+   * @returns {number} The coin type the path walks
+   */
+  override get coinType(): number {
+    return this.chainCoinType;
   }
 
   override getKeyPublic(keyPrivate: string, options?: KeyOptions): string {

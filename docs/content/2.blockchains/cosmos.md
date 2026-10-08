@@ -18,7 +18,7 @@ const cosmosChain = useBlockchain(await blockchains.cosmos()());
 const osmosis = useBlockchain(await blockchains.cosmos({ prefix: "osmo" })());
 ```
 
-Every Cosmos SDK chain hashes the key the same way and walks the same path. The only thing that changes is the bit in front of the `1`. So it's an option, not twenty classes. Leave it out and you get the Hub, `cosmos`.
+Every Cosmos SDK chain hashes the key the same way. What changes is the bit in front of the `1`, and on a few chains the coin type in the path. So it's an option, not twenty classes. Leave it out and you get the Hub, `cosmos`.
 
 Testnets keep their mainnet's prefix, so the `network` option changes nothing here.
 
@@ -53,7 +53,7 @@ cosmosChain.validateAddress("cosmos1w508d6qejxtdg4y5r3zarvary0c5xw7k6ah60c"); //
 cosmosChain.validateAddress("osmo1w508d6qejxtdg4y5r3zarvary0c5xw7kjxy2e2"); // false
 ```
 
-Not every chain with a bech32 address fits, though. Terra hashes the same way, it just walks `m/44'/330'`. Pass that path to `deriveHDWallet` with `prefix: "terra"` and you're there. Injective and Evmos hash Ethereum style keys, and no prefix fixes that.
+Not every chain with a bech32 address fits, though. Injective and Evmos hash Ethereum style keys, and no prefix fixes that.
 
 ## Mnemonics
 
@@ -72,7 +72,30 @@ osmosis.deriveHDWallet(mnemonic, "m/44'/118'/0'/0/0").address;
 
 One phrase, one account on every chain that uses 118. That's why a Keplr wallet shows a different address per chain with the same middle.
 
-Don't know which account the phrase used? `keys_hd_wallet_scan` walks accounts and indices under 118, `prefix` and all.
+### Why does Terra get another middle?
+
+Because Terra never used 118. It walks `m/44'/330'`, Secret walks 529, Kava 459. The prefix knows that now. A table of the [chain registry](https://github.com/cosmos/chain-registry)'s `slip44` values maps 27 prefixes to their own coin type. Every other prefix stays on 118.
+
+```js
+const terra = useBlockchain(await blockchains.cosmos({ prefix: "terra" })());
+
+terra.getDerivationPath(); // "m/44'/330'/0'/0/0"
+terra.deriveHDWallet(mnemonic, terra.getDerivationPath()).address;
+// terra1amdttz2937a3dytmxmkany53pp6ma6dy4vsllv
+```
+
+Wallet went its own way, or the table missed your chain? `coinType` wins over the table.
+
+```js
+const hubPath = useBlockchain(await blockchains.cosmos({ prefix: "terra", coinType: 118 })());
+
+hubPath.deriveHDWallet(mnemonic, hubPath.getDerivationPath()).address;
+// terra19rl4cm2hmr8afy4kldpxz3fka4jguq0a6yhaa4
+```
+
+Same middle as the Hub's `cosmos19rl4...` up there. Of course it is, it's the Hub's path.
+
+Don't know which account the phrase used? `keys_hd_wallet_scan` walks accounts and indices under the chain's coin type, `prefix` and all.
 
 ## Signing
 
@@ -89,6 +112,8 @@ That last `false` is correct. The signer's address sits inside the signed bytes,
 ## Agents
 
 Every tool that writes, checks or signs for a chain takes `prefix` next to `chain: "cosmos"`. On any other chain it refuses the prefix instead of quietly ignoring it.
+
+`keys_bip44_generate` and `keys_hd_wallet_scan` take `coinType` too, for when the table guessed wrong. Hand it to `bitcoin` and you get an error, not a path nobody walks.
 
 ## Where it lives
 
