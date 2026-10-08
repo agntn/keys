@@ -474,6 +474,15 @@ const prefixArgument = Type.Optional(
   }),
 );
 
+const coinTypeArgument = Type.Optional(
+  Type.Integer({
+    description:
+      "cosmos only: SLIP-0044 coin type of the path, for a chain the built-in table gets wrong. Default: the chain registry's for prefix, such as 330 for terra, else 118",
+    minimum: 0,
+    maximum: 0x7f_ff_ff_ff,
+  }),
+);
+
 const addressTypeArgument = Type.Optional(
   Type.String({
     description: "Chain-specific address type, such as segwit, taproot, stake, or secp256k1",
@@ -598,6 +607,7 @@ export const SCAN_HD_WALLET_PARAMETERS = Type.Object(
     ),
     network: networkArgument,
     prefix: prefixArgument,
+    coinType: coinTypeArgument,
   },
   { additionalProperties: false },
 );
@@ -1052,6 +1062,8 @@ export const BIP44_GENERATE_PARAMETERS = Type.Object(
       }),
     ),
     network: networkArgument,
+    prefix: prefixArgument,
+    coinType: coinTypeArgument,
   },
   { additionalProperties: false },
 );

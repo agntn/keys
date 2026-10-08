@@ -635,6 +635,16 @@ export const cosmosTestVectors = {
 } as const;
 
 /**
+ * The first `MnemonicKey` example of @terra-money/terra.js 3.1.10, on its default coin type 330.
+ * The public key is its base64 `SimplePublicKey` in hex.
+ */
+export const terraTestVectors = {
+  mnemonic:
+    "wonder caution square unveil april art add hover spend smile proud admit modify old copper throw crew happy nature luggage reopen exhibit ordinary napkin",
+  publicKey: "02cf7ed0b5832538cd89b55084ce93399b186e381684b31388763801439cbdd20a",
+} as const;
+
+/**
  * Accounts by @polkadot/keyring 14.0.3, ed25519 over `bip39TestVectors.mnemonic`, SS58 0, 2 and 42.
  * Signatures: `pair.sign` with `ed25519TestVectors.privateKey`, over `u8aWrapBytes` and raw bytes.
  */

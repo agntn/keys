@@ -1,11 +1,21 @@
 import { describe, expect, it } from "vite-plus/test";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bech32 } from "@agntn/encodings/bech32";
-import { bip39TestVectors, cosmosTestVectors, secp256k1TestVectors } from "../fixtures";
+import {
+  bip39TestVectors,
+  cosmosTestVectors,
+  secp256k1TestVectors,
+  terraTestVectors,
+} from "../fixtures";
 import Cosmos from "../../src/blockchains/cosmos";
 import { useBlockchain } from "../../src/blockchain";
 import { blockchains } from "../../src/_blockchains";
-import { getAddress, scanHdWallet, validateAddress } from "../../src/tool-operations.ts";
+import {
+  generateBip44Path,
+  getAddress,
+  scanHdWallet,
+  validateAddress,
+} from "../../src/tool-operations.ts";
 
 describe("Cosmos", () => {
   const blockchain = useBlockchain(new Cosmos());
@@ -136,6 +146,33 @@ describe("Cosmos", () => {
       expect(blockchain.getDerivationPath()).toBe("m/44'/118'/0'/0/0");
       expect(blockchain.getDerivationPath(1, 0, 3)).toBe("m/44'/118'/1'/0/3");
     });
+
+    it("walks Terra's 330 to the key terra.js derives", () => {
+      const terra = new Cosmos({ prefix: "terra" });
+      expect(terra.coinType).toBe(330);
+      const wallet = terra.deriveHDWallet(terraTestVectors.mnemonic, terra.getDerivationPath());
+      expect(wallet.keys.public).toBe(terraTestVectors.publicKey);
+      expect(wallet.address).toBe(terra.getAddress(terraTestVectors.publicKey));
+    });
+
+    it("takes the coin type the chain registry gives a prefix, 118 for one it doesn't list", () => {
+      expect(new Cosmos({ prefix: "secret" }).getDerivationPath()).toBe("m/44'/529'/0'/0/0");
+      expect(new Cosmos({ prefix: "hippo" }).coinType).toBe(0);
+      expect(osmosis.coinType).toBe(118);
+      expect(new Cosmos({ prefix: "constructor" }).coinType).toBe(118);
+      expect(new Cosmos({ prefix: "__proto__" }).coinType).toBe(118);
+    });
+
+    it("lets coinType win over the table", () => {
+      expect(new Cosmos({ prefix: "terra", coinType: 118 }).getDerivationPath()).toBe(
+        "m/44'/118'/0'/0/0",
+      );
+      expect(new Cosmos({ prefix: "fren", coinType: 1234 }).coinType).toBe(1234);
+    });
+
+    it.each([-1, 1.5, 0x80_00_00_00, Number.NaN])("refuses coin type %s", (coinType) => {
+      expect(() => new Cosmos({ coinType })).toThrow(/integer from 0 to 2147483647/);
+    });
   });
 
   describe("Tool executors", () => {
@@ -169,6 +206,37 @@ describe("Cosmos", () => {
         "c4e",
       );
       expect(result.details.found).toBe(true);
+    });
+
+    it("scan Terra's path when the prefix is terra", async () => {
+      const terra = new Cosmos({ prefix: "terra" });
+      const result = await scanHdWallet(
+        "cosmos",
+        terraTestVectors.mnemonic,
+        terra.getAddress(terraTestVectors.publicKey),
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        1,
+        "terra",
+      );
+      expect(result.details.match?.path).toBe("m/44'/330'/0'/0/0");
+    });
+
+    it("generate the path of the prefix, or of coinType when it comes along", async () => {
+      const path = (prefix?: string, coinType?: number) =>
+        generateBip44Path("cosmos", 0, 0, 0, undefined, undefined, prefix, coinType);
+      expect((await path("terra")).details.path).toBe("m/44'/330'/0'/0/0");
+      expect((await path("kava")).details.coinType).toBe(459);
+      expect((await path("fren", 7)).details.path).toBe("m/44'/7'/0'/0/0");
+    });
+
+    it("refuse coinType off cosmos", async () => {
+      await expect(
+        generateBip44Path("bitcoin", 0, 0, 0, undefined, undefined, undefined, 330),
+      ).rejects.toThrow("bitcoin has its own, so leave it out");
     });
 
     it("say what a bad prefix looks like", async () => {

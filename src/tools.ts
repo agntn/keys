@@ -258,7 +258,7 @@ export const hdWalletDeriveTool = defineTool({
     "Provide a chain, a BIP39 mnemonic or its hex entropy, and a full derivation path",
     "Pass entropy directly instead of calling keys_bip39_entropy_encode first",
     "keys_hd_wallet_derive accepts an explicit BIP39 language; omission means english, not automatic detection",
-    "Common paths: Bitcoin m/44'/0'/0'/0/0 (legacy), m/49'/0'/0'/0/0 (p2sh), m/84'/0'/0'/0/0 (segwit), m/86'/0'/0'/0/0 (taproot); Bitcoin Cash m/44'/145'/0'/0/0; Bitcoin Gold m/44'/156'/0'/0/0 or m/84'/156'/0'/0/0 (segwit); Bitcoin SV m/44'/236'/0'/0/0, or m/44'/0'/0'/0/0 for ElectrumSV; Dash m/44'/5'/0'/0/0; Dogecoin m/44'/3'/0'/0/0; Zcash m/44'/133'/0'/0/0; eCash m/44'/899'/0'/0/0, or m/44'/1899'/0'/0/0 for Cashtab and m/44'/145'/0'/0/0 for wallets from before the split; Ethereum m/44'/60'/0'/0/0; Solana m/44'/501'/0'/0'; Stellar m/44'/148'/0'; Aptos m/44'/637'/0'/0'/0'; Sui m/44'/784'/0'/0'/0'; XRPL m/44'/144'/0'/0/0, secp256k1 only; NEAR m/44'/397'/0'; Cosmos m/44'/118'/0'/0/0, prefix picking the chain; Polkadot m for the root key or hard junctions such as //polkadot//0",
+    "Common paths: Bitcoin m/44'/0'/0'/0/0 (legacy), m/49'/0'/0'/0/0 (p2sh), m/84'/0'/0'/0/0 (segwit), m/86'/0'/0'/0/0 (taproot); Bitcoin Cash m/44'/145'/0'/0/0; Bitcoin Gold m/44'/156'/0'/0/0 or m/84'/156'/0'/0/0 (segwit); Bitcoin SV m/44'/236'/0'/0/0, or m/44'/0'/0'/0/0 for ElectrumSV; Dash m/44'/5'/0'/0/0; Dogecoin m/44'/3'/0'/0/0; Zcash m/44'/133'/0'/0/0; eCash m/44'/899'/0'/0/0, or m/44'/1899'/0'/0/0 for Cashtab and m/44'/145'/0'/0/0 for wallets from before the split; Ethereum m/44'/60'/0'/0/0; Solana m/44'/501'/0'/0'; Stellar m/44'/148'/0'; Aptos m/44'/637'/0'/0'/0'; Sui m/44'/784'/0'/0'/0'; XRPL m/44'/144'/0'/0/0, secp256k1 only; NEAR m/44'/397'/0'; Cosmos m/44'/118'/0'/0/0 on the Hub, the chain's own coin type elsewhere, such as m/44'/330'/0'/0/0 on Terra; Polkadot m for the root key or hard junctions such as //polkadot//0",
     "polkadot derives like subkey and polkadot.js, from the BIP39 entropy rather than the seed, on ed25519 accounts only: a wallet on its default sr25519 shows another address for the same words",
     "Bitcoin, Bitcoin Gold and Litecoin pick the address type from the path purpose unless addressType is set",
     "Optionally pass a BIP39 passphrase, a network, or an address type",
@@ -299,6 +299,7 @@ export const hdWalletScanTool = defineTool({
     "On bitcoin a phrase that is a native Electrum seed is also walked on its Electrum paths; old seeds report change/index",
     "A miss lists every scheme tried and every seed family skipped, with the reason. It rules out those paths only, not the mnemonic",
     "Pass the passphrase the wallet used; it is a different wallet with any other one",
+    "On cosmos the path walks the coin type prefix stands for, 330 for terra; coinType overrides it",
     "Decred and Cardano are refused, as in keys_hd_wallet_derive",
     "Returns public keys and addresses, never the mnemonic or a private key",
   ],
@@ -316,6 +317,7 @@ export const hdWalletScanTool = defineTool({
       params.accounts,
       params.indices,
       params.prefix,
+      params.coinType,
     ),
 });
 
@@ -786,6 +788,7 @@ export const bip44GenerateTool = defineTool({
     "Stellar paths end at the account and Solana paths at the change branch; a deeper index on those chains is an error",
     "Cardano reads change as the CIP-1852 role: 0 external, 1 internal, 2 staking, up to 5",
     "On testnet the UTXO chains and Decred take coin type 1, the one testnet wallets write",
+    "On cosmos the coin type follows prefix, 330 for terra and 529 for secret; coinType covers a chain the table misses",
   ],
   effect: "read",
   input: BIP44_GENERATE_PARAMETERS,
@@ -797,6 +800,8 @@ export const bip44GenerateTool = defineTool({
       params.addressIndex,
       params.addressType,
       params.network,
+      params.prefix,
+      params.coinType,
     ),
 });
 

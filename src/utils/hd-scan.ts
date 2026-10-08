@@ -87,6 +87,15 @@ function legacy(...coins: ReadonlyArray<readonly [string, number]>): ScanScheme[
   }));
 }
 
+/**
+ * The Keplr path of a Cosmos SDK chain on its coin type.
+ * @param coin - Coin type of the chain, 118 on the Hub
+ * @returns {ScanScheme[]} The one scheme Cosmos wallets write
+ */
+function cosmos(coin: number): ScanScheme[] {
+  return [{ name: "bip44", path: `m/44'/${coin}'/{account}'/0/{index}` }];
+}
+
 const EVM_SCHEMES: readonly ScanScheme[] = [
   { name: "bip44", path: "m/44'/60'/{account}'/0/{index}" },
   { name: "ledger-live", path: "m/44'/60'/{index}'/0/0" },
@@ -122,7 +131,7 @@ const CHAIN_SCHEMES: Readonly<Record<string, readonly ScanScheme[]>> = {
     { name: "bip44", path: "m/44'/397'/{index}'" },
     { name: "ledger", path: "m/44'/397'/0'/0'/{index}'" },
   ],
-  cosmos: [{ name: "bip44", path: "m/44'/118'/{account}'/0/{index}" }],
+  cosmos: cosmos(118),
 };
 
 /** UTXO chains, whose testnet wallets take coin type 1. */
@@ -148,9 +157,15 @@ export const ELECTRUM_SCHEMES: Readonly<Record<"standard" | "segwit", ScanScheme
  * Lists the BIP39 wallet paths of a chain; a UTXO testnet walks coin type 1 as `-testnet` first.
  * @param chain - Tool chain name
  * @param network - Network name
+ * @param coinType - Coin type of the loaded chain, which the Cosmos path follows from Hub to Terra
  * @returns {ScanScheme[] | undefined} Schemes, or undefined for a chain without BIP39 derivation
  */
-export function scanSchemes(chain: string, network: string): ScanScheme[] | undefined {
+export function scanSchemes(
+  chain: string,
+  network: string,
+  coinType?: number,
+): ScanScheme[] | undefined {
+  if (chain === "cosmos" && coinType !== undefined) return cosmos(coinType);
   const schemes = CHAIN_SCHEMES[chain];
   if (schemes === undefined) return undefined;
   if (network !== "testnet" || !UTXO_CHAINS.has(chain)) return [...schemes];
