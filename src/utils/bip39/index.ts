@@ -134,13 +134,59 @@ export async function lookupIndices(
   }));
 }
 
-// Re-export main functionality with default wordlist
-export const generateMnemonic = (strength = 128) => bip39.generateMnemonic(wordlist, strength);
-export const validateMnemonic = (mnemonic: string) => bip39.validateMnemonic(mnemonic, wordlist);
+/**
+ * Draws a fresh mnemonic from `crypto.getRandomValues`, so a throwaway one, nothing more.
+ * @param strength - Entropy bits, 128 to 256 in steps of 32
+ * @param selectedWordlist - BIP39 word list, from `loadWordlist`, defaulting to English
+ * @returns {string} The phrase, ideographic spaces included for Japanese
+ */
+export function generateMnemonic(
+  strength = 128,
+  selectedWordlist: readonly string[] = wordlist,
+): string {
+  return bip39.generateMnemonic([...selectedWordlist], strength);
+}
+
+/**
+ * Checks words, length and checksum against one list; `inspect` says which of them failed.
+ * @param mnemonic - Candidate phrase
+ * @param selectedWordlist - BIP39 word list, from `loadWordlist`, defaulting to English
+ * @returns {boolean} Whether the phrase is valid in that list
+ */
+export function validateMnemonic(
+  mnemonic: string,
+  selectedWordlist: readonly string[] = wordlist,
+): boolean {
+  return bip39.validateMnemonic(mnemonic, [...selectedWordlist]);
+}
+
 export const mnemonicToSeed = bip39.mnemonicToSeedSync;
-export const mnemonicToEntropy = (mnemonic: string) => bip39.mnemonicToEntropy(mnemonic, wordlist);
-export const entropyToMnemonic = (entropy: Uint8Array) =>
-  bip39.entropyToMnemonic(entropy, wordlist);
+
+/**
+ * Reads the entropy back out of a phrase, throwing on a word off the list or a bad checksum.
+ * @param mnemonic - Valid phrase
+ * @param selectedWordlist - BIP39 word list, from `loadWordlist`, defaulting to English
+ * @returns {Uint8Array} 16 to 32 bytes of entropy
+ */
+export function mnemonicToEntropy(
+  mnemonic: string,
+  selectedWordlist: readonly string[] = wordlist,
+): Uint8Array {
+  return bip39.mnemonicToEntropy(mnemonic, [...selectedWordlist]);
+}
+
+/**
+ * Turns entropy into the phrase it stands for, in any of the ten lists.
+ * @param entropy - 16 to 32 bytes, a multiple of 4
+ * @param selectedWordlist - BIP39 word list, from `loadWordlist`, defaulting to English
+ * @returns {string} The phrase, ideographic spaces included for Japanese
+ */
+export function entropyToMnemonic(
+  entropy: Uint8Array,
+  selectedWordlist: readonly string[] = wordlist,
+): string {
+  return bip39.entropyToMnemonic(entropy, [...selectedWordlist]);
+}
 
 const MNEMONIC_WORD_COUNTS: readonly number[] = [12, 15, 18, 21, 24];
 
