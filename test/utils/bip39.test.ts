@@ -15,7 +15,12 @@ import {
   loadWordlist,
 } from "../../src/utils/bip39";
 import { hex } from "@agntn/encodings/hex";
-import { bip39TestVectors, invalidChecksumPuzzle, localizedMnemonicVectors } from "../fixtures";
+import {
+  bip39TestVectors,
+  frenchMuralMnemonic,
+  invalidChecksumPuzzle,
+  localizedMnemonicVectors,
+} from "../fixtures";
 
 describe("BIP39 Utils", () => {
   // Test vectors from BIP39 specification
@@ -336,6 +341,28 @@ describe("BIP39 Utils", () => {
       const backToEntropy = mnemonicToEntropy(mnemonic);
       expect(Buffer.from(backToEntropy).toString("hex")).toBe(vector.entropy);
     }
+  });
+
+  it.each(localizedMnemonicVectors)(
+    "round trips $language through the four short helpers",
+    async ({ language, entropy, mnemonic }) => {
+      const wordlist = await loadWordlist(language);
+
+      expect(entropyToMnemonic(hex.decode(entropy), wordlist)).toBe(mnemonic);
+      expect(hex.encode(mnemonicToEntropy(mnemonic, wordlist))).toBe(entropy);
+      expect(validateMnemonic(mnemonic, wordlist)).toBe(true);
+      expect(validateMnemonic(generateMnemonic(256, wordlist), wordlist)).toBe(true);
+    },
+  );
+
+  it("turns the mural's entropy into its French phrase, not the English one", async () => {
+    const french = await loadWordlist("french");
+    const entropy = hex.decode(frenchMuralMnemonic.entropy);
+
+    expect(entropyToMnemonic(entropy, french)).toBe(frenchMuralMnemonic.french);
+    expect(entropyToMnemonic(entropy)).toBe(frenchMuralMnemonic.english);
+    expect(validateMnemonic(frenchMuralMnemonic.french)).toBe(false);
+    expect(() => mnemonicToEntropy(frenchMuralMnemonic.french)).toThrow();
   });
 
   it("integrates with the wallet generation process", () => {

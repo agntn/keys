@@ -1503,6 +1503,14 @@ export const localizedMnemonicVectors = [
   },
 ] as const;
 
+/** Pascal Boyart's Paris mural: words from the author's solution, entropy from agntn/keys#271. */
+export const frenchMuralMnemonic = {
+  entropy: "199e96675bf360b47cd99136be09eec3",
+  french:
+    "banquier usure mensonge peuple combat espoir union citoyen conduire triomphe horizon jaune",
+  english: "book visa oil retire current focus vibrant cram cute utility knife make",
+} as const;
+
 /** Quizchain block 74 in agntn/puzzles: entropy from the thread, public key from its claim. */
 export const bip39EntropyWalletVector = {
   entropy: "0a7c902815f9dc9d26057280592b2553",
