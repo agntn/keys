@@ -14,7 +14,7 @@ describe("wallet scan schemes", () => {
     async (network) => {
       for (const chain of TOOL_CHAINS) {
         const schemes = scanSchemes(chain, network);
-        if (chain === "decred" || chain === "cardano" || chain === "polkadot") {
+        if (["decred", "cardano", "polkadot", "monero"].includes(chain)) {
           expect(schemes, chain).toBeUndefined();
           continue;
         }

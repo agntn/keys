@@ -123,6 +123,7 @@ export const TOOL_CHAINS = [
   "near",
   "cosmos",
   "polkadot",
+  "monero",
 ] as const;
 
 /** Blockchain name accepted by the tool surfaces. */
@@ -133,6 +134,9 @@ export const TOOL_NETWORKS = ["mainnet", "testnet"] as const;
 
 /** Network name accepted by the tool surfaces. */
 export type ToolNetwork = (typeof TOOL_NETWORKS)[number];
+
+/** Every network a chain tool takes: the two above, and stagenet on monero. */
+export const CHAIN_NETWORKS = [...TOOL_NETWORKS, "stagenet"] as const;
 
 const BITCOIN_ADDRESS_TYPES = ["legacy", "p2sh", "segwit", "p2wsh", "taproot"] as const;
 const CARDANO_ADDRESS_TYPES = ["payment", "stake", "enterprise"] as const;
@@ -172,6 +176,7 @@ export const TOOL_ADDRESS_TYPES_BY_CHAIN: Readonly<Record<ToolChain, readonly st
   near: [],
   cosmos: [],
   polkadot: [],
+  monero: [],
 };
 
 /** Native WIF chains exposed by both agent transports. */
@@ -237,8 +242,18 @@ export const PRIVATE_KEY_SCHEMA_PATTERN = "^[0-9A-Fa-f]{64}$";
 /** JSON Schema pattern for an XRPL family seed: `s...` for secp256k1, `sEd...` for ed25519. */
 export const FAMILY_SEED_SCHEMA_PATTERN = "^s[1-9A-HJ-NP-Za-km-z]{28,30}$";
 
-/** JSON Schema pattern for the secret a wallet is derived from: a private key, or a family seed. */
-export const WALLET_SECRET_SCHEMA_PATTERN = "^(?:[0-9A-Fa-f]{64}|s[1-9A-HJ-NP-Za-km-z]{28,30})$";
+/** Longest secret `keys_wallet_derive` reads, room for 25 seed words with loose spacing. */
+export const MAX_WALLET_SECRET_LENGTH = 1024;
+
+/** JSON Schema pattern for Monero seed words: 25 with the checksum word, or the 24 alone. */
+export const MONERO_SEED_SCHEMA_PATTERN = "^\\s*[A-Za-z]+(?:\\s+[A-Za-z]+){23,24}\\s*$";
+
+/**
+ * JSON Schema pattern for the secret a wallet is derived from: a private key, an XRPL family seed,
+ * or Monero seed words.
+ */
+export const WALLET_SECRET_SCHEMA_PATTERN =
+  "^(?:[0-9A-Fa-f]{64}|s[1-9A-HJ-NP-Za-km-z]{28,30}|\\s*[A-Za-z]+(?:\\s+[A-Za-z]+){23,24}\\s*)$";
 
 /**
  * JSON Schema pattern for a 32-byte ed25519 key, XRPL's 33-byte `ED` form of one, or a compressed
@@ -247,9 +262,12 @@ export const WALLET_SECRET_SCHEMA_PATTERN = "^(?:[0-9A-Fa-f]{64}|s[1-9A-HJ-NP-Za
 export const PUBLIC_KEY_SCHEMA_PATTERN =
   "^(?:(?:[Ee][Dd])?[0-9A-Fa-f]{64}|0[23][0-9A-Fa-f]{64}|04[0-9A-Fa-f]{128})$";
 
-/** JSON Schema pattern for the key an address or a signature reads, NEAR's `ed25519:` form too. */
+/**
+ * JSON Schema pattern for the key an address or a signature reads, NEAR's `ed25519:` form and
+ * Monero's 64-byte spend and view pair too.
+ */
 export const CHAIN_PUBLIC_KEY_SCHEMA_PATTERN =
-  "^(?:(?:[Ee][Dd])?[0-9A-Fa-f]{64}|0[23][0-9A-Fa-f]{64}|04[0-9A-Fa-f]{128}|ed25519:[1-9A-HJ-NP-Za-km-z]{32,44})$";
+  "^(?:(?:[Ee][Dd])?[0-9A-Fa-f]{64}|0[23][0-9A-Fa-f]{64}|04[0-9A-Fa-f]{128}|[0-9A-Fa-f]{128}|ed25519:[1-9A-HJ-NP-Za-km-z]{32,44})$";
 
 /** JSON Schema pattern for a 64-byte `r||s` or ed25519 signature, or 65 bytes with the recovery byte. */
 export const SIGNATURE_SCHEMA_PATTERN = "^[0-9A-Fa-f]{128}(?:[0-9A-Fa-f]{2})?$";

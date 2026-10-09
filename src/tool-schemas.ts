@@ -25,6 +25,8 @@ import {
   MESSAGE_SIGNATURE_SCHEMA_PATTERN,
   TOOL_WIF_CHAINS,
   TOOL_NETWORKS,
+  CHAIN_NETWORKS,
+  MAX_WALLET_SECRET_LENGTH,
   TOOL_MNEMONIC_WORD_COUNTS,
   MAX_BIP39_SEED_INPUT_LENGTH,
   MAX_BIP38_ADDRESS_LENGTH,
@@ -461,8 +463,8 @@ const chainArgument = Type.String({
 
 const networkArgument = Type.Optional(
   Type.String({
-    description: "Network (mainnet or testnet). Default: mainnet",
-    enum: TOOL_NETWORKS,
+    description: "Network (mainnet or testnet, also stagenet on monero). Default: mainnet",
+    enum: CHAIN_NETWORKS,
   }),
 );
 
@@ -505,8 +507,9 @@ export const DERIVE_WALLET_PARAMETERS = Type.Object(
     chain: chainArgument,
     privateKey: Type.String({
       pattern: WALLET_SECRET_SCHEMA_PATTERN,
+      maxLength: MAX_WALLET_SECRET_LENGTH,
       description:
-        "Private key as 64 hex characters without 0x. On xrpl also a family seed: s... for secp256k1, sEd... for ed25519",
+        "Private key as 64 hex characters without 0x. On xrpl also a family seed: s... for secp256k1, sEd... for ed25519. On monero also the 25 seed words",
     }),
     addressType: addressTypeArgument,
     network: networkArgument,
@@ -814,7 +817,7 @@ export const GET_ADDRESS_PARAMETERS = Type.Object(
     publicKey: Type.String({
       pattern: CHAIN_PUBLIC_KEY_SCHEMA_PATTERN,
       description:
-        "Public key as hex without 0x: 32-byte ed25519 (on xrpl also its ED form, on near also ed25519: and base58), or compressed or uncompressed SEC1 secp256k1",
+        "Public key as hex without 0x: 32-byte ed25519 (on xrpl also its ED form, on near also ed25519: and base58), compressed or uncompressed SEC1 secp256k1, or on monero the 64-byte public spend and view keys",
     }),
     addressType: addressTypeArgument,
     network: networkArgument,

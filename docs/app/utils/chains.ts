@@ -35,6 +35,7 @@ export const CHAINS: readonly ChainEntry[] = [
   { driver: "near", label: "NEAR", curve: "ed25519", icon: "i-token-near", row: "near", blurb: "The account is the public key in hex. No hash, no checksum, not even base58." },
   { driver: "cosmos", label: "Cosmos", curve: "secp256k1", icon: "i-token-atom", row: "atom", blurb: "One driver for the Hub, Osmosis, Celestia and the rest. Same key, same path, only the letters before the `1` disagree." },
   { driver: "polkadot", label: "Polkadot", curve: "ed25519", icon: "i-token-dot", row: "dot", blurb: "SS58 under any network prefix, Kusama included. ed25519 for now, sr25519 is still waiting its turn." },
+  { driver: "monero", label: "Monero", curve: "ed25519", icon: "i-token-xmr", row: "xmr", blurb: "Two public keys in one 95-character address, and a 25th seed word that only checks the other 24." },
 ].map((entry) => ({ ...entry, to: `/blockchains/${entry.driver}` }));
 
 /**

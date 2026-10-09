@@ -27,6 +27,17 @@ describe("landing fixtures", () => {
   });
 });
 
+describe("explorer rows", () => {
+  it("leave Monero out for a key that reduces to zero mod l", async () => {
+    const chains = await loadExplorerChains(await import("../src/index.ts"));
+    const zero = "edd3f55c1a631258d69cf7a2def9de1400000000000000000000000000000010";
+    const ids = deriveAddresses(zero, chains).addresses.map((row) => row.id);
+
+    expect(ids).not.toContain("xmr");
+    expect(ids).toContain("dot");
+  });
+});
+
 describe("tool count", () => {
   it("comes from TOOL_NAMES", () => {
     expect(TOOL_COUNT).toBe(TOOL_NAMES.length);

@@ -49,6 +49,7 @@ export type ExplorerChains = {
   readonly near: AbstractBlockchain;
   readonly cosmos: AbstractBlockchain;
   readonly polkadot: AbstractBlockchain;
+  readonly monero: AbstractBlockchain;
 };
 
 /** Constructs every explorer chain. Client only in the app, nothing here runs on the server. */
@@ -78,6 +79,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     near,
     cosmos,
     polkadot,
+    monero,
   ] = await Promise.all([
     load("bitcoin"),
     load("bitcoincash"),
@@ -101,6 +103,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     load("near"),
     load("cosmos"),
     load("polkadot"),
+    load("monero"),
   ]);
   return {
     bitcoin,
@@ -125,6 +128,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     near,
     cosmos,
     polkadot,
+    monero,
   };
 }
 
@@ -156,6 +160,7 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
     near,
     cosmos,
     polkadot,
+    monero,
   } = chains;
 
   return {
@@ -244,6 +249,7 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
       addressRow(near, hex, "near", "NEAR", "ed25519", "implicit"),
       addressRow(cosmos, hex, "atom", "Cosmos", "secp256k1", "bech32"),
       addressRow(polkadot, hex, "dot", "Polkadot", "ed25519", "ss58"),
+      ...moneroRows(monero, hex),
     ],
   };
 }
@@ -255,6 +261,16 @@ const hex = "${hex}";
 const bitcoin = useBlockchain(await blockchains.bitcoin()());
 const publicKey = bitcoin.getKeyPublic(hex);
 bitcoin.getAddress(publicKey, "segwit");`;
+}
+
+/** Monero's row, left out for the keys that reduce to zero mod l and have no spend key. */
+function moneroRows(chain: AbstractBlockchain, hex: string): readonly AddressRow[] {
+  try {
+    return [addressRow(chain, hex, "xmr", "Monero", "ed25519", "standard")];
+  } catch (error) {
+    if (error instanceof RangeError) return [];
+    throw error;
+  }
 }
 
 function addressRow(
