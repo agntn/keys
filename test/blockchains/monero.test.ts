@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
+import { keccak256 } from "@agntn/hashes";
+import { hex } from "@agntn/encodings/hex";
 import { bip39TestVectors, ed25519TestVectors, moneroTestVectors } from "../fixtures";
 import Monero from "../../src/blockchains/monero";
 import { useBlockchain } from "../../src/blockchain";
 import { blockchains } from "../../src/_blockchains";
+import { encodeMoneroBase58 } from "../../src/utils/monero-base58.ts";
 import {
   deriveHdWallet,
   deriveWallet,
@@ -102,9 +105,16 @@ describe("Monero", () => {
       expect(() => blockchain.getKeyPublic("00".repeat(31))).toThrow("32 bytes");
     });
 
-    it("refuses a public key half that is no curve point", () => {
-      const notPoint = `${"ff".repeat(31)}7f${first.publicKey.slice(64)}`;
-      expect(() => blockchain.getAddress(notPoint)).toThrow("points on ed25519");
+    it.each([
+      ["no curve point", `${"ff".repeat(31)}7f`],
+      ["the identity", `01${"00".repeat(31)}`],
+      ["a point of order 8", "c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a"],
+    ])("refuses a spend key that is %s, like check_address", (_, spend) => {
+      const keyPublic = `${spend}${first.publicKey.slice(64)}`;
+      expect(() => blockchain.getAddress(keyPublic)).toThrow("main subgroup");
+      const body = Uint8Array.of(18, ...hex.decode(keyPublic));
+      const address = encodeMoneroBase58(Uint8Array.of(...body, ...keccak256(body).subarray(0, 4)));
+      expect(blockchain.validateAddress(address)).toBe(false);
     });
 
     it("validates only standard addresses with a matching checksum", () => {

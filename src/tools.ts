@@ -569,7 +569,7 @@ export const addressValidateTool = defineTool({
     "NEAR checks implicit accounts; named ones like alice.near come back invalid, since no key derives them",
     "cosmos checks the prefix too: osmo1... is invalid unless prefix is osmo",
     "polkadot checks the SS58 prefix too: a Kusama address is invalid unless prefix is 2",
-    "monero checks standard addresses, both keys on the curve included; subaddresses (8...) and integrated addresses come back invalid",
+    "monero checks standard addresses like check_address, both keys in the main subgroup; subaddresses (8...) and integrated addresses come back invalid",
   ],
   effect: "read",
   input: VALIDATE_ADDRESS_PARAMETERS,

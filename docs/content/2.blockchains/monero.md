@@ -69,7 +69,7 @@ monero.getAddress(wallet.keys.public); // 42ey1afD...TfJJQAWDm
 monero.validateAddress("42ey1afDFnn4886T7196doS9GPMzexD9gXpsZJDwVjeRVdFCSoHnv7KPbBeGpzJBzHRCAs9UxqeoyFQMYbqSWYTfJJQAWDm"); // true
 ```
 
-Mainnet starts with `4`, stagenet with `5`, testnet with `9` or `A`. `validateAddress` wants this instance's network, a good checksum and both keys on the curve.
+Mainnet starts with `4`, stagenet with `5`, testnet with `9` or `A`. `validateAddress` wants this instance's network, a good checksum and two real keys. Not the identity, not a torsion point, the same `check_address` monero-wallet-cli runs.
 
 Standard addresses only. Subaddresses start with `8` and come back `false`, integrated addresses too. They're next.
 

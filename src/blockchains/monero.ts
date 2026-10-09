@@ -59,10 +59,24 @@ function viewScalar(spend: bigint): bigint {
 }
 
 /**
- * Splits the 64-byte public key into its spend and view halves, each one a point on the curve.
+ * Monero's `check_address` on one key: a point, not the identity, in the main subgroup.
+ * @param key - 32 bytes of a public key
+ * @returns {boolean} Whether a Monero wallet would pay to it
+ */
+function isAddressKey(key: Uint8Array): boolean {
+  try {
+    const point = Point.fromBytes(key);
+    return !point.is0() && point.isTorsionFree();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Splits the 64-byte public key into its spend and view halves, both checked like `check_address`.
  * @param keyPublic - Public spend key then public view key, as hex
  * @returns {readonly [Uint8Array, Uint8Array]} The spend and view keys
- * @throws {RangeError} When the key is not 64 bytes or either half is no curve point
+ * @throws {RangeError} When the key is not 64 bytes or either half is no key Monero pays to
  */
 function splitKeyPublic(keyPublic: string): readonly [Uint8Array, Uint8Array] {
   const bytes = Uint8Array.fromHex(keyPublic);
@@ -71,11 +85,10 @@ function splitKeyPublic(keyPublic: string): readonly [Uint8Array, Uint8Array] {
   }
   const spend = bytes.slice(0, 32);
   const view = bytes.slice(32);
-  try {
-    Point.fromBytes(spend);
-    Point.fromBytes(view);
-  } catch {
-    throw new RangeError("Monero public spend and view keys must be points on ed25519");
+  if (!isAddressKey(spend) || !isAddressKey(view)) {
+    throw new RangeError(
+      "Monero public keys must be ed25519 points in the main subgroup, not identity",
+    );
   }
   return [spend, view];
 }
@@ -200,7 +213,7 @@ export class Monero extends AbstractBlockchain {
   }
 
   /**
-   * Checks a standard address on this network: block base58, checksum and both keys on the curve.
+   * Checks a standard address on this network like `check_address`: checksum and both keys.
    * @param address - The address to check
    * @returns {boolean} Whether a wallet on this network would pay to it
    */
