@@ -249,7 +249,7 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
       addressRow(near, hex, "near", "NEAR", "ed25519", "implicit"),
       addressRow(cosmos, hex, "atom", "Cosmos", "secp256k1", "bech32"),
       addressRow(polkadot, hex, "dot", "Polkadot", "ed25519", "ss58"),
-      addressRow(monero, hex, "xmr", "Monero", "ed25519", "standard"),
+      ...moneroRows(monero, hex),
     ],
   };
 }
@@ -261,6 +261,16 @@ const hex = "${hex}";
 const bitcoin = useBlockchain(await blockchains.bitcoin()());
 const publicKey = bitcoin.getKeyPublic(hex);
 bitcoin.getAddress(publicKey, "segwit");`;
+}
+
+/** Monero's row, left out for the keys that reduce to zero mod l and have no spend key. */
+function moneroRows(chain: AbstractBlockchain, hex: string): readonly AddressRow[] {
+  try {
+    return [addressRow(chain, hex, "xmr", "Monero", "ed25519", "standard")];
+  } catch (error) {
+    if (error instanceof RangeError) return [];
+    throw error;
+  }
 }
 
 function addressRow(

@@ -58,7 +58,7 @@ wallet.keys.public; // 1b3bd040...7be2ab231c9bf834...247e99
 
 `keys.public` is 64 bytes. The public spend key, then the public view key. Weird? Every Monero address needs both, so a wallet carries both.
 
-Plain hex works too. `deriveWallet` reduces whatever 32 bytes you give it, the way Monero's wallet does, and the wallet shows the reduced key. A random key is above l most of the time, so don't be surprised when it comes back different.
+Plain hex works too. `deriveWallet` reduces whatever 32 bytes you give it, the way Monero's wallet does, and the wallet shows the reduced key. A random key is above l most of the time, so don't be surprised when it comes back different. A key that reduces to zero throws. No spend key, no wallet.
 
 ## What's in an address?
 
