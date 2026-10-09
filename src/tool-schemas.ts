@@ -25,6 +25,8 @@ import {
   MESSAGE_SIGNATURE_SCHEMA_PATTERN,
   TOOL_WIF_CHAINS,
   TOOL_NETWORKS,
+  CHAIN_NETWORKS,
+  MAX_WALLET_SECRET_LENGTH,
   TOOL_MNEMONIC_WORD_COUNTS,
   MAX_BIP39_SEED_INPUT_LENGTH,
   MAX_BIP38_ADDRESS_LENGTH,
@@ -461,8 +463,8 @@ const chainArgument = Type.String({
 
 const networkArgument = Type.Optional(
   Type.String({
-    description: "Network (mainnet or testnet). Default: mainnet",
-    enum: TOOL_NETWORKS,
+    description: "Network (mainnet or testnet, also stagenet on monero). Default: mainnet",
+    enum: CHAIN_NETWORKS,
   }),
 );
 
@@ -505,6 +507,7 @@ export const DERIVE_WALLET_PARAMETERS = Type.Object(
     chain: chainArgument,
     privateKey: Type.String({
       pattern: WALLET_SECRET_SCHEMA_PATTERN,
+      maxLength: MAX_WALLET_SECRET_LENGTH,
       description:
         "Private key as 64 hex characters without 0x. On xrpl also a family seed: s... for secp256k1, sEd... for ed25519. On monero also the 25 seed words",
     }),

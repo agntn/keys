@@ -196,7 +196,7 @@ export const walletGenerateTool = defineTool({
   snippet: "Use to create a new wallet with keys and address for Bitcoin, Ethereum, Solana, etc.",
   guidelines: [
     "Provide a chain name (bitcoin, bitcoincash, bitcoingold, bitcoinsv, litecoin, dash, decred, dogecoin, zcash, ecash, ethereum, base, solana, stellar, aptos, tron, sui, cardano, xrpl, near, cosmos, polkadot, monero)",
-    "Optionally specify network (mainnet/testnet) and address type",
+    "Optionally specify network (mainnet/testnet, stagenet on monero) and address type",
     "Bitcoin and Litecoin address types: legacy, p2sh, segwit, p2wsh, taproot",
     "Bitcoin Gold address types: legacy, p2sh, segwit, p2wsh; it never activated taproot",
     "Decred supports legacy ECDSA P2PKH addresses only",

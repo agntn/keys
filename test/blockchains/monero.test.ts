@@ -150,6 +150,9 @@ describe("Monero", () => {
       const fromKey = await deriveWallet("monero", vector.unreducedKey, undefined, "testnet");
       expect(fromKey.details.address).toBe(vector.testnet);
       await expect(deriveWallet("xrpl", first.seed)).rejects.toThrow("keys_hd_wallet_derive");
+      await expect(deriveWallet("monero", `${first.seed} ${"a".repeat(1024)}`)).rejects.toThrow(
+        "1024 characters",
+      );
     });
 
     it("writes and checks addresses from the 64-byte key", async () => {
@@ -160,6 +163,16 @@ describe("Monero", () => {
       await expect(getAddress("solana", first.publicKey)).rejects.toThrow("Monero's spend");
       const checked = await validateAddress("monero", vector.testnet);
       expect(checked.content[0]?.text).toContain("valid on testnet");
+      const staged = await validateAddress("monero", vector.stagenet);
+      expect(staged.content[0]?.text).toContain("valid on stagenet");
+    });
+
+    it("takes stagenet on monero and nowhere else", async () => {
+      const wallet = await deriveWallet("monero", reduced.seed, undefined, "stagenet");
+      expect(wallet.details.address).toBe(vector.stagenet);
+      await expect(
+        getAddress("solana", ed25519TestVectors.publicKey, undefined, "stagenet"),
+      ).rejects.toThrow("Unsupported network");
     });
 
     it("points BIP39 words, paths and signatures elsewhere", async () => {

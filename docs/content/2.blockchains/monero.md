@@ -18,7 +18,7 @@ const monero = useBlockchain(await blockchains.monero()());
 const stagenet = useBlockchain(await blockchains.monero({ network: "stagenet" })());
 ```
 
-Three networks, one class. `mainnet`, `testnet` and `stagenet`, and anything else throws. Only the first byte of the address changes.
+Three networks, one class. `mainnet`, `testnet` and `stagenet`, and anything else throws. Same keys on every network. The network byte up front changes, and the checksum over it.
 
 ## The seed
 
@@ -81,7 +81,7 @@ No message signing either. Monero signs with its own SigV2 scheme, and `signMess
 
 ## Agents
 
-On `chain: "monero"` the `privateKey` of `keys_wallet_derive` takes the seed words as well as hex. `keys_address_get` wants the 64-byte public key, the one `keys_wallet_derive` prints.
+On `chain: "monero"` the `privateKey` of `keys_wallet_derive` takes the seed words as well as hex, and `network` takes `stagenet` too. `keys_address_get` wants the 64-byte public key, the one `keys_wallet_derive` prints.
 
 ## Where it lives
 

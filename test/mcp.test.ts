@@ -2604,7 +2604,7 @@ describe("keys MCP server", () => {
       [
         "keys_wallet_generate",
         { chain: "bitcoin", network: "testnett" },
-        "Invalid arguments at /network: must be one of mainnet, testnet",
+        "Invalid arguments at /network: must be one of mainnet, testnet, stagenet",
       ],
       [
         "keys_wif_decode",

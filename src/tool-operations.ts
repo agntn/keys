@@ -99,6 +99,8 @@ import {
   TOOL_ADDRESS_TYPES_BY_CHAIN,
   TOOL_CHAINS,
   TOOL_NETWORKS,
+  CHAIN_NETWORKS,
+  MAX_WALLET_SECRET_LENGTH,
   TOOL_MNEMONIC_WORD_COUNTS,
   MAX_BIP39_SEED_INPUT_LENGTH,
   MAX_BIP38_ADDRESS_LENGTH,
@@ -570,6 +572,17 @@ function parseNetwork(value: unknown): ToolNetwork {
   return matched;
 }
 
+/**
+ * Reads the network of a chain tool: mainnet or testnet, and stagenet on monero only.
+ * @param chain - Chain the call loads
+ * @param value - Network as the host passed it
+ * @returns {string} The network to construct the chain with
+ */
+function parseChainNetwork(chain: ToolChain, value: unknown): string {
+  if (chain === "monero" && optionalName(value, "Network") === "stagenet") return "stagenet";
+  return parseNetwork(value);
+}
+
 function parseAddressType(chain: ToolChain, value: unknown): string | undefined {
   const addressType = optionalName(value, "Address type");
   if (addressType === undefined) return undefined;
@@ -656,7 +669,7 @@ async function getBlockchain(
       `Unknown chain ${JSON.stringify(name)}. Supported: ${TOOL_CHAINS.join(", ")}`,
     );
   }
-  const network = parseNetwork(networkValue);
+  const network = parseChainNetwork(chain, networkValue);
   const addressType = parseAddressType(chain, addressTypeValue);
   const prefix = parsePrefix(chain, prefixValue);
   const coinType = parseCoinType(chain, coinTypeValue);
@@ -750,6 +763,9 @@ export async function deriveWallet(
   const compressed = walletCompressed(compressedValue);
   const options = compressed === undefined ? {} : { compressed };
   const secret = requiredString(privateKeyValue, "Private key");
+  if (secret.length > MAX_WALLET_SECRET_LENGTH) {
+    throw new RangeError(`Private key must not exceed ${MAX_WALLET_SECRET_LENGTH} characters`);
+  }
   if (MONERO_SEED.test(secret) && blockchain.name !== "monero") {
     throw new TypeError(
       `Seed words go to keys_hd_wallet_derive as a BIP39 mnemonic; ${blockchain.name} takes a private key here`,
@@ -2505,7 +2521,7 @@ export async function validateAddress(
   const renderedAddress = sanitizeToolText(address);
   const otherNetwork = valid
     ? undefined
-    : await otherNetworkOf(chainValue, blockchain.network, address, prefixValue);
+    : await otherNetworkOf(blockchain.name, blockchain.network, address, prefixValue);
   return {
     content: content(
       valid
@@ -2519,24 +2535,26 @@ export async function validateAddress(
 }
 
 /**
- * Finds the other network an address is valid on, so a testnet address checked against
+ * Finds another network an address is valid on, so a testnet address checked against
  * mainnet is not reported as simply broken.
- * @param chainValue - Blockchain name, already accepted by `getBlockchain`.
+ * @param chain - Blockchain name, already accepted by `getBlockchain`.
  * @param network - Network the address failed on.
  * @param address - Address that failed.
  * @param prefixValue - Prefix the first check used, cosmos and polkadot only.
- * @returns {Promise<ToolNetwork | undefined>} The other network, when the address passes there.
+ * @returns {Promise<string | undefined>} The other network, when the address passes there.
  */
 async function otherNetworkOf(
-  chainValue: unknown,
+  chain: string,
   network: string,
   address: string,
   prefixValue: unknown,
-): Promise<ToolNetwork | undefined> {
-  const other = TOOL_NETWORKS.find((candidate) => candidate !== network);
-  if (other === undefined) return undefined;
-  const { blockchain } = await getBlockchain(chainValue, other, undefined, prefixValue);
-  return blockchain.validateAddress(address) ? other : undefined;
+): Promise<string | undefined> {
+  const networks = chain === "monero" ? CHAIN_NETWORKS : TOOL_NETWORKS;
+  for (const other of networks.filter((candidate) => candidate !== network)) {
+    const { blockchain } = await getBlockchain(chain, other, undefined, prefixValue);
+    if (blockchain.validateAddress(address)) return other;
+  }
+  return undefined;
 }
 
 /**
