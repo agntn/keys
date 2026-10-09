@@ -17,6 +17,9 @@ const ADDRESS_PREFIXES: Readonly<Record<string, number>> = {
   stagenet: 24,
 };
 
+/** The largest multiple of l that fits in 32 bytes; draws at or above it would bias the key. */
+const DRAW_LIMIT = 15n * Point.Fn.ORDER;
+
 /** Bytes of the keccak256 checksum at the end of an address. */
 const CHECKSUM_BYTES = 4;
 
@@ -102,11 +105,15 @@ export class Monero extends AbstractBlockchain {
   }
 
   /**
-   * Draws a spend key the way monero-wallet-cli does: 32 random bytes, reduced mod l.
+   * Draws a spend key like Monero's `random32_unbiased`: below 15l, reduced mod l, never zero.
    * @returns {string} The private spend key as hex
    */
   override generateKeyPrivate(): string {
-    return Point.Fn.toBytes(spendScalar(ed25519.utils.randomSecretKey().toHex())).toHex();
+    for (;;) {
+      const draw = bytesToNumberLE(ed25519.utils.randomSecretKey());
+      const scalar = Point.Fn.create(draw);
+      if (draw < DRAW_LIMIT && scalar !== 0n) return Point.Fn.toBytes(scalar).toHex();
+    }
   }
 
   /**
