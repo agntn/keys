@@ -225,8 +225,8 @@ export abstract class AbstractBlockchain implements Blockchain {
   }
 
   /**
-   * Derives a wallet from the chain's own seed string, which only the XRP Ledger has: its family
-   * seed (`s...`). Every other chain takes a private key or BIP39 words instead.
+   * Derives a wallet from the chain's own seed string, which only the XRP Ledger and Monero have:
+   * a family seed (`s...`) and 25 seed words. Every other chain takes a private key or BIP39 words.
    * @param _seed - The seed string
    * @param _options - Key options of the wallet
    * @param _addressType - Address type to write

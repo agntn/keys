@@ -117,6 +117,7 @@ import {
   TOOL_WIF_CHAINS,
   PRIVATE_KEY_SCHEMA_PATTERN,
   FAMILY_SEED_SCHEMA_PATTERN,
+  MONERO_SEED_SCHEMA_PATTERN,
   DER_SIGNATURE_SCHEMA_PATTERN,
   PUBLIC_KEY_SCHEMA_PATTERN,
   CHAIN_PUBLIC_KEY_SCHEMA_PATTERN,
@@ -437,6 +438,9 @@ const CHAIN_PUBLIC_KEY = new RegExp(CHAIN_PUBLIC_KEY_SCHEMA_PATTERN, "u");
 const SIGNATURE_HEX = new RegExp(SIGNATURE_SCHEMA_PATTERN, "u");
 const DER_SIGNATURE = new RegExp(DER_SIGNATURE_SCHEMA_PATTERN, "u");
 const FAMILY_SEED = new RegExp(FAMILY_SEED_SCHEMA_PATTERN, "u");
+const MONERO_SEED = new RegExp(MONERO_SEED_SCHEMA_PATTERN, "u");
+/** Monero's spend and view pair, the one 64-byte key the tools take. */
+const MONERO_PUBLIC_KEY = /^[0-9A-Fa-f]{128}$/u;
 const CORE_SIGNATURE = new RegExp(CORE_SIGNATURE_SCHEMA_PATTERN, "u");
 const RECOVERABLE_SIGNATURE = new RegExp(RECOVERABLE_SIGNATURE_SCHEMA_PATTERN, "u");
 const DIGEST_HEX = new RegExp(DIGEST_SCHEMA_PATTERN, "u");
@@ -473,11 +477,18 @@ function chainPublicKey(value: unknown, chain: string): string {
     value,
     "Public key",
     CHAIN_PUBLIC_KEY,
-    "a 32-byte ed25519 key, XRPL's ED form of one, NEAR's ed25519: form, or a SEC1 secp256k1 key in hex",
+    "a 32-byte ed25519 key, XRPL's ED form of one, NEAR's ed25519: form, Monero's 64-byte spend and view pair, or a SEC1 secp256k1 key in hex",
   );
   if (chain !== "near" && publicKey.startsWith("ed25519:")) {
     throw new TypeError(
       `ed25519: and base58 is how NEAR writes a key. Give ${chain} the key in hex`,
+    );
+  }
+  if ((chain === "monero") !== MONERO_PUBLIC_KEY.test(publicKey)) {
+    throw new TypeError(
+      chain === "monero"
+        ? "A Monero public key is 64 bytes of hex: the public spend key, then the public view key"
+        : `64 bytes of hex is Monero's spend and view pair. Give ${chain} its own public key`,
     );
   }
   return publicKey;
@@ -739,18 +750,24 @@ export async function deriveWallet(
   const compressed = walletCompressed(compressedValue);
   const options = compressed === undefined ? {} : { compressed };
   const secret = requiredString(privateKeyValue, "Private key");
-  const wallet = FAMILY_SEED.test(secret)
-    ? blockchain.deriveSeedWallet(secret, options, addressType)
-    : blockchain.deriveWallet(
-        hexArgument(
-          secret,
-          "Private key",
-          PRIVATE_KEY_HEX,
-          "64 hex characters, or on xrpl a family seed (s...),",
-        ),
-        options,
-        addressType,
-      );
+  if (MONERO_SEED.test(secret) && blockchain.name !== "monero") {
+    throw new TypeError(
+      `Seed words go to keys_hd_wallet_derive as a BIP39 mnemonic; ${blockchain.name} takes a private key here`,
+    );
+  }
+  const wallet =
+    FAMILY_SEED.test(secret) || MONERO_SEED.test(secret)
+      ? blockchain.deriveSeedWallet(secret, options, addressType)
+      : blockchain.deriveWallet(
+          hexArgument(
+            secret,
+            "Private key",
+            PRIVATE_KEY_HEX,
+            "64 hex characters, a family seed (s...) on xrpl or the seed words on monero,",
+          ),
+          options,
+          addressType,
+        );
   const details = {
     chain: blockchain.name,
     network: blockchain.network,
@@ -1186,6 +1203,26 @@ function scanText(details: Readonly<ScannedWalletDetails>): string {
   ].join("\n");
 }
 
+/** Why a chain with no scan schemes has none, where a generic answer would mislead. */
+const SCAN_REFUSALS: Readonly<Record<string, string>> = {
+  polkadot:
+    "polkadot has no wallet paths to scan: wallets name their own junctions, so derive each one with keys_hd_wallet_derive",
+  monero:
+    "monero has no wallet paths to scan: a wallet restores from its 25 seed words, so pass them to keys_wallet_derive",
+};
+
+/**
+ * The error a scan on a chain without schemes answers with.
+ * @param chain - Name of the loaded chain
+ * @returns {string} The chain's own reason, or the generic one
+ */
+function scanRefusal(chain: string): string {
+  return (
+    SCAN_REFUSALS[chain] ??
+    `${chain} has no wallet paths to scan: its HD derivation is not supported`
+  );
+}
+
 /**
  * Scans a fixed, named list of wallet paths for the one that reaches an address.
  * @param chainValue - Blockchain name
@@ -1231,11 +1268,7 @@ export async function scanHdWallet(
   );
   const schemes = scanSchemes(blockchain.name, blockchain.network, blockchain.coinType);
   if (schemes === undefined) {
-    throw new RangeError(
-      blockchain.name === "polkadot"
-        ? "polkadot has no wallet paths to scan: wallets name their own junctions, so derive each one with keys_hd_wallet_derive"
-        : `${blockchain.name} has no wallet paths to scan: its HD derivation is not supported`,
-    );
+    throw new RangeError(scanRefusal(blockchain.name));
   }
   if (!blockchain.validateAddress(args.address)) {
     throw new TypeError(

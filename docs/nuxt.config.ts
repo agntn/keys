@@ -153,6 +153,7 @@ export default defineNuxtConfig({
         "token:trx",
         "token:xec",
         "token:xlm",
+        "token:xmr",
         "token:near",
         "token:xrp",
         "token:zec",

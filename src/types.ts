@@ -127,8 +127,8 @@ export interface SigningOptions extends RecoverableSigningOptions {
 
 /**
  * Network type.
- * Known values are `"mainnet"` and `"testnet"`. A chain whose addresses depend on the
- * network throws on any other name; the rest ignore it.
+ * Known values are `"mainnet"` and `"testnet"`, and `"stagenet"` on Monero. A chain whose
+ * addresses depend on the network throws on any other name; the rest ignore it.
  */
 export type NetworkType = string;
 

@@ -64,4 +64,5 @@ export const blockchains = {
   near: lazy("near", () => import("./blockchains/near.ts")),
   cosmos: lazy("cosmos", () => import("./blockchains/cosmos.ts")),
   polkadot: lazy("polkadot", () => import("./blockchains/polkadot.ts")),
+  monero: lazy("monero", () => import("./blockchains/monero.ts")),
 };

@@ -2761,3 +2761,47 @@ export const multisigVector = {
     "p2sh-p2wsh": "2N6vG8VCbxnqyukVoMnFXo8z19q6jCJiChQ",
   },
 } as const;
+
+/**
+ * Monero seeds and the wallets behind them. The first two seed the wallets of Monero's own
+ * `tests/functional_tests/transfer.py`, which asserts both addresses; monero-python 1.1.1 gives
+ * every key and the third seed, whose 32 bytes need reducing mod l before they are a spend key.
+ */
+export const moneroTestVectors = {
+  wallets: [
+    {
+      seed: "velvet lymph giddy number token physics poetry unquoted nibs useful sabotage limits benches lifestyle eden nitrogen anvil fewest avoid batch vials washing fences goat unquoted",
+      spendKey: "148d78d2aba7dbca5cd8f6abcfb0b3c009ffbdbea1ff373d50ed94d78286640e",
+      viewKey: "49774391fa5e8d249fc2c5b45dadef13534bf2483dede880dac88f061e809100",
+      publicKey:
+        "1b3bd040020d3712ab84992b773d0a965134eb2df0392fb84af95de8a17be2ab231c9bf8341c6a870d92e3fb98063a90a355fb8dbf74a8561b9d7f9273247e99",
+      address:
+        "42ey1afDFnn4886T7196doS9GPMzexD9gXpsZJDwVjeRVdFCSoHnv7KPbBeGpzJBzHRCAs9UxqeoyFQMYbqSWYTfJJQAWDm",
+    },
+    {
+      seed: "peeled mixture ionic radar utopia puddle buying illness nuns gadget river spout cavernous bounced paradise drunk looking cottage jump tequila melting went winter adjust spout",
+      spendKey: "609ae8e228a871c37b61292ff898dd144db5d784804cc4a971bf74aff3acb70a",
+      viewKey: "3c2afc906377b0c596136916726e904719350eb9535e286afa703641dd6a7f03",
+      publicKey:
+        "47335f3ceae62690c602dc20cdb6bd461dfb409f7322844e0092dbb4000c796cb8954f72ccc4bf16d93600d0cfba6be32def0ca114bf7147c20c42769bef4cfc",
+      address:
+        "44Kbx4sJ7JDRDV5aAhLJzQCjDz2ViLRduE3ijDZu3osWKBjMGkV1XPk4pfDUMqt1Aiezvephdqm6YD19GKFD9ZcXVUTp6BW",
+    },
+    {
+      seed: "satin upcoming females later roared ultimate cajun adjust unnoticed peeled roped hiding else gifts dwindling cell vipers last evenings king uneven richly icing dime evenings",
+      spendKey: "dbf4e305f122f008f7974c3f33d9deaa825833e4d7ec398901e1066e47d9a70c",
+      viewKey: "0ed7791d24f68dc33963e85ec09578c67ae622cf1f3492333edc0d335ee70105",
+      publicKey:
+        "37dd88ea7a906e28f7c60edbb8a21b622263756379c0e4969d4b3813641042753d8634feac744a0c8d120c65419d6f923320dc70d257e241cb039ed01b1e16dc",
+      address:
+        "43jtzqTMD257rSVsdtJznEHR2WEHumEF5SC9czE81qYmLcNvmk8gu5j36m8ugiJ7oLRTKauM4q8YqC1GwFiMWiZjRqB4QQo",
+    },
+  ],
+  /** The 32 bytes the third seed spells, which reduce to its spend key. */
+  unreducedKey: "f7e369612dc8cc2903f2e7e2a28f52a5835833e4d7ec398901e1066e47d9a7cc",
+  /** The third wallet on the other two networks, from monero-python 1.1.1. */
+  testnet:
+    "9uHSV67cVPB7rSVsdtJznEHR2WEHumEF5SC9czE81qYmLcNvmk8gu5j36m8ugiJ7oLRTKauM4q8YqC1GwFiMWiZjRucrqXt",
+  stagenet:
+    "53ww5gNJrdB7rSVsdtJznEHR2WEHumEF5SC9czE81qYmLcNvmk8gu5j36m8ugiJ7oLRTKauM4q8YqC1GwFiMWiZjRqLYV4u",
+} as const;

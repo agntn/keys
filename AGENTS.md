@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-TypeScript library providing a unified interface for key generation, address derivation, wallet creation, and message signing across Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, Cardano, SUI, TRON, the XRP Ledger, NEAR, Cosmos SDK chains and Polkadot. Signing curves and HD derivation come from @noble/@scure, point math on secp256k1 and custom curves from @agntn/curves, every hash from @agntn/hashes, base encodings from @agntn/encodings, AES from @agntn/ciphers. Nothing in the package is audited or meant for production, real funds or sensitive data.
+TypeScript library providing a unified interface for key generation, address derivation, wallet creation, and message signing across Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, Cardano, SUI, TRON, the XRP Ledger, NEAR, Cosmos SDK chains, Polkadot and Monero. Signing curves and HD derivation come from @noble/@scure, point math on secp256k1 and custom curves from @agntn/curves, every hash from @agntn/hashes, base encodings from @agntn/encodings, AES from @agntn/ciphers. Nothing in the package is audited or meant for production, real funds or sensitive data.
 
 ## STRUCTURE
 
@@ -51,8 +51,9 @@ keys/
 | Change agent tools  | `src/tools.ts`, `src/tool-schemas.ts`, `src/tool-operations.ts`                   | One definition per tool; a new tool also gets its file in `docs/server/mcp/tools/`                                                      |
 | Keystore files      | `src/utils/store/`                                                                | Web3 Secret Storage v3: scrypt/PBKDF2, AES-128-CTR from `@agntn/ciphers/aes`                                                            |
 | Add BIP/derivation  | `src/utils/bip32/`, `bip39/`, `bip44/`, `slip10/`                                 | Subdirs with index.ts                                                                                                                   |
-| Mnemonic to wallet  | `src/blockchain.ts` → `deriveHDWallet` + `src/utils/hd.ts`                        | Bitcoin family infers the address type; Sui overrides it, Cardano throws (CIP-1852), Polkadot walks Substrate junctions                 |
+| Mnemonic to wallet  | `src/blockchain.ts` → `deriveHDWallet` + `src/utils/hd.ts`                        | Bitcoin family infers the address type; Sui overrides it, Cardano and Monero throw, Polkadot walks Substrate junctions                  |
 | XRPL family seed    | `src/blockchains/xrpl.ts` → `deriveSeedWallet`                                    | `s...`/`sEd...` to account 0 as rippled derives it; `keys_wallet_derive` takes one as `privateKey`                                      |
+| Monero seed words   | `src/blockchains/monero.ts` → `deriveSeedWallet` + `src/utils/monero-seed.ts`     | 25 English words to the spend key, view key and standard address; `keys_wallet_derive` takes them as `privateKey`                       |
 | Scan wallet paths   | `src/utils/hd-scan.ts` → `scanSchemes`                                            | Named schemes per chain as data; `keys_hd_wallet_scan` walks them                                                                       |
 | Xpub to address     | `src/utils/extended-key.ts` → `deriveXpubWallet` on the base class                | SLIP-0132 prefixes pick the type on the Bitcoin family; normal levels only, no xprv                                                     |
 | Xpub + child key    | `src/utils/bip32/parent.ts` → `recoverParent`                                     | Parent xprv from a normal child; the private prefix pairs with the xpub's                                                               |
@@ -71,7 +72,7 @@ keys/
 - **Abstract bases** - all chains extend `AbstractBlockchain`; Ethereum and Base extend `AbstractEVMBlockchain`
 - **Lazy double-call** - `blockchains.chain(options)()` passes constructor options, then imports and constructs the class
 - **Curve-split signing** - secp256k1 chains use `evmSignMessage` (Ethereum preamble + keccak256), ed25519 chains use `ed25519SignMessage` (raw, no prehash)
-- **Paths per chain** - `getDerivationPath` on the base class is BIP44; Solana, Stellar, Aptos and NEAR override it with their SLIP-10 shape, every level hardened (Stellar and NEAR stop at the account, Solana at the change branch), Sui hardens the ed25519 path and walks BIP32 `m/54'/784'/account'/change/index` on secp256k1, Cardano writes CIP-1852 with a plain role and index, XRPL keeps BIP44 and refuses ed25519, Polkadot throws because Substrate wallets walk named `//hard` junctions instead. `keys_bip44_generate` goes through it, so Cardano takes roles up to 5 where BIP44 chains stop at 1
+- **Paths per chain** - `getDerivationPath` on the base class is BIP44; Solana, Stellar, Aptos and NEAR override it with their SLIP-10 shape, every level hardened (Stellar and NEAR stop at the account, Solana at the change branch), Sui hardens the ed25519 path and walks BIP32 `m/54'/784'/account'/change/index` on secp256k1, Cardano writes CIP-1852 with a plain role and index, XRPL keeps BIP44 and refuses ed25519, Polkadot throws because Substrate wallets walk named `//hard` junctions instead, Monero throws because its wallets restore from their 25-word seed. `keys_bip44_generate` goes through it, so Cardano takes roles up to 5 where BIP44 chains stop at 1
 - **Test mirrors src** - `src/blockchains/bitcoin.ts` -> `test/blockchains/bitcoin.test.ts`
 - **Test imports** - test files import from `vite-plus/test`, not `vitest`
 - **Shared fixtures** - test vectors live in `test/fixtures.ts`, not duplicated per test file
