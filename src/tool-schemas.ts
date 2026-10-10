@@ -130,15 +130,20 @@ export const WIF_DECODE_PARAMETERS = Type.Object(
   { additionalProperties: false },
 );
 
+/** Not `encrypted`: Codex rejects every OMP request while a tool has a field by that name. */
+const bip38Key = {
+  encryptedKey: Type.String({
+    minLength: 1,
+    maxLength: 64,
+    pattern: "^[1-9A-HJ-NP-Za-km-z]+$",
+    description: "BIP38 encrypted private key, 58 characters starting with 6P",
+  }),
+};
+
 /** Shared MCP and Pi schema for reading a BIP38 key without its passphrase. */
 export const INSPECT_BIP38_PARAMETERS = Type.Object(
   {
-    encrypted: Type.String({
-      minLength: 1,
-      maxLength: 64,
-      pattern: "^[1-9A-HJ-NP-Za-km-z]+$",
-      description: "BIP38 encrypted private key, 58 characters starting with 6P",
-    }),
+    ...bip38Key,
     address: Type.Optional(
       Type.String({
         minLength: 1,
@@ -153,12 +158,7 @@ export const INSPECT_BIP38_PARAMETERS = Type.Object(
 /** Shared MCP and Pi schema for opening a BIP38 key with its passphrase. */
 export const DECRYPT_BIP38_PARAMETERS = Type.Object(
   {
-    encrypted: Type.String({
-      minLength: 1,
-      maxLength: 64,
-      pattern: "^[1-9A-HJ-NP-Za-km-z]+$",
-      description: "BIP38 encrypted private key, 58 characters starting with 6P",
-    }),
+    ...bip38Key,
     passphrase: Type.String({
       maxLength: MAX_BIP38_PASSPHRASE_LENGTH,
       description: "Public or disposable passphrase, NFC normalized and hashed as UTF-8",
