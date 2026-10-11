@@ -13,7 +13,6 @@ import {
 } from "./utils/electrum/index.ts";
 import {
   BIP32ChildMismatchError,
-  deriveHDKey,
   getMasterKeyFromSeed,
   recoverParent,
   type RecoveredParent,
@@ -1561,14 +1560,9 @@ export async function deriveElectrumWallet(
   }
   const path = electrumPath(pathValue, change !== undefined || index !== undefined);
   const { blockchain } = await getBlockchain("bitcoin", networkValue);
-  const { seed, seedType, scheme } = deriveElectrumSeed(mnemonic, passphrase);
-  const privateKey = deriveHDKey(getMasterKeyFromSeed(seed), path).privateKey;
-  if (!privateKey) throw new Error("No private key at the supplied path");
-  const wallet = blockchain.deriveWallet(
-    privateKey.toHex(),
-    { compressed: true },
-    seedType === "segwit" ? "segwit" : "legacy",
-  );
+  const seed = deriveElectrumSeed(mnemonic, passphrase);
+  const wallet = blockchain.deriveElectrumWallet(seed, path);
+  const { scheme, seedType } = seed;
   const details = {
     chain: "bitcoin",
     network: blockchain.network,

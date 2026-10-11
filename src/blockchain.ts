@@ -6,11 +6,12 @@ import {
   SLIP132_FORMATS,
   type ExtendedKeyFormats,
 } from "./utils/extended-key.ts";
-import { deriveMnemonicKey } from "./utils/hd.ts";
+import { deriveElectrumKey, deriveMnemonicKey } from "./utils/hd.ts";
 import type {
   AddressType,
   Blockchain,
   Curve,
+  ElectrumSeed,
   HDWalletOptions,
   KeyOptions,
   Keys,
@@ -222,6 +223,43 @@ export abstract class AbstractBlockchain implements Blockchain {
             "BIP39 checksum is invalid. Derived from the supplied words without repairing the checksum.",
           ],
         };
+  }
+
+  /**
+   * Address type an Electrum seed version stands for, on chains that write more than one.
+   * @param _seedType - Version of the seed the wallet came from
+   * @returns {AddressType | undefined} The type to write, or undefined to keep the chain's default
+   */
+  protected electrumAddressType(_seedType: "standard" | "segwit"): AddressType | undefined {
+    return undefined;
+  }
+
+  /**
+   * Derives a wallet from the seed `deriveSeed` returns, so no chain loads Electrum's word list.
+   * @param seed - Standard or SegWit seed from `deriveSeed`
+   * @param path - Derivation path, `m/0/0` for standard seeds and `m/0'/0/0` for SegWit ones
+   * @param options - Key options of the wallet
+   * @param addressType - Address type that wins over the one the seed version picks
+   * @returns {Wallet} The wallet at the path
+   */
+  deriveElectrumWallet(
+    seed: ElectrumSeed,
+    path: string,
+    options?: KeyOptions,
+    addressType?: AddressType,
+  ): Wallet {
+    const curve = this.resolveCurve(options);
+    if (curve !== "secp256k1") {
+      throw new Error(
+        `${this.name} ${curve} keys do not derive from Electrum seeds, which walk BIP32 on secp256k1`,
+      );
+    }
+    const privateKey = deriveElectrumKey(seed, path);
+    return this.deriveWallet(
+      privateKey,
+      options,
+      addressType ?? this.electrumAddressType(seed.seedType),
+    );
   }
 
   /**

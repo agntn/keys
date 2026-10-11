@@ -3,9 +3,10 @@ import { base64 } from "@agntn/encodings/base64";
 import { hex } from "@agntn/encodings/hex";
 import { describe, expect, it } from "vite-plus/test";
 import Decred, { Decred as NamedDecred } from "../../src/blockchains/decred.ts";
-import { blockchains, getBlockchainPath } from "../../src/index.ts";
+import { blockchains, getBlockchainPath, type AbstractBlockchain } from "../../src/index.ts";
 import { deriveWallet, deriveHdWallet } from "../../src/tool-operations.ts";
-import { bip39TestVectors, decredTestVectors as vector } from "../fixtures.ts";
+import { deriveSeed } from "../../src/utils/electrum/index.ts";
+import { bip39TestVectors, decredTestVectors as vector, electrumVectors } from "../fixtures.ts";
 
 describe("Decred", () => {
   it("loads ECDSA wallets through the registry and shared tools", async () => {
@@ -73,6 +74,14 @@ describe("Decred", () => {
     await expect(
       deriveHdWallet("decred", bip39TestVectors.mnemonic, "m/44'/42'/0'/0/0"),
     ).rejects.toThrow("Decred HD derivation is not supported");
+  });
+
+  it("refuses an Electrum seed for the same reason", () => {
+    const [electrum] = electrumVectors;
+    const chain: AbstractBlockchain = new Decred();
+    expect(() => chain.deriveElectrumWallet(deriveSeed(electrum.mnemonic), electrum.path)).toThrow(
+      "Decred HD derivation is not supported",
+    );
   });
 
   it.each(vector.messageHashes)("matches the dcrd message digest %#", async (message, digest) => {

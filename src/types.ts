@@ -105,6 +105,14 @@ export interface HDWalletOptions extends KeyOptions {
   readonly wordlist?: readonly string[];
 }
 
+/** Standard or SegWit Electrum seed, as `deriveSeed` in `@agntn/keys/electrum` returns it. */
+export interface ElectrumSeed {
+  readonly scheme: "electrum";
+  readonly seedType: "standard" | "segwit";
+  /** 64 bytes of PBKDF2 output, not a master private key. */
+  readonly seed: Uint8Array;
+}
+
 /**
  * Options for a chain that fixes its own curve and digest but can still append the recovery byte.
  */
@@ -271,6 +279,14 @@ export interface Blockchain extends BlockchainImplementation {
     mnemonic: string,
     path: string,
     options?: HDWalletOptions,
+    addressType?: string,
+  ) => Wallet;
+
+  /** Derives a complete wallet from an Electrum seed and derivation path. */
+  deriveElectrumWallet?: (
+    seed: ElectrumSeed,
+    path: string,
+    options?: KeyOptions,
     addressType?: string,
   ) => Wallet;
 

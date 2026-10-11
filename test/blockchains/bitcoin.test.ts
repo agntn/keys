@@ -7,9 +7,11 @@ import {
   bip137MessageVectors,
   bip39TestVectors,
   bitcoinMessageVectors as messageVectors,
+  electrumVectors,
 } from "../fixtures";
 import { useBlockchain } from "../../src";
 import { generateBip44Path, getAddress } from "../../src/tool-operations.ts";
+import { deriveSeed } from "../../src/utils/electrum/index.ts";
 import Bitcoin from "../../src/blockchains/bitcoin";
 import type { Options } from "../../src/types";
 
@@ -541,6 +543,40 @@ describe("Bitcoin blockchain", () => {
       await expect(generateBip44Path("bitcoin", 0, 0, 0, "segwit")).rejects.toThrow(
         "bitcoin has one curve",
       );
+    });
+  });
+
+  describe("Electrum wallets", () => {
+    it.each(electrumVectors)("derives the $name vector as Electrum does", (vector) => {
+      const seed = deriveSeed(vector.mnemonic, vector.passphrase);
+      const wallet = blockchain.deriveElectrumWallet(seed, vector.path);
+
+      expect(wallet.keys.public).toBe(vector.publicKey);
+      expect(wallet.address).toBe(vector.address);
+      expect(wallet.addressType).toBe(vector.seedType === "segwit" ? "segwit" : "legacy");
+    });
+
+    it("keeps an explicit address type over the seed version, and takes h for '", () => {
+      const [vector] = electrumVectors;
+      const seed = deriveSeed(vector.mnemonic);
+      const wallet = blockchain.deriveElectrumWallet(seed, "m/0h/0/0", {}, "legacy");
+
+      expect(wallet.keys.public).toBe(vector.publicKey);
+      expect(wallet.address).toBe(blockchain.getAddress(vector.publicKey, "legacy"));
+      expect(wallet.addressType).toBe("legacy");
+    });
+
+    it.each([
+      ["the phrase itself", electrumVectors[0].mnemonic],
+      ["a BIP39 seed", { scheme: "bip39", seed: new Uint8Array(64) }],
+      ["bare seed bytes", deriveSeed(electrumVectors[0].mnemonic).seed],
+      ["a seed without its version", { scheme: "electrum", seed: new Uint8Array(64) }],
+      ["a 2FA version", { scheme: "electrum", seedType: "2fa", seed: new Uint8Array(64) }],
+      ["a short seed", { scheme: "electrum", seedType: "segwit", seed: new Uint8Array(32) }],
+    ])("refuses %s, which deriveSeed didn't return", (_label, seed) => {
+      expect(() => {
+        Reflect.apply(blockchain.deriveElectrumWallet.bind(blockchain), undefined, [seed, "m/0/0"]);
+      }).toThrow(TypeError);
     });
   });
 

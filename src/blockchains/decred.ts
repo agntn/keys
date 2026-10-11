@@ -79,6 +79,11 @@ export class Decred extends AbstractBlockchain {
     throw new Error("Decred HD derivation is not supported");
   }
 
+  /** An Electrum seed walks the same standard BIP32, so it lands on the same wrong keys. */
+  override deriveElectrumWallet(): Wallet {
+    throw new Error("Decred HD derivation is not supported");
+  }
+
   /** Decred wallets export `dpub` keys, and its HD derivation is not supported here. */
   override deriveXpubWallet(): XpubWallet {
     throw new Error("Decred HD derivation is not supported");

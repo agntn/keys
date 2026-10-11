@@ -28,6 +28,9 @@ import { Sha512Hasher, hmac, pbkdf2 } from "@agntn/hashes";
 import { ELECTRUM_LEGACY_WORDS } from "./legacy.ts";
 import { ELECTRUM_WHITESPACE, normalizeElectrumText } from "./normalize.ts";
 import { oldChildPublicKey, oldHexSeed, oldMasterPublicKey } from "./old.ts";
+import type { ElectrumSeed } from "../../types.ts";
+
+export type { ElectrumSeed };
 
 /**
  * Starts the SHA-512 state that Electrum's HMAC and PBKDF2 run on.
@@ -80,16 +83,9 @@ export function inspect(mnemonic: string): ElectrumSeedType {
  * Derives an Electrum seed, never a BIP39 seed or a BIP32 master key.
  * @param mnemonic - Complete standard or SegWit phrase
  * @param passphrase - Electrum seed extension, normalized like the phrase
- * @returns {{ scheme: "electrum"; seedType: "standard" | "segwit"; seed: Uint8Array }} Seed and version
+ * @returns {ElectrumSeed} Seed and version, ready for `deriveElectrumWallet` on a chain
  */
-export function deriveSeed(
-  mnemonic: string,
-  passphrase = "",
-): {
-  readonly scheme: "electrum";
-  readonly seedType: "standard" | "segwit";
-  readonly seed: Uint8Array;
-} {
+export function deriveSeed(mnemonic: string, passphrase = ""): ElectrumSeed {
   const seedType = inspect(mnemonic);
   if (seedType !== "standard" && seedType !== "segwit") {
     throw new Error("Unsupported or unrecognized Electrum seed version");

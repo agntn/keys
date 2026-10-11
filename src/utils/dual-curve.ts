@@ -1,5 +1,5 @@
 import { AbstractBlockchain } from "../blockchain.ts";
-import type { AddressType, HDWalletOptions, KeyOptions, Wallet } from "../types.ts";
+import type { AddressType, ElectrumSeed, HDWalletOptions, KeyOptions, Wallet } from "../types.ts";
 
 /**
  * Lets the address type name the signature scheme, so one argument drives key, address, and curve.
@@ -39,6 +39,16 @@ export abstract class AbstractDualCurveBlockchain extends AbstractBlockchain {
   ): Wallet {
     const { scheme, keyOptions } = withScheme(options, addressType);
     return super.deriveHDWallet(mnemonic, path, keyOptions, scheme);
+  }
+
+  override deriveElectrumWallet(
+    seed: ElectrumSeed,
+    path: string,
+    options?: KeyOptions,
+    addressType?: AddressType,
+  ): Wallet {
+    const { scheme, keyOptions } = withScheme(options, addressType);
+    return super.deriveElectrumWallet(seed, path, keyOptions, scheme);
   }
 
   override generateWallet(options?: KeyOptions, addressType?: AddressType): Wallet {
