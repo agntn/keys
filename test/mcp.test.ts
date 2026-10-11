@@ -359,25 +359,28 @@ describe("keys MCP server", () => {
 
   it("reads a BIP38 header and checks an address through MCP", async () => {
     const client = await connectTestClient();
-    const { encrypted, address, inspection } = bip38Vectors[3];
+    const { encrypted: encryptedKey, address, inspection } = bip38Vectors[3];
 
     const response = await client.callTool({
       name: "keys_bip38_inspect",
-      arguments: { encrypted, address },
+      arguments: { encryptedKey, address },
     });
     expect(response.isError).not.toBe(true);
     expect(JSON.parse(text(response.content))).toEqual({ ...inspection, addressMatches: true });
 
     const omitted = await client.callTool({
       name: "keys_bip38_inspect",
-      arguments: { encrypted: bip38Vectors[0].encrypted },
+      arguments: { encryptedKey: bip38Vectors[0].encrypted },
     });
     expect(JSON.parse(text(omitted.content))).toEqual(bip38Vectors[0].inspection);
 
     for (const [args, message] of [
-      [{ encrypted: encrypted.slice(0, -1) + "1" }, "Invalid BIP38 base58 encoding or checksum"],
-      [{ encrypted: "0OIl" }, "Invalid arguments at /encrypted"],
-      [{ encrypted, extra: true }, "Invalid arguments"],
+      [
+        { encryptedKey: encryptedKey.slice(0, -1) + "1" },
+        "Invalid BIP38 base58 encoding or checksum",
+      ],
+      [{ encryptedKey: "0OIl" }, "Invalid arguments at /encryptedKey"],
+      [{ encryptedKey, extra: true }, "Invalid arguments"],
     ] as const) {
       const failed = await client.callTool({ name: "keys_bip38_inspect", arguments: args });
       expect(failed.isError).toBe(true);
@@ -387,12 +390,12 @@ describe("keys MCP server", () => {
 
   it("opens a BIP38 key through MCP, with its WIF only on request", async () => {
     const client = await connectTestClient();
-    const { encrypted, passphrase, wif, address } = bip38Vectors[3];
+    const { encrypted: encryptedKey, passphrase, wif, address } = bip38Vectors[3];
     const privateKey = decodeWIF(wif, { chain: "bitcoin" }).privateKey;
 
     const opened = await client.callTool({
       name: "keys_bip38_decrypt",
-      arguments: { encrypted, passphrase },
+      arguments: { encryptedKey, passphrase },
     });
     expect(opened.isError).not.toBe(true);
     expect(text(opened.content)).toMatch(
@@ -407,13 +410,13 @@ describe("keys MCP server", () => {
 
     const revealed = await client.callTool({
       name: "keys_bip38_decrypt",
-      arguments: { encrypted, passphrase, revealKey: true },
+      arguments: { encryptedKey, passphrase, revealKey: true },
     });
     expect(text(revealed.content)).toBe(`${text(opened.content)}\nWIF: ${wif}`);
 
     const wrong = await client.callTool({
       name: "keys_bip38_decrypt",
-      arguments: { encrypted, passphrase: "wrong", revealKey: true },
+      arguments: { encryptedKey, passphrase: "wrong", revealKey: true },
     });
     expect(wrong.isError).not.toBe(true);
     expect(text(wrong.content)).toBe(
@@ -421,10 +424,13 @@ describe("keys MCP server", () => {
     );
 
     for (const [args, message] of [
-      [{ encrypted: encrypted.slice(0, -1) + "1", passphrase }, "Invalid BIP38 base58 encoding"],
-      [{ encrypted, passphrase: 42 }, "Invalid arguments at /passphrase"],
-      [{ encrypted, passphrase, revealKey: "yes" }, "Invalid arguments at /revealKey"],
-      [{ encrypted, passphrase, extra: true }, "Invalid arguments"],
+      [
+        { encryptedKey: encryptedKey.slice(0, -1) + "1", passphrase },
+        "Invalid BIP38 base58 encoding",
+      ],
+      [{ encryptedKey, passphrase: 42 }, "Invalid arguments at /passphrase"],
+      [{ encryptedKey, passphrase, revealKey: "yes" }, "Invalid arguments at /revealKey"],
+      [{ encryptedKey, passphrase, extra: true }, "Invalid arguments"],
     ] as const) {
       const failed = await client.callTool({ name: "keys_bip38_decrypt", arguments: args });
       expect(failed.isError).toBe(true);

@@ -159,7 +159,7 @@ export const bip38InspectTool = defineTool({
   effect: "read",
   input: INSPECT_BIP38_PARAMETERS,
   execute: async (params) =>
-    (await loadOperations()).inspectBip38(params.encrypted, params.address),
+    (await loadOperations()).inspectBip38(params.encryptedKey, params.address),
 });
 
 export const bip38DecryptTool = defineTool({
@@ -170,7 +170,7 @@ export const bip38DecryptTool = defineTool({
   effect: "read",
   input: DECRYPT_BIP38_PARAMETERS,
   execute: async (params) =>
-    (await loadOperations()).decryptBip38(params.encrypted, params.passphrase, params.revealKey),
+    (await loadOperations()).decryptBip38(params.encryptedKey, params.passphrase, params.revealKey),
 });
 
 export const storeDecryptTool = defineTool({

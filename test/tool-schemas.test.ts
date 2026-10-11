@@ -85,4 +85,11 @@ describe("MCP and Pi tool parameters", () => {
     expect(Value.Check(generate, {})).toBe(false);
     expect(Value.Check(generate, { chain: "bitcoin", path: "m/44'/0'/0'/0/0" })).toBe(false);
   });
+
+  it("names no field `encrypted`, which sinks every OMP request to Codex", () => {
+    const named = [...piSchemas].filter(([, schema]) =>
+      JSON.stringify(schema).includes('"encrypted":'),
+    );
+    expect(named.map(([name]) => name)).toEqual([]);
+  });
 });

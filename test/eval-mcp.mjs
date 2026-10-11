@@ -130,13 +130,13 @@ try {
 
   await call(
     "keys_bip38_inspect",
-    { encrypted: bip38Vectors[3].encrypted, address: bip38Vectors[3].address },
+    { encryptedKey: bip38Vectors[3].encrypted, address: bip38Vectors[3].address },
     /"lot":263183,"sequence":1,"addressMatches":true/,
   );
 
   await call(
     "keys_bip38_decrypt",
-    { encrypted: bip38Vectors[3].encrypted, passphrase: bip38Vectors[3].passphrase },
+    { encryptedKey: bip38Vectors[3].encrypted, passphrase: bip38Vectors[3].passphrase },
     new RegExp(`Passphrase: correct\nPublic key: \\w+\nAddress: ${bip38Vectors[3].address}$`),
   );
 

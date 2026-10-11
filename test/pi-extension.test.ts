@@ -553,21 +553,21 @@ describe("keys Pi extension", () => {
   it("reads a BIP38 header with the shared executor", async () => {
     const tool = (await registerTools()).get("keys_bip38_inspect");
     if (!tool) throw new Error("Missing BIP38 tool");
-    const { encrypted, address, inspection } = bip38Vectors[2];
-    const args = { encrypted, address };
+    const { encrypted: encryptedKey, address, inspection } = bip38Vectors[2];
+    const args = { encryptedKey, address };
     expect(Value.Check(tool.parameters, args)).toBe(true);
-    expect(Value.Check(tool.parameters, { encrypted, address: "" })).toBe(false);
+    expect(Value.Check(tool.parameters, { encryptedKey, address: "" })).toBe(false);
     await expect(tool.execute("bip38", args)).resolves.toMatchObject({
       details: { ...inspection, addressMatches: true },
     });
-    await expect(skipSchema(tool)("bip38", { encrypted, address: "" })).resolves.toEqual({
+    await expect(skipSchema(tool)("bip38", { encryptedKey, address: "" })).resolves.toEqual({
       content: [{ type: "text", text: JSON.stringify(inspection) }],
       details: inspection,
     });
-    await expect(skipSchema(tool)("bip38", { encrypted: 42 })).rejects.toThrow(
+    await expect(skipSchema(tool)("bip38", { encryptedKey: 42 })).rejects.toThrow(
       "BIP38 key must be a string",
     );
-    const longAddress = { encrypted, address: "1".repeat(129) };
+    const longAddress = { encryptedKey, address: "1".repeat(129) };
     expect(Value.Check(tool.parameters, longAddress)).toBe(false);
     await expect(skipSchema(tool)("bip38", longAddress)).rejects.toThrow(
       "Address must not exceed 128 characters",
@@ -577,19 +577,21 @@ describe("keys Pi extension", () => {
   it("opens a BIP38 key with the shared executor and checks revealKey without the schema", async () => {
     const tool = (await registerTools()).get("keys_bip38_decrypt");
     if (!tool) throw new Error("Missing BIP38 decrypt tool");
-    const { encrypted, passphrase, wif, address } = bip38Vectors[2];
-    expect(Value.Check(tool.parameters, { encrypted, passphrase })).toBe(true);
-    expect(Value.Check(tool.parameters, { encrypted, passphrase, revealKey: "yes" })).toBe(false);
-    await expect(tool.execute("bip38", { encrypted, passphrase })).resolves.toMatchObject({
+    const { encrypted: encryptedKey, passphrase, wif, address } = bip38Vectors[2];
+    expect(Value.Check(tool.parameters, { encryptedKey, passphrase })).toBe(true);
+    expect(Value.Check(tool.parameters, { encryptedKey, passphrase, revealKey: "yes" })).toBe(
+      false,
+    );
+    await expect(tool.execute("bip38", { encryptedKey, passphrase })).resolves.toMatchObject({
       details: { mode: "ec-multiply", unlocked: true, chain: "bitcoin", address },
     });
     await expect(
-      tool.execute("bip38", { encrypted, passphrase, revealKey: true }),
+      tool.execute("bip38", { encryptedKey, passphrase, revealKey: true }),
     ).resolves.toMatchObject({ details: { wif } });
     await expect(
-      skipSchema(tool)("bip38", { encrypted, passphrase, revealKey: "yes" }),
+      skipSchema(tool)("bip38", { encryptedKey, passphrase, revealKey: "yes" }),
     ).rejects.toThrow("revealKey must be a boolean");
-    const longPassphrase = { encrypted, passphrase: "x".repeat(4097) };
+    const longPassphrase = { encryptedKey, passphrase: "x".repeat(4097) };
     expect(Value.Check(tool.parameters, longPassphrase)).toBe(false);
     await expect(skipSchema(tool)("bip38", longPassphrase)).rejects.toThrow(
       "Passphrase must not exceed 4096 characters",
