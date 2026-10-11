@@ -40,9 +40,11 @@ describe("Electrum wallet documentation", () => {
     if (!example) throw new Error("Missing Electrum example");
     const script = example
       .replace(/const phrase = .*;/u, `const phrase = ${JSON.stringify(vector.mnemonic)};`)
-      .replace(/\.derive\("m\/0'\/0\/0"\)/u, `.derive(${JSON.stringify(vector.path)})`);
-    const address = run(script, "wallet.address");
-    expect(address).toBe(vector.address);
+      .replace(/"m\/0'\/0\/0"/u, JSON.stringify(vector.path));
+    const addressType = vector.seedType === "segwit" ? "segwit" : "legacy";
+    expect(run(script, "wallet.address, wallet.addressType")).toBe(
+      `${vector.address} ${addressType}`,
+    );
   });
 
   it("derives the old seed example", () => {

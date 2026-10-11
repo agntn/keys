@@ -3,9 +3,16 @@ import { hex } from "@agntn/encodings/hex";
 import { HDKey } from "@scure/bip32";
 import { mnemonicToSeedSync } from "@scure/bip39";
 import { blockchains } from "../../src/index.ts";
+import { getMasterKeyFromSeed as getBIP32MasterKey } from "../../src/utils/bip32/index.ts";
 import { loadWordlist, mnemonicToSeed } from "../../src/utils/bip39/index.ts";
+import { deriveSeed as deriveElectrumSeed } from "../../src/utils/electrum/index.ts";
 import { getMasterKeyFromSeed } from "../../src/utils/slip10/index.ts";
-import { bip39TestVectors, invalidChecksumPuzzle, localizedMnemonicVectors } from "../fixtures.ts";
+import {
+  bip39TestVectors,
+  electrumVectors,
+  invalidChecksumPuzzle,
+  localizedMnemonicVectors,
+} from "../fixtures.ts";
 
 describe("HD checksum policy", () => {
   const { mnemonic, path, address, publicKey, withPassphrase } = invalidChecksumPuzzle;
@@ -190,4 +197,52 @@ describe("HD word lists", () => {
       }).toThrow("wordlist must be a BIP39 word list of 2048 words");
     },
   );
+});
+
+describe("Electrum wallets through the chain classes", () => {
+  const [segwit] = electrumVectors;
+  const seed = deriveElectrumSeed(segwit.mnemonic);
+  const privateKey = hex.encode(
+    getBIP32MasterKey(seed.seed).derive(segwit.path).privateKey ?? new Uint8Array(),
+  );
+
+  it.each(["dogecoin", "ethereum", "cosmos"] as const)(
+    "gives %s the key the seed walks to, in the chain's own address",
+    async (name) => {
+      const chain = await blockchains[name]()();
+      expect(chain.deriveElectrumWallet(seed, segwit.path)).toEqual(chain.deriveWallet(privateKey));
+    },
+  );
+
+  it("walks secp256k1 on Sui when the scheme or the address type asks for it", async () => {
+    const chain = await blockchains.sui()();
+    const fromAddressType = chain.deriveElectrumWallet(seed, segwit.path, {}, "secp256k1");
+    const fromScheme = chain.deriveElectrumWallet(seed, segwit.path, {
+      scheme: "secp256k1",
+    });
+
+    expect(fromAddressType).toEqual(fromScheme);
+    expect(fromAddressType).toEqual(chain.deriveWallet(privateKey, {}, "secp256k1"));
+    expect(() => chain.deriveElectrumWallet(seed, segwit.path)).toThrow(
+      "sui ed25519 keys do not derive from Electrum seeds",
+    );
+  });
+
+  it.each(["solana", "cardano", "polkadot", "monero"] as const)(
+    "refuses %s, whose keys are ed25519",
+    async (name) => {
+      const chain = await blockchains[name]()();
+      expect(() => chain.deriveElectrumWallet(seed, segwit.path)).toThrow(
+        `${name} ed25519 keys do not derive from Electrum seeds`,
+      );
+    },
+  );
+
+  it("refuses ed25519 on the XRP Ledger and walks secp256k1", async () => {
+    const chain = await blockchains.xrpl()();
+    expect(() => chain.deriveElectrumWallet(seed, segwit.path, {}, "ed25519")).toThrow(
+      "xrpl ed25519 keys do not derive from Electrum seeds",
+    );
+    expect(chain.deriveElectrumWallet(seed, segwit.path)).toEqual(chain.deriveWallet(privateKey));
+  });
 });

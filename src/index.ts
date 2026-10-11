@@ -19,6 +19,7 @@ export type {
   MessageSigner,
   KeyOptions,
   HDWalletOptions,
+  ElectrumSeed,
   SigningOptions,
   RecoverableSigningOptions,
   Options,

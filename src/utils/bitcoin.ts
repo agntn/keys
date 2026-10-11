@@ -288,6 +288,15 @@ export abstract class AbstractBitcoinBlockchain extends AbstractBitcoinMessageBl
   }
 
   /**
+   * SegWit seeds write P2WPKH and standard seeds P2PKH, as Electrum does with them.
+   * @param seedType - Version of the Electrum seed
+   * @returns {AddressType} The address type Electrum gives that version
+   */
+  protected override electrumAddressType(seedType: "standard" | "segwit"): AddressType {
+    return seedType === "segwit" ? "segwit" : "legacy";
+  }
+
+  /**
    * SLIP-0132 prefixes, so a `zpub` writes SegWit and a `ypub` P2SH without being told.
    * @returns {ExtendedKeyFormats} Bitcoin's single signature prefixes on this network
    */

@@ -7,7 +7,7 @@ import {
 } from "./bip39/index.ts";
 import { normalizeHardenedMarkers } from "./hd-index.ts";
 import { getMasterKeyFromSeed as getSLIP10MasterKey } from "./slip10/index.ts";
-import type { Curve } from "../types.ts";
+import type { Curve, ElectrumSeed } from "../types.ts";
 
 /**
  * Collapses whitespace so a phrase pasted with line breaks still validates.
@@ -154,6 +154,17 @@ export function deriveMnemonicKey(
   }
 
   const seed = mnemonicToSeed(normalizedMnemonic, passphrase);
+  return { privateKey: deriveSeedKey(seed, path, curve), checksumValid: inspection.valid };
+}
+
+/**
+ * Walks a seed down a path: BIP32 for secp256k1, SLIP-10 for ed25519.
+ * @param seed - BIP39 or Electrum seed bytes
+ * @param path - Derivation path, `h` taken for `'`
+ * @param curve - Curve of the key the chain expects
+ * @returns {string} The private key at the path, as hex
+ */
+function deriveSeedKey(seed: Uint8Array, path: string, curve: Curve): string {
   const hdPath = normalizeHardenedMarkers(path);
   const privateKey =
     curve === "ed25519"
@@ -162,5 +173,36 @@ export function deriveMnemonicKey(
   if (!privateKey) {
     throw new Error(`No private key at ${path}`);
   }
-  return { privateKey: privateKey.toHex(), checksumValid: inspection.valid };
+  return privateKey.toHex();
+}
+
+/**
+ * Walks an Electrum seed down a BIP32 path, refusing anything `deriveSeed` didn't return.
+ * @param seed - Seed from `deriveSeed` in `@agntn/keys/electrum`
+ * @param path - Derivation path such as `m/0'/0/0`
+ * @returns {string} The secp256k1 private key at the path, as hex
+ */
+export function deriveElectrumKey(seed: ElectrumSeed, path: string): string {
+  if (!isElectrumSeed(seed)) {
+    throw new TypeError(
+      "Pass the seed that deriveSeed from @agntn/keys/electrum returns, not the phrase",
+    );
+  }
+  return deriveSeedKey(seed.seed, path, "secp256k1");
+}
+
+/**
+ * Checks for the scheme and bytes `deriveSeed` returns, for callers that skip the types.
+ * @param seed - Seed as the caller passed it
+ * @returns {boolean} Whether it came from `deriveSeed`
+ */
+function isElectrumSeed(seed: unknown): boolean {
+  return (
+    typeof seed === "object" &&
+    seed !== null &&
+    "scheme" in seed &&
+    seed.scheme === "electrum" &&
+    "seed" in seed &&
+    seed.seed instanceof Uint8Array
+  );
 }
