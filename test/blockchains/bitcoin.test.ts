@@ -570,6 +570,9 @@ describe("Bitcoin blockchain", () => {
       ["the phrase itself", electrumVectors[0].mnemonic],
       ["a BIP39 seed", { scheme: "bip39", seed: new Uint8Array(64) }],
       ["bare seed bytes", deriveSeed(electrumVectors[0].mnemonic).seed],
+      ["a seed without its version", { scheme: "electrum", seed: new Uint8Array(64) }],
+      ["a 2FA version", { scheme: "electrum", seedType: "2fa", seed: new Uint8Array(64) }],
+      ["a short seed", { scheme: "electrum", seedType: "segwit", seed: new Uint8Array(32) }],
     ])("refuses %s, which deriveSeed didn't return", (_label, seed) => {
       expect(() => {
         Reflect.apply(blockchain.deriveElectrumWallet.bind(blockchain), undefined, [seed, "m/0/0"]);

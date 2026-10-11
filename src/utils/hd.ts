@@ -191,18 +191,21 @@ export function deriveElectrumKey(seed: ElectrumSeed, path: string): string {
   return deriveSeedKey(seed.seed, path, "secp256k1");
 }
 
+/** Seed versions `deriveSeed` hands out; old and 2FA seeds never get that far. */
+const ELECTRUM_SEED_TYPES: readonly unknown[] = ["standard", "segwit"];
+
 /**
- * Checks for the scheme and bytes `deriveSeed` returns, for callers that skip the types.
+ * Checks for the scheme, version and 64 bytes `deriveSeed` returns, for untyped callers.
  * @param seed - Seed as the caller passed it
  * @returns {boolean} Whether it came from `deriveSeed`
  */
 function isElectrumSeed(seed: unknown): boolean {
+  if (typeof seed !== "object" || seed === null) return false;
+  if (!("scheme" in seed && "seedType" in seed && "seed" in seed)) return false;
   return (
-    typeof seed === "object" &&
-    seed !== null &&
-    "scheme" in seed &&
     seed.scheme === "electrum" &&
-    "seed" in seed &&
-    seed.seed instanceof Uint8Array
+    ELECTRUM_SEED_TYPES.includes(seed.seedType) &&
+    seed.seed instanceof Uint8Array &&
+    seed.seed.length === 64
   );
 }
