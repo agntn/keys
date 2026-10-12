@@ -3,8 +3,6 @@ import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { base64 } from "@agntn/encodings/base64";
 import { hex } from "@agntn/encodings/hex";
-import { HDKey } from "@scure/bip32";
-import { mnemonicToSeedSync } from "@scure/bip39";
 import {
   entropyProfileVectors,
   bip137MessageVectors,
@@ -682,18 +680,16 @@ describe("keys MCP server", () => {
   it("derives an HD wallet from the BIP39 list the language names", async () => {
     const client = await connectTestClient();
     const path = "m/44'/0'/0'/0/0";
-    for (const { language, mnemonic } of localizedMnemonicVectors.filter((vector) =>
+    const { passphrase } = bip39TestVectors;
+    for (const { language, mnemonic, publicKey } of localizedMnemonicVectors.filter((vector) =>
       ["italian", "japanese"].includes(vector.language),
     )) {
-      const expected = HDKey.fromMasterSeed(mnemonicToSeedSync(mnemonic)).derive(path).publicKey;
       const response = await client.callTool({
         name: "keys_hd_wallet_derive",
-        arguments: { chain: "bitcoin", mnemonic, path, language },
+        arguments: { chain: "bitcoin", mnemonic, path, language, passphrase },
       });
       expect(response.isError).not.toBe(true);
-      expect(text(response.content)).toContain(
-        `Public key: ${hex.encode(expected ?? new Uint8Array())}`,
-      );
+      expect(text(response.content)).toContain(`Public key: ${publicKey}`);
     }
 
     const italian = localizedMnemonicVectors.find((vector) => vector.language === "italian");
@@ -729,14 +725,17 @@ describe("keys MCP server", () => {
     for (const vector of localizedMnemonicVectors.filter((item) =>
       ["italian", "japanese"].includes(item.language),
     )) {
-      const expected = HDKey.fromMasterSeed(mnemonicToSeedSync(vector.mnemonic)).derive(path);
       const localized = await client.callTool({
         name: "keys_hd_wallet_derive",
-        arguments: { chain: "bitcoin", entropy: vector.entropy, path, language: vector.language },
+        arguments: {
+          chain: "bitcoin",
+          entropy: vector.entropy,
+          path,
+          language: vector.language,
+          passphrase: bip39TestVectors.passphrase,
+        },
       });
-      expect(text(localized.content)).toContain(
-        `Public key: ${hex.encode(expected.publicKey ?? new Uint8Array())}`,
-      );
+      expect(text(localized.content)).toContain(`Public key: ${vector.publicKey}`);
     }
 
     for (const [args, reason] of [
@@ -2022,9 +2021,7 @@ describe("keys MCP server", () => {
       expect(signed.isError).not.toBe(true);
       const [, signature = "", address = ""] =
         /^Signature: (\S+)\nAddress: (\S+) \(/u.exec(text(signed.content)) ?? [];
-      expect(address).toBe(
-        new Bitcoin().getAddress(new Bitcoin().getKeyPublic(privateKey), addressType),
-      );
+      expect(address).toBe(secp256k1TestVectors.addresses[addressType]);
       const verified = await client.callTool({
         name: "keys_bip322_verify",
         arguments: { address, message: "disposable", signature },

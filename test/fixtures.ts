@@ -11,6 +11,13 @@ export const secp256k1TestVectors = {
   publicKeyCompressed: "030947751e3022ecf3016be03ec77ab0ce3c2662b4843898cb068d74f698ccc8ad",
   /** The group order n, one above the largest valid private key. */
   curveOrder: "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141",
+  /** Bitcoin addresses of the compressed key, by bip_utils 2.9.3, taproot with the BIP86 tweak. */
+  addresses: {
+    legacy: "1PbwjuQP3y9F3ZnbbWUvue4zpgkQuSbgD5",
+    p2sh: "3K3S2AmwUVYHSKaMmtzsxmfmMts1s9RsXe",
+    segwit: "bc1q7lhf4defwy62pnx8du74p62daut53revvqv96s",
+    taproot: "bc1pf3nev47234920c5aa24t4yzx8g40ncvzqynezyfxxnzdtpdnyjnshehf0j",
+  },
 };
 
 // Ed25519 keys - used for Solana, Cardano, etc.
@@ -89,6 +96,11 @@ export const invalidChecksumPuzzle = {
     passphrase: " e\u0301 ",
     path: "m/84'/0'/0'/1/2",
     publicKey: "0248b84ccd2a9aefdd556e3550eb4dff2de903b2eef7718be305ddc9394f43a5ab",
+  },
+  /** The same words over SLIP-10 ed25519 to a Solana address, as bip_utils 2.9.3 walks them. */
+  solana: {
+    path: "m/44'/501'/0'/0'",
+    address: "CLZRcJGxvfhGHyHFKnbKiEwgtcYSTfnE2v6v9Wk8e9pg",
   },
 };
 
@@ -636,12 +648,13 @@ export const cosmosTestVectors = {
 
 /**
  * The first `MnemonicKey` example of @terra-money/terra.js 3.1.10, on its default coin type 330.
- * The public key is its base64 `SimplePublicKey` in hex.
+ * The public key is its base64 `SimplePublicKey` in hex, the address bip_utils 2.9.3 writes for it.
  */
 export const terraTestVectors = {
   mnemonic:
     "wonder caution square unveil april art add hover spend smile proud admit modify old copper throw crew happy nature luggage reopen exhibit ordinary napkin",
   publicKey: "02cf7ed0b5832538cd89b55084ce93399b186e381684b31388763801439cbdd20a",
+  address: "terra1jnzv225hwl3uxc5wtnlgr8mwy6nlt0vztv3qqm",
 } as const;
 
 /**
@@ -1444,64 +1457,93 @@ export const wifTestVectors = [
   },
 ] as const;
 
-/** trezor/python-mnemonic vectors.json, blob d362a5d4eb1ba800a52aec30116915cd4576e1fd. */
+/**
+ * trezor/python-mnemonic vectors.json, blob d362a5d4eb1ba800a52aec30116915cd4576e1fd. Seeds take
+ * the passphrase TREZOR; bip_utils 2.9.3 walks the file's xprv to `publicKey` at m/44'/0'/0'/0/0.
+ */
 export const localizedMnemonicVectors = [
   {
     language: "czech",
     entropy: "00000000000000000000000000000000",
     mnemonic:
       "abdikace abdikace abdikace abdikace abdikace abdikace abdikace abdikace abdikace abdikace abdikace agrese",
+    seed: "872501bed75c98fbf943a67907bf394995f337e9adfa23687282d1135c262421715a0bcccfe2d3f5f8b72c8e2fa12a7a7267f8047b744557f4a9d49d11ccc75f",
+    publicKey: "03c3d520649e4c4606f227fbe2b820160e42ef0d67b2b064de5087cc5a4f8a61c9",
   },
   {
     language: "english",
     entropy: "00000000000000000000000000000000",
     mnemonic:
       "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+    seed: "c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e53495531f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04",
+    publicKey: "027440c6c46ec617a202f44bc886a249b10f98a8ff5d8a0aa56a350ab930a0ec79",
   },
   {
     language: "french",
     entropy: "00000000000000000000000000000000",
     mnemonic:
       "abaisser abaisser abaisser abaisser abaisser abaisser abaisser abaisser abaisser abaisser abaisser abeille",
+    seed: "3bf3366c40256d7e2fca716fddf8673425c7c7e444af290ee1edf1bbf095e6e78a7190253f3e46f1e2069345d4b05ac17b242faa225c0a3e4d268976744e0698",
+    publicKey: "032334a2a0f4a99f173a9969e49ff3c56f7f14cb0568290a811151ea6f90c4c989",
   },
   {
     language: "italian",
     entropy: "00000000000000000000000000000000",
     mnemonic: "abaco abaco abaco abaco abaco abaco abaco abaco abaco abaco abaco abete",
+    seed: "d2ae4bbd4efc4aba345b66dc2bfa4ea280d85810945ba4e100707694d5731c5a42ac0d0308ba9ad176966879328f1aa014fbcbeb46d671d9475c38254bf1eeb7",
+    publicKey: "02dbe54c899032b3bb7bbcbb6433b3687b84d406b41b0f7783ce7a092a7a768ac1",
   },
   {
     language: "japanese",
     entropy: "00000000000000000000000000000000",
     mnemonic:
       "あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あおぞら",
+    seed: "5a6c23b5abdd5c3e1f7d77ad25ecd715647bdafb44dab324c730a76a45d7421daccee1a4ff0739715a2c56a8a9f1e527a5e3496224d91293bfcd9b5393bfff83",
+    publicKey: "0386aaed2ca3dc1a355750fd0271acb637863697839cedaa864121f797da8c8f4d",
   },
   {
     language: "korean",
     entropy: "00000000000000000000000000000000",
     mnemonic: "가격 가격 가격 가격 가격 가격 가격 가격 가격 가격 가격 가능",
+    seed: "a253d07f616223e337b6fa257632a2cc37e1ba36ff0bc7cf5a943366fa1b9ef02d6aa0333da51c17902951634b8aa81b6692a194b07f4f8c542335d73c96aad3",
+    publicKey: "02f2462f739bd5821cace852b30fee8469a82787b1be8d9b11f8e143efe7da1ff9",
   },
   {
     language: "portuguese",
     entropy: "00000000000000000000000000000000",
     mnemonic:
       "abacate abacate abacate abacate abacate abacate abacate abacate abacate abacate abacate abater",
+    seed: "ab9742b024a1e8bd241b76f8b3a157e9d442da60277bc8f36b8b23afe163de79414fb49fd1a8dd26f4ea7f0dc965c760b3b80727557bdca61e1f0b0f069952f2",
+    publicKey: "0373bf2b3fc281366ce506b19e4fb856f46ef2daed97e97ac7e63dd3021ed50c27",
   },
   {
     language: "simplified-chinese",
     entropy: "7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f",
     mnemonic: "枪 疫 霉 尝 俩 闹 饿 贤 枪 疫 霉 卿",
+    seed: "816a69d6866891b246b4d33f54d6d2be624470141754396205d039bdd8003949fec4340253dde4c8e11437a181ad992f56d5b976eb9fbe48f4c5e5fec60a27e1",
+    publicKey: "0302bbf52c0d90821847e94083dcb5d07551e13fce05535aafb4f8f0a5465c3563",
   },
   {
     language: "spanish",
     entropy: "00000000000000000000000000000000",
     mnemonic: "ábaco ábaco ábaco ábaco ábaco ábaco ábaco ábaco ábaco ábaco ábaco abierto",
+    seed: "29a2ee16de47d07025de37e7d9c596869439f9bcd26a702d2bae64db2bf0f68383841c5444b5b3bd39dd720d2ebe59969e110e5955c8e6d32c6c3294fd87439b",
+    publicKey: "02d13489b33e3d047f3334cc92381d407c83d980e60caec4e5168a6a8855f83881",
   },
   {
     language: "traditional-chinese",
     entropy: "7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f",
     mnemonic: "槍 疫 黴 嘗 倆 鬧 餓 賢 槍 疫 黴 卿",
+    seed: "f38af46f6bc3222b0f5aa14dd5b8b506e51131510f2450ec9fb52c28617cfa59d436055fe542e25dfa01415639d2171e41796f169f8bbc18516941dfdee8fb72",
+    publicKey: "03dc885f3390356ecbbf56cbd030f461dd065b6bcbb717b0a363a1ba5afaa10cf1",
   },
 ] as const;
+
+/** Twelve Italian `abaco`, so only the checksum fails. bip_utils 2.9.3 key at m/44'/0'/0'/0/0. */
+export const italianBadChecksumVector = {
+  mnemonic: "abaco abaco abaco abaco abaco abaco abaco abaco abaco abaco abaco abaco",
+  publicKey: "02e6391a22382eb89842b0a808e9f16d20bc6153c886fb94a2e840b7a09d9f420f",
+} as const;
 
 /** Pascal Boyart's Paris mural: words from the author's solution, entropy from agntn/keys#271. */
 export const frenchMuralMnemonic = {

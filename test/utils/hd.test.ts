@@ -1,21 +1,17 @@
 import { describe, expect, it } from "vite-plus/test";
-import { hex } from "@agntn/encodings/hex";
-import { HDKey } from "@scure/bip32";
-import { mnemonicToSeedSync } from "@scure/bip39";
 import { blockchains } from "../../src/index.ts";
-import { getMasterKeyFromSeed as getBIP32MasterKey } from "../../src/utils/bip32/index.ts";
-import { loadWordlist, mnemonicToSeed } from "../../src/utils/bip39/index.ts";
+import { loadWordlist } from "../../src/utils/bip39/index.ts";
 import { deriveSeed as deriveElectrumSeed } from "../../src/utils/electrum/index.ts";
-import { getMasterKeyFromSeed } from "../../src/utils/slip10/index.ts";
 import {
   bip39TestVectors,
   electrumVectors,
   invalidChecksumPuzzle,
+  italianBadChecksumVector,
   localizedMnemonicVectors,
 } from "../fixtures.ts";
 
 describe("HD checksum policy", () => {
-  const { mnemonic, path, address, publicKey, withPassphrase } = invalidChecksumPuzzle;
+  const { mnemonic, path, address, publicKey, withPassphrase, solana } = invalidChecksumPuzzle;
 
   it("requires an explicit override and reproduces the claimed puzzle address without repair", async () => {
     const chain = await blockchains.bitcoin()();
@@ -120,12 +116,10 @@ describe("HD checksum policy", () => {
 
   it("applies the same checksum policy to SLIP-10 without bypassing hardened paths", async () => {
     const chain = await blockchains.solana()();
-    const solanaPath = "m/44'/501'/0'/0'";
-    const key = getMasterKeyFromSeed(mnemonicToSeed(mnemonic)).derive(solanaPath).privateKey;
-    const wallet = chain.deriveHDWallet(mnemonic, solanaPath, { allowInvalidChecksum: true });
-    expect(wallet.address).toBe(chain.deriveWallet(hex.encode(key)).address);
+    const wallet = chain.deriveHDWallet(mnemonic, solana.path, { allowInvalidChecksum: true });
+    expect(wallet.address).toBe(solana.address);
     expect(wallet.warnings).toHaveLength(1);
-    expect(() => chain.deriveHDWallet(mnemonic, solanaPath)).toThrow("Invalid BIP39 mnemonic");
+    expect(() => chain.deriveHDWallet(mnemonic, solana.path)).toThrow("Invalid BIP39 mnemonic");
     expect(() =>
       chain.deriveHDWallet(mnemonic, "m/44'/501'/0'/0", { allowInvalidChecksum: true }),
     ).toThrow("Non-hardened");
@@ -139,14 +133,13 @@ describe("HD word lists", () => {
 
   it.each(localizedMnemonicVectors)(
     "derives a $language mnemonic from its own list",
-    async ({ language, mnemonic }) => {
+    async ({ language, mnemonic, publicKey: expected }) => {
       const chain = await blockchains.bitcoin()();
-      const expected = HDKey.fromMasterSeed(mnemonicToSeedSync(mnemonic)).derive(path).publicKey;
       const wallet = chain.deriveHDWallet(mnemonic, path, {
+        passphrase: bip39TestVectors.passphrase,
         wordlist: await loadWordlist(language),
       });
-      expect(expected).not.toBeNull();
-      expect(wallet.keys.public).toBe(hex.encode(expected ?? new Uint8Array()));
+      expect(wallet.keys.public).toBe(expected);
       expect(wallet).not.toHaveProperty("warnings");
     },
   );
@@ -165,7 +158,7 @@ describe("HD word lists", () => {
   it("lets allowInvalidChecksum skip only the checksum of the selected list", async () => {
     const chain = await blockchains.bitcoin()();
     const wordlist = await loadWordlist("italian");
-    const badChecksum = italian.mnemonic.replace(/abete$/u, "abaco");
+    const { mnemonic: badChecksum, publicKey: expected } = italianBadChecksumVector;
     expect(() => chain.deriveHDWallet(badChecksum, path, { wordlist })).toThrow(
       "the checksum does not match",
     );
@@ -173,8 +166,7 @@ describe("HD word lists", () => {
       wordlist,
       allowInvalidChecksum: true,
     });
-    const expected = HDKey.fromMasterSeed(mnemonicToSeedSync(badChecksum)).derive(path).publicKey;
-    expect(wallet.keys.public).toBe(hex.encode(expected ?? new Uint8Array()));
+    expect(wallet.keys.public).toBe(expected);
     expect(wallet.warnings).toHaveLength(1);
     expect(() =>
       chain.deriveHDWallet(italian.mnemonic.replace(/abete$/u, "about"), path, {
@@ -202,15 +194,14 @@ describe("HD word lists", () => {
 describe("Electrum wallets through the chain classes", () => {
   const [segwit] = electrumVectors;
   const seed = deriveElectrumSeed(segwit.mnemonic);
-  const privateKey = hex.encode(
-    getBIP32MasterKey(seed.seed).derive(segwit.path).privateKey ?? new Uint8Array(),
-  );
 
   it.each(["dogecoin", "ethereum", "cosmos"] as const)(
     "gives %s the key the seed walks to, in the chain's own address",
     async (name) => {
       const chain = await blockchains[name]()();
-      expect(chain.deriveElectrumWallet(seed, segwit.path)).toEqual(chain.deriveWallet(privateKey));
+      const wallet = chain.deriveElectrumWallet(seed, segwit.path);
+      expect(wallet.keys.public).toBe(segwit.publicKey);
+      expect(wallet.address).toBe(chain.getAddress(segwit.publicKey));
     },
   );
 
@@ -222,7 +213,8 @@ describe("Electrum wallets through the chain classes", () => {
     });
 
     expect(fromAddressType).toEqual(fromScheme);
-    expect(fromAddressType).toEqual(chain.deriveWallet(privateKey, {}, "secp256k1"));
+    expect(fromAddressType.keys.public).toBe(segwit.publicKey);
+    expect(fromAddressType.address).toBe(chain.getAddress(segwit.publicKey, "secp256k1"));
     expect(() => chain.deriveElectrumWallet(seed, segwit.path)).toThrow(
       "sui ed25519 keys do not derive from Electrum seeds",
     );
@@ -243,6 +235,8 @@ describe("Electrum wallets through the chain classes", () => {
     expect(() => chain.deriveElectrumWallet(seed, segwit.path, {}, "ed25519")).toThrow(
       "xrpl ed25519 keys do not derive from Electrum seeds",
     );
-    expect(chain.deriveElectrumWallet(seed, segwit.path)).toEqual(chain.deriveWallet(privateKey));
+    const wallet = chain.deriveElectrumWallet(seed, segwit.path);
+    expect(wallet.keys.public).toBe(segwit.publicKey);
+    expect(wallet.address).toBe(chain.getAddress(segwit.publicKey));
   });
 });

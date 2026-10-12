@@ -40,9 +40,7 @@ describe("MCP and Pi tool parameters", () => {
   });
 
   it.each([...piSchemas.keys()])("shares the field contract for %s", (name) => {
-    const mcp = mcpSchemas.get(name);
-    expect(mcp).toBeDefined();
-    expect(JSON.parse(JSON.stringify(piSchemas.get(name)))).toEqual(mcp);
+    expect(JSON.parse(JSON.stringify(piSchemas.get(name)))).toEqual(mcpSchemas.get(name));
   });
 
   it.each([
