@@ -34,6 +34,7 @@ describe("Bitcoin blockchain", () => {
     expect(keyPrivate).toMatch(/^[0-9a-f]{64}$/);
   });
 
+  /* FIPS 186-5 A.2.1 maps 48 zero bytes to 0 mod (n - 1) + 1, so the key is 1. */
   it("should generate a private key from a 48-byte secp256k1 seed", () => {
     const seed = new Uint8Array(48);
     const getRandomValues = vi.spyOn(webcrypto, "getRandomValues").mockImplementation((array) => {
@@ -47,7 +48,7 @@ describe("Bitcoin blockchain", () => {
 
       expect(getRandomValues).toHaveBeenCalledOnce();
       expect(getRandomValues.mock.calls[0]?.[0].byteLength).toBe(seed.byteLength);
-      expect(keyPrivate).toBe(hex.encode(secp256k1.utils.randomSecretKey(seed)));
+      expect(keyPrivate).toBe(`${"00".repeat(31)}01`);
     } finally {
       getRandomValues.mockRestore();
     }

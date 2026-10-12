@@ -1,32 +1,7 @@
 import { describe, it, expect } from "vite-plus/test";
-import {
-  hash160,
-  generateAddressLegacy,
-  validateAddressLegacy,
-  createVersionedHash,
-} from "../../src/utils/address";
-import { encodeBase58Check } from "../../src/utils/encoding";
+import { generateAddressLegacy, validateAddressLegacy } from "../../src/utils/address";
 
 describe("Bitcoin-like utils", () => {
-  describe("hash160", () => {
-    it("should compute hash160 correctly", () => {
-      const input = new Uint8Array([1, 2, 3, 4, 5]);
-      const result = hash160(input);
-
-      // Hash160 should be 20 bytes
-      expect(result.length).toBe(20);
-
-      // Test the hash function by ensuring an address generated with it is valid
-      const bytesVersion = 0x00;
-      const hashVersioned = createVersionedHash(result, bytesVersion);
-
-      const address = encodeBase58Check(hashVersioned);
-      expect(address).toBeTruthy();
-      expect(address.length).toBeGreaterThan(25);
-      expect(address.length).toBeLessThan(36);
-    });
-  });
-
   describe("generateAddressLegacy", () => {
     // Test pubkey (compressed format)
     const pubKey = "0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798";

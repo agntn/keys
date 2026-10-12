@@ -29,10 +29,6 @@ describe("Blockchain class API", () => {
 });
 
 describe("Common blockchain functionality", () => {
-  it("should expose useBlockchain function", () => {
-    expect(typeof useBlockchain).toBe("function");
-  });
-
   describe("generateKeys function", () => {
     it("should generate a valid key pair for Bitcoin", () => {
       const blockchain = useBlockchain(new Bitcoin());

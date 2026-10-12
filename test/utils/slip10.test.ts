@@ -98,6 +98,8 @@ describe("SLIP-0010 Utils", () => {
 
     // But with forceHardened it should work by treating all indices as hardened
     const childForced = deriveHDKey(masterKey, "m/0", true);
-    expect(childForced).toBeDefined();
+    expect(Buffer.from(childForced.privateKey).toString("hex")).toBe(
+      "68e0fe46dfb67e368c75379acec591dad19df3cde26e63b93a8e704f1dade7a3",
+    );
   });
 });

@@ -41,7 +41,7 @@ import {
 } from "./fixtures.ts";
 import keysExtension from "../packages/pi/extensions/keys.ts";
 import { keysTools } from "../src/tools.ts";
-import { mnemonicToSeed, mnemonicToEntropy, validateMnemonic } from "../src/utils/bip39/index.ts";
+import { mnemonicToEntropy, validateMnemonic } from "../src/utils/bip39/index.ts";
 
 interface RegisteredTool {
   readonly name: string;
@@ -295,13 +295,15 @@ describe("keys Pi extension", () => {
 
   it.each(localizedMnemonicVectors)(
     "derives seeds for the $language list",
-    async ({ language, mnemonic }) => {
+    async ({ language, mnemonic, seed }) => {
       const tool = (await registerTools()).get("keys_bip39_seed_derive");
       if (!tool) throw new Error("Missing BIP39 seed tool");
-      const result = await tool.execute("seed", { language, mnemonic: mnemonic.normalize("NFC") });
-      expect(result).toMatchObject({
-        details: { language, seed: Buffer.from(mnemonicToSeed(mnemonic)).toString("hex") },
+      const result = await tool.execute("seed", {
+        language,
+        mnemonic: mnemonic.normalize("NFC"),
+        passphrase: bip39TestVectors.passphrase,
       });
+      expect(result).toMatchObject({ details: { language, seed } });
     },
   );
 

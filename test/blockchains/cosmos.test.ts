@@ -152,7 +152,7 @@ describe("Cosmos", () => {
       expect(terra.coinType).toBe(330);
       const wallet = terra.deriveHDWallet(terraTestVectors.mnemonic, terra.getDerivationPath());
       expect(wallet.keys.public).toBe(terraTestVectors.publicKey);
-      expect(wallet.address).toBe(terra.getAddress(terraTestVectors.publicKey));
+      expect(wallet.address).toBe(terraTestVectors.address);
     });
 
     it("takes the coin type the chain registry gives a prefix, 118 for one it doesn't list", () => {

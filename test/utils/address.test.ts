@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+import { hex } from "@agntn/encodings/hex";
 import {
   hash160,
   generateAddressLegacy,
@@ -14,11 +15,9 @@ describe("Address utilities", () => {
 
   describe("hash160", () => {
     it("should hash data properly", () => {
-      const data = new Uint8Array([1, 2, 3, 4, 5]);
-      const hash = hash160(data);
+      const hash = hash160(new Uint8Array([1, 2, 3, 4, 5]));
 
-      // Result should be 20 bytes (RIPEMD160 output)
-      expect(hash.length).toBe(20);
+      expect(hex.encode(hash)).toBe("1fcc83c91e862661592480531afa87c3e2f59332");
     });
   });
 
