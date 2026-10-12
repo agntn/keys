@@ -73,7 +73,7 @@ import {
 import { getBlockchainPath, useBlockchain, type AbstractBlockchain } from "./blockchain.ts";
 import { blockchains } from "./_blockchains.ts";
 import { parse as parseBIP44Path } from "./utils/bip44/index.ts";
-import type { Curve, MessageSigner, Options } from "./types.ts";
+import type { Curve, KeyOptions, MessageSigner, Options, Wallet } from "./types.ts";
 import { hashTypedData, type TypedData } from "./utils/eip712.ts";
 import {
   entropyHashAlgorithms,
@@ -102,6 +102,8 @@ import {
   TOOL_NETWORKS,
   CHAIN_NETWORKS,
   MAX_WALLET_SECRET_LENGTH,
+  MAX_MONERO_SUBADDRESS_INDEX,
+  MONERO_PAYMENT_ID_SCHEMA_PATTERN,
   TOOL_MNEMONIC_WORD_COUNTS,
   MAX_BIP39_SEED_INPUT_LENGTH,
   MAX_BIP38_ADDRESS_LENGTH,
@@ -216,6 +218,10 @@ export interface DerivedWalletDetails {
   /** The public key form the caller asked for; absent when it was left to the default. */
   compressed?: boolean;
   address: string;
+  /** Account of a Monero subaddress, present when the caller picked one. */
+  account?: number;
+  /** Index of a Monero subaddress within its account, present when the caller picked one. */
+  addressIndex?: number;
   path?: string;
   warnings?: readonly string[];
 }
@@ -312,6 +318,8 @@ export interface AddressDetails {
   chain: string;
   network: string;
   addressType?: string;
+  /** Payment ID inside a Monero integrated address. */
+  paymentId?: string;
   address: string;
 }
 
@@ -473,6 +481,7 @@ const CHAIN_PUBLIC_KEY = new RegExp(CHAIN_PUBLIC_KEY_SCHEMA_PATTERN, "u");
 const SIGNATURE_HEX = new RegExp(SIGNATURE_SCHEMA_PATTERN, "u");
 const DER_SIGNATURE = new RegExp(DER_SIGNATURE_SCHEMA_PATTERN, "u");
 const FAMILY_SEED = new RegExp(FAMILY_SEED_SCHEMA_PATTERN, "u");
+const MONERO_PAYMENT_ID = new RegExp(MONERO_PAYMENT_ID_SCHEMA_PATTERN, "u");
 const MONERO_SEED = new RegExp(MONERO_SEED_SCHEMA_PATTERN, "u");
 /** Monero's spend and view pair, the one 64-byte key the tools take. */
 const MONERO_PUBLIC_KEY = /^[0-9A-Fa-f]{128}$/u;
@@ -770,6 +779,90 @@ function walletCompressed(value: unknown): boolean | undefined {
 }
 
 /**
+ * Derives a wallet from an XRPL family seed, Monero seed words or a private key in hex.
+ * @param blockchain - The chain to derive on
+ * @param secret - The secret as the caller passed it
+ * @param options - Key options
+ * @param addressType - The address type the caller asked for
+ * @returns {Wallet} The wallet
+ */
+function secretWallet(
+  blockchain: Readonly<AbstractBlockchain>,
+  secret: string,
+  options: KeyOptions,
+  addressType: string | undefined,
+): Wallet {
+  if (FAMILY_SEED.test(secret) || MONERO_SEED.test(secret)) {
+    return blockchain.deriveSeedWallet(secret, options, addressType);
+  }
+  const keyPrivate = hexArgument(
+    secret,
+    "Private key",
+    PRIVATE_KEY_HEX,
+    "64 hex characters, a family seed (s...) on xrpl or the seed words on monero,",
+  );
+  return blockchain.deriveWallet(keyPrivate, options, addressType);
+}
+
+/** Account and index of a Monero subaddress. */
+interface SubaddressIndices {
+  readonly account: number;
+  readonly index: number;
+}
+
+/**
+ * Reads the account and index of a Monero subaddress, each 0 when only the other is given.
+ * @param chain - Name of the chain the wallet is on
+ * @param accountValue - Raw account argument
+ * @param indexValue - Raw address index argument
+ * @returns {SubaddressIndices | undefined} The indices, undefined when neither is given
+ * @throws {RangeError} When either is no uint32, or the chain is not monero
+ */
+function subaddressIndices(
+  chain: string,
+  accountValue: unknown,
+  indexValue: unknown,
+): SubaddressIndices | undefined {
+  const account = optionalIndex(accountValue, "account", MAX_MONERO_SUBADDRESS_INDEX);
+  const index = optionalIndex(indexValue, "addressIndex", MAX_MONERO_SUBADDRESS_INDEX);
+  if (account === undefined && index === undefined) return undefined;
+  if (chain !== "monero") {
+    throw new RangeError(
+      `account and addressIndex pick a Monero subaddress; ${chain} takes neither here`,
+    );
+  }
+  return { account: account ?? 0, index: index ?? 0 };
+}
+
+/**
+ * Swaps a Monero wallet's address for the one at an account and index; the view key stays inside.
+ * @param network - Network of the wallet
+ * @param spendKey - The private spend key its seed or key gave
+ * @param indices - Account and index of the address
+ * @returns {Promise<Wallet>} The wallet at that address, its public key the pair the address holds
+ */
+async function moneroSubaddressWallet(
+  network: string,
+  spendKey: string,
+  indices: SubaddressIndices,
+): Promise<Wallet> {
+  const monero = await blockchains.monero({ network })();
+  const wallet = monero.deriveWallet(spendKey);
+  if (indices.account === 0 && indices.index === 0) return wallet;
+  const pair = monero.getSubaddressKeyPublic(
+    wallet.keys.public,
+    monero.getViewKey(spendKey),
+    indices.account,
+    indices.index,
+  );
+  return {
+    keys: { private: spendKey, public: pair },
+    address: monero.getAddress(pair, "subaddress"),
+    addressType: "subaddress",
+  };
+}
+
+/**
  * Derive public wallet material from a private key without echoing the secret.
  * @param chainValue - Blockchain name.
  * @param privateKeyValue - Private key as hexadecimal text.
@@ -777,6 +870,8 @@ function walletCompressed(value: unknown): boolean | undefined {
  * @param networkValue - Optional network name.
  * @param compressedValue - Optional secp256k1 public key form, compressed by default.
  * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot.
+ * @param accountValue - Optional account of a Monero subaddress.
+ * @param addressIndexValue - Optional index of a Monero subaddress within its account.
  * @returns {Promise<ToolResult<DerivedWalletDetails>>} Derived public wallet material.
  */
 export async function deriveWallet(
@@ -786,6 +881,8 @@ export async function deriveWallet(
   networkValue?: unknown,
   compressedValue?: unknown,
   prefixValue?: unknown,
+  accountValue?: unknown,
+  addressIndexValue?: unknown,
 ): Promise<ToolResult<DerivedWalletDetails>> {
   const { blockchain, addressType } = await getBlockchain(
     chainValue,
@@ -795,6 +892,7 @@ export async function deriveWallet(
   );
   const compressed = walletCompressed(compressedValue);
   const options = compressed === undefined ? {} : { compressed };
+  const subaddress = subaddressIndices(blockchain.name, accountValue, addressIndexValue);
   const secret = requiredString(privateKeyValue, "Private key");
   if (secret.length > MAX_WALLET_SECRET_LENGTH) {
     throw new RangeError(`Private key must not exceed ${MAX_WALLET_SECRET_LENGTH} characters`);
@@ -804,19 +902,11 @@ export async function deriveWallet(
       `Seed words go to keys_hd_wallet_derive as a BIP39 mnemonic; ${blockchain.name} takes a private key here`,
     );
   }
+  const derived = secretWallet(blockchain, secret, options, addressType);
   const wallet =
-    FAMILY_SEED.test(secret) || MONERO_SEED.test(secret)
-      ? blockchain.deriveSeedWallet(secret, options, addressType)
-      : blockchain.deriveWallet(
-          hexArgument(
-            secret,
-            "Private key",
-            PRIVATE_KEY_HEX,
-            "64 hex characters, a family seed (s...) on xrpl or the seed words on monero,",
-          ),
-          options,
-          addressType,
-        );
+    subaddress === undefined
+      ? derived
+      : await moneroSubaddressWallet(blockchain.network, derived.keys.private, subaddress);
   const details = {
     chain: blockchain.name,
     network: blockchain.network,
@@ -824,6 +914,9 @@ export async function deriveWallet(
     ...(compressed === undefined ? {} : { compressed }),
     publicKey: wallet.keys.public,
     address: wallet.address,
+    ...(subaddress === undefined
+      ? {}
+      : { account: subaddress.account, addressIndex: subaddress.index }),
   };
   return {
     content: content(
@@ -2549,12 +2642,60 @@ export async function recoverMnemonicWord(
 }
 
 /**
+ * Writes the Monero integrated address of a key pair and a payment ID.
+ * @param blockchain - The chain the caller named
+ * @param publicKey - The public spend key then the public view key, as hex
+ * @param paymentIdValue - Raw payment ID argument
+ * @param addressType - The address type the caller asked for, which must be left out
+ * @returns {Promise<ToolResult<AddressDetails>>} The integrated address
+ * @throws {RangeError} When the chain is not monero, a type is given or the ID is not 8 bytes
+ */
+async function integratedAddress(
+  blockchain: Readonly<AbstractBlockchain>,
+  publicKey: string,
+  paymentIdValue: unknown,
+  addressType: string | undefined,
+): Promise<ToolResult<AddressDetails>> {
+  if (blockchain.name !== "monero") {
+    throw new RangeError(
+      `paymentId makes a Monero integrated address; ${blockchain.name} has none`,
+    );
+  }
+  if (addressType !== undefined) {
+    throw new RangeError("An integrated address holds the standard keys, so leave addressType out");
+  }
+  const paymentId = hexArgument(
+    paymentIdValue,
+    "paymentId",
+    MONERO_PAYMENT_ID,
+    "16 hex characters",
+  ).toLowerCase();
+  const monero = await blockchains.monero({ network: blockchain.network })();
+  const address = monero.getIntegratedAddress(publicKey, paymentId);
+  return {
+    content: content(
+      [...addressTypeLines("integrated"), `Payment ID: ${paymentId}`, `Address: ${address}`].join(
+        "\n",
+      ),
+    ),
+    details: {
+      chain: blockchain.name,
+      network: blockchain.network,
+      addressType: "integrated",
+      paymentId,
+      address,
+    },
+  };
+}
+
+/**
  * Derive an address from a public key.
  * @param chainValue - Blockchain name.
  * @param publicKeyValue - Public key as hexadecimal text.
  * @param addressTypeValue - Optional chain-specific address type.
  * @param networkValue - Optional network name.
  * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot.
+ * @param paymentIdValue - Optional payment ID of a Monero integrated address.
  * @returns {Promise<ToolResult<AddressDetails>>} Derived address.
  */
 export async function getAddress(
@@ -2563,6 +2704,7 @@ export async function getAddress(
   addressTypeValue?: unknown,
   networkValue?: unknown,
   prefixValue?: unknown,
+  paymentIdValue?: unknown,
 ): Promise<ToolResult<AddressDetails>> {
   const { blockchain, addressType } = await getBlockchain(
     chainValue,
@@ -2571,6 +2713,9 @@ export async function getAddress(
     prefixValue,
   );
   const publicKey = chainPublicKey(publicKeyValue, blockchain.name);
+  if (paymentIdValue !== undefined) {
+    return integratedAddress(blockchain, publicKey, paymentIdValue, addressType);
+  }
   const type = addressType ?? blockchain.defaultAddressType;
   const address = blockchain.getAddress(publicKey, type);
   return {

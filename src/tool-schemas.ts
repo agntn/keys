@@ -27,6 +27,8 @@ import {
   TOOL_NETWORKS,
   CHAIN_NETWORKS,
   MAX_WALLET_SECRET_LENGTH,
+  MAX_MONERO_SUBADDRESS_INDEX,
+  MONERO_PAYMENT_ID_SCHEMA_PATTERN,
   TOOL_MNEMONIC_WORD_COUNTS,
   MAX_BIP39_SEED_INPUT_LENGTH,
   MAX_MNEMONIC_LENGTH,
@@ -531,6 +533,22 @@ export const DERIVE_WALLET_PARAMETERS = Type.Object(
           "secp256k1 only: SEC1 form of the public key, which a legacy address hashes. Old wallets and brainwallets wrote uncompressed. ethereum, base and tron hash the uncompressed key and refuse true, sui and xrpl refuse false. Default: true",
       }),
     ),
+    account: Type.Optional(
+      Type.Integer({
+        description:
+          "monero only: account of the subaddress, the major index monero-wallet-cli shows. Default: 0",
+        minimum: 0,
+        maximum: MAX_MONERO_SUBADDRESS_INDEX,
+      }),
+    ),
+    addressIndex: Type.Optional(
+      Type.Integer({
+        description:
+          "monero only: address within the account, the minor index. Account 0, index 0 is the standard address. Default: 0",
+        minimum: 0,
+        maximum: MAX_MONERO_SUBADDRESS_INDEX,
+      }),
+    ),
   },
   { additionalProperties: false },
 );
@@ -842,6 +860,13 @@ export const GET_ADDRESS_PARAMETERS = Type.Object(
     addressType: addressTypeArgument,
     network: networkArgument,
     prefix: prefixArgument,
+    paymentId: Type.Optional(
+      Type.String({
+        pattern: MONERO_PAYMENT_ID_SCHEMA_PATTERN,
+        description:
+          "monero only: 8-byte payment ID as 16 hex characters, which turns the standard address into an integrated one",
+      }),
+    ),
   },
   { additionalProperties: false },
 );

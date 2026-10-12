@@ -2878,4 +2878,60 @@ export const moneroTestVectors = {
     "9uHSV67cVPB7rSVsdtJznEHR2WEHumEF5SC9czE81qYmLcNvmk8gu5j36m8ugiJ7oLRTKauM4q8YqC1GwFiMWiZjRucrqXt",
   stagenet:
     "53ww5gNJrdB7rSVsdtJznEHR2WEHumEF5SC9czE81qYmLcNvmk8gu5j36m8ugiJ7oLRTKauM4q8YqC1GwFiMWiZjRqLYV4u",
+  /** The first wallet in monero-wallet-cli 0.18.5.3 offline, account 1 from `account new`. */
+  subaddresses: [
+    {
+      account: 0,
+      index: 1,
+      address:
+        "84QRUYawRNrU3NN1VpFRndSukeyEb3Xpv8qZjjsoJZnTYpDYceuUTpog13D7qPxpviS7J29bSgSkR11hFFoXWk2yNdsR9WF",
+    },
+    {
+      account: 0,
+      index: 2,
+      address:
+        "85M4M1RVRcoEeC8sdSxN1ef6GhQYChSfKPWkB4FLKYJiSWuMXXT4Ewv8BHCRzSJB4ZYvXUcFxN4DPcVu6uwoPNRvQ1QwaXB",
+    },
+    {
+      account: 0,
+      index: 3,
+      address:
+        "862oiydSvvBUynhpD6peZZFGDJM2QRskfckUMUgkZJPKXodj1qC8kcFRgc9iDEB68XfDGUvDKBy7h5ikYEbfP2upBK9oVXS",
+    },
+    {
+      account: 1,
+      index: 0,
+      address:
+        "82pP87g1Vkd3LUMssBCumk3MfyEsFqLAaGDf6oxddu61EgSFzt8gCwUD4tr3kp9TUfdPs2CnpD7xLZzyC1Ei9UsW3oyCWDf",
+    },
+    {
+      account: 1,
+      index: 1,
+      address:
+        "87qyoPVaEcWikVBmG1TaP1KumZ3hB3Q5f4wZRjuppNdwYjWzs2RgbLYQgtpdu2YdoTT3EZhiUGaPJQt2FsykeFZbCtaGXU4",
+    },
+  ],
+  /** `integrated_address 1234567890abcdef` in the same wallet. */
+  integrated: {
+    paymentId: "1234567890abcdef",
+    address:
+      "4CMe2PUhs4J4886T7196doS9GPMzexD9gXpsZJDwVjeRVdFCSoHnv7KPbBeGpzJBzHRCAs9UxqeoyFQMYbqSWYTfSbyvqonpbf2Tzcs8kx",
+  },
+  /** The third wallet's subaddress 0/1 and integrated address on the other two networks. */
+  networks: [
+    {
+      network: "testnet",
+      subaddress:
+        "BYS42uwVgwZbpA4rSbcEmPJWrjdf72NjvPb1YynYBQQRgXo2R9QeKkDf6mY3K9eCJa3KsPEfHffVVMqRV6q9ympAGXTHcyQ",
+      integrated:
+        "A4z7Vtw76eh7rSVsdtJznEHR2WEHumEF5SC9czE81qYmLcNvmk8gu5j36m8ugiJ7oLRTKauM4q8YqC1GwFiMWiZjdoxzmtesLagU3fNDzf",
+    },
+    {
+      network: "stagenet",
+      subaddress:
+        "72Vtf7qBGibbpA4rSbcEmPJWrjdf72NjvPb1YynYBQQRgXo2R9QeKkDf6mY3K9eCJa3KsPEfHffVVMqRV6q9ympAGUKLdrp",
+      integrated:
+        "5Dec6VBoTth7rSVsdtJznEHR2WEHumEF5SC9czE81qYmLcNvmk8gu5j36m8ugiJ7oLRTKauM4q8YqC1GwFiMWiZjdoxzmtesLagU3WcADY",
+    },
+  ],
 } as const;
