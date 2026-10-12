@@ -133,7 +133,12 @@ export interface RecoverableSigningOptions extends KeyOptions {
 export interface SigningOptions extends RecoverableSigningOptions {
   readonly curve?: Curve;
   readonly hash?: boolean;
+  /** Which Monero key signs, as `monero-wallet-cli sign --spend` or `--view`. Default: `spend`. */
+  readonly signingKey?: MoneroSigningKey;
 }
+
+/** The two Monero keys a SigV2 signature can come from. */
+export type MoneroSigningKey = "spend" | "view";
 
 /**
  * Network type.

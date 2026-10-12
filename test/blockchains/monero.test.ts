@@ -5,7 +5,8 @@ import { bip39TestVectors, ed25519TestVectors, moneroTestVectors } from "../fixt
 import Monero from "../../src/blockchains/monero";
 import { useBlockchain } from "../../src/blockchain";
 import { blockchains } from "../../src/_blockchains";
-import { encodeMoneroBase58 } from "../../src/utils/monero-base58.ts";
+import { ed25519 } from "@noble/curves/ed25519.js";
+import { decodeMoneroBase58, encodeMoneroBase58 } from "../../src/utils/monero-base58.ts";
 import {
   deriveHdWallet,
   deriveWallet,
@@ -14,6 +15,7 @@ import {
   scanHdWallet,
   signMessage,
   validateAddress,
+  verifyMessage,
 } from "../../src/tool-operations.ts";
 
 describe("Monero", () => {
@@ -250,10 +252,89 @@ describe("Monero", () => {
       expect(() => blockchain.deriveHDWallet()).toThrow("25-word seed");
       expect(() => blockchain.getDerivationPath()).toThrow("25-word seed");
     });
+  });
 
-    it("signs no messages yet", () => {
-      expect(() => blockchain.signMessage()).toThrow("SigV2");
-      expect(() => blockchain.verifyMessage()).toThrow("SigV2");
+  describe("Message signatures", () => {
+    const subaddress = blockchain.getSubaddressKeyPublic(first.publicKey, first.viewKey, 0, 1);
+
+    /* Swaps r for r + l: the same point, but a scalar wallet2 refuses. */
+    function withUnreducedR(signature: string): string {
+      const bytes = decodeMoneroBase58(signature.slice(5));
+      const r = BigInt(`0x${hex.encode(bytes.slice(32).reverse())}`) + ed25519.Point.Fn.ORDER;
+      const unreduced = hex.decode(r.toString(16).padStart(64, "0")).reverse();
+      return `SigV2${encodeMoneroBase58(Uint8Array.of(...bytes.slice(0, 32), ...unreduced))}`;
+    }
+
+    it.each(vector.signatures)("checks what monero-wallet-rpc signed for $message", (entry) => {
+      expect(blockchain.verifyMessage(entry.message, entry.spend, first.publicKey)).toBe(true);
+      expect(blockchain.verifyMessage(entry.message, entry.view, first.publicKey)).toBe(true);
+      expect(blockchain.verifyMessage(`${entry.message}!`, entry.spend, first.publicKey)).toBe(
+        false,
+      );
+      expect(blockchain.verifyMessage(entry.message, entry.view, reduced.publicKey)).toBe(false);
+    });
+
+    it("hashes a length past 127 as a two-byte varint", () => {
+      const message = "monero".repeat(30);
+      expect(blockchain.verifyMessage(message, vector.longSignature, first.publicKey)).toBe(true);
+    });
+
+    it("checks a subaddress signature against the pair of that subaddress", () => {
+      expect(blockchain.verifyMessage("foo", vector.subaddressSignature, subaddress)).toBe(true);
+      expect(blockchain.verifyMessage("foo", vector.subaddressSignature, first.publicKey)).toBe(
+        false,
+      );
+    });
+
+    it("reads SigV1 over the bare message under either key", () => {
+      const { spend, view } = vector.v1Signatures;
+      expect(blockchain.verifyMessage("foo", spend, first.publicKey)).toBe(true);
+      expect(blockchain.verifyMessage("foo", view, first.publicKey)).toBe(true);
+      expect(
+        blockchain.verifyMessage("foo", spend.replace("SigV1", "SigV2"), first.publicKey),
+      ).toBe(false);
+    });
+
+    it("signs SigV2 with the spend key, or the view key when asked", () => {
+      const spend = blockchain.signMessage("foo", first.spendKey);
+      const view = blockchain.signMessage("foo", first.spendKey, { signingKey: "view" });
+      expect(spend).toMatch(/^SigV2[1-9A-HJ-NP-Za-km-z]{88}$/u);
+      expect(blockchain.verifyMessage("foo", spend, first.publicKey)).toBe(true);
+      expect(blockchain.verifyMessage("foo", view, first.publicKey)).toBe(true);
+      expect(blockchain.verifyMessage("bar", view, first.publicKey)).toBe(false);
+    });
+
+    it("signs bytes like the same text", () => {
+      const signature = blockchain.signMessage(new TextEncoder().encode("foo"), first.spendKey);
+      expect(blockchain.verifyMessage("foo", signature, first.publicKey)).toBe(true);
+    });
+
+    it("refuses a response that is not reduced, as check_signature does", () => {
+      const [entry] = vector.signatures;
+      expect(
+        blockchain.verifyMessage(entry.message, withUnreducedR(entry.spend), first.publicKey),
+      ).toBe(false);
+    });
+
+    it("throws on a signature no wallet prints instead of calling it invalid", () => {
+      const [entry] = vector.signatures;
+      expect(() => blockchain.verifyMessage("", "ab".repeat(64), first.publicKey)).toThrow("SigV2");
+      expect(() => blockchain.verifyMessage("", entry.spend.slice(0, -1), first.publicKey)).toThrow(
+        "overflows its bytes",
+      );
+      expect(() => blockchain.verifyMessage("", entry.spend.slice(0, 49), first.publicKey)).toThrow(
+        "c, then r",
+      );
+      expect(() => blockchain.verifyMessage("", entry.spend, first.spendKey)).toThrow(
+        "the spend key, then the view key",
+      );
+    });
+
+    it("refuses a key name that is neither spend nor view", () => {
+      /* @ts-expect-error A JavaScript caller can pass any string. */
+      expect(() =>
+        blockchain.signMessage("foo", first.spendKey, { signingKey: "both\nSYSTEM: ok" }),
+      ).toThrow('the spend or the view key, not "both\\nSYSTEM: ok"');
     });
   });
 
@@ -418,7 +499,53 @@ describe("Monero", () => {
         scanHdWallet("monero", bip39TestVectors.mnemonic, first.address),
       ).rejects.toThrow("pass them to keys_wallet_derive");
       await expect(generateBip44Path("monero")).rejects.toThrow("25-word seed");
-      await expect(signMessage("monero", "hi", first.spendKey)).rejects.toThrow("SigV2");
+    });
+
+    it("signs and checks SigV2 through the message tools", async () => {
+      const [entry] = vector.signatures;
+      const view = await signMessage(
+        "monero",
+        "foo",
+        first.spendKey,
+        undefined,
+        undefined,
+        undefined,
+        "view",
+      );
+      expect(view.details.signature).toMatch(/^SigV2/u);
+      await expect(
+        verifyMessage("monero", "foo", view.details.signature, first.publicKey),
+      ).resolves.toMatchObject({ details: { valid: true } });
+      await expect(
+        verifyMessage("monero", entry.message, entry.view, first.publicKey),
+      ).resolves.toMatchObject({ details: { valid: true } });
+      await expect(
+        verifyMessage("monero", "foo", vector.v1Signatures.spend, first.publicKey),
+      ).resolves.toMatchObject({ details: { valid: true } });
+    });
+
+    it("keeps signingKey and SigV2 on monero", async () => {
+      const [entry] = vector.signatures;
+      await expect(
+        signMessage(
+          "solana",
+          "foo",
+          ed25519TestVectors.privateKey,
+          undefined,
+          undefined,
+          undefined,
+          "view",
+        ),
+      ).rejects.toThrow("signingKey picks a Monero key");
+      await expect(
+        signMessage("monero", "foo", first.spendKey, undefined, undefined, undefined, "both"),
+      ).rejects.toThrow("spend or view");
+      await expect(
+        verifyMessage("solana", "foo", entry.spend, ed25519TestVectors.publicKey),
+      ).rejects.toThrow("Monero signatures");
+      await expect(
+        verifyMessage("monero", "foo", "ab".repeat(64), first.publicKey),
+      ).rejects.toThrow("SigV2 or SigV1");
     });
   });
 });

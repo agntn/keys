@@ -655,14 +655,14 @@ export const messageSignTool = defineTool({
   snippet: "Use to sign a message with a private key for any supported blockchain.",
   guidelines: [
     "Provide chain, message text, and private key (hex)",
-    "Returns the signature as hex, or as base64 with recovered on the Bitcoin family and decred",
+    "Returns the signature as hex, as base64 with recovered on the Bitcoin family and decred, and as SigV2 on monero",
     "Bitcoin, Bitcoin Gold, Dash, Dogecoin, eCash, Litecoin and Zcash each use their own message preamble; Bitcoin Cash and Bitcoin SV sign with Bitcoin's",
     "Ethereum/Base use EIP-191 prefix",
     "xrpl signs like ripple-keypairs: DER over SHA-512Half of the message",
     "near signs the raw bytes; a NEP-413 wallet signature wraps a nonce and recipient first and won't match",
     "cosmos signs like Keplr's signArbitrary (ADR-036), with the signer's address under prefix inside the signed doc",
     "polkadot signs the message wrapped in <Bytes>, as the polkadot.js extension does in signRaw",
-    "monero is not supported yet: its wallets sign with their own SigV2 scheme",
+    "monero signs SigV2 like monero-wallet-cli sign, with the spend key or, given signingKey view, the view key",
     "Pass recovered on Ethereum, Base or TRON for 65-byte r||s||v, what ethers and TronWeb need",
     "Pass recovered on the Bitcoin family or decred for signmessage's base64, which a wallet verifies against an address",
   ],
@@ -677,6 +677,7 @@ export const messageSignTool = defineTool({
       params.network,
       params.recovered,
       params.prefix,
+      params.signingKey,
     ),
 });
 
@@ -687,7 +688,8 @@ export const messageVerifyTool = defineTool({
     "Verify a message signature against a blockchain public key. To check a signature against an address instead, use keys_message_recover.",
   snippet: "Use to verify that a signature is valid for a given message and public key.",
   guidelines: [
-    "Provide chain, original message, signature (hex, or signmessage's base64 on the Bitcoin family and decred), and public key (hex)",
+    "Provide chain, original message, signature (hex, signmessage's base64 on the Bitcoin family and decred, SigV2 or SigV1 on monero), and public key (hex)",
+    "On monero either key of the address passes, as monero-wallet-cli verify accepts both",
     "On xrpl the key picks the curve: ED... or 32 bytes is ed25519, SEC1 is secp256k1 with a DER signature",
     "On polkadot a signature over the <Bytes> wrapped message passes, and so does one over the raw message",
     "Returns true if signature is valid, false otherwise",

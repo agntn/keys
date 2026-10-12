@@ -3,6 +3,7 @@ import {
   TOOL_CHAINS,
   TOOL_ADDRESS_TYPES,
   SUI_ADDRESS_TYPES,
+  MONERO_SIGNING_KEYS,
   MAX_BIP39_LOOKUP_ITEMS,
   MAX_BIP39_PHRASES_SHOWN,
   MAX_BIP39_PHRASE_LENGTH,
@@ -901,6 +902,13 @@ export const SIGN_MESSAGE_PARAMETERS = Type.Object(
           "Return the recoverable form: 65-byte r||s||v hex on ethereum, base and tron, the form ethers, viem and TronWeb read; base64 of a header byte, r and s on the Bitcoin family and decred, the form signmessage prints. Default: false",
       }),
     ),
+    signingKey: Type.Optional(
+      Type.String({
+        description:
+          "Monero only: which key signs, spend or view, as monero-wallet-cli sign --spend or --view. privateKey stays the spend key. Default: spend",
+        enum: MONERO_SIGNING_KEYS,
+      }),
+    ),
   },
   { additionalProperties: false },
 );
@@ -912,12 +920,12 @@ export const VERIFY_MESSAGE_PARAMETERS = Type.Object(
     signature: Type.String({
       pattern: MESSAGE_SIGNATURE_SCHEMA_PATTERN,
       description:
-        "Signature as hex without 0x: 64 bytes, or 65 with the recovery byte; DER on xrpl secp256k1, as ripple-keypairs signs. The Bitcoin family and decred also take signmessage's base64",
+        "Signature as hex without 0x: 64 bytes, or 65 with the recovery byte; DER on xrpl secp256k1, as ripple-keypairs signs. The Bitcoin family and decred also take signmessage's base64, monero takes SigV2 or SigV1 as its wallets print it",
     }),
     publicKey: Type.String({
       pattern: CHAIN_PUBLIC_KEY_SCHEMA_PATTERN,
       description:
-        "Public key as hex without 0x: 32-byte ed25519 (on near also ed25519: and base58), or compressed or uncompressed SEC1 secp256k1",
+        "Public key as hex without 0x: 32-byte ed25519 (on near also ed25519: and base58), or compressed or uncompressed SEC1 secp256k1. On monero the 64-byte public spend then view key of the address, or of the subaddress that signed",
     }),
     network: networkArgument,
     prefix: prefixArgument,

@@ -6,7 +6,15 @@ import { BIP44 } from "../utils/bip44/index.ts";
 import { concatBytes } from "../utils/bytes.ts";
 import { decodeMoneroBase58, encodeMoneroBase58 } from "../utils/monero-base58.ts";
 import { decodeMoneroSeed } from "../utils/monero-seed.ts";
-import type { AddressType, Curve, KeyOptions, Options, Wallet } from "../types.ts";
+import type {
+  AddressType,
+  Curve,
+  KeyOptions,
+  MoneroSigningKey,
+  Options,
+  SigningOptions,
+  Wallet,
+} from "../types.ts";
 
 const { Point } = ed25519;
 
@@ -44,6 +52,21 @@ const MAX_SUBADDRESS_INDEX = 0xffffffff;
 /** Domain tag wallet2 hashes in front of the view key for every subaddress. */
 const SUBADDRESS_TAG = new TextEncoder().encode("SubAddr\0");
 
+/** Domain tag `get_message_hash` opens every SigV2 digest with, the NUL included. */
+const MESSAGE_TAG = new TextEncoder().encode("MoneroMessageSignature\0");
+
+/** The mode byte SigV2 hashes, so a signature by one key never passes as the other's. */
+const SIGNING_MODES: Readonly<Record<MoneroSigningKey, number>> = { spend: 0, view: 1 };
+
+/** Header of the signatures wallet2 writes today, bound to both keys and the mode. */
+const SIGNATURE_V2 = "SigV2";
+
+/** Header of the older signatures over the bare keccak256 of the message, still read by wallets. */
+const SIGNATURE_V1 = "SigV1";
+
+/** Bytes of a signature: the challenge `c`, then the response `r`. */
+const SIGNATURE_BYTES = 64;
+
 /**
  * Reduces 32 little-endian bytes mod l, as Monero's `sc_reduce32` does before a key is used.
  * @param bytes - 32 bytes read as a little-endian number
@@ -51,6 +74,18 @@ const SUBADDRESS_TAG = new TextEncoder().encode("SubAddr\0");
  */
 function reduceScalar(bytes: Uint8Array): bigint {
   return Point.Fn.create(bytesToNumberLE(bytes));
+}
+
+/**
+ * Draws a scalar like Monero's `random32_unbiased`: below 15l, reduced mod l, never zero.
+ * @returns {bigint} The scalar
+ */
+function randomScalar(): bigint {
+  for (;;) {
+    const draw = bytesToNumberLE(ed25519.utils.randomSecretKey());
+    const scalar = Point.Fn.create(draw);
+    if (draw < DRAW_LIMIT && scalar !== 0n) return scalar;
+  }
 }
 
 /**
@@ -169,6 +204,126 @@ function refuseWalletAddressType(type: AddressType | undefined): void {
   );
 }
 
+/**
+ * The bytes a wallet signs: a string as UTF-8, bytes as they are.
+ * @param message - The message
+ * @returns {Uint8Array} Its bytes
+ */
+function messageBytes(message: string | Uint8Array): Uint8Array {
+  return typeof message === "string" ? new TextEncoder().encode(message) : message;
+}
+
+/**
+ * Writes a length the way Monero's `write_varint` does: seven bits a byte, low bits first.
+ * @param value - The length
+ * @returns {Uint8Array} One byte below 128, more above it
+ */
+function varint(value: number): Uint8Array {
+  const bytes: number[] = [];
+  let rest = value;
+  while (rest >= 0x80) {
+    bytes.push((rest % 0x80) | 0x80);
+    rest = Math.floor(rest / 0x80);
+  }
+  bytes.push(rest);
+  return Uint8Array.from(bytes);
+}
+
+/**
+ * The SigV2 digest of `get_message_hash`: the tag, both public keys, the mode and the message.
+ * @param message - The message bytes
+ * @param spend - The public spend key of the address
+ * @param view - The public view key of the address
+ * @param mode - 0 when the spend key signs, 1 when the view key does
+ * @returns {Uint8Array} 32 bytes of keccak256
+ */
+function messageHash(
+  message: Uint8Array,
+  spend: Uint8Array,
+  view: Uint8Array,
+  mode: number,
+): Uint8Array {
+  return keccak256(
+    concatBytes(MESSAGE_TAG, spend, view, Uint8Array.of(mode), varint(message.length), message),
+  );
+}
+
+/**
+ * The challenge of `generate_signature`: keccak256 of digest, key and commitment, mod l.
+ * @param hash - The signed digest
+ * @param key - The public key that signs
+ * @param commitment - The nonce point, as 32 bytes
+ * @returns {bigint} The scalar `c`
+ */
+function challenge(hash: Uint8Array, key: Uint8Array, commitment: Uint8Array): bigint {
+  return reduceScalar(keccak256(concatBytes(hash, key, commitment)));
+}
+
+/**
+ * Monero's `generate_signature`: a fresh nonce k, then `c` over kG and `r = k - c * secret`.
+ * @param hash - The digest to sign
+ * @param key - The public key of `secret`
+ * @param secret - The private key
+ * @returns {Uint8Array} 64 bytes, `c` then `r`, both little endian
+ */
+function schnorrSign(hash: Uint8Array, key: Uint8Array, secret: bigint): Uint8Array {
+  for (;;) {
+    const nonce = randomScalar();
+    const c = challenge(hash, key, Point.BASE.multiply(nonce).toBytes());
+    const r = Point.Fn.sub(nonce, Point.Fn.mul(c, secret));
+    if (c !== 0n && r !== 0n) return concatBytes(Point.Fn.toBytes(c), Point.Fn.toBytes(r));
+  }
+}
+
+/**
+ * Monero's `check_signature`: canonical scalars, a commitment that isn't the identity, same `c`.
+ * @param hash - The signed digest
+ * @param key - The public key, already checked to be a point
+ * @param signature - 64 bytes, `c` then `r`
+ * @returns {boolean} Whether `key` signed `hash`
+ */
+function schnorrCheck(hash: Uint8Array, key: Uint8Array, signature: Uint8Array): boolean {
+  const c = bytesToNumberLE(signature.subarray(0, 32));
+  const r = bytesToNumberLE(signature.subarray(32));
+  if (c === 0n || c >= Point.Fn.ORDER || r >= Point.Fn.ORDER) return false;
+  const commitment = Point.fromBytes(key).multiplyUnsafe(c).add(Point.BASE.multiplyUnsafe(r));
+  return !commitment.is0() && challenge(hash, key, commitment.toBytes()) === c;
+}
+
+/**
+ * Reads the mode byte of the key the caller picked, refusing a name that is neither key.
+ * @param signingKey - `spend`, `view` or left out for the spend key
+ * @returns {number} The mode byte
+ * @throws {RangeError} When the name is neither `spend` nor `view`
+ */
+function signingMode(signingKey: MoneroSigningKey | undefined): number {
+  const name = signingKey ?? "spend";
+  if (!Object.hasOwn(SIGNING_MODES, name)) {
+    throw new RangeError(
+      `A Monero message is signed by the spend or the view key, not ${JSON.stringify(name)}`,
+    );
+  }
+  return SIGNING_MODES[name];
+}
+
+/**
+ * Splits a signature into its version and bytes, refusing text no wallet would print.
+ * @param signature - `SigV1` or `SigV2`, then 64 bytes in Monero's block base58
+ * @returns {Readonly<{ v2: boolean; bytes: Uint8Array }>} Whether it is V2, and `c` then `r`
+ * @throws {RangeError} On another header, text off the alphabet or a length other than 64 bytes
+ */
+function readSignature(signature: string): Readonly<{ v2: boolean; bytes: Uint8Array }> {
+  const header = signature.slice(0, SIGNATURE_V2.length);
+  if (header !== SIGNATURE_V2 && header !== SIGNATURE_V1) {
+    throw new RangeError("A Monero signature starts with SigV2 or SigV1, as wallets print it");
+  }
+  const bytes = decodeMoneroBase58(signature.slice(header.length));
+  if (bytes.length !== SIGNATURE_BYTES) {
+    throw new RangeError("A Monero signature holds 64 bytes after its header: c, then r");
+  }
+  return { v2: header === SIGNATURE_V2, bytes };
+}
+
 /** Monero standard, sub and integrated addresses; the private key is the spend key alone. */
 export class Monero extends AbstractBlockchain {
   override readonly name = "monero";
@@ -201,11 +356,7 @@ export class Monero extends AbstractBlockchain {
    * @returns {string} The private spend key as hex
    */
   override generateKeyPrivate(): string {
-    for (;;) {
-      const draw = bytesToNumberLE(ed25519.utils.randomSecretKey());
-      const scalar = Point.Fn.create(draw);
-      if (draw < DRAW_LIMIT && scalar !== 0n) return Point.Fn.toBytes(scalar).toHex();
-    }
+    return Point.Fn.toBytes(randomScalar()).toHex();
   }
 
   /**
@@ -401,21 +552,54 @@ export class Monero extends AbstractBlockchain {
   }
 
   /**
-   * Monero signs messages with its own SigV2 scheme, which this package does not write yet.
-   * @returns {string} Never returns
-   * @throws {Error} Always
+   * Signs a message like `monero-wallet-cli sign`: SigV2 for the standard address of the wallet.
+   * @param message - The message, UTF-8 when it is a string
+   * @param keyPrivate - The private spend key as hex; the view key comes from it
+   * @param options - `signingKey: "view"` signs with the view key, as `sign --view` does
+   * @returns {string} `SigV2` and 88 characters of block base58
+   * @throws {RangeError} When the key is malformed or `signingKey` names neither key
    */
-  override signMessage(): string {
-    throw new Error("Monero message signatures (SigV2) are not supported yet");
+  override signMessage(
+    message: string | Uint8Array,
+    keyPrivate: string,
+    options?: SigningOptions,
+  ): string {
+    const mode = signingMode(options?.signingKey);
+    const spend = spendScalar(keyPrivate);
+    const view = viewScalar(spend);
+    const spendKey = Point.BASE.multiply(spend).toBytes();
+    const viewKey = Point.BASE.multiply(view).toBytes();
+    const hash = messageHash(messageBytes(message), spendKey, viewKey, mode);
+    const signature =
+      mode === SIGNING_MODES.view
+        ? schnorrSign(hash, viewKey, view)
+        : schnorrSign(hash, spendKey, spend);
+    return SIGNATURE_V2 + encodeMoneroBase58(signature);
   }
 
   /**
-   * Monero signs messages with its own SigV2 scheme, which this package does not check yet.
-   * @returns {boolean} Never returns
-   * @throws {Error} Always
+   * Checks a SigV2 or SigV1 signature like `monero-wallet-cli verify`, under either key.
+   * @param message - The message, UTF-8 when it is a string
+   * @param signature - The signature as the wallet printed it
+   * @param keyPublic - The public spend key then the public view key of the address, 64 bytes of
+   * hex; a subaddress signature checks against the pair of that subaddress
+   * @returns {boolean} Whether the spend or the view key of the address signed the message
+   * @throws {RangeError} When the signature or the key cannot be read, so it never reads as invalid
    */
-  override verifyMessage(): boolean {
-    throw new Error("Monero message signatures (SigV2) are not supported yet");
+  override verifyMessage(
+    message: string | Uint8Array,
+    signature: string,
+    keyPublic: string,
+  ): boolean {
+    const { v2, bytes } = readSignature(signature);
+    const [spend, view] = splitKeyPublic(keyPublic);
+    const data = messageBytes(message);
+    const digest = (mode: number): Uint8Array =>
+      v2 ? messageHash(data, spend, view, mode) : keccak256(data);
+    return (
+      schnorrCheck(digest(SIGNING_MODES.spend), spend, bytes) ||
+      schnorrCheck(digest(SIGNING_MODES.view), view, bytes)
+    );
   }
 }
 

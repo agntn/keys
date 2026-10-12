@@ -22,6 +22,7 @@ export type {
   ElectrumSeed,
   SigningOptions,
   RecoverableSigningOptions,
+  MoneroSigningKey,
   Options,
   AddressType,
   NetworkType,
