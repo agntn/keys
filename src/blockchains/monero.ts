@@ -10,11 +10,17 @@ import type { AddressType, Curve, KeyOptions, Options, Wallet } from "../types.t
 
 const { Point } = ed25519;
 
-/** Network byte in front of a standard address, one per network Monero runs. */
-const ADDRESS_PREFIXES: Readonly<Record<string, number>> = {
-  mainnet: 18,
-  testnet: 53,
-  stagenet: 24,
+/** Network bytes of the three address kinds, one set per network Monero runs. */
+interface AddressPrefixes {
+  readonly standard: number;
+  readonly integrated: number;
+  readonly subaddress: number;
+}
+
+const ADDRESS_PREFIXES: Readonly<Record<string, AddressPrefixes>> = {
+  mainnet: { standard: 18, integrated: 19, subaddress: 42 },
+  testnet: { standard: 53, integrated: 54, subaddress: 63 },
+  stagenet: { standard: 24, integrated: 25, subaddress: 36 },
 };
 
 /** The largest multiple of l that fits in 32 bytes; draws at or above it would bias the key. */
@@ -23,8 +29,20 @@ const DRAW_LIMIT = 15n * Point.Fn.ORDER;
 /** Bytes of the keccak256 checksum at the end of an address. */
 const CHECKSUM_BYTES = 4;
 
-/** Bytes of a standard address: network byte, spend key, view key and checksum. */
+/** Bytes of a standard address or a subaddress: network byte, spend key, view key and checksum. */
 const ADDRESS_BYTES = 1 + 32 + 32 + CHECKSUM_BYTES;
+
+/** Bytes of the payment ID an integrated address carries after both keys. */
+const PAYMENT_ID_BYTES = 8;
+
+/** Bytes of an integrated address: a standard one with the payment ID before the checksum. */
+const INTEGRATED_ADDRESS_BYTES = ADDRESS_BYTES + PAYMENT_ID_BYTES;
+
+/** The largest account or address index, since wallet2 keeps both as uint32. */
+const MAX_SUBADDRESS_INDEX = 0xffffffff;
+
+/** Domain tag wallet2 hashes in front of the view key for every subaddress. */
+const SUBADDRESS_TAG = new TextEncoder().encode("SubAddr\0");
 
 /**
  * Reduces 32 little-endian bytes mod l, as Monero's `sc_reduce32` does before a key is used.
@@ -94,27 +112,88 @@ function splitKeyPublic(keyPublic: string): readonly [Uint8Array, Uint8Array] {
 }
 
 /**
- * Monero standard addresses. The public key is the spend key then the view key, both halves of the
- * address; the private key is the spend key alone. No subaddresses or message signatures yet.
+ * Reads a private view key that belongs to the public view key it is given with.
+ * @param viewKey - The private view key, 32 bytes of hex, reduced mod l like every wallet keeps it
+ * @param publicView - The public view key from the same wallet
+ * @returns {Uint8Array} The view key bytes, the exact ones wallet2 hashes for a subaddress
+ * @throws {RangeError} When the key is not a reduced scalar or not the one behind `publicView`
  */
+function viewKeyBytes(viewKey: string, publicView: ArrayLike<number>): Uint8Array {
+  const bytes = Uint8Array.fromHex(viewKey);
+  if (bytes.length !== 32) throw new RangeError("Monero view key must be 32 bytes");
+  const scalar = bytesToNumberLE(bytes);
+  if (scalar === 0n || scalar >= Point.Fn.ORDER) {
+    throw new RangeError("Monero view key must be a nonzero scalar below l, as wallets keep it");
+  }
+  if (!equalBytes(Point.BASE.multiply(scalar).toBytes(), Uint8Array.from(publicView))) {
+    throw new RangeError("Monero view key does not belong to the public view key it came with");
+  }
+  return bytes;
+}
+
+/**
+ * Writes an account or address index as the four little-endian bytes wallet2 hashes.
+ * @param value - The index
+ * @param name - What the index is, for the error
+ * @returns {Uint8Array} Four bytes
+ * @throws {RangeError} When the index is not an integer from 0 to 2^32 - 1
+ */
+function indexBytes(value: number, name: string): Uint8Array {
+  if (!Number.isInteger(value) || value < 0 || value > MAX_SUBADDRESS_INDEX) {
+    throw new RangeError(`Monero ${name} must be an integer from 0 to ${MAX_SUBADDRESS_INDEX}`);
+  }
+  const bytes = new Uint8Array(4);
+  new DataView(bytes.buffer).setUint32(0, value, true);
+  return bytes;
+}
+
+/**
+ * Appends four bytes of keccak256 and writes the result in Monero's block base58.
+ * @param body - Network byte and everything the address carries before its checksum
+ * @returns {string} The address
+ */
+function encodeAddress(body: ArrayLike<number>): string {
+  const bytes = Uint8Array.from(body);
+  return encodeMoneroBase58(concatBytes(bytes, keccak256(bytes).subarray(0, CHECKSUM_BYTES)));
+}
+
+/**
+ * Refuses an address type for a whole wallet, whose own address is always the standard one.
+ * @param type - The type the caller asked for
+ * @throws {RangeError} When any type is given
+ */
+function refuseWalletAddressType(type: AddressType | undefined): void {
+  if (type === undefined) return;
+  throw new RangeError(
+    `A Monero wallet writes its standard address, not ${JSON.stringify(type)}; pick a subaddress by its account and index instead`,
+  );
+}
+
+/** Monero standard, sub and integrated addresses; the private key is the spend key alone. */
 export class Monero extends AbstractBlockchain {
   override readonly name = "monero";
   override readonly curve: Curve = "ed25519";
   override readonly bip44 = BIP44.MONERO;
-  /** Network byte every address of this instance starts with. */
+  /** Network byte every standard address of this instance starts with. */
   readonly addressPrefix: number;
+  /** Network byte of a subaddress on this network. */
+  readonly subaddressPrefix: number;
+  /** Network byte of an integrated address on this network. */
+  readonly integratedAddressPrefix: number;
 
   constructor(options?: Options) {
     super(options);
-    const prefix = Object.hasOwn(ADDRESS_PREFIXES, this.network)
+    const prefixes = Object.hasOwn(ADDRESS_PREFIXES, this.network)
       ? ADDRESS_PREFIXES[this.network]
       : undefined;
-    if (prefix === undefined) {
+    if (prefixes === undefined) {
       throw new RangeError(
         `Monero networks are mainnet, testnet and stagenet, not ${JSON.stringify(this.network)}`,
       );
     }
-    this.addressPrefix = prefix;
+    this.addressPrefix = prefixes.standard;
+    this.subaddressPrefix = prefixes.subaddress;
+    this.integratedAddressPrefix = prefixes.integrated;
   }
 
   /**
@@ -156,7 +235,7 @@ export class Monero extends AbstractBlockchain {
    * Writes the wallet with the spend key reduced, the key a Monero wallet would show for it.
    * @param keyPrivate - The private spend key as hex
    * @param options - Key options
-   * @param addressType - Any type throws, only standard addresses are written
+   * @param addressType - Any type throws, the wallet writes its standard address
    * @returns {Wallet} The wallet with its standard address
    */
   override deriveWallet(
@@ -164,15 +243,27 @@ export class Monero extends AbstractBlockchain {
     options?: KeyOptions,
     addressType?: AddressType,
   ): Wallet {
+    refuseWalletAddressType(addressType);
     const spend = Point.Fn.toBytes(spendScalar(keyPrivate)).toHex();
-    return super.deriveWallet(spend, options, addressType);
+    return super.deriveWallet(spend, options);
+  }
+
+  /**
+   * Draws a new wallet and writes its standard address.
+   * @param options - Key options
+   * @param addressType - Any type throws, the wallet writes its standard address
+   * @returns {Wallet} The new wallet
+   */
+  override generateWallet(options?: KeyOptions, addressType?: AddressType): Wallet {
+    refuseWalletAddressType(addressType);
+    return super.generateWallet(options);
   }
 
   /**
    * Restores a wallet from its seed words, as monero-wallet-cli `--restore-deterministic-wallet`.
    * @param seed - 25 English seed words, or the 24 without the checksum word
    * @param options - Key options
-   * @param addressType - Any type throws, only standard addresses are written
+   * @param addressType - Any type throws, the wallet writes its standard address
    * @returns {Wallet} The wallet of the seed, the reduced spend key as its private key
    */
   override deriveSeedWallet(seed: string, options?: KeyOptions, addressType?: AddressType): Wallet {
@@ -200,20 +291,80 @@ export class Monero extends AbstractBlockchain {
   }
 
   /**
-   * Writes the standard address: network byte, both public keys and four bytes of keccak256.
+   * Writes the address of a key pair: network byte, both public keys and four bytes of keccak256.
    * @param keyPublic - The public spend key then the public view key, 64 bytes of hex
-   * @param type - Any type throws, only standard addresses are written
+   * @param type - `subaddress` for the pair of a subaddress, as `getSubaddressKeyPublic` gives it;
+   * left out for the standard address
    * @returns {string} The 95-character address
+   * @throws {RangeError} When the type is neither left out nor `subaddress`
    */
   override getAddress(keyPublic: string, type?: AddressType): string {
-    this.refuseAddressType(type);
+    if (type !== undefined && type !== "subaddress") {
+      throw new RangeError(
+        `Monero writes standard addresses and subaddresses, not ${JSON.stringify(type)}; an integrated address comes from getIntegratedAddress`,
+      );
+    }
+    const prefix = type === undefined ? this.addressPrefix : this.subaddressPrefix;
     const [spend, view] = splitKeyPublic(keyPublic);
-    const body = concatBytes(Uint8Array.of(this.addressPrefix), spend, view);
-    return encodeMoneroBase58(concatBytes(body, keccak256(body).subarray(0, CHECKSUM_BYTES)));
+    return encodeAddress(concatBytes(Uint8Array.of(prefix), spend, view));
   }
 
   /**
-   * Checks a standard address on this network like `check_address`: checksum and both keys.
+   * Both public keys of a subaddress as wallet2 derives them; a view key is the only secret needed.
+   * @param keyPublic - The wallet's public spend key then public view key, 64 bytes of hex
+   * @param viewKey - The wallet's private view key, 32 bytes of hex
+   * @param account - The account, the major index
+   * @param index - The address within the account, the minor index
+   * @returns {string} 64 bytes of hex; account 0, index 0 is the wallet's own pair
+   * @throws {RangeError} When a key is malformed, the view key is not the wallet's, or an index
+   * falls outside 0 to 2^32 - 1
+   */
+  getSubaddressKeyPublic(
+    keyPublic: string,
+    viewKey: string,
+    account: number,
+    index: number,
+  ): string {
+    const [spend, view] = splitKeyPublic(keyPublic);
+    const secret = viewKeyBytes(viewKey, view);
+    const indices = concatBytes(indexBytes(account, "account"), indexBytes(index, "address index"));
+    if (account === 0 && index === 0) return concatBytes(spend, view).toHex();
+    const m = reduceScalar(keccak256(concatBytes(SUBADDRESS_TAG, secret, indices)));
+    const subSpend = Point.fromBytes(spend).add(Point.BASE.multiply(m));
+    const subView = subSpend.multiply(bytesToNumberLE(secret));
+    return concatBytes(subSpend.toBytes(), subView.toBytes()).toHex();
+  }
+
+  /**
+   * The address monero-wallet-cli lists at an account and index, the standard one at 0/0.
+   * @param keyPublic - The wallet's public spend key then public view key, 64 bytes of hex
+   * @param viewKey - The wallet's private view key, 32 bytes of hex
+   * @param account - The account, the major index
+   * @param index - The address within the account, the minor index
+   * @returns {string} The 95-character address
+   * @throws {RangeError} Like `getSubaddressKeyPublic`
+   */
+  getSubaddress(keyPublic: string, viewKey: string, account: number, index: number): string {
+    const pair = this.getSubaddressKeyPublic(keyPublic, viewKey, account, index);
+    return this.getAddress(pair, account === 0 && index === 0 ? undefined : "subaddress");
+  }
+
+  /**
+   * The standard address with an 8-byte payment ID inside, as `integrated_address` writes it.
+   * @param keyPublic - The wallet's public spend key then public view key, 64 bytes of hex
+   * @param paymentId - The payment ID, 8 bytes of hex
+   * @returns {string} The 106-character address
+   * @throws {RangeError} When a key is malformed or the payment ID is not 8 bytes
+   */
+  getIntegratedAddress(keyPublic: string, paymentId: string): string {
+    const [spend, view] = splitKeyPublic(keyPublic);
+    const id = /^[0-9a-f]{16}$/iu.test(paymentId) ? Uint8Array.fromHex(paymentId) : undefined;
+    if (id === undefined) throw new RangeError("Monero payment ID must be 8 bytes of hex");
+    return encodeAddress(concatBytes(Uint8Array.of(this.integratedAddressPrefix), spend, view, id));
+  }
+
+  /**
+   * Checks any of the three kinds on this network like `check_address`: checksum and both keys.
    * @param address - The address to check
    * @returns {boolean} Whether a wallet on this network would pay to it
    */
@@ -224,17 +375,29 @@ export class Monero extends AbstractBlockchain {
     } catch {
       return false;
     }
-    if (bytes.length !== ADDRESS_BYTES || bytes[0] !== this.addressPrefix) return false;
-    const body = bytes.subarray(0, ADDRESS_BYTES - CHECKSUM_BYTES);
+    if (!this.hasAddressLayout(bytes)) return false;
+    const body = bytes.subarray(0, bytes.length - CHECKSUM_BYTES);
     if (!equalBytes(keccak256(body).subarray(0, CHECKSUM_BYTES), bytes.subarray(body.length))) {
       return false;
     }
     try {
-      splitKeyPublic(body.subarray(1).toHex());
+      splitKeyPublic(body.subarray(1, ADDRESS_BYTES - CHECKSUM_BYTES).toHex());
       return true;
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Whether the network byte and the length agree on one of the three kinds of this network.
+   * @param bytes - The decoded address
+   * @returns {boolean} Whether the layout is one a wallet here writes
+   */
+  private hasAddressLayout(bytes: ArrayLike<number>): boolean {
+    const prefix = bytes[0];
+    if (bytes.length === INTEGRATED_ADDRESS_BYTES) return prefix === this.integratedAddressPrefix;
+    if (bytes.length !== ADDRESS_BYTES) return false;
+    return prefix === this.addressPrefix || prefix === this.subaddressPrefix;
   }
 
   /**

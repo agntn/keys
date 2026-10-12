@@ -236,6 +236,7 @@ export const walletDeriveTool = defineTool({
   guidelines: [
     "Provide a chain name and private key as hex, or on xrpl a family seed (s... or sEd...), whose version picks the scheme",
     "On monero pass the 25 English seed words as privateKey, or the private spend key as hex; the 24 key words work without the checksum word, but then each word has to be whole",
+    "On monero account and addressIndex pick the subaddress monero-wallet-cli lists there; the public key is then the subaddress pair",
     "Optionally specify network and address type",
     "Bitcoin and Litecoin address types: legacy, p2sh, segwit, p2wsh, taproot",
     "Bitcoin Gold address types: legacy, p2sh, segwit, p2wsh",
@@ -252,6 +253,8 @@ export const walletDeriveTool = defineTool({
       params.network,
       params.compressed,
       params.prefix,
+      params.account,
+      params.addressIndex,
     ),
 });
 
@@ -557,7 +560,7 @@ export const addressGetTool = defineTool({
     "Provide chain, public key (hex), and optionally address type",
     "On near the address is the implicit account, the key itself in hex; the key may come as ed25519: and base58",
     "On polkadot the 32-byte ed25519 key becomes an SS58 address under prefix: 0 Polkadot, 2 Kusama, 42 any Substrate chain",
-    "On monero the key is 64 bytes of hex, the public spend key and then the public view key, as keys_wallet_derive prints it",
+    "On monero the key is 64 bytes of hex, the public spend key and then the public view key, as keys_wallet_derive prints it; addressType subaddress writes a subaddress pair, paymentId an integrated address",
     "Returns the derived address",
   ],
   effect: "read",
@@ -569,6 +572,7 @@ export const addressGetTool = defineTool({
       params.addressType,
       params.network,
       params.prefix,
+      params.paymentId,
     ),
 });
 
@@ -584,7 +588,7 @@ export const addressValidateTool = defineTool({
     "NEAR checks implicit accounts; named ones like alice.near come back invalid, since no key derives them",
     "cosmos checks the prefix too: osmo1... is invalid unless prefix is osmo",
     "polkadot checks the SS58 prefix too: a Kusama address is invalid unless prefix is 2",
-    "monero checks standard addresses like check_address, both keys in the main subgroup; subaddresses (8...) and integrated addresses come back invalid",
+    "monero checks standard addresses, subaddresses and integrated addresses like check_address, both keys in the main subgroup",
   ],
   effect: "read",
   input: VALIDATE_ADDRESS_PARAMETERS,

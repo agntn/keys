@@ -117,7 +117,7 @@ describe("Monero", () => {
       expect(blockchain.validateAddress(address)).toBe(false);
     });
 
-    it("validates only standard addresses with a matching checksum", () => {
+    it("validates only addresses with a matching checksum", () => {
       const [, second] = vector.wallets;
       expect(blockchain.validateAddress(second.address)).toBe(true);
       expect(blockchain.validateAddress(`${first.address.slice(0, -1)}n`)).toBe(false);
@@ -133,6 +133,115 @@ describe("Monero", () => {
       expect(chain.deriveWallet(wallet.keys.private)).toEqual(wallet);
       expect(chain.validateAddress(wallet.address)).toBe(true);
       expect(wallet.address).toHaveLength(95);
+    });
+  });
+
+  describe("Subaddresses and integrated addresses", () => {
+    it.each(vector.subaddresses)(
+      "lists account $account, index $index like monero-wallet-cli",
+      ({ account, index, address }) => {
+        expect(blockchain.getSubaddress(first.publicKey, first.viewKey, account, index)).toBe(
+          address,
+        );
+        expect(blockchain.validateAddress(address)).toBe(true);
+      },
+    );
+
+    it("gives the standard address and the wallet's own keys at account 0, index 0", () => {
+      expect(blockchain.getSubaddress(first.publicKey, first.viewKey, 0, 0)).toBe(first.address);
+      expect(blockchain.getSubaddressKeyPublic(first.publicKey, first.viewKey, 0, 0)).toBe(
+        first.publicKey,
+      );
+    });
+
+    it("writes a subaddress from its own key pair", () => {
+      const [subaddress] = vector.subaddresses;
+      const pair = blockchain.getSubaddressKeyPublic(first.publicKey, first.viewKey, 0, 1);
+      expect(blockchain.getAddress(pair, "subaddress")).toBe(subaddress.address);
+    });
+
+    it("writes the integrated address with its payment ID", () => {
+      const { paymentId, address } = vector.integrated;
+      expect(blockchain.getIntegratedAddress(first.publicKey, paymentId)).toBe(address);
+      expect(blockchain.getIntegratedAddress(first.publicKey, paymentId.toUpperCase())).toBe(
+        address,
+      );
+      expect(blockchain.validateAddress(address)).toBe(true);
+      expect(blockchain.validateAddress(`${address.slice(0, -1)}y`)).toBe(false);
+    });
+
+    it.each(vector.networks)(
+      "writes both kinds on $network",
+      ({ network, subaddress, integrated }) => {
+        const chain = new Monero({ network });
+        expect(chain.getSubaddress(reduced.publicKey, reduced.viewKey, 0, 1)).toBe(subaddress);
+        expect(chain.getIntegratedAddress(reduced.publicKey, vector.integrated.paymentId)).toBe(
+          integrated,
+        );
+        expect(chain.validateAddress(subaddress)).toBe(true);
+        expect(chain.validateAddress(integrated)).toBe(true);
+        expect(blockchain.validateAddress(subaddress)).toBe(false);
+        expect(blockchain.validateAddress(integrated)).toBe(false);
+      },
+    );
+
+    it("refuses a view key from another wallet, or one wallets would not keep", () => {
+      const [, second] = vector.wallets;
+      expect(() => blockchain.getSubaddress(first.publicKey, second.viewKey, 0, 1)).toThrow(
+        "does not belong",
+      );
+      expect(() => blockchain.getSubaddress(first.publicKey, "ff".repeat(32), 0, 1)).toThrow(
+        "below l",
+      );
+      expect(() => blockchain.getSubaddress(first.publicKey, "00".repeat(31), 0, 1)).toThrow(
+        "32 bytes",
+      );
+    });
+
+    it.each([-1, 1.5, 2 ** 32])("refuses index %d outside uint32", (index) => {
+      expect(() => blockchain.getSubaddress(first.publicKey, first.viewKey, 0, index)).toThrow(
+        "address index must be an integer from 0 to 4294967295",
+      );
+      expect(() => blockchain.getSubaddress(first.publicKey, first.viewKey, index, 0)).toThrow(
+        "account must be",
+      );
+    });
+
+    it("takes the largest index wallet2 keeps", () => {
+      const address = blockchain.getSubaddress(
+        first.publicKey,
+        first.viewKey,
+        2 ** 32 - 1,
+        2 ** 32 - 1,
+      );
+      expect(blockchain.validateAddress(address)).toBe(true);
+    });
+
+    it("refuses a payment ID that is not 8 bytes", () => {
+      for (const paymentId of ["1234", `${"ab".repeat(8)}00`, "zz".repeat(8)]) {
+        expect(() => blockchain.getIntegratedAddress(first.publicKey, paymentId)).toThrow(
+          "8 bytes of hex",
+        );
+      }
+    });
+
+    it("keeps wallets on their standard address", () => {
+      expect(() => blockchain.deriveWallet(first.spendKey, {}, "subaddress")).toThrow(
+        "account and index",
+      );
+      expect(() => blockchain.generateWallet({}, "subaddress")).toThrow("account and index");
+      expect(() => blockchain.deriveSeedWallet(first.seed, {}, "integrated")).toThrow(
+        "standard address",
+      );
+      expect(() => blockchain.getAddress(first.publicKey, "integrated")).toThrow(
+        "getIntegratedAddress",
+      );
+    });
+
+    it("refuses the integrated network byte on an address without a payment ID", () => {
+      const body = Uint8Array.of(19, ...hex.decode(first.publicKey));
+      const address = encodeMoneroBase58(Uint8Array.of(...body, ...keccak256(body).subarray(0, 4)));
+      expect(blockchain.validateAddress(address)).toBe(false);
     });
   });
 
@@ -175,6 +284,122 @@ describe("Monero", () => {
       expect(checked.content[0]?.text).toContain("valid on testnet");
       const staged = await validateAddress("monero", vector.stagenet);
       expect(staged.content[0]?.text).toContain("valid on stagenet");
+    });
+
+    it("derives a subaddress from the seed, and its pair writes the same address", async () => {
+      const last = vector.subaddresses.at(-1);
+      const derived = await deriveWallet(
+        "monero",
+        first.seed,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        last?.account,
+        last?.index,
+      );
+      expect(derived.details).toMatchObject({
+        addressType: "subaddress",
+        address: last?.address,
+        account: 1,
+        addressIndex: 1,
+      });
+      expect(derived.content[0]?.text).toContain("Address type: subaddress");
+      const written = await getAddress("monero", derived.details.publicKey, "subaddress");
+      expect(written.details.address).toBe(last?.address);
+      expect((await validateAddress("monero", last?.address)).details.valid).toBe(true);
+    });
+
+    it("reads a lone account or index with the other at 0", async () => {
+      const [, , , accountOnly] = vector.subaddresses;
+      const fromAccount = await deriveWallet(
+        "monero",
+        first.spendKey,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+      );
+      expect(fromAccount.details.address).toBe(accountOnly.address);
+      const main = await deriveWallet(
+        "monero",
+        first.seed,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+      );
+      expect(main.details).toMatchObject({ address: first.address, account: 0, addressIndex: 0 });
+      expect(main.details.addressType).toBeUndefined();
+      expect(main.details.publicKey).toBe(first.publicKey);
+    });
+
+    it("refuses subaddress indices off monero, outside uint32, or an address type instead", async () => {
+      await expect(
+        deriveWallet(
+          "solana",
+          ed25519TestVectors.privateKey,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          1,
+        ),
+      ).rejects.toThrow("solana takes neither");
+      await expect(
+        deriveWallet(
+          "monero",
+          first.seed,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          2 ** 32,
+        ),
+      ).rejects.toThrow("addressIndex must be an integer between 0 and 4294967295");
+      await expect(deriveWallet("monero", first.seed, "subaddress")).rejects.toThrow(
+        "account and index",
+      );
+    });
+
+    it("writes an integrated address from the key and a payment ID", async () => {
+      const { paymentId, address } = vector.integrated;
+      const written = await getAddress(
+        "monero",
+        first.publicKey,
+        undefined,
+        undefined,
+        undefined,
+        paymentId.toUpperCase(),
+      );
+      expect(written.details).toEqual({
+        chain: "monero",
+        network: "mainnet",
+        addressType: "integrated",
+        paymentId,
+        address,
+      });
+      expect(written.content[0]?.text).toContain(`Payment ID: ${paymentId}`);
+      await expect(
+        getAddress("monero", first.publicKey, "subaddress", undefined, undefined, paymentId),
+      ).rejects.toThrow("leave addressType out");
+      await expect(
+        getAddress("monero", first.publicKey, undefined, undefined, undefined, "1234"),
+      ).rejects.toThrow("paymentId must be 16 hex characters");
+      await expect(
+        getAddress(
+          "solana",
+          ed25519TestVectors.publicKey,
+          undefined,
+          undefined,
+          undefined,
+          paymentId,
+        ),
+      ).rejects.toThrow("solana has none");
     });
 
     it("takes stagenet on monero and nowhere else", async () => {

@@ -1,12 +1,12 @@
 ---
 title: Monero
 icon: i-token-xmr
-description: Monero standard addresses from a 25-word seed or a spend key. Both key pairs come out the way monero-wallet-cli restores them.
+description: Monero addresses from a 25-word seed or a spend key. Subaddresses and integrated addresses come out the way monero-wallet-cli writes them.
 seo:
   title: Monero addresses and keys from a 25-word seed
 ---
 
-::chain-facts{driver="monero" curve="ed25519" formats="standard address" coin="128"}
+::chain-facts{driver="monero" curve="ed25519" formats="standard, subaddress, integrated" coin="128"}
 ::
 
 ## Load it
@@ -62,16 +62,48 @@ Plain hex works too. `deriveWallet` reduces whatever 32 bytes you give it, the w
 
 ## What's in an address?
 
-A network byte, both public keys and four bytes of keccak256. Then base58, but Monero's version. It cuts the bytes into blocks of eight and pads every block to 11 characters. So the address is always 95 characters long.
+A network byte, both public keys and four bytes of keccak256. Then base58, but Monero's version. It cuts the bytes into blocks of eight and pads every block to 11 characters. So a standard address is always 95 characters long.
 
 ```js
 monero.getAddress(wallet.keys.public); // 42ey1afD...TfJJQAWDm
 monero.validateAddress("42ey1afDFnn4886T7196doS9GPMzexD9gXpsZJDwVjeRVdFCSoHnv7KPbBeGpzJBzHRCAs9UxqeoyFQMYbqSWYTfJJQAWDm"); // true
 ```
 
-Mainnet starts with `4`, stagenet with `5`, testnet with `9` or `A`. `validateAddress` wants this instance's network, a good checksum and two real keys. Not the identity, not a torsion point, the same `check_address` monero-wallet-cli runs.
+Mainnet starts with `4`, stagenet with `5`, testnet with `9` or `A`. `validateAddress` wants this instance's network, a good checksum and two real keys. Not the identity, not a torsion point, the same `check_address` monero-wallet-cli runs. It takes all three kinds below, each under its own network byte.
 
-Standard addresses only. Subaddresses start with `8` and come back `false`, integrated addresses too. They're next.
+## Subaddresses
+
+Want a fresh address for every payment without a new seed? That's what subaddresses are for. monero-wallet-cli hands them out with `address new` and `account new`. Here's the same list:
+
+```js
+const viewKey = monero.getViewKey(wallet.keys.private);
+
+monero.getSubaddress(wallet.keys.public, viewKey, 0, 1);
+// 84QRUYawRNrU3NN1VpFRndSukeyEb3Xpv8qZjjsoJZnTYpDYceuUTpog13D7qPxpviS7J29bSgSkR11hFFoXWk2yNdsR9WF
+monero.getSubaddress(wallet.keys.public, viewKey, 1, 0);
+// 82pP87g1Vkd3LUMssBCumk3MfyEsFqLAaGDf6oxddu61EgSFzt8gCwUD4tr3kp9TUfdPs2CnpD7xLZzyC1Ei9UsW3oyCWDf
+```
+
+Two numbers pick one. The account first, then the address inside it. Account 0, index 0 is the wallet's own `4...` address. Every other pair starts with `8` on mainnet, `7` on stagenet and `B` on testnet. Both indices go up to 2^32 - 1, since wallet2 keeps them as uint32.
+
+Notice what's missing? The spend key. A subaddress hashes the private view key with both indices. That scalar times G lands on the public spend key, and the view key multiplies the sum. So a view only wallet hands out subaddresses just fine.
+
+Pass a view key from another wallet and it throws. Better than an address nobody can spend.
+
+Only want the keys? `getSubaddressKeyPublic` returns the 64-byte pair, and `getAddress(pair, "subaddress")` writes it. A whole wallet stays on its standard address, so `deriveWallet` refuses an address type.
+
+## Integrated addresses
+
+Older trick, same goal. The standard keys plus an 8-byte payment ID, packed into one address:
+
+```js
+monero.getIntegratedAddress(wallet.keys.public, "1234567890abcdef");
+// 4CMe2PUhs4J4886T7196doS9GPMzexD9gXpsZJDwVjeRVdFCSoHnv7KPbBeGpzJBzHRCAs9UxqeoyFQMYbqSWYTfSbyvqonpbf2Tzcs8kx
+```
+
+Same `4` up front, 106 characters long. Wallets push subaddresses these days. But an old integrated address still has to check out, and now it does.
+
+Every address on this page comes from monero-wallet-cli 0.18.5.3, restored offline from that seed. The tests hold the library to them.
 
 ## What it doesn't do
 
@@ -81,7 +113,7 @@ No message signing either. Monero signs with its own SigV2 scheme, and `signMess
 
 ## Agents
 
-On `chain: "monero"` the `privateKey` of `keys_wallet_derive` takes the seed words as well as hex, and `network` takes `stagenet` too. `keys_address_get` wants the 64-byte public key, the one `keys_wallet_derive` prints.
+On `chain: "monero"` the `privateKey` of `keys_wallet_derive` takes the seed words as well as hex, and `network` takes `stagenet` too. Add `account` and `addressIndex` and it prints that subaddress, the view key never leaving the call. `keys_address_get` wants the 64-byte public key, the one `keys_wallet_derive` prints. `addressType: "subaddress"` writes a subaddress pair, `paymentId` the integrated address.
 
 ## Where it lives
 

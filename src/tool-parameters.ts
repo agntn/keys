@@ -144,12 +144,15 @@ const CARDANO_ADDRESS_TYPES = ["payment", "stake", "enterprise"] as const;
 export const SUI_ADDRESS_TYPES = ["ed25519", "secp256k1"] as const;
 /** Signature schemes the XRP Ledger takes as its address type, its default first. */
 const XRPL_ADDRESS_TYPES = ["secp256k1", "ed25519"] as const;
+/** Monero writes a key pair as a subaddress under this type, the standard address without one. */
+const MONERO_ADDRESS_TYPES = ["subaddress"] as const;
 
 /** Every address type exposed by the tool surfaces. */
 export const TOOL_ADDRESS_TYPES = [
   ...BITCOIN_ADDRESS_TYPES,
   ...CARDANO_ADDRESS_TYPES,
   ...SUI_ADDRESS_TYPES,
+  ...MONERO_ADDRESS_TYPES,
 ] as const;
 
 /** Address types accepted for each tool chain. */
@@ -176,7 +179,7 @@ export const TOOL_ADDRESS_TYPES_BY_CHAIN: Readonly<Record<ToolChain, readonly st
   near: [],
   cosmos: [],
   polkadot: [],
-  monero: [],
+  monero: MONERO_ADDRESS_TYPES,
 };
 
 /** Native WIF chains exposed by both agent transports. */
@@ -253,6 +256,12 @@ export const MAX_WALLET_SECRET_LENGTH = 1024;
 
 /** JSON Schema pattern for Monero seed words: 25 with the checksum word, or the 24 alone. */
 export const MONERO_SEED_SCHEMA_PATTERN = "^\\s*[A-Za-z]+(?:\\s+[A-Za-z]+){23,24}\\s*$";
+
+/** Largest Monero account or address index, a uint32 in wallet2. */
+export const MAX_MONERO_SUBADDRESS_INDEX = 0xffffffff;
+
+/** JSON Schema pattern for the 8-byte payment ID of a Monero integrated address. */
+export const MONERO_PAYMENT_ID_SCHEMA_PATTERN = "^[0-9A-Fa-f]{16}$";
 
 /**
  * JSON Schema pattern for the secret a wallet is derived from: a private key, an XRPL family seed,
