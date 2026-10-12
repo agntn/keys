@@ -73,7 +73,14 @@ import {
 import { getBlockchainPath, useBlockchain, type AbstractBlockchain } from "./blockchain.ts";
 import { blockchains } from "./_blockchains.ts";
 import { parse as parseBIP44Path } from "./utils/bip44/index.ts";
-import type { Curve, KeyOptions, MessageSigner, Options, Wallet } from "./types.ts";
+import type {
+  Curve,
+  KeyOptions,
+  MessageSigner,
+  MoneroSigningKey,
+  Options,
+  Wallet,
+} from "./types.ts";
 import { hashTypedData, type TypedData } from "./utils/eip712.ts";
 import {
   entropyHashAlgorithms,
@@ -104,6 +111,8 @@ import {
   MAX_WALLET_SECRET_LENGTH,
   MAX_MONERO_SUBADDRESS_INDEX,
   MONERO_PAYMENT_ID_SCHEMA_PATTERN,
+  MONERO_SIGNATURE_SCHEMA_PATTERN,
+  MONERO_SIGNING_KEYS,
   TOOL_MNEMONIC_WORD_COUNTS,
   MAX_BIP39_SEED_INPUT_LENGTH,
   MAX_BIP38_ADDRESS_LENGTH,
@@ -486,6 +495,7 @@ const MONERO_SEED = new RegExp(MONERO_SEED_SCHEMA_PATTERN, "u");
 /** Monero's spend and view pair, the one 64-byte key the tools take. */
 const MONERO_PUBLIC_KEY = /^[0-9A-Fa-f]{128}$/u;
 const CORE_SIGNATURE = new RegExp(CORE_SIGNATURE_SCHEMA_PATTERN, "u");
+const MONERO_SIGNATURE = new RegExp(MONERO_SIGNATURE_SCHEMA_PATTERN, "u");
 const RECOVERABLE_SIGNATURE = new RegExp(RECOVERABLE_SIGNATURE_SCHEMA_PATTERN, "u");
 const DIGEST_HEX = new RegExp(DIGEST_SCHEMA_PATTERN, "u");
 
@@ -2796,6 +2806,7 @@ async function otherNetworkOf(
  * @param networkValue - Optional network name.
  * @param recoveredValue - Append the recovery byte as `v`, default false.
  * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot.
+ * @param signingKeyValue - Monero key that signs, spend or view; spend when left out.
  * @returns {Promise<ToolResult<SignatureDetails>>} Generated signature.
  */
 export async function signMessage(
@@ -2805,12 +2816,14 @@ export async function signMessage(
   networkValue?: unknown,
   recoveredValue?: unknown,
   prefixValue?: unknown,
+  signingKeyValue?: unknown,
 ): Promise<ToolResult<SignatureDetails>> {
   if (recoveredValue !== undefined && typeof recoveredValue !== "boolean") {
     throw new TypeError("recovered must be a boolean");
   }
   const recovered = recoveredValue ?? false;
   const { blockchain } = await getBlockchain(chainValue, networkValue, undefined, prefixValue);
+  const signingKey = moneroSigningKey(signingKeyValue, blockchain.name);
   const message = requiredString(messageValue, "Message");
   const privateKey = hexArgument(
     privateKeyValue,
@@ -2818,14 +2831,34 @@ export async function signMessage(
     PRIVATE_KEY_HEX,
     "64 hex characters",
   );
-  /** Only pass options when the flag is set, so every other chain keeps its current defaults. */
-  const signature = recovered
-    ? blockchain.signMessage(message, privateKey, { recovered })
-    : blockchain.signMessage(message, privateKey);
+  /** Only pass options when one is set, so every other chain keeps its current defaults. */
+  const signature =
+    recovered || signingKey !== undefined
+      ? blockchain.signMessage(message, privateKey, { recovered, signingKey })
+      : blockchain.signMessage(message, privateKey);
   return {
     content: content(`Signature: ${signature}`),
     details: { chain: blockchain.name, network: blockchain.network, signature, recovered },
   };
+}
+
+/**
+ * Read the Monero key a signature should come from, refused on every other chain.
+ * @param value - `spend`, `view`, or blank and missing for the default.
+ * @param chain - Chain the message is signed on.
+ * @returns {MoneroSigningKey | undefined} The key, or undefined for the chain's default.
+ */
+function moneroSigningKey(value: unknown, chain: string): MoneroSigningKey | undefined {
+  const name = optionalName(value, "signingKey");
+  if (name === undefined) return undefined;
+  if (chain !== "monero") {
+    throw new TypeError(`signingKey picks a Monero key; ${chain} signs with its one key, omit it`);
+  }
+  const key = MONERO_SIGNING_KEYS.find((candidate) => candidate === name);
+  if (key === undefined) {
+    throw new RangeError(`signingKey must be spend or view, not ${JSON.stringify(name)}`);
+  }
+  return key;
 }
 
 /**
@@ -2870,14 +2903,23 @@ export async function verifyMessage(
   const message = requiredString(messageValue, "Message");
   const signatureText = requiredString(signatureValue, "Signature");
   const core = CORE_SIGNATURE.test(signatureText);
-  const signature = core
-    ? signatureText
-    : hexArgument(
-        signatureText,
-        "Signature",
-        DER_SIGNATURE.test(signatureText) ? DER_SIGNATURE : SIGNATURE_HEX,
-        "64 or 65 bytes of hex, or DER on xrpl,",
-      );
+  const monero = MONERO_SIGNATURE.test(signatureText);
+  if (monero !== (blockchain.name === "monero")) {
+    throw new TypeError(
+      monero
+        ? `SigV2 and SigV1 are Monero signatures. Give ${blockchain.name} its own signature`
+        : "A Monero signature is SigV2 or SigV1 and 88 characters of base58, as its wallets print it",
+    );
+  }
+  const signature =
+    core || monero
+      ? signatureText
+      : hexArgument(
+          signatureText,
+          "Signature",
+          DER_SIGNATURE.test(signatureText) ? DER_SIGNATURE : SIGNATURE_HEX,
+          "64 or 65 bytes of hex, or DER on xrpl,",
+        );
   const publicKey = chainPublicKey(publicKeyValue, blockchain.name);
   if (core) assertReadableSignature(blockchain, message, signature);
   const valid = blockchain.verifyMessage(message, signature, publicKey);

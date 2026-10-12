@@ -299,9 +299,15 @@ export const RECOVERABLE_SIGNATURE_SCHEMA_PATTERN = "^(?:[0-9A-Fa-f]{130}|[A-Za-
 /** JSON Schema pattern for a 32-byte digest as hex without 0x. */
 export const DIGEST_SCHEMA_PATTERN = "^[0-9A-Fa-f]{64}$";
 
-/** JSON Schema pattern for a signature the verify tool reads: hex as above, or Core's base64. */
+/** JSON Schema pattern for a Monero signature: `SigV2` or `SigV1`, then 64 bytes of base58. */
+export const MONERO_SIGNATURE_SCHEMA_PATTERN = "^SigV[12][1-9A-HJ-NP-Za-km-z]{88}$";
+
+/** The two Monero keys `keys_message_sign` signs with. */
+export const MONERO_SIGNING_KEYS = ["spend", "view"] as const;
+
+/** JSON Schema pattern for what the verify tool reads: hex as above, Core's base64, SigV2. */
 export const MESSAGE_SIGNATURE_SCHEMA_PATTERN =
-  "^(?:[0-9A-Fa-f]{128}(?:[0-9A-Fa-f]{2})?|30(?:[0-9A-Fa-f]{2}){7,71}|[A-Za-z0-9+/]{87}=)$";
+  "^(?:[0-9A-Fa-f]{128}(?:[0-9A-Fa-f]{2})?|30(?:[0-9A-Fa-f]{2}){7,71}|[A-Za-z0-9+/]{87}=|SigV[12][1-9A-HJ-NP-Za-km-z]{88})$";
 
 /** Address types `keys_bip322_sign` writes for. */
 export const BIP322_SIGNING_TYPES = ["legacy", "p2sh", "segwit", "taproot"] as const;

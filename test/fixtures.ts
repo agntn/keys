@@ -2934,4 +2934,37 @@ export const moneroTestVectors = {
         "5Dec6VBoTth7rSVsdtJznEHR2WEHumEF5SC9czE81qYmLcNvmk8gu5j36m8ugiJ7oLRTKauM4q8YqC1GwFiMWiZjdoxzmtesLagU3WcADY",
     },
   ],
+  /** The first wallet, signed by monero-wallet-rpc 0.18.5.3 offline with each key. */
+  signatures: [
+    {
+      message: "",
+      spend:
+        "SigV2cv8FCMnUtnA7aoxmEgBXJ77tkGrgUDVQ1RRdqErstNciUm9RtVUfMTPM7FvG4h8qRzFh2CfKPpFoJa2jJQ7twNVQ",
+      view: "SigV27CecJ9SRTUkHhddJ1hF1hs9icZFzLWDKabJUommFWJjz5VFBy1VkTnY96EoaZRz8ffe3HSFmRoGAm1EEvvX3SBKA",
+    },
+    {
+      message: "foo",
+      spend:
+        "SigV28r6htFqF3fA4brb5tVALH661nNdrpfociHRduyn29JYpSJ2b9jUudSNbziPuGkQfiS4idjLzHHxrfKs6kC8vgEPj",
+      view: "SigV2EZ876jFfcH2c1Tp3Ab4chVFQAHASPnmvAAtXhGiwLKWpjP4Wn9W56wuSJMUopbsDfrciUxnSXANs65CWdBHrPtkX",
+    },
+    {
+      message: "Hello, Monero!",
+      spend:
+        "SigV2PproHWU9i39h952yKpKeeqCS9xtWUHyM1eN7PzJQ3PB5CYypJcCF7TQ7MjR6EWSbPY6ppBC4JcGKPP3XJTLBdwFh",
+      view: "SigV2WePQ4kTL63U5G4X4t8dXzMHN6ruMsJAJyTLNtASF5QT7UFaK123B4D8f2jn2UUAaWwDexkv42mfUPgUTEG82NmJ8",
+    },
+  ],
+  /** 180 bytes signed with the spend key, so the length takes two varint bytes. */
+  longSignature:
+    "SigV2214KH3PV6gV5Uv7TVqaM5AcdbUu9eb2Nw7M2JkSf1hvmGLUv61mcWAebN7DqfjHwagRZPx7uBjFHnUeiwqbTkMxf",
+  /** `foo` signed by subaddress 0/1 with its spend key. */
+  subaddressSignature:
+    "SigV2gRZmdDjNykzM5yqHcgGCkZ7Gq1b7GvTUA856kNdMnpbtRrfDRkTNFi7dBLybu17dKuiSDodJc58e2bbWWDbaSKkJ",
+  /** `foo` as SigV1, built here; monero-wallet-rpc 0.18.5.3 `verify` reads each as version 1. */
+  v1Signatures: {
+    spend:
+      "SigV1Uapq9n2aczWHPUbgTTsfVJKMymGAMNhhbd6tGYFaUSrZSzaaTHYDnD7UHxtVkvfUE67B4cpNSpHFidkZGQbFQApe",
+    view: "SigV1VnKqbtVFYW24r2ueSwQaNLVVR15Qmyc4iLSKgLCfe1WkBevpKsPrY2x4tNbrr7mWDf9V2eErf4md4ZbfKT7MzmR3",
+  },
 } as const;
