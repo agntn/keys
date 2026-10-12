@@ -40,6 +40,9 @@ function checksumBits(entropy: ArrayLike<number>): bigint {
  * @returns {string} The phrase, ideographic spaces included for Japanese
  */
 export function encodeColeman(entropy: ArrayLike<number>, wordlist: readonly string[]): string {
+  if (wordlist.length !== 2048) {
+    throw new TypeError("wordlist must be a BIP39 word list of 2048 words");
+  }
   const words = (entropy.length * 3) / 4;
   if (!isWordCount(words, true) || entropy.length % 4 !== 0) {
     throw new RangeError(

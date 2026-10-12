@@ -428,6 +428,17 @@ describe("BIP39 Utils", () => {
       );
     });
 
+    it("refuses a word list short of 2048 words, as strict BIP39 does", async () => {
+      const short = (await loadWordlist()).slice(0, 10);
+      const { mnemonic } = colemanMnemonicVectors[0];
+      expect(() => entropyToMnemonic(new Uint8Array(4), short, coleman)).toThrow("2048 words");
+      expect(inspect(mnemonic, short, coleman)).toMatchObject({
+        valid: false,
+        checksumValid: false,
+      });
+      expect(() => mnemonicToEntropy(mnemonic, short, coleman)).toThrow("Invalid mnemonic");
+    });
+
     it("refuses lengths Coleman's codec has no checksum for", () => {
       expect(inspect("abandon abandon", undefined, coleman).wordCountValid).toBe(false);
       expect(

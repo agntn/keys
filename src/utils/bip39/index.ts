@@ -280,7 +280,7 @@ export function inspect(
  * @param words - Its words
  * @param selectedWordlist - BIP39 word list the words come from
  * @param coleman - Read it with Coleman's codec, which takes any 3 words per 32 bits
- * @returns {boolean} Whether the checksum matches
+ * @returns {boolean} Whether the checksum matches; never with a list short of 2048 words
  */
 function checksumMatches(
   normalized: string,
@@ -288,7 +288,9 @@ function checksumMatches(
   selectedWordlist: readonly string[],
   coleman: boolean,
 ): boolean {
-  if (coleman) return decodeColeman(words, selectedWordlist).checksumValid;
+  if (coleman) {
+    return selectedWordlist.length === 2048 && decodeColeman(words, selectedWordlist).checksumValid;
+  }
   return bip39.validateMnemonic(normalized, [...selectedWordlist]);
 }
 
