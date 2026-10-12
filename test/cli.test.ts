@@ -164,7 +164,7 @@ describe("keys usage paths", () => {
       address: "1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH",
     });
     expect(refused).toMatchObject({ code: 1, stdout: "" });
-    expect(refused.stderr).toMatch(/^Invalid arguments at \/privateKey: [^\n]*\n$/u);
+    expect(refused.stderr).toMatch(/^Invalid arguments at --private-key: [^\n]*\n$/u);
   });
 
   it("keys mcp loads the server stack once it runs and the executors on the first call", async () => {
