@@ -1,5 +1,12 @@
 import * as bip39 from "@scure/bip39";
 import * as english from "@scure/bip39/wordlists/english.js";
+import {
+  BIP39_WORD_COUNTS,
+  colemanSeed,
+  decodeColeman,
+  encodeColeman,
+  isWordCount,
+} from "./coleman.ts";
 import { isBIP39Language, type BIP39Language } from "./languages.ts";
 
 export { BIP39_LANGUAGES, isBIP39Language } from "./languages.ts";
@@ -11,6 +18,12 @@ export type { WordRepair, WordRepairOptions, WordSuggestion, WordSuggestions } f
 
 // Get English wordlist
 const wordlist = english.wordlist;
+
+/** How strictly a phrase is read. */
+export interface MnemonicOptions {
+  /** Any 3 words per 32 bits, 3 to 768, as Ian Coleman's tool writes. Not BIP39. Default: false. */
+  readonly coleman?: boolean;
+}
 
 /** A normalized word and its index in one BIP39 word list. */
 export interface BIP39WordLookup {
@@ -151,72 +164,105 @@ export function generateMnemonic(
  * Checks words, length and checksum against one list; `inspect` says which of them failed.
  * @param mnemonic - Candidate phrase
  * @param selectedWordlist - BIP39 word list, from `loadWordlist`, defaulting to English
+ * @param options - `coleman` takes Ian Coleman's lengths too
  * @returns {boolean} Whether the phrase is valid in that list
  */
 export function validateMnemonic(
   mnemonic: string,
   selectedWordlist: readonly string[] = wordlist,
+  options: MnemonicOptions = {},
 ): boolean {
+  if (options.coleman === true) return inspect(mnemonic, selectedWordlist, options).valid;
   return bip39.validateMnemonic(mnemonic, [...selectedWordlist]);
 }
 
-export const mnemonicToSeed = bip39.mnemonicToSeedSync;
+/**
+ * Stretches a phrase into the 64-byte BIP39 seed, checking its length but never its checksum.
+ * @param mnemonic - Words separated by single spaces
+ * @param passphrase - BIP39 passphrase, empty by default
+ * @param options - `coleman` takes Ian Coleman's lengths too
+ * @returns {Uint8Array} The seed, which is not a BIP32 master key yet
+ */
+export function mnemonicToSeed(
+  mnemonic: string,
+  passphrase = "",
+  options: MnemonicOptions = {},
+): Uint8Array {
+  if (options.coleman !== true) return bip39.mnemonicToSeedSync(mnemonic, passphrase);
+  if (!isWordCount(mnemonic.normalize("NFKD").split(" ").length, true)) {
+    throw new Error("Invalid mnemonic: Coleman phrases have a multiple of 3 words, 3 to 768");
+  }
+  return colemanSeed(mnemonic, passphrase);
+}
 
 /**
  * Reads the entropy back out of a phrase, throwing on a word off the list or a bad checksum.
  * @param mnemonic - Valid phrase
  * @param selectedWordlist - BIP39 word list, from `loadWordlist`, defaulting to English
- * @returns {Uint8Array} 16 to 32 bytes of entropy
+ * @param options - `coleman` takes Ian Coleman's lengths too
+ * @returns {Uint8Array} 16 to 32 bytes of entropy, or 4 to 1024 under `coleman`
  */
 export function mnemonicToEntropy(
   mnemonic: string,
   selectedWordlist: readonly string[] = wordlist,
+  options: MnemonicOptions = {},
 ): Uint8Array {
-  return bip39.mnemonicToEntropy(mnemonic, [...selectedWordlist]);
+  if (options.coleman !== true) return bip39.mnemonicToEntropy(mnemonic, [...selectedWordlist]);
+  if (!inspect(mnemonic, selectedWordlist, options).valid) {
+    throw new Error("Invalid mnemonic: inspect says which check it fails");
+  }
+  return decodeColeman(mnemonic.normalize("NFKD").split(" "), selectedWordlist).entropy;
 }
 
 /**
  * Turns entropy into the phrase it stands for, in any of the ten lists.
- * @param entropy - 16 to 32 bytes, a multiple of 4
+ * @param entropy - 16 to 32 bytes, a multiple of 4; under `coleman` 4 to 1024 bytes
  * @param selectedWordlist - BIP39 word list, from `loadWordlist`, defaulting to English
+ * @param options - `coleman` takes Ian Coleman's lengths too
  * @returns {string} The phrase, ideographic spaces included for Japanese
  */
 export function entropyToMnemonic(
   entropy: Uint8Array,
   selectedWordlist: readonly string[] = wordlist,
+  options: MnemonicOptions = {},
 ): string {
+  if (options.coleman === true) return encodeColeman(entropy, selectedWordlist);
   return bip39.entropyToMnemonic(entropy, [...selectedWordlist]);
 }
-
-const MNEMONIC_WORD_COUNTS: readonly number[] = [12, 15, 18, 21, 24];
 
 /** BIP39 diagnostics without the input words or entropy. */
 export interface BIP39MnemonicInspection {
   readonly valid: boolean;
   readonly words: number;
+  /** Under `coleman`, any multiple of 3 from 3 to 768 counts. */
   readonly wordCountValid: boolean;
   readonly wordlistValid: boolean;
   /** Null when word count or dictionary membership prevents checking the checksum. */
   readonly checksumValid: boolean | null;
+  /** Only under `coleman`: whether the length is one of BIP39's own 12, 15, 18, 21 or 24. */
+  readonly standardLength?: boolean;
 }
 
 /**
  * Separates word count, dictionary membership and checksum after NFKD normalization.
  * @param mnemonic - Candidate phrase with words separated by single spaces
  * @param selectedWordlist - BIP39 word list, defaulting to English
+ * @param options - `coleman` takes Ian Coleman's lengths too and adds `standardLength`
  * @returns {BIP39MnemonicInspection} Diagnostics without echoing the phrase
  */
 export function inspect(
   mnemonic: string,
   selectedWordlist: readonly string[] = wordlist,
+  options: MnemonicOptions = {},
 ): BIP39MnemonicInspection {
+  const coleman = options.coleman === true;
   const normalized = mnemonic.normalize("NFKD");
   const words = normalized === "" ? [] : normalized.split(" ");
-  const wordCountValid = MNEMONIC_WORD_COUNTS.includes(words.length);
+  const wordCountValid = isWordCount(words.length, coleman);
   const wordlistValid = words.length > 0 && words.every((word) => selectedWordlist.includes(word));
   const checksumValid =
     wordCountValid && wordlistValid
-      ? bip39.validateMnemonic(normalized, [...selectedWordlist])
+      ? checksumMatches(normalized, words, selectedWordlist, coleman)
       : null;
   return {
     valid: checksumValid === true,
@@ -224,7 +270,28 @@ export function inspect(
     wordCountValid,
     wordlistValid,
     checksumValid,
+    ...(coleman ? { standardLength: BIP39_WORD_COUNTS.includes(words.length) } : {}),
   };
+}
+
+/**
+ * Checks the checksum of a phrase whose length and words already passed.
+ * @param normalized - NFKD normalized phrase
+ * @param words - Its words
+ * @param selectedWordlist - BIP39 word list the words come from
+ * @param coleman - Read it with Coleman's codec, which takes any 3 words per 32 bits
+ * @returns {boolean} Whether the checksum matches; never with a list short of 2048 words
+ */
+function checksumMatches(
+  normalized: string,
+  words: readonly string[],
+  selectedWordlist: readonly string[],
+  coleman: boolean,
+): boolean {
+  if (coleman) {
+    return selectedWordlist.length === 2048 && decodeColeman(words, selectedWordlist).checksumValid;
+  }
+  return bip39.validateMnemonic(normalized, [...selectedWordlist]);
 }
 
 /**
@@ -268,7 +335,7 @@ export function getMnemonicWordCandidates(
     throw new TypeError("wordlist must be a BIP39 word list of 2048 words");
   }
   const words = mnemonic.normalize("NFKD").trim().split(/\s+/u);
-  if (!MNEMONIC_WORD_COUNTS.includes(words.length)) {
+  if (!BIP39_WORD_COUNTS.includes(words.length)) {
     throw new RangeError("Mnemonic template must contain 12, 15, 18, 21, or 24 words");
   }
 

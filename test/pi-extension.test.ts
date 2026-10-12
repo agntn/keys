@@ -147,7 +147,7 @@ describe("keys Pi extension", () => {
       [{ ...args, accounts: 11 }, "accounts must be an integer between 1 and 10"],
       [{ ...args, indices: 0.5 }, "indices must be an integer between 1 and 100"],
       [{ ...args, allowInvalidChecksum: "yes" }, "allowInvalidChecksum must be a boolean"],
-      [{ ...args, mnemonic: "a ".repeat(2049) }, "Mnemonic must not exceed 4096 characters"],
+      [{ ...args, mnemonic: "a ".repeat(4609) }, "Mnemonic must not exceed 9216 characters"],
       [{ ...args, mnemonic: "   " }, "Mnemonic must not be empty"],
       [{ ...args, address: "1".repeat(1024) }, "Address must be 1 to 1023 characters"],
       [{ ...args, passphrase: 7 }, "Passphrase must be a string"],

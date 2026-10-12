@@ -37,6 +37,38 @@ export const bip39TestVectors = {
     "c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e53495531f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04",
 };
 
+/** Run through Ian Coleman's `jsbip39.js` at de71c22; the first two are from #281 and #282. */
+export const colemanMnemonicVectors = [
+  {
+    entropy: "00000000",
+    mnemonic: "abandon abandon ability",
+    passphrase: "",
+    seed: "20da140d3dd1df8713cefcc4d54ce0e445b4151027a1ab567b832f6da5fcc5afc1c3a3f199ab78b8e0ab4652efd7f414ac2c9a3b81bceb879a70f377aa0a58f3",
+  },
+  {
+    entropy: "00".repeat(64),
+    mnemonic: [...Array.from({ length: 46 }, () => "abandon"), "adult", "regret"].join(" "),
+    passphrase: "",
+    seed: "98fd41a8fbf57ed7456ab6f7c3bead7b726f9c92ed0a3e0d2c3da838d43ee29cf9dd73173e9ef8daec3bad42ace2bc84c5fe1926314517b9cb8cc56e358089a7",
+  },
+  {
+    entropy: "e45e602fe28b82df",
+    mnemonic: "tone vessel armor shallow return hurt",
+    passphrase: "TREZOR",
+    seed: "977d47e677bd4277edf13f35289e4afa7b644d70c1a8c628815218b79e6a844a56c76d20b176027ceb7b0e4a52c01127e65eeb47a6e109769feecb1f67ed7159",
+  },
+  {
+    entropy: "71ee30b0db87bca2167b8524e77c21adf65a9ce5a480e44113e9f64a65fc8146ea11a325",
+    mnemonic:
+      "impose immense club require knock extra fly idle ceiling desk anchor fossil grant example notable mosquito tone ancient whip uncle play wrestle agree tail balance bomb dry",
+    passphrase: "TREZOR",
+    seed: "739afc23f25221cb0887b515d366ac360e3b40102ffbdf2fe69d040d29074e83819b152376f2b8b3cb69c40b86540f422263e187ec74adce23c6262029224bbf",
+  },
+] as const;
+
+/** Three words Coleman's `check` refuses: entropy `00000001` with a checksum bit of 0. */
+export const colemanBadChecksum = "abandon abandon able";
+
 /** Trezor's `7f7f...` vector, last six words scattered; 51 of 720 orders pass `@scure/bip39`. */
 export const bip39WordOrderVector = {
   mnemonic: "legal winner thank year wave sausage worth useful legal winner thank yellow",

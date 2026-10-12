@@ -11,6 +11,7 @@ import {
   deriveSeed as deriveElectrumSeed,
   inspect as inspectElectrumSeed,
 } from "./utils/electrum/index.ts";
+import { MAX_ELECTRUM_TEXT_LENGTH } from "./utils/electrum/normalize.ts";
 import {
   BIP32ChildMismatchError,
   getMasterKeyFromSeed,
@@ -95,6 +96,7 @@ import {
   MAX_ENTROPY_PREIMAGES,
   MAX_ENTROPY_PREIMAGE_LENGTH,
   BIP39_ENTROPY_BYTE_LENGTHS,
+  MAX_COLEMAN_ENTROPY_BYTES,
   TOOL_ADDRESS_TYPES_BY_CHAIN,
   TOOL_CHAINS,
   TOOL_NETWORKS,
@@ -109,7 +111,7 @@ import {
   MAX_KEYSTORE_LENGTH,
   MAX_KEYSTORE_PASSWORD_LENGTH,
   MAX_ADDRESS_LENGTH,
-  MAX_SCAN_MNEMONIC_LENGTH,
+  MAX_MNEMONIC_LENGTH,
   SCAN_ACCOUNTS,
   SCAN_INDICES,
   MAX_BRAINWALLET_INPUT_LENGTH,
@@ -155,6 +157,8 @@ import {
 } from "./utils/bip322/index.ts";
 import {
   bip39,
+  entropyToMnemonic,
+  mnemonicToEntropy,
   mnemonicToSeed,
   loadWordlist as loadBIP39Wordlist,
   getMnemonicWordCandidates,
@@ -166,6 +170,7 @@ import {
   orderWords,
   repairWords,
   suggestWords,
+  type BIP39MnemonicInspection,
   type WordSuggestions,
 } from "./utils/bip39/index.ts";
 import { BIP39_LANGUAGES, isBIP39Language, type BIP39Language } from "./utils/bip39/languages.ts";
@@ -177,6 +182,10 @@ export {
   BIP39_WORD_SCHEMA_PATTERN,
   DERIVATION_PATH_SCHEMA_PATTERN,
 } from "./tool-parameters.ts";
+
+/** What a result says when a phrase has one of Coleman's lengths but not one of BIP39's own. */
+const NONSTANDARD_LENGTH_WARNING =
+  "Not a BIP39 length. Read the way Ian Coleman's tool reads it; wallet apps will refuse these words.";
 
 /**
  * Text for the model plus structured details for agent harnesses. A failure throws instead:
@@ -215,6 +224,7 @@ export interface DerivedWalletDetails {
 export interface DerivedBIP39SeedDetails {
   language: BIP39Language;
   seed: string;
+  warnings?: readonly string[];
 }
 
 /** BIP39 inspection result without the supplied mnemonic. */
@@ -225,6 +235,8 @@ export interface MnemonicInspectionDetails {
   wordCountValid: boolean;
   wordlistValid: boolean;
   checksumValid: boolean | null;
+  /** Only with `coleman`: whether the length is one of BIP39's own. */
+  standardLength?: boolean;
   entropy?: string;
   entropyProfile?: EntropyProfile;
 }
@@ -241,6 +253,7 @@ export interface EncodedEntropyDetails {
   language: BIP39Language;
   words: number;
   mnemonic: string;
+  warnings?: readonly string[];
 }
 
 /** Result of a BIP39 index lookup. */
@@ -356,19 +369,40 @@ export interface BIP44PathDetails {
 const BIP39_ENTROPY_PATTERN = /^[0-9a-f]+$/i;
 
 /**
- * Decodes BIP39 entropy from hex, refusing lengths the standard has no word count for.
+ * Decodes BIP39 entropy from hex, refusing lengths the mode has no word count for.
  * @param value - Entropy as the caller passed it
+ * @param coleman - Take Coleman's lengths, any 4-byte multiple up to 1024 bytes
  * @returns {Uint8Array} Entropy bytes
  */
-function parseBip39Entropy(value: unknown): Uint8Array {
+function parseBip39Entropy(value: unknown, coleman = false): Uint8Array {
   const entropyText = requiredString(value, "BIP39 entropy");
   if (!BIP39_ENTROPY_PATTERN.test(entropyText)) {
     throw new TypeError("BIP39 entropy must be a hexadecimal string");
   }
-  if (!BIP39_ENTROPY_BYTE_LENGTHS.includes(entropyText.length / 2)) {
-    throw new RangeError("BIP39 entropy must be 16, 20, 24, 28, or 32 bytes");
+  const bytes = entropyText.length / 2;
+  if (coleman) {
+    if (bytes % 4 !== 0 || bytes > MAX_COLEMAN_ENTROPY_BYTES) {
+      throw new RangeError(
+        `Coleman entropy must be 4 to ${MAX_COLEMAN_ENTROPY_BYTES} bytes, a multiple of 4`,
+      );
+    }
+  } else if (!BIP39_ENTROPY_BYTE_LENGTHS.includes(bytes)) {
+    throw new RangeError(
+      "BIP39 entropy must be 16, 20, 24, 28, or 32 bytes; coleman takes any multiple of 4",
+    );
   }
   return Uint8Array.fromHex(entropyText);
+}
+
+/**
+ * Reads the optional `coleman` flag, refusing anything but a boolean.
+ * @param value - Flag as the caller passed it
+ * @returns {boolean} Whether Coleman's lengths are taken
+ */
+function colemanFlag(value: unknown): boolean {
+  if (value === undefined) return false;
+  if (typeof value !== "boolean") throw new TypeError("coleman must be a boolean");
+  return value;
 }
 
 function parseIndexBase(value: unknown): 0 | 1 {
@@ -808,12 +842,14 @@ export async function deriveWallet(
  * @param mnemonicValue - Mnemonic as the caller passed it
  * @param entropyValue - Entropy hex as the caller passed it
  * @param wordlist - Word list that spells the entropy
+ * @param coleman - Take Coleman's entropy lengths
  * @returns {string} Mnemonic to derive from
  */
 function mnemonicOrEntropy(
   mnemonicValue: unknown,
   entropyValue: unknown,
   wordlist: readonly string[],
+  coleman: boolean,
 ): string {
   if (mnemonicValue !== undefined && entropyValue !== undefined) {
     throw new TypeError("Pass either a BIP39 mnemonic or its entropy, not both");
@@ -822,7 +858,7 @@ function mnemonicOrEntropy(
     if (mnemonicValue === undefined) throw new TypeError("Pass a BIP39 mnemonic or its entropy");
     return requiredString(mnemonicValue, "BIP39 mnemonic");
   }
-  return bip39.entropyToMnemonic(parseBip39Entropy(entropyValue), [...wordlist]);
+  return entropyToMnemonic(parseBip39Entropy(entropyValue, coleman), wordlist, { coleman });
 }
 
 /**
@@ -837,6 +873,7 @@ function mnemonicOrEntropy(
  * @param languageValue - Optional official BIP39 language key.
  * @param entropyValue - BIP39 entropy as hex, encoded with the selected list in place of a mnemonic.
  * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot.
+ * @param colemanValue - Take Ian Coleman's lengths too, default false.
  * @returns {Promise<ToolResult<DerivedWalletDetails>>} Derived public wallet material.
  */
 export async function deriveHdWallet(
@@ -850,11 +887,13 @@ export async function deriveHdWallet(
   languageValue?: unknown,
   entropyValue?: unknown,
   prefixValue?: unknown,
+  colemanValue?: unknown,
 ): Promise<ToolResult<DerivedWalletDetails>> {
   if (allowInvalidChecksumValue !== undefined && typeof allowInvalidChecksumValue !== "boolean") {
     throw new TypeError("allowInvalidChecksum must be a boolean");
   }
   const allowInvalidChecksum = allowInvalidChecksumValue ?? false;
+  const coleman = colemanFlag(colemanValue);
   const path = requiredString(pathValue, "Derivation path");
   const { blockchain, addressType } = await getBlockchain(
     chainValue,
@@ -866,16 +905,16 @@ export async function deriveHdWallet(
   const passphrase = optionalString(passphraseValue, "BIP39 passphrase");
   const language = parseBIP39Language(languageValue);
   const wordlist = await loadBIP39Wordlist(language);
-  const mnemonic = mnemonicOrEntropy(mnemonicValue, entropyValue, wordlist);
+  const mnemonic = mnemonicOrEntropy(mnemonicValue, entropyValue, wordlist, coleman);
   const words = normalizeMnemonic(mnemonic);
-  const inspection = inspectBIP39Mnemonic(words, wordlist);
+  const inspection = inspectBIP39Mnemonic(words, wordlist, { coleman });
   if (inspection.checksumValid === null) {
     throw new TypeError(describeInvalidMnemonic(words, inspection, wordlist, language));
   }
   const wallet = blockchain.deriveHDWallet(
     mnemonic,
     path,
-    { passphrase, allowInvalidChecksum, wordlist },
+    { passphrase, allowInvalidChecksum, wordlist, ...(coleman ? { coleman } : {}) },
     addressType,
   );
   const details = {
@@ -962,7 +1001,7 @@ interface ScanSource {
 interface ScanRead {
   readonly source?: ScanSource;
   readonly reason?: string;
-  readonly warning?: string;
+  readonly warnings?: readonly string[];
 }
 
 /**
@@ -975,6 +1014,7 @@ interface ScanRead {
  * @param input.wordlist - Selected BIP39 word list
  * @param input.language - Its name for the error
  * @param input.allowInvalidChecksum - Whether a checksum failure is scanned
+ * @param input.coleman - Whether Ian Coleman's lengths are read
  * @returns {ScanRead} Source, or the reason it is skipped
  */
 function bip39ScanSource(
@@ -986,16 +1026,18 @@ function bip39ScanSource(
     wordlist,
     language,
     allowInvalidChecksum,
+    coleman,
   }: {
     readonly mnemonic: string;
     readonly passphrase: string;
     readonly wordlist: readonly string[];
     readonly language: BIP39Language;
     readonly allowInvalidChecksum: boolean;
+    readonly coleman: boolean;
   },
 ): ScanRead {
   const words = normalizeMnemonic(mnemonic);
-  const inspection = inspectBIP39Mnemonic(words, wordlist);
+  const inspection = inspectBIP39Mnemonic(words, wordlist, { coleman });
   if (inspection.checksumValid === null) {
     return { reason: describeInvalidMnemonic(words, inspection, wordlist, language) };
   }
@@ -1004,7 +1046,7 @@ function bip39ScanSource(
       reason: "Invalid BIP39 mnemonic: the checksum does not match. allowInvalidChecksum scans it",
     };
   }
-  const seed = mnemonicToSeed(words, passphrase);
+  const seed = mnemonicToSeed(words, passphrase, { coleman });
   const walkers = {
     secp256k1: nodeWalker(getMasterKeyFromSeed(seed)),
     ed25519: nodeWalker(getSLIP10MasterKey(seed)),
@@ -1020,12 +1062,14 @@ function bip39ScanSource(
       schemes,
       addressAt: (scheme) => hdAddress(blockchain, scheme, walkers[curveOf(scheme)]),
     },
-    ...(inspection.valid
-      ? {}
-      : {
-          warning:
+    warnings: [
+      ...(inspection.valid
+        ? []
+        : [
             "BIP39 checksum is invalid. Scanned the supplied words without repairing the checksum.",
-        }),
+          ]),
+      ...(inspection.standardLength === false ? [NONSTANDARD_LENGTH_WARNING] : []),
+    ],
   };
 }
 
@@ -1041,6 +1085,9 @@ function electrumScanSource(
   mnemonic: string,
   passphrase: string,
 ): ScanRead {
+  if (Array.from(mnemonic).length > MAX_ELECTRUM_TEXT_LENGTH) {
+    return { reason: "Longer than any Electrum seed" };
+  }
   const seedType = inspectElectrumSeed(mnemonic);
   if (seedType === "standard" || seedType === "segwit") {
     const nodeAt = nodeWalker(getMasterKeyFromSeed(deriveElectrumSeed(mnemonic, passphrase).seed));
@@ -1077,6 +1124,7 @@ interface ScanArguments {
   readonly address: string;
   readonly passphrase: string;
   readonly allowInvalidChecksum: boolean;
+  readonly coleman: boolean;
   readonly ranges: { readonly accounts: number; readonly indices: number };
 }
 
@@ -1087,6 +1135,7 @@ interface ScanArguments {
  * @param args.address - Target address
  * @param args.passphrase - Passphrase
  * @param args.allowInvalidChecksum - Checksum override
+ * @param args.coleman - Length mode
  * @param args.accounts - Account count
  * @param args.indices - Index count
  * @returns {ScanArguments} The checked arguments
@@ -1097,8 +1146,8 @@ function scanArguments(args: Readonly<Record<string, unknown>>): ScanArguments {
     throw new TypeError("allowInvalidChecksum must be a boolean");
   }
   const mnemonic = requiredString(args.mnemonic, "Mnemonic");
-  if (mnemonic.length > MAX_SCAN_MNEMONIC_LENGTH) {
-    throw new RangeError(`Mnemonic must not exceed ${MAX_SCAN_MNEMONIC_LENGTH} characters`);
+  if (mnemonic.length > MAX_MNEMONIC_LENGTH) {
+    throw new RangeError(`Mnemonic must not exceed ${MAX_MNEMONIC_LENGTH} characters`);
   }
   if (mnemonic.trim() === "") throw new TypeError("Mnemonic must not be empty");
   const address = requiredString(args.address, "Address").trim();
@@ -1110,6 +1159,7 @@ function scanArguments(args: Readonly<Record<string, unknown>>): ScanArguments {
     address,
     passphrase: optionalString(args.passphrase, "Passphrase") ?? "",
     allowInvalidChecksum,
+    coleman: colemanFlag(args.coleman),
     ranges: {
       accounts: scanCount(args.accounts, "accounts", SCAN_ACCOUNTS),
       indices: scanCount(args.indices, "indices", SCAN_INDICES),
@@ -1156,7 +1206,7 @@ async function scanSources(
     if (read.source) found.sources.push(read.source);
     if (read.reason !== undefined) found.skipped.push({ family, reason: read.reason });
   }
-  if (bip39Source.warning !== undefined) found.warnings.push(bip39Source.warning);
+  found.warnings.push(...(bip39Source.warnings ?? []));
   if (found.sources.length === 0) {
     throw new TypeError(
       found.skipped.map(({ family, reason }) => `${family}: ${reason}`).join("; "),
@@ -1251,6 +1301,7 @@ function scanRefusal(chain: string): string {
  * @param indicesValue - Address indices from 0, default 20
  * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot
  * @param coinTypeValue - Optional coin type on cosmos, in place of the one prefix stands for
+ * @param colemanValue - Read Ian Coleman's lengths too, default false
  * @returns {Promise<ToolResult<ScannedWalletDetails>>} The match, or every scheme tried
  */
 export async function scanHdWallet(
@@ -1265,8 +1316,10 @@ export async function scanHdWallet(
   indicesValue?: unknown,
   prefixValue?: unknown,
   coinTypeValue?: unknown,
+  colemanValue?: unknown,
 ): Promise<ToolResult<ScannedWalletDetails>> {
   const args = scanArguments({
+    coleman: colemanValue,
     mnemonic: mnemonicValue,
     address: addressValue,
     passphrase: passphraseValue,
@@ -1934,36 +1987,45 @@ export async function deriveBrainwallet(
  * @param mnemonicValue - Public or disposable BIP39 mnemonic.
  * @param passphraseValue - BIP39 passphrase, defaulting to empty.
  * @param languageValue - Optional official BIP39 language key.
+ * @param colemanValue - Take Ian Coleman's lengths too, default false.
  * @returns {Promise<ToolResult<DerivedBIP39SeedDetails>>} Seed hex and transcript warning.
  */
 export async function deriveBip39Seed(
   mnemonicValue: unknown,
   passphraseValue?: unknown,
   languageValue?: unknown,
+  colemanValue?: unknown,
 ): Promise<ToolResult<DerivedBIP39SeedDetails>> {
+  const coleman = colemanFlag(colemanValue);
   const input = requiredString(mnemonicValue, "BIP39 mnemonic");
   const passphrase = optionalString(passphraseValue, "BIP39 passphrase") ?? "";
-  if (
-    Array.from(input).length > MAX_BIP39_SEED_INPUT_LENGTH ||
-    Array.from(passphrase).length > MAX_BIP39_SEED_INPUT_LENGTH
-  ) {
+  if (Array.from(input).length > MAX_MNEMONIC_LENGTH) {
+    throw new RangeError(`BIP39 mnemonic must not exceed ${MAX_MNEMONIC_LENGTH} characters`);
+  }
+  if (Array.from(passphrase).length > MAX_BIP39_SEED_INPUT_LENGTH) {
     throw new RangeError(
-      `BIP39 mnemonic and passphrase must not exceed ${MAX_BIP39_SEED_INPUT_LENGTH} characters each`,
+      `BIP39 passphrase must not exceed ${MAX_BIP39_SEED_INPUT_LENGTH} characters`,
     );
   }
   const mnemonic = normalizedMnemonic(input);
   const language = parseBIP39Language(languageValue);
   const wordlist = await loadBIP39Wordlist(language);
-  const inspection = inspectBIP39Mnemonic(mnemonic, wordlist);
+  const inspection = inspectBIP39Mnemonic(mnemonic, wordlist, { coleman });
   if (!inspection.valid) {
     throw new TypeError(describeInvalidMnemonic(mnemonic, inspection, wordlist, language));
   }
-  const seed = Buffer.from(await bip39.mnemonicToSeed(mnemonic, passphrase)).toString("hex");
+  const seed = mnemonicToSeed(mnemonic, passphrase, { coleman }).toHex();
+  const warnings = inspection.standardLength === false ? [NONSTANDARD_LENGTH_WARNING] : [];
   return {
     content: content(
-      `Language: ${language}\nSeed: ${seed}\nThis seed is saved in the transcript. Never use it for real funds.`,
+      [
+        `Language: ${language}`,
+        `Seed: ${seed}`,
+        ...warnings.map((warning) => `Warning: ${warning}`),
+        "This seed is saved in the transcript. Never use it for real funds.",
+      ].join("\n"),
     ),
-    details: { language, seed },
+    details: { language, seed, ...(warnings.length === 0 ? {} : { warnings }) },
   };
 }
 
@@ -2077,38 +2139,55 @@ function entropyPreimageTexts(value: unknown): readonly string[] {
 }
 
 /**
+ * Writes the verdict lines of an inspection, with the BIP39 length line only under `coleman`.
+ * @param inspection - Verdict of the inspection
+ * @param coleman - Whether Coleman's lengths were taken
+ * @returns {string[]} Lines without the language and the entropy
+ */
+function inspectionLines(inspection: BIP39MnemonicInspection, coleman: boolean): string[] {
+  const { valid, words, wordCountValid, wordlistValid, checksumValid, standardLength } = inspection;
+  const yesNo = (flag: boolean): string => (flag ? "yes" : "no");
+  return [
+    `Valid ${coleman ? "Coleman" : "BIP39"}: ${yesNo(valid)}`,
+    `Words: ${words}`,
+    `Word count valid: ${yesNo(wordCountValid)}`,
+    ...(standardLength === undefined
+      ? []
+      : [`BIP39 length: ${standardLength ? "yes" : "no, only Coleman's tool reads it"}`]),
+    `Wordlist valid: ${yesNo(wordlistValid)}`,
+    `Checksum valid: ${checksumValid === null ? "not checked" : yesNo(checksumValid)}`,
+  ];
+}
+
+/**
  * Validate a BIP39 mnemonic against the selected list and recover its entropy when valid.
  * @param mnemonicValue - BIP39 mnemonic candidate.
  * @param languageValue - Optional official BIP39 language key.
  * @param preimagesValue - Optional caller texts hashed against the entropy after the built-in list.
+ * @param colemanValue - Take Ian Coleman's lengths too, default false.
  * @returns {Promise<ToolResult<MnemonicInspectionDetails>>} Validity, entropy and its profile.
  */
 export async function inspectMnemonic(
   mnemonicValue: unknown,
   languageValue?: unknown,
   preimagesValue?: unknown,
+  colemanValue?: unknown,
 ): Promise<ToolResult<MnemonicInspectionDetails>> {
+  const coleman = colemanFlag(colemanValue);
   const mnemonic = normalizedMnemonic(mnemonicValue);
   const language = parseBIP39Language(languageValue);
   const preimages = entropyPreimageTexts(preimagesValue);
   const wordlist = await loadBIP39Wordlist(language);
-  const inspection = inspectBIP39Mnemonic(mnemonic, wordlist);
-  const { valid, words, wordCountValid, wordlistValid, checksumValid } = inspection;
+  const inspection = inspectBIP39Mnemonic(mnemonic, wordlist, { coleman });
   const entropy = inspectedEntropy(
-    valid ? bip39.mnemonicToEntropy(mnemonic, wordlist) : undefined,
+    inspection.valid ? mnemonicToEntropy(mnemonic, wordlist, { coleman }) : undefined,
     preimages,
   );
   return {
     content: content(
-      [
-        `Language: ${language}`,
-        `Valid BIP39: ${valid ? "yes" : "no"}`,
-        `Words: ${words}`,
-        `Word count valid: ${wordCountValid ? "yes" : "no"}`,
-        `Wordlist valid: ${wordlistValid ? "yes" : "no"}`,
-        `Checksum valid: ${checksumValid === null ? "not checked" : checksumValid ? "yes" : "no"}`,
-        ...entropy.lines,
-      ].join("\n"),
+      [`Language: ${language}`, ...inspectionLines(inspection, coleman), ...entropy.lines].join(
+        "\n",
+      ),
     ),
     details: { language, ...inspection, ...entropy.details },
   };
@@ -2118,20 +2197,33 @@ export async function inspectMnemonic(
  * Encode a supported BIP39 entropy length using the selected word list.
  * @param entropyValue - BIP39 entropy as hexadecimal text.
  * @param languageValue - Optional official BIP39 language key.
+ * @param colemanValue - Take Ian Coleman's lengths too, default false.
  * @returns {Promise<ToolResult<EncodedEntropyDetails>>} Canonical mnemonic and language.
  */
 export async function encodeBip39Entropy(
   entropyValue: unknown,
   languageValue?: unknown,
+  colemanValue?: unknown,
 ): Promise<ToolResult<EncodedEntropyDetails>> {
-  const entropy = parseBip39Entropy(entropyValue);
+  const coleman = colemanFlag(colemanValue);
+  const entropy = parseBip39Entropy(entropyValue, coleman);
   const language = parseBIP39Language(languageValue);
   const wordlist = await loadBIP39Wordlist(language);
-  const mnemonic = bip39.entropyToMnemonic(entropy, wordlist);
+  const mnemonic = entropyToMnemonic(entropy, wordlist, { coleman });
   const words = mnemonic.split(/\s+/u).length;
+  const warnings = BIP39_ENTROPY_BYTE_LENGTHS.includes(entropy.length)
+    ? []
+    : [NONSTANDARD_LENGTH_WARNING];
   return {
-    content: content(`Language: ${language}\nWords: ${words}\nMnemonic: ${mnemonic}`),
-    details: { language, words, mnemonic },
+    content: content(
+      [
+        `Language: ${language}`,
+        `Words: ${words}`,
+        `Mnemonic: ${mnemonic}`,
+        ...warnings.map((warning) => `Warning: ${warning}`),
+      ].join("\n"),
+    ),
+    details: { language, words, mnemonic, ...(warnings.length === 0 ? {} : { warnings }) },
   };
 }
 

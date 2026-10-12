@@ -45,8 +45,11 @@ export const TOOL_NAMES = [
 
 export type ToolName = (typeof TOOL_NAMES)[number];
 
-/** Maximum text length accepted by the BIP39 seed tool. */
+/** Longest passphrase the BIP39 seed tool reads. */
 export const MAX_BIP39_SEED_INPUT_LENGTH = 4096;
+
+/** Longest phrase the seed and scan tools read: 768 Korean words of 11 code points, and spaces. */
+export const MAX_MNEMONIC_LENGTH = 9216;
 
 /** Maximum passphrase and salt length the brainwallet tool takes, in characters. */
 export const MAX_BRAINWALLET_INPUT_LENGTH = 4096;
@@ -80,9 +83,6 @@ export const MAX_EXTENDED_KEY_LENGTH = 128;
 
 /** Maximum WIF length; Decred's two byte prefix makes the longest one 53 characters. */
 export const MAX_WIF_LENGTH = 54;
-
-/** Maximum phrase length the wallet scan reads, in characters. */
-export const MAX_SCAN_MNEMONIC_LENGTH = 4096;
 
 /** Accounts the wallet scan walks by default and at most, from account 0. */
 export const SCAN_ACCOUNTS = { default: 3, maximum: 10 } as const;
@@ -223,6 +223,12 @@ export const BIP39_ENTROPY_BYTE_LENGTHS: readonly number[] = [16, 20, 24, 28, 32
 
 /** JSON Schema pattern for a complete BIP39 entropy value. */
 export const BIP39_ENTROPY_SCHEMA_PATTERN = `^(?:${BIP39_ENTROPY_BYTE_LENGTHS.map((bytes) => `[0-9A-Fa-f]{${bytes * 2}}`).join("|")})$`;
+
+/** Most entropy bytes Coleman's lengths spell: 768 words, all 256 bits of SHA-256 as checksum. */
+export const MAX_COLEMAN_ENTROPY_BYTES = 1024;
+
+/** JSON Schema pattern for entropy in 4-byte steps; the executor checks what the mode takes. */
+export const MNEMONIC_ENTROPY_SCHEMA_PATTERN = `^(?:[0-9A-Fa-f]{8}){1,${MAX_COLEMAN_ENTROPY_BYTES / 4}}$`;
 
 /** JSON Schema pattern for one non-whitespace BIP39 lookup word. */
 export const BIP39_WORD_SCHEMA_PATTERN = "^\\S+$";
