@@ -4,14 +4,13 @@ import { keysTheme } from "./shiki-theme";
 /** Bundled from the checkout's sources: a deploy needs neither dist/ nor the root node_modules. */
 const librarySource = resolve(import.meta.dirname, "../src");
 
-/** Runtime deps under src/index.ts and src/mcp.ts, installed here so they resolve from docs/node_modules. */
+/** What src/index.ts and src/tools.ts import at runtime, resolved from docs/node_modules. */
 const libraryDependencies = [
   "@agntn/ciphers",
   "@agntn/curves",
   "@agntn/encodings",
   "@agntn/hashes",
   "@agntn/tools",
-  "@modelcontextprotocol/server",
   "@noble/curves",
   "@scure/bip32",
   "@scure/bip39",
@@ -49,7 +48,6 @@ export default defineNuxtConfig({
   /** The repo root is its own pnpm workspace; Nuxt must not treat it as this site's. */
   workspaceDir: import.meta.dirname,
   alias: {
-    "@agntn/keys/mcp": resolve(librarySource, "mcp.ts"),
     "@agntn/keys": resolve(librarySource, "index.ts"),
   },
   vite: {
@@ -199,6 +197,17 @@ export default defineNuxtConfig({
         import.meta.dirname,
         "node_modules/@modelcontextprotocol/sdk/dist/esm",
       ),
+    },
+    /** Types only: src/tools.ts and the /mcp adapter see one `ToolDefinition`, the copy here. */
+    typescript: {
+      tsConfig: {
+        compilerOptions: {
+          paths: {
+            "@agntn/tools": ["../node_modules/@agntn/tools/dist/index.d.mts"],
+            "@agntn/tools/toolkit": ["../node_modules/@agntn/tools/dist/toolkit.d.mts"],
+          },
+        },
+      },
     },
     compatibilityDate: "2026-09-03",
     /** The library writes bigint literals, which have no es2019 form. The worker runs them as they are. */

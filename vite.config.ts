@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import oxfmt from "@agntn/ox/oxfmt";
 import oxlint from "@agntn/ox/oxlint";
 import { defineConfig } from "vite-plus";
@@ -59,8 +58,5 @@ export default defineConfig({
       ],
     },
     ignorePatterns: ["dist", "coverage", "docs"],
-  },
-  test: {
-    alias: { "@agntn/keys/mcp": fileURLToPath(new URL("src/mcp.ts", import.meta.url)) },
   },
 });
