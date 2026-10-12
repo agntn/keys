@@ -17,6 +17,8 @@ import {
 import { hex } from "@agntn/encodings/hex";
 import {
   bip39TestVectors,
+  colemanBadChecksum,
+  colemanMnemonicVectors,
   frenchMuralMnemonic,
   invalidChecksumPuzzle,
   localizedMnemonicVectors,
@@ -363,6 +365,85 @@ describe("BIP39 Utils", () => {
     expect(entropyToMnemonic(entropy)).toBe(frenchMuralMnemonic.english);
     expect(validateMnemonic(frenchMuralMnemonic.french)).toBe(false);
     expect(() => mnemonicToEntropy(frenchMuralMnemonic.french)).toThrow();
+  });
+
+  describe("Coleman lengths", () => {
+    const coleman = { coleman: true };
+
+    it.each(colemanMnemonicVectors)(
+      "reads $entropy the way Coleman's codec does",
+      ({ entropy, mnemonic, passphrase, seed }) => {
+        expect(entropyToMnemonic(hex.decode(entropy), undefined, coleman)).toBe(mnemonic);
+        expect(hex.encode(mnemonicToEntropy(mnemonic, undefined, coleman))).toBe(entropy);
+        expect(hex.encode(mnemonicToSeed(mnemonic, passphrase, coleman))).toBe(seed);
+        expect(validateMnemonic(mnemonic, undefined, coleman)).toBe(true);
+        expect(inspect(mnemonic, undefined, coleman)).toEqual({
+          valid: true,
+          words: mnemonic.split(" ").length,
+          wordCountValid: true,
+          wordlistValid: true,
+          checksumValid: true,
+          standardLength: false,
+        });
+      },
+    );
+
+    it("keeps strict BIP39 the default", () => {
+      const { mnemonic, entropy } = colemanMnemonicVectors[0];
+      expect(inspect(mnemonic)).toEqual({
+        valid: false,
+        words: 3,
+        wordCountValid: false,
+        wordlistValid: true,
+        checksumValid: null,
+      });
+      expect(validateMnemonic(mnemonic)).toBe(false);
+      expect(() => mnemonicToSeed(mnemonic)).toThrow("Invalid mnemonic");
+      expect(() => mnemonicToEntropy(mnemonic)).toThrow();
+      expect(() => entropyToMnemonic(hex.decode(entropy))).toThrow();
+    });
+
+    it("checks the checksum instead of the length alone", () => {
+      expect(inspect(colemanBadChecksum, undefined, coleman)).toMatchObject({
+        valid: false,
+        wordCountValid: true,
+        checksumValid: false,
+      });
+      expect(() => mnemonicToEntropy(colemanBadChecksum, undefined, coleman)).toThrow(
+        "Invalid mnemonic",
+      );
+    });
+
+    it("gives the standard lengths the same answer as BIP39", async () => {
+      const { mnemonic, passphrase, seedWithPassphrase } = bip39TestVectors;
+      expect(inspect(mnemonic, undefined, coleman)).toMatchObject({
+        valid: true,
+        standardLength: true,
+      });
+      expect(hex.encode(mnemonicToSeed(mnemonic, passphrase, coleman))).toBe(seedWithPassphrase);
+      const japanese = await loadWordlist("japanese");
+      const entropy = new Uint8Array(16).fill(7);
+      expect(entropyToMnemonic(entropy, japanese, coleman)).toBe(
+        entropyToMnemonic(entropy, japanese),
+      );
+    });
+
+    it("refuses lengths Coleman's codec has no checksum for", () => {
+      expect(inspect("abandon abandon", undefined, coleman).wordCountValid).toBe(false);
+      expect(
+        inspect(Array.from({ length: 771 }, () => "abandon").join(" "), undefined, coleman)
+          .wordCountValid,
+      ).toBe(false);
+      expect(() => mnemonicToSeed("abandon abandon", "", coleman)).toThrow("multiple of 3");
+      for (const bytes of [0, 6, 1028]) {
+        expect(() => entropyToMnemonic(new Uint8Array(bytes), undefined, coleman)).toThrow(
+          RangeError,
+        );
+      }
+      expect(entropyToMnemonic(new Uint8Array(1024), undefined, coleman).split(" ")).toHaveLength(
+        768,
+      );
+    });
   });
 
   it("integrates with the wallet generation process", () => {

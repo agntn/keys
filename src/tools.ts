@@ -84,11 +84,16 @@ export const bip39SeedDeriveTool = defineTool({
   name: "keys_bip39_seed_derive",
   title: "Derive BIP39 Seed",
   description:
-    "Derive a 64-byte BIP39 seed from a valid mnemonic and optional passphrase. Not a BIP32 master key. Inputs and seed enter the transcript; use only public or disposable material, never keys controlling real funds.",
+    "Derive a 64-byte BIP39 seed from a valid mnemonic and optional passphrase; coleman also takes the 3 to 768 word phrases Ian Coleman's tool writes. Not a BIP32 master key. Inputs and seed enter the transcript; use only public or disposable material, never keys controlling real funds.",
   effect: "read",
   input: DERIVE_BIP39_SEED_PARAMETERS,
   execute: async (params) =>
-    (await loadOperations()).deriveBip39Seed(params.mnemonic, params.passphrase, params.language),
+    (await loadOperations()).deriveBip39Seed(
+      params.mnemonic,
+      params.passphrase,
+      params.language,
+      params.coleman,
+    ),
 });
 
 export const secp256k1PublicKeyConvertTool = defineTool({
@@ -265,6 +270,7 @@ export const hdWalletDeriveTool = defineTool({
     "Bitcoin, Bitcoin Gold and Litecoin pick the address type from the path purpose unless addressType is set",
     "Optionally pass a BIP39 passphrase, a network, or an address type",
     "For public puzzles, allowInvalidChecksum=true accepts a checksum failure with a warning, but still requires words from the selected list and BIP39 word counts",
+    "coleman=true also takes the 3 to 768 word phrases Ian Coleman's tool writes, 3 words per 32 bits, with a warning; polkadot refuses it",
     "Never repair words just to satisfy the checksum. A bad checksum does not rule out a puzzle candidate",
     "Whitespace is collapsed and BIP39 NFKD normalization still applies, not raw text hashing",
     "Decred HD derivation is not supported because it differs from standard BIP32",
@@ -287,6 +293,7 @@ export const hdWalletDeriveTool = defineTool({
       params.language,
       params.entropy,
       params.prefix,
+      params.coleman,
     ),
 });
 
@@ -302,6 +309,7 @@ export const hdWalletScanTool = defineTool({
     "On bitcoin a phrase that is a native Electrum seed is also walked on its Electrum paths; old seeds report change/index",
     "A miss lists every scheme tried and every seed family skipped, with the reason. It rules out those paths only, not the mnemonic",
     "Pass the passphrase the wallet used; it is a different wallet with any other one",
+    "coleman=true also scans the 3 to 768 word phrases Ian Coleman's tool writes, with a warning",
     "On cosmos the path walks the coin type prefix stands for, 330 for terra; coinType overrides it",
     "Decred and Cardano are refused, as in keys_hd_wallet_derive",
     "Returns public keys and addresses, never the mnemonic or a private key",
@@ -321,6 +329,7 @@ export const hdWalletScanTool = defineTool({
       params.indices,
       params.prefix,
       params.coinType,
+      params.coleman,
     ),
 });
 
@@ -405,29 +414,35 @@ export const bip39InspectTool = defineTool({
     "checksumValid is null when word count or dictionary membership prevents checking it",
     "Pass preimages with candidate answers: each is hashed as its exact UTF-8 bytes, digests cut to the entropy length. A built-in list of common words is always checked",
     "A checksum failure is not proof that a puzzle candidate is wrong. keys_hd_wallet_derive accepts allowInvalidChecksum=true explicitly",
+    "A phrase from Ian Coleman's tool with 3, 6, 9 or more than 24 words fails the word count; pass coleman=true to read it, and standardLength says whether BIP39 itself would",
   ],
   effect: "read",
   input: INSPECT_MNEMONIC_PARAMETERS,
   execute: async (params) =>
-    (await loadOperations()).inspectMnemonic(params.mnemonic, params.language, params.preimages),
+    (await loadOperations()).inspectMnemonic(
+      params.mnemonic,
+      params.language,
+      params.preimages,
+      params.coleman,
+    ),
 });
 
 export const bip39EntropyEncodeTool = defineTool({
   name: "keys_bip39_entropy_encode",
   title: "Encode BIP39 Entropy",
   description:
-    "Encode 16, 20, 24, 28, or 32 bytes of hexadecimal entropy as a BIP39 mnemonic. Both forms enter the transcript, so use only public or disposable material.",
+    "Encode 16, 20, 24, 28, or 32 bytes of hexadecimal entropy as a BIP39 mnemonic, or with coleman any multiple of 4 bytes up to 1024, as Ian Coleman's tool spells raw entropy. Both forms enter the transcript, so use only public or disposable material.",
   snippet: "Use to turn public puzzle entropy into BIP39 words.",
   guidelines: [
     "keys_bip39_entropy_encode accepts an explicit BIP39 language; omission means english, not automatic detection",
-    "Provide 16, 20, 24, 28, or 32 bytes as hexadecimal text",
+    "Provide 16, 20, 24, 28, or 32 bytes as hexadecimal text; coleman=true takes any multiple of 4 bytes up to 1024, 3 words per 4 bytes, with a warning",
     "Use only public or disposable entropy because tool arguments are saved in the transcript",
     "Returns the canonical mnemonic with its word count",
   ],
   effect: "read",
   input: ENCODE_BIP39_ENTROPY_PARAMETERS,
   execute: async (params) =>
-    (await loadOperations()).encodeBip39Entropy(params.entropy, params.language),
+    (await loadOperations()).encodeBip39Entropy(params.entropy, params.language, params.coleman),
 });
 
 export const bip39IndicesLookupTool = defineTool({

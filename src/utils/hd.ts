@@ -19,6 +19,19 @@ export function normalizeMnemonic(mnemonic: string): string {
 }
 
 /**
+ * Names the word count a phrase should have had, under the mode the inspection ran in.
+ * @param inspection - Verdict whose word count failed
+ * @returns {string} The reason
+ */
+function describeWordCount(inspection: BIP39MnemonicInspection): string {
+  const expected =
+    inspection.standardLength === undefined
+      ? "12, 15, 18, 21 or 24"
+      : "a multiple of 3 from 3 to 768";
+  return `${inspection.words} words, expected ${expected}`;
+}
+
+/**
  * Names the BIP39 check a phrase fails, by word position and never by the word itself.
  * @param mnemonic - Phrase with words separated by single spaces
  * @param inspection - Verdict of `inspectBIP39Mnemonic` for the same phrase and word list
@@ -33,9 +46,7 @@ export function describeInvalidMnemonic(
   listName = "English",
 ): string {
   const reasons: string[] = [];
-  if (!inspection.wordCountValid) {
-    reasons.push(`${inspection.words} words, expected 12, 15, 18, 21 or 24`);
-  }
+  if (!inspection.wordCountValid) reasons.push(describeWordCount(inspection));
   if (!inspection.wordlistValid && inspection.words > 0) {
     const unknown = mnemonic
       .normalize("NFKD")
@@ -82,10 +93,18 @@ function describeRejectedMnemonic(
  * Refuses a non-boolean override and a list that the checksum check would read as a bad checksum.
  * @param allowInvalidChecksum - Override as the caller passed it
  * @param wordlist - Candidate BIP39 word list
+ * @param coleman - Length mode as the caller passed it
  */
-function assertDerivationInput(allowInvalidChecksum: unknown, wordlist: unknown): void {
+function assertDerivationInput(
+  allowInvalidChecksum: unknown,
+  wordlist: unknown,
+  coleman: unknown = false,
+): void {
   if (typeof allowInvalidChecksum !== "boolean") {
     throw new TypeError("allowInvalidChecksum must be a boolean");
+  }
+  if (typeof coleman !== "boolean") {
+    throw new TypeError("coleman must be a boolean");
   }
   if (!Array.isArray(wordlist) || wordlist.length !== 2048) {
     throw new TypeError("wordlist must be a BIP39 word list of 2048 words");
@@ -136,7 +155,8 @@ export function deriveMnemonicEntropy(
  * @param passphrase - BIP39 passphrase, empty by default
  * @param allowInvalidChecksum - Accept only checksum failures when explicitly true
  * @param wordlist - BIP39 word list the words come from, English by default
- * @returns {{ privateKey: string; checksumValid: boolean }} Derived key and actual checksum verdict
+ * @param coleman - Take Ian Coleman's lengths too, any 3 words per 32 bits
+ * @returns {{ privateKey: string; checksumValid: boolean; standardLength: boolean }} Key, verdicts
  */
 export function deriveMnemonicKey(
   mnemonic: string,
@@ -145,16 +165,25 @@ export function deriveMnemonicKey(
   passphrase = "",
   allowInvalidChecksum = false,
   wordlist: readonly string[] = englishWordlist,
-): { readonly privateKey: string; readonly checksumValid: boolean } {
-  assertDerivationInput(allowInvalidChecksum, wordlist);
+  coleman = false,
+): {
+  readonly privateKey: string;
+  readonly checksumValid: boolean;
+  readonly standardLength: boolean;
+} {
+  assertDerivationInput(allowInvalidChecksum, wordlist, coleman);
   const normalizedMnemonic = normalizeMnemonic(mnemonic);
-  const inspection = inspectBIP39Mnemonic(normalizedMnemonic, wordlist);
+  const inspection = inspectBIP39Mnemonic(normalizedMnemonic, wordlist, { coleman });
   if (inspection.checksumValid === null || (!inspection.valid && !allowInvalidChecksum)) {
     throw new Error(describeRejectedMnemonic(normalizedMnemonic, inspection, wordlist));
   }
 
-  const seed = mnemonicToSeed(normalizedMnemonic, passphrase);
-  return { privateKey: deriveSeedKey(seed, path, curve), checksumValid: inspection.valid };
+  const seed = mnemonicToSeed(normalizedMnemonic, passphrase, { coleman });
+  return {
+    privateKey: deriveSeedKey(seed, path, curve),
+    checksumValid: inspection.valid,
+    standardLength: inspection.standardLength ?? true,
+  };
 }
 
 /**

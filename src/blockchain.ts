@@ -203,26 +203,33 @@ export abstract class AbstractBlockchain implements Blockchain {
     options?: HDWalletOptions,
     addressType?: AddressType,
   ): Wallet {
-    const { passphrase, allowInvalidChecksum, wordlist, ...keyOptions } = options ?? {};
-    const { privateKey, checksumValid } = deriveMnemonicKey(
+    const { passphrase, allowInvalidChecksum, wordlist, coleman, ...keyOptions } = options ?? {};
+    const { privateKey, checksumValid, standardLength } = deriveMnemonicKey(
       mnemonic,
       path,
       this.resolveCurve(keyOptions),
       passphrase,
       allowInvalidChecksum,
       wordlist,
+      coleman,
     );
 
     const wallet = this.deriveWallet(privateKey, keyOptions, addressType);
-    return checksumValid
-      ? wallet
-      : {
-          ...wallet,
-          warnings: [
-            ...(wallet.warnings ?? []),
+    const warnings = [
+      ...(checksumValid
+        ? []
+        : [
             "BIP39 checksum is invalid. Derived from the supplied words without repairing the checksum.",
-          ],
-        };
+          ]),
+      ...(standardLength
+        ? []
+        : [
+            "Not a BIP39 length. Derived the way Ian Coleman's tool reads it; wallet apps will refuse these words.",
+          ]),
+    ];
+    return warnings.length === 0
+      ? wallet
+      : { ...wallet, warnings: [...(wallet.warnings ?? []), ...warnings] };
   }
 
   /**

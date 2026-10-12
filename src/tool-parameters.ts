@@ -224,6 +224,12 @@ export const BIP39_ENTROPY_BYTE_LENGTHS: readonly number[] = [16, 20, 24, 28, 32
 /** JSON Schema pattern for a complete BIP39 entropy value. */
 export const BIP39_ENTROPY_SCHEMA_PATTERN = `^(?:${BIP39_ENTROPY_BYTE_LENGTHS.map((bytes) => `[0-9A-Fa-f]{${bytes * 2}}`).join("|")})$`;
 
+/** Most entropy bytes Coleman's lengths spell: 768 words, all 256 bits of SHA-256 as checksum. */
+export const MAX_COLEMAN_ENTROPY_BYTES = 1024;
+
+/** JSON Schema pattern for entropy in 4-byte steps; the executor checks what the mode takes. */
+export const MNEMONIC_ENTROPY_SCHEMA_PATTERN = `^(?:[0-9A-Fa-f]{8}){1,${MAX_COLEMAN_ENTROPY_BYTES / 4}}$`;
+
 /** JSON Schema pattern for one non-whitespace BIP39 lookup word. */
 export const BIP39_WORD_SCHEMA_PATTERN = "^\\S+$";
 

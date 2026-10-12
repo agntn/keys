@@ -7,6 +7,7 @@ import {
   entropyProfileVectors,
   bip137MessageVectors,
   bip39TestVectors,
+  colemanMnemonicVectors,
   bitcoinMessageVectors,
   bitcoinTestVectors,
   electrumOldVectors,
@@ -210,6 +211,84 @@ describe("keys MCP server", () => {
       expect(result.isError).toBe(true);
       expect(text(result.content)).toContain(`Invalid BIP39 mnemonic: ${reason}`);
       expect(text(result.content)).not.toContain("allowInvalidChecksum");
+    }
+  });
+
+  it("reads Coleman's lengths through MCP only when asked", async () => {
+    const client = await connectTestClient();
+    const [three, , six] = colemanMnemonicVectors;
+    const call = async (name: string, args: Readonly<Record<string, unknown>>) =>
+      client.callTool({ name, arguments: args });
+
+    const strict = await call("keys_bip39_inspect", { mnemonic: three.mnemonic });
+    expect(text(strict.content)).toContain("Valid BIP39: no");
+    expect(text(strict.content)).toContain("Word count valid: no");
+
+    const inspected = await call("keys_bip39_inspect", { mnemonic: three.mnemonic, coleman: true });
+    expect(text(inspected.content)).toContain("Valid Coleman: yes");
+    expect(text(inspected.content)).toContain("BIP39 length: no, only Coleman's tool reads it");
+    expect(text(inspected.content)).toContain(`Entropy: ${three.entropy}`);
+
+    const seed = await call("keys_bip39_seed_derive", {
+      mnemonic: six.mnemonic,
+      passphrase: six.passphrase,
+      coleman: true,
+    });
+    expect(text(seed.content)).toContain(`Seed: ${six.seed}`);
+    expect(text(seed.content)).toContain("Warning: Not a BIP39 length");
+
+    const encoded = await call("keys_bip39_entropy_encode", {
+      entropy: six.entropy,
+      coleman: true,
+    });
+    expect(text(encoded.content)).toContain(`Mnemonic: ${six.mnemonic}`);
+    expect(text(encoded.content)).toContain("Warning: Not a BIP39 length");
+
+    const wallet = await call("keys_hd_wallet_derive", {
+      chain: "bitcoin",
+      entropy: three.entropy,
+      path: "m/44'/0'/0'/0/0",
+      coleman: true,
+    });
+    expect(wallet.isError).not.toBe(true);
+    expect(text(wallet.content)).toContain("Warning: Not a BIP39 length");
+    const address = /Address: (\S+)/u.exec(text(wallet.content))?.[1];
+
+    const scanned = await call("keys_hd_wallet_scan", {
+      chain: "bitcoin",
+      mnemonic: three.mnemonic,
+      address,
+      coleman: true,
+    });
+    expect(text(scanned.content)).toContain("m/44'/0'/0'/0/0");
+    expect(text(scanned.content)).toContain("Warning: Not a BIP39 length");
+
+    for (const [name, args, message] of [
+      [
+        "keys_bip39_seed_derive",
+        { mnemonic: three.mnemonic },
+        "3 words, expected 12, 15, 18, 21 or 24",
+      ],
+      ["keys_bip39_entropy_encode", { entropy: three.entropy }, "coleman takes any multiple of 4"],
+      [
+        "keys_hd_wallet_derive",
+        { chain: "polkadot", mnemonic: three.mnemonic, path: "m", coleman: true },
+        "Polkadot reads BIP39 lengths only",
+      ],
+      ["keys_bip39_inspect", { mnemonic: three.mnemonic, coleman: "yes" }, "coleman"],
+      [
+        "keys_hd_wallet_scan",
+        {
+          chain: "bitcoin",
+          mnemonic: three.mnemonic,
+          address: "1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH",
+        },
+        "3 words, expected 12, 15, 18, 21 or 24",
+      ],
+    ] as const) {
+      const failed = await call(name, args);
+      expect(failed.isError).toBe(true);
+      expect(text(failed.content)).toContain(message);
     }
   });
 

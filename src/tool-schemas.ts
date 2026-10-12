@@ -11,7 +11,7 @@ import {
   DEFAULT_BIP39_REPAIR_DISTANCE,
   MAX_ENTROPY_PREIMAGES,
   MAX_ENTROPY_PREIMAGE_LENGTH,
-  BIP39_ENTROPY_SCHEMA_PATTERN,
+  MNEMONIC_ENTROPY_SCHEMA_PATTERN,
   BIP39_WORD_SCHEMA_PATTERN,
   DERIVATION_PATH_SCHEMA_PATTERN,
   HD_WALLET_PATH_SCHEMA_PATTERN,
@@ -69,6 +69,16 @@ export const BIP39_LANGUAGE_PARAMETER = Type.Optional(
     minLength: 1,
     maxLength: 19,
     description: "Official BIP39 language key. Default: english",
+  }),
+);
+
+/** What Coleman's lengths are, shared by every tool that takes them. */
+const COLEMAN_DESCRIPTION =
+  "Also read Ian Coleman's lengths: any multiple of 3 words from 3 to 768, 3 words per 32 bits of entropy. Not BIP39, and wallet apps refuse such words.";
+
+export const COLEMAN_PARAMETER = Type.Optional(
+  Type.Boolean({
+    description: `${COLEMAN_DESCRIPTION} The result says when the length is not BIP39's own. Default: false`,
   }),
 );
 
@@ -303,6 +313,7 @@ export const DERIVE_BIP39_SEED_PARAMETERS = Type.Object(
       }),
     ),
     language: BIP39_LANGUAGE_PARAMETER,
+    coleman: COLEMAN_PARAMETER,
   },
   { additionalProperties: false },
 );
@@ -537,8 +548,8 @@ export const DERIVE_HD_WALLET_PARAMETERS = Type.Object(
     entropy: Type.Optional(
       Type.String({
         description:
-          "BIP39 entropy as 32, 40, 48, 56, or 64 hexadecimal characters, encoded into words of the selected language. Pass this or mnemonic, not both",
-        pattern: BIP39_ENTROPY_SCHEMA_PATTERN,
+          "BIP39 entropy as 32, 40, 48, 56, or 64 hexadecimal characters, encoded into words of the selected language; with coleman any multiple of 8 characters up to 2048. Pass this or mnemonic, not both",
+        pattern: MNEMONIC_ENTROPY_SCHEMA_PATTERN,
       }),
     ),
     language: BIP39_LANGUAGE_PARAMETER,
@@ -557,6 +568,11 @@ export const DERIVE_HD_WALLET_PARAMETERS = Type.Object(
       Type.Boolean({
         description:
           "Accept an invalid checksum with a warning. Words from the selected list and BIP39 word counts are still required. Default: false",
+      }),
+    ),
+    coleman: Type.Optional(
+      Type.Boolean({
+        description: `${COLEMAN_DESCRIPTION} The wallet then carries a warning; polkadot refuses it. Default: false`,
       }),
     ),
     addressType: addressTypeArgument,
@@ -594,6 +610,7 @@ export const SCAN_HD_WALLET_PARAMETERS = Type.Object(
         description: "Scan BIP39 words that fail only the checksum, with a warning. Default: false",
       }),
     ),
+    coleman: COLEMAN_PARAMETER,
     accounts: Type.Optional(
       Type.Integer({
         minimum: 1,
@@ -687,6 +704,7 @@ export const INSPECT_MNEMONIC_PARAMETERS = Type.Object(
         maxItems: MAX_ENTROPY_PREIMAGES,
       }),
     ),
+    coleman: COLEMAN_PARAMETER,
   },
   { additionalProperties: false },
 );
@@ -695,9 +713,11 @@ export const ENCODE_BIP39_ENTROPY_PARAMETERS = Type.Object(
   {
     language: BIP39_LANGUAGE_PARAMETER,
     entropy: Type.String({
-      description: "BIP39 entropy as 32, 40, 48, 56, or 64 hexadecimal characters",
-      pattern: BIP39_ENTROPY_SCHEMA_PATTERN,
+      description:
+        "BIP39 entropy as 32, 40, 48, 56, or 64 hexadecimal characters; with coleman any multiple of 8 characters up to 2048",
+      pattern: MNEMONIC_ENTROPY_SCHEMA_PATTERN,
     }),
+    coleman: COLEMAN_PARAMETER,
   },
   { additionalProperties: false },
 );

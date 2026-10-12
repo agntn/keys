@@ -90,7 +90,7 @@ export class Polkadot extends AbstractBlockchain {
    * Derives like subkey and polkadot.js: the mini secret from the entropy, then hard junctions.
    * @param mnemonic - BIP39 words
    * @param path - `//hard` junctions such as `//polkadot//0`, or empty or `m` for the root key
-   * @param options - Checksum override, word list and passphrase, the `///password` of a Substrate URI
+   * @param options - Checksum override, word list, the `///password` passphrase; `coleman` throws
    * @param addressType - Any type throws, Polkadot has one address format
    * @returns {Wallet} The wallet at the path
    */
@@ -101,7 +101,12 @@ export class Polkadot extends AbstractBlockchain {
     addressType?: AddressType,
   ): Wallet {
     this.refuseAddressType(addressType);
-    const { passphrase, allowInvalidChecksum, wordlist, ...keyOptions } = options ?? {};
+    const { passphrase, allowInvalidChecksum, wordlist, coleman, ...keyOptions } = options ?? {};
+    if (coleman !== undefined && coleman !== false) {
+      throw new Error(
+        "Polkadot reads BIP39 lengths only, as subkey and polkadot.js do; drop coleman",
+      );
+    }
     const junctions = parseHardJunctions(path);
     const { entropy, checksumValid } = deriveMnemonicEntropy(
       mnemonic,

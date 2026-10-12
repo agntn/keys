@@ -103,6 +103,8 @@ export interface HDWalletOptions extends KeyOptions {
   readonly allowInvalidChecksum?: boolean;
   /** Word list of the mnemonic, from `loadWordlist` in `@agntn/keys/bip39`. Default: English. */
   readonly wordlist?: readonly string[];
+  /** Ian Coleman's lengths too, warned when not BIP39's own; Polkadot refuses. Default: false */
+  readonly coleman?: boolean;
 }
 
 /** Standard or SegWit Electrum seed, as `deriveSeed` in `@agntn/keys/electrum` returns it. */
