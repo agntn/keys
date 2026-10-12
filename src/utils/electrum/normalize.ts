@@ -74,6 +74,9 @@ function isCJK(character: string): boolean {
   );
 }
 
+/** Longest phrase or passphrase Electrum normalization reads, in code points. */
+export const MAX_ELECTRUM_TEXT_LENGTH = 4096;
+
 /**
  * Applies Electrum normalization to both the phrase and its passphrase.
  * Canonical ordering between classes 240 and 1 detects nonzero combining classes;
@@ -82,8 +85,14 @@ function isCJK(character: string): boolean {
  * @returns {string} Electrum-normalized text
  */
 export function normalizeElectrumText(text: string): string {
-  if (typeof text !== "string" || !text.isWellFormed() || Array.from(text).length > 4096) {
-    throw new TypeError("Electrum text must be well-formed Unicode of at most 4096 characters");
+  if (
+    typeof text !== "string" ||
+    !text.isWellFormed() ||
+    Array.from(text).length > MAX_ELECTRUM_TEXT_LENGTH
+  ) {
+    throw new TypeError(
+      `Electrum text must be well-formed Unicode of at most ${MAX_ELECTRUM_TEXT_LENGTH} characters`,
+    );
   }
   const unaccented = Array.from(text.normalize("NFKD").toLowerCase())
     .filter((character) => `\u0345${character}\u0334`.normalize("NFD").startsWith("\u0345"))

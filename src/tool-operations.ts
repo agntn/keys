@@ -11,6 +11,7 @@ import {
   deriveSeed as deriveElectrumSeed,
   inspect as inspectElectrumSeed,
 } from "./utils/electrum/index.ts";
+import { MAX_ELECTRUM_TEXT_LENGTH } from "./utils/electrum/normalize.ts";
 import {
   BIP32ChildMismatchError,
   getMasterKeyFromSeed,
@@ -110,7 +111,7 @@ import {
   MAX_KEYSTORE_LENGTH,
   MAX_KEYSTORE_PASSWORD_LENGTH,
   MAX_ADDRESS_LENGTH,
-  MAX_SCAN_MNEMONIC_LENGTH,
+  MAX_MNEMONIC_LENGTH,
   SCAN_ACCOUNTS,
   SCAN_INDICES,
   MAX_BRAINWALLET_INPUT_LENGTH,
@@ -1084,6 +1085,9 @@ function electrumScanSource(
   mnemonic: string,
   passphrase: string,
 ): ScanRead {
+  if (Array.from(mnemonic).length > MAX_ELECTRUM_TEXT_LENGTH) {
+    return { reason: "Longer than any Electrum seed" };
+  }
   const seedType = inspectElectrumSeed(mnemonic);
   if (seedType === "standard" || seedType === "segwit") {
     const nodeAt = nodeWalker(getMasterKeyFromSeed(deriveElectrumSeed(mnemonic, passphrase).seed));
@@ -1142,8 +1146,8 @@ function scanArguments(args: Readonly<Record<string, unknown>>): ScanArguments {
     throw new TypeError("allowInvalidChecksum must be a boolean");
   }
   const mnemonic = requiredString(args.mnemonic, "Mnemonic");
-  if (mnemonic.length > MAX_SCAN_MNEMONIC_LENGTH) {
-    throw new RangeError(`Mnemonic must not exceed ${MAX_SCAN_MNEMONIC_LENGTH} characters`);
+  if (mnemonic.length > MAX_MNEMONIC_LENGTH) {
+    throw new RangeError(`Mnemonic must not exceed ${MAX_MNEMONIC_LENGTH} characters`);
   }
   if (mnemonic.trim() === "") throw new TypeError("Mnemonic must not be empty");
   const address = requiredString(args.address, "Address").trim();
@@ -1995,12 +1999,12 @@ export async function deriveBip39Seed(
   const coleman = colemanFlag(colemanValue);
   const input = requiredString(mnemonicValue, "BIP39 mnemonic");
   const passphrase = optionalString(passphraseValue, "BIP39 passphrase") ?? "";
-  if (
-    Array.from(input).length > MAX_BIP39_SEED_INPUT_LENGTH ||
-    Array.from(passphrase).length > MAX_BIP39_SEED_INPUT_LENGTH
-  ) {
+  if (Array.from(input).length > MAX_MNEMONIC_LENGTH) {
+    throw new RangeError(`BIP39 mnemonic must not exceed ${MAX_MNEMONIC_LENGTH} characters`);
+  }
+  if (Array.from(passphrase).length > MAX_BIP39_SEED_INPUT_LENGTH) {
     throw new RangeError(
-      `BIP39 mnemonic and passphrase must not exceed ${MAX_BIP39_SEED_INPUT_LENGTH} characters each`,
+      `BIP39 passphrase must not exceed ${MAX_BIP39_SEED_INPUT_LENGTH} characters`,
     );
   }
   const mnemonic = normalizedMnemonic(input);

@@ -45,8 +45,11 @@ export const TOOL_NAMES = [
 
 export type ToolName = (typeof TOOL_NAMES)[number];
 
-/** Maximum text length accepted by the BIP39 seed tool. */
+/** Longest passphrase the BIP39 seed tool reads. */
 export const MAX_BIP39_SEED_INPUT_LENGTH = 4096;
+
+/** Longest phrase the seed and scan tools read: 768 Korean words of 11 code points, and spaces. */
+export const MAX_MNEMONIC_LENGTH = 9216;
 
 /** Maximum passphrase and salt length the brainwallet tool takes, in characters. */
 export const MAX_BRAINWALLET_INPUT_LENGTH = 4096;
@@ -80,9 +83,6 @@ export const MAX_EXTENDED_KEY_LENGTH = 128;
 
 /** Maximum WIF length; Decred's two byte prefix makes the longest one 53 characters. */
 export const MAX_WIF_LENGTH = 54;
-
-/** Maximum phrase length the wallet scan reads, in characters. */
-export const MAX_SCAN_MNEMONIC_LENGTH = 4096;
 
 /** Accounts the wallet scan walks by default and at most, from account 0. */
 export const SCAN_ACCOUNTS = { default: 3, maximum: 10 } as const;

@@ -29,13 +29,13 @@ import {
   MAX_WALLET_SECRET_LENGTH,
   TOOL_MNEMONIC_WORD_COUNTS,
   MAX_BIP39_SEED_INPUT_LENGTH,
+  MAX_MNEMONIC_LENGTH,
   MAX_BIP38_ADDRESS_LENGTH,
   MAX_BIP38_PASSPHRASE_LENGTH,
   MAX_EXTENDED_KEY_LENGTH,
   MAX_KEYSTORE_LENGTH,
   MAX_KEYSTORE_PASSWORD_LENGTH,
   MAX_ADDRESS_LENGTH,
-  MAX_SCAN_MNEMONIC_LENGTH,
   SCAN_ACCOUNTS,
   SCAN_INDICES,
   MAX_TYPED_DATA_LENGTH,
@@ -302,7 +302,7 @@ export const DERIVE_BIP39_SEED_PARAMETERS = Type.Object(
   {
     mnemonic: Type.String({
       minLength: 1,
-      maxLength: MAX_BIP39_SEED_INPUT_LENGTH,
+      maxLength: MAX_MNEMONIC_LENGTH,
       pattern: "\\S",
       description: "Public or disposable BIP39 mnemonic; whitespace is collapsed",
     }),
@@ -590,7 +590,7 @@ export const SCAN_HD_WALLET_PARAMETERS = Type.Object(
       description:
         "Public or disposable BIP39 mnemonic in the selected language; on bitcoin also a native Electrum seed",
       minLength: 1,
-      maxLength: MAX_SCAN_MNEMONIC_LENGTH,
+      maxLength: MAX_MNEMONIC_LENGTH,
       pattern: "\\S",
     }),
     address: Type.String({

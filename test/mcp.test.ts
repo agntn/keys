@@ -61,8 +61,9 @@ import {
   TOOL_CHAINS,
   TOOL_NAMES,
   TOOL_NETWORKS,
+  MAX_MNEMONIC_LENGTH,
 } from "../src/tool-parameters.ts";
-import { loadWordlist as loadBIP39Wordlist } from "../src/utils/bip39/index.ts";
+import { BIP39_LANGUAGES, loadWordlist as loadBIP39Wordlist } from "../src/utils/bip39/index.ts";
 import { scanSchemes } from "../src/utils/hd-scan.ts";
 import { decode as decodeWIF, encode as encodeWIF } from "../src/utils/wif/index.ts";
 
@@ -290,6 +291,42 @@ describe("keys MCP server", () => {
       expect(failed.isError).toBe(true);
       expect(text(failed.content)).toContain(message);
     }
+  });
+
+  it("takes back the longest phrase Coleman's lengths spell through MCP", async () => {
+    const client = await connectTestClient();
+    let longest = 0;
+    for (const language of BIP39_LANGUAGES) {
+      const words = await loadBIP39Wordlist(language);
+      const word = Math.max(...words.map((entry) => Array.from(entry).length));
+      longest = Math.max(longest, word * 768 + 767);
+    }
+    expect(MAX_MNEMONIC_LENGTH).toBeGreaterThanOrEqual(longest);
+
+    const encoded = await client.callTool({
+      name: "keys_bip39_entropy_encode",
+      arguments: { entropy: "00".repeat(1024), coleman: true },
+    });
+    const mnemonic = /Mnemonic: ([a-z ]+)/u.exec(text(encoded.content))?.[1];
+    expect(mnemonic?.length).toBeGreaterThan(4096);
+    const seed = await client.callTool({
+      name: "keys_bip39_seed_derive",
+      arguments: { mnemonic, coleman: true },
+    });
+    expect(text(seed.content)).toMatch(/Seed: [0-9a-f]{128}/u);
+    const scanned = await client.callTool({
+      name: "keys_hd_wallet_scan",
+      arguments: {
+        chain: "bitcoin",
+        mnemonic,
+        address: "1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH",
+        indices: 1,
+        accounts: 1,
+        coleman: true,
+      },
+    });
+    expect(scanned.isError).not.toBe(true);
+    expect(text(scanned.content)).toContain("Warning: Not a BIP39 length");
   });
 
   it("converts public keys through MCP and rejects invalid points", async () => {
