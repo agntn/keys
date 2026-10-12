@@ -330,6 +330,12 @@ describe("Monero", () => {
       );
     });
 
+    it("refuses a recovered signature, which SigV2 has no byte for", () => {
+      expect(() => blockchain.signMessage("foo", first.spendKey, { recovered: true })).toThrow(
+        "no recovery byte",
+      );
+    });
+
     it("refuses a key name that is neither spend nor view", () => {
       /* @ts-expect-error A JavaScript caller can pass any string. */
       expect(() =>
@@ -540,6 +546,9 @@ describe("Monero", () => {
       await expect(
         signMessage("monero", "foo", first.spendKey, undefined, undefined, undefined, "both"),
       ).rejects.toThrow("spend or view");
+      await expect(
+        signMessage("monero", "foo", first.spendKey, undefined, true, undefined, "view"),
+      ).rejects.toThrow("no recovery byte");
       await expect(
         verifyMessage("solana", "foo", entry.spend, ed25519TestVectors.publicKey),
       ).rejects.toThrow("Monero signatures");

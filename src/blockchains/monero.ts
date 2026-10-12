@@ -6,6 +6,7 @@ import { BIP44 } from "../utils/bip44/index.ts";
 import { concatBytes } from "../utils/bytes.ts";
 import { decodeMoneroBase58, encodeMoneroBase58 } from "../utils/monero-base58.ts";
 import { decodeMoneroSeed } from "../utils/monero-seed.ts";
+import { assertNoRecoveryByte } from "../utils/signing.ts";
 import type {
   AddressType,
   Curve,
@@ -557,13 +558,17 @@ export class Monero extends AbstractBlockchain {
    * @param keyPrivate - The private spend key as hex; the view key comes from it
    * @param options - `signingKey: "view"` signs with the view key, as `sign --view` does
    * @returns {string} `SigV2` and 88 characters of block base58
-   * @throws {RangeError} When the key is malformed or `signingKey` names neither key
+   * @throws {RangeError} When the key isn't 32 bytes or reduces to zero, or `signingKey` names
+   * neither key
+   * @throws {SyntaxError} When the key isn't hex
+   * @throws {Error} When `recovered` is set, since SigV2 carries no recovery byte
    */
   override signMessage(
     message: string | Uint8Array,
     keyPrivate: string,
     options?: SigningOptions,
   ): string {
+    assertNoRecoveryByte(options, "Monero signs SigV2, with no recovery byte");
     const mode = signingMode(options?.signingKey);
     const spend = spendScalar(keyPrivate);
     const view = viewScalar(spend);
@@ -585,6 +590,7 @@ export class Monero extends AbstractBlockchain {
    * hex; a subaddress signature checks against the pair of that subaddress
    * @returns {boolean} Whether the spend or the view key of the address signed the message
    * @throws {RangeError} When the signature or the key cannot be read, so it never reads as invalid
+   * @throws {SyntaxError} When the key isn't hex
    */
   override verifyMessage(
     message: string | Uint8Array,
