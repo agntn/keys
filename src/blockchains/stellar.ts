@@ -1,12 +1,11 @@
 import { crc16Xmodem, sha256 } from "@agntn/hashes";
 import { concatBytes } from "../utils/bytes.ts";
 import { base32 } from "@agntn/encodings/base32";
-import { AbstractBlockchain } from "../blockchain.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { getHardenedPath } from "../utils/bip44/paths.ts";
-import { decodeKeyPublic, generateKeyPublic } from "../utils/ed25519.ts";
-import { signMessage, verifyMessage } from "../utils/signing.ts";
-import type { AddressType, Curve, KeyOptions } from "../types.ts";
+import { decodeKeyPublic } from "../utils/ed25519.ts";
+import { AbstractEd25519Blockchain } from "../utils/ed25519-chains.ts";
+import type { AddressType, KeyOptions } from "../types.ts";
 
 /** SEP-23 StrKey address types: the version byte and the decoded length, checksum included. */
 const STRKEY_TYPES: Readonly<
@@ -57,14 +56,9 @@ function hashMessage(message: string | Uint8Array): Uint8Array {
  * Stellar blockchain implementation. Addresses are the same on pubnet and testnet, so the
  * network option changes nothing here.
  */
-export class Stellar extends AbstractBlockchain {
+export class Stellar extends AbstractEd25519Blockchain {
   override readonly name = "stellar";
-  override readonly curve: Curve = "ed25519";
   override readonly bip44 = BIP44.STELLAR;
-
-  override getKeyPublic(keyPrivate: string, _options?: KeyOptions): string {
-    return generateKeyPublic(keyPrivate);
-  }
 
   /**
    * SEP-0005 puts account `x` at `m/44'/148'/x'` and stops there, so neither a change branch nor
@@ -129,7 +123,7 @@ export class Stellar extends AbstractBlockchain {
     keyPrivate: string,
     options?: KeyOptions,
   ): string {
-    return signMessage(hashMessage(message), keyPrivate, { ...options, curve: "ed25519" });
+    return super.signMessage(hashMessage(message), keyPrivate, options);
   }
 
   override verifyMessage(
@@ -138,10 +132,7 @@ export class Stellar extends AbstractBlockchain {
     keyPublic: string,
     options?: KeyOptions,
   ): boolean {
-    return verifyMessage(hashMessage(message), signature, keyPublic, {
-      ...options,
-      curve: "ed25519",
-    });
+    return super.verifyMessage(hashMessage(message), signature, keyPublic, options);
   }
 }
 

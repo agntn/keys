@@ -1,20 +1,11 @@
-import { AbstractBlockchain } from "../blockchain.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { concatBytes } from "../utils/bytes.ts";
-import { decodeKeyPublic, generateKeyPublic } from "../utils/ed25519.ts";
-import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
+import { decodeKeyPublic } from "../utils/ed25519.ts";
+import { AbstractEd25519Blockchain } from "../utils/ed25519-chains.ts";
 import { deriveMnemonicEntropy } from "../utils/hd.ts";
 import { decodeSS58, encodeSS58, isSS58Prefix, MAX_SS58_PREFIX } from "../utils/ss58.ts";
 import { deriveEd25519Hard, miniSecret, parseHardJunctions } from "../utils/substrate.ts";
-import type {
-  AddressType,
-  Curve,
-  HDWalletOptions,
-  KeyOptions,
-  Options,
-  SigningOptions,
-  Wallet,
-} from "../types.ts";
+import type { AddressType, HDWalletOptions, Options, SigningOptions, Wallet } from "../types.ts";
 
 /** Polkadot's own prefix, written on mainnet unless the options name another. */
 const POLKADOT_PREFIX = 0;
@@ -54,9 +45,8 @@ function wrapBytes(message: string | Uint8Array): Uint8Array {
 }
 
 /** Polkadot and any Substrate chain on ed25519 accounts. sr25519, the wallet default, waits. */
-export class Polkadot extends AbstractBlockchain {
+export class Polkadot extends AbstractEd25519Blockchain {
   override readonly name = "polkadot";
-  override readonly curve: Curve = "ed25519";
   override readonly bip44 = BIP44.POLKADOT;
   /** SS58 network prefix every address of this instance carries. */
   readonly ss58Prefix: number;
@@ -69,10 +59,6 @@ export class Polkadot extends AbstractBlockchain {
       throw new RangeError(`An SS58 prefix is 0 to ${MAX_SS58_PREFIX}, but not 46 or 47`);
     }
     this.ss58Prefix = prefix;
-  }
-
-  override getKeyPublic(keyPrivate: string, _options?: KeyOptions): string {
-    return generateKeyPublic(keyPrivate);
   }
 
   /**
@@ -156,7 +142,7 @@ export class Polkadot extends AbstractBlockchain {
     keyPrivate: string,
     options?: SigningOptions,
   ): string {
-    return ed25519SignMessage(wrapBytes(message), keyPrivate, options);
+    return super.signMessage(wrapBytes(message), keyPrivate, options);
   }
 
   /**
@@ -174,8 +160,8 @@ export class Polkadot extends AbstractBlockchain {
     options?: SigningOptions,
   ): boolean {
     return (
-      ed25519VerifyMessage(wrapBytes(message), signature, keyPublic, options) ||
-      ed25519VerifyMessage(message, signature, keyPublic, options)
+      super.verifyMessage(wrapBytes(message), signature, keyPublic, options) ||
+      super.verifyMessage(message, signature, keyPublic, options)
     );
   }
 }

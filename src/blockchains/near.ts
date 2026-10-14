@@ -1,10 +1,9 @@
 import { base58 } from "@agntn/encodings/base58";
-import { AbstractBlockchain } from "../blockchain.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { getHardenedPath } from "../utils/bip44/paths.ts";
-import { decodeKeyPublic, generateKeyPublic } from "../utils/ed25519.ts";
-import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
-import type { AddressType, Curve, KeyOptions } from "../types.ts";
+import { decodeKeyPublic } from "../utils/ed25519.ts";
+import { AbstractEd25519Blockchain } from "../utils/ed25519-chains.ts";
+import type { AddressType, KeyOptions } from "../types.ts";
 
 /** Prefix NEAR writes in front of a base58 ed25519 key, as in `ed25519:6j4b6z...`. */
 const KEY_PREFIX = "ed25519:";
@@ -25,15 +24,13 @@ function readKeyPublic(keyPublic: string): Uint8Array {
   return bytes;
 }
 
-/** NEAR, where the address is the implicit account: the public key itself, in hex. */
-export class Near extends AbstractBlockchain {
+/**
+ * NEAR, where the address is the implicit account: the public key itself, in hex.
+ * Messages get raw ed25519 over their bytes, not the NEP-413 payload wallets sign.
+ */
+export class Near extends AbstractEd25519Blockchain {
   override readonly name = "near";
-  override readonly curve: Curve = "ed25519";
   override readonly bip44 = BIP44.NEAR;
-
-  override getKeyPublic(keyPrivate: string, _options?: KeyOptions): string {
-    return generateKeyPublic(keyPrivate);
-  }
 
   /**
    * near-seed-phrase stops at `m/44'/397'/0'`, so account `a` is `m/44'/397'/a'`, no deeper.
@@ -70,21 +67,6 @@ export class Near extends AbstractBlockchain {
   }
 
   /**
-   * Raw ed25519 over the message bytes, not the NEP-413 payload wallets sign.
-   * @param message - The message to sign
-   * @param keyPrivate - The private key as hex
-   * @param options - Key options
-   * @returns {string} The 64-byte ed25519 signature as hex
-   */
-  override signMessage(
-    message: string | Uint8Array,
-    keyPrivate: string,
-    options?: KeyOptions,
-  ): string {
-    return ed25519SignMessage(message, keyPrivate, options);
-  }
-
-  /**
    * Checks a raw ed25519 signature over the message bytes.
    * @param message - The signed message
    * @param signature - The signature as hex
@@ -99,7 +81,7 @@ export class Near extends AbstractBlockchain {
     options?: KeyOptions,
   ): boolean {
     try {
-      return ed25519VerifyMessage(message, signature, readKeyPublic(keyPublic).toHex(), options);
+      return super.verifyMessage(message, signature, readKeyPublic(keyPublic).toHex(), options);
     } catch {
       return false;
     }
