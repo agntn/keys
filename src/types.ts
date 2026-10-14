@@ -131,7 +131,9 @@ export interface RecoverableSigningOptions extends KeyOptions {
  * Options for message signing and verification.
  */
 export interface SigningOptions extends RecoverableSigningOptions {
+  /** Curve of the key. Default: `secp256k1`. */
   readonly curve?: Curve;
+  /** On secp256k1, `false` skips SHA-256 and signs the bytes as a ready digest. Default: true. */
   readonly hash?: boolean;
   /** Which Monero key signs, as `monero-wallet-cli sign --spend` or `--view`. Default: `spend`. */
   readonly signingKey?: MoneroSigningKey;

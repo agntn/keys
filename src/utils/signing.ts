@@ -61,7 +61,8 @@ export function hasRecoveryByte(signature: string): boolean {
 }
 
 /**
- * Sign a prepared digest, with or without the recovery byte Ethereum writes as `v`.
+ * Sign a prepared digest with `prehash: false`, or noble v2 would hash it a second time.
+ * noble puts the recovery byte first; Ethereum wants it last, as `v`.
  * @param messageHash - The digest to sign
  * @param keyPrivateBytes - The private key bytes
  * @param recovered - Append the recovery byte as 27 or 28
@@ -73,10 +74,8 @@ function signSecp256k1(
   recovered: boolean,
 ): string {
   if (!recovered) {
-    // In @noble/curves v2, sign() returns Uint8Array directly (compact format)
     return secp256k1.sign(messageHash, keyPrivateBytes, { prehash: false }).toHex();
   }
-  // v2 puts the recovery byte first; Ethereum, TRON and ecrecover want it last, as 27 or 28.
   const signature = secp256k1.sign(messageHash, keyPrivateBytes, {
     prehash: false,
     format: "recovered",
@@ -166,12 +165,30 @@ function verifyRecoveredSignature(
 }
 
 /**
- * Signs a message using the appropriate elliptic curve
- * `@noble/curves` v2 hashes by default, so the digest built here goes in with `prehash: false`.
- *
+ * Encode a string message as UTF-8; bytes pass through untouched.
+ * @param message - The message as text or bytes
+ * @returns {Uint8Array} The message bytes
+ */
+function messageBytes(message: string | Uint8Array): Uint8Array {
+  return typeof message === "string" ? new TextEncoder().encode(message) : message;
+}
+
+/**
+ * The digest secp256k1 signs: SHA-256 of the message, or the bytes as given under `hash: false`.
+ * @param message - The message, or a digest the caller already built
+ * @param options - Signing options, read for `hash`
+ * @returns {Uint8Array} The digest
+ */
+function secp256k1Digest(message: string | Uint8Array, options: SigningOptions): Uint8Array {
+  const bytes = messageBytes(message);
+  return options.hash === false ? bytes : sha256(bytes);
+}
+
+/**
+ * Sign a message: secp256k1 over its SHA-256 unless `hash` is false, ed25519 over the raw bytes.
  * @param message - The message to sign as a string or Uint8Array
  * @param keyPrivate - The private key as a hex string
- * @param options - Options for signature generation including curve type
+ * @param options - Curve, hashing and recovery byte
  * @returns {string} The signature as a hex string
  */
 export function signMessage(
@@ -182,29 +199,17 @@ export function signMessage(
   /** Read as plain string: untyped callers can pass anything, the final throw guards them. */
   const curve: string = options.curve || "secp256k1";
   const recovered = readRecoveredFlag(options);
-
-  // Convert message to Uint8Array if it's a string
-  let messageBytes = typeof message === "string" ? new TextEncoder().encode(message) : message;
-
-  // Different handling based on curve type
   if (curve === "secp256k1") {
-    // For secp256k1, we typically hash the message first with SHA-256
-    // Unless options.hash is explicitly set to false
-    if (options.hash !== false) {
-      messageBytes = sha256(messageBytes);
-    }
-
-    return signSecp256k1(messageBytes, decodeKeyPrivate(keyPrivate), recovered);
-  } else if (curve === "ed25519") {
-    if (recovered) {
-      throw new Error("Recovered signatures are secp256k1 only");
-    }
-
-    // Ed25519 doesn't typically prehash the message
-    const signature = ed25519.sign(messageBytes, Uint8Array.fromHex(keyPrivate));
-    return signature.toHex();
+    return signSecp256k1(
+      secp256k1Digest(message, options),
+      decodeKeyPrivate(keyPrivate),
+      recovered,
+    );
   }
-
+  if (curve === "ed25519") {
+    if (recovered) throw new Error("Recovered signatures are secp256k1 only");
+    return ed25519.sign(messageBytes(message), Uint8Array.fromHex(keyPrivate)).toHex();
+  }
   throw new Error(`Unsupported curve: ${curve}`);
 }
 
@@ -218,7 +223,6 @@ export function signMessage(
 function verifySecp256k1(signature: string, messageHash: Uint8Array, keyPublic: string): boolean {
   try {
     const keyPublicBytes = Uint8Array.fromHex(keyPublic);
-    // In @noble/curves v2, verify() accepts Uint8Array signature directly
     const signatureBytes = Uint8Array.fromHex(signature);
     if (signatureBytes.length === COMPACT_SIGNATURE_LENGTH + 1) {
       return verifyRecoveredSignature(signatureBytes, messageHash, keyPublicBytes);
@@ -230,13 +234,27 @@ function verifySecp256k1(signature: string, messageHash: Uint8Array, keyPublic: 
 }
 
 /**
- * Verifies a signature using the appropriate elliptic curve
- * Passes `prehash: false` like `signMessage`, so the bytes are checked exactly as hashed here.
- *
+ * Check an ed25519 signature, where bad hex is a failed check, not an error.
+ * @param signature - Signature as hex
+ * @param message - The signed bytes
+ * @param keyPublic - Public key as hex
+ * @returns {boolean} Whether the signature matches the key
+ */
+function verifyEd25519(signature: string, message: Uint8Array, keyPublic: string): boolean {
+  try {
+    const keyPublicBytes = Uint8Array.fromHex(keyPublic);
+    return ed25519.verify(Uint8Array.fromHex(signature), message, keyPublicBytes);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Verify a signature over the same bytes `signMessage` signs for that curve and `hash` setting.
  * @param message - The original message as a string or Uint8Array
  * @param signature - The signature as a hex string
  * @param keyPublic - The public key as a hex string
- * @param options - Options for signature verification including curve type
+ * @param options - Curve and hashing, as given to `signMessage`
  * @returns {boolean} True if the signature is valid, false otherwise
  */
 export function verifyMessage(
@@ -247,28 +265,9 @@ export function verifyMessage(
 ): boolean {
   /** Read as plain string: untyped callers can pass anything, the final throw guards them. */
   const curve: string = options.curve || "secp256k1";
-
-  // Convert message to Uint8Array if it's a string
-  let messageBytes = typeof message === "string" ? new TextEncoder().encode(message) : message;
-
-  // Different handling based on curve type
   if (curve === "secp256k1") {
-    // For secp256k1, we typically hash the message first with SHA-256
-    // Unless options.hash is explicitly set to false
-    if (options.hash !== false) {
-      messageBytes = sha256(messageBytes);
-    }
-
-    return verifySecp256k1(signature, messageBytes, keyPublic);
-  } else if (curve === "ed25519") {
-    // Ed25519 doesn't typically prehash the message
-    try {
-      const keyPublicBytes = Uint8Array.fromHex(keyPublic);
-      return ed25519.verify(Uint8Array.fromHex(signature), messageBytes, keyPublicBytes);
-    } catch {
-      return false;
-    }
+    return verifySecp256k1(signature, secp256k1Digest(message, options), keyPublic);
   }
-
+  if (curve === "ed25519") return verifyEd25519(signature, messageBytes(message), keyPublic);
   throw new Error(`Unsupported curve: ${curve}`);
 }
