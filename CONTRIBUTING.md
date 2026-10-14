@@ -26,7 +26,7 @@ The lint scripts build first, because the Pi and OMP extensions take their tool 
 
 ## Agent tools
 
-- One `defineTool` per tool in `src/tools.ts`, with its executor in `src/tool-operations.ts`. `keys mcp`, the docs `/mcp`, Pi and OMP all serve that list, so a fix never lands on one surface only.
+- One `defineTool` per tool in `src/tools.ts`, with its executor in the domain module under `src/tool-operations/` that `index.ts` re-exports. Shared argument readers live in `arguments.ts` and the chain and network ones in `blockchain.ts`. Look there before you write another `requiredString`. `keys mcp`, the docs `/mcp`, Pi and OMP all serve that list, so a fix never lands on one surface only.
 - Schemas in `src/tool-schemas.ts` take `Type` from `@agntn/tools`, never a bare `typebox` import, which OMP rewrites to its own facade. Every root is a plain object without `oneOf`, and a `pattern` stays portable across JSON Schema consumers. Unicode property escapes belong in the executor.
 - Executors compose public library capabilities and keep their own checks for callers that skip the schema. A blank optional name reads as omitted, while passphrases keep blank and whitespace values.
 - Secret input never lands in an error or in structured details.

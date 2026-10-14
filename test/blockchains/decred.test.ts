@@ -4,7 +4,7 @@ import { hex } from "@agntn/encodings/hex";
 import { describe, expect, it } from "vite-plus/test";
 import Decred, { Decred as NamedDecred } from "../../src/blockchains/decred.ts";
 import { blockchains, getBlockchainPath, type AbstractBlockchain } from "../../src/index.ts";
-import { deriveWallet, deriveHdWallet } from "../../src/tool-operations.ts";
+import { deriveWallet, deriveHdWallet } from "../../src/tool-operations/index.ts";
 import { deriveSeed } from "../../src/utils/electrum/index.ts";
 import { bip39TestVectors, decredTestVectors as vector, electrumVectors } from "../fixtures.ts";
 

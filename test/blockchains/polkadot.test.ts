@@ -10,7 +10,7 @@ import {
   getAddress,
   scanHdWallet,
   validateAddress,
-} from "../../src/tool-operations.ts";
+} from "../../src/tool-operations/index.ts";
 
 describe("Polkadot", () => {
   const blockchain = useBlockchain(new Polkadot());
