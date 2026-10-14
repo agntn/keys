@@ -1,6 +1,7 @@
 packages:
   - .
 
+# Without it Node walks up to the root node_modules and the server bundle can carry a second Vue.
 shamefullyHoist: true
 
 allowBuilds:
@@ -10,5 +11,6 @@ allowBuilds:
   vue-demi: true
   core-js-pure: false
 
+# Workers Builds runs pnpm 11, which holds back day-old releases. The glob lets every @agntn one in.
 minimumReleaseAgeExclude:
   - "@agntn/*"
