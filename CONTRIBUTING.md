@@ -18,7 +18,7 @@ The lint scripts build first, because the Pi and OMP extensions take their tool 
 
 - A primitive an `@agntn/*` package covers comes from it: every hash from `@agntn/hashes`, point math from `@agntn/curves`, encodings from `@agntn/encodings`. Signing, ed25519 and HD stay on @noble/@scure until a sibling takes them over. A missing primitive is an issue on the sibling, not a new @noble dependency, and an audit is no argument for one.
 - Never Node `crypto`, not even for randomness. Keys come from the curve's `utils.randomSecretKey()`.
-- secp256k1 chains sign through `evmSignMessage` or their own preamble, ed25519 chains through `ed25519SignMessage` on the raw message. Don't mix them.
+- secp256k1 chains sign through `evmSignMessage` or their own preamble, ed25519 chains extend `AbstractEd25519Blockchain`, which signs the raw message, and wrap or hash it before `super` when their wallets do. Don't mix them.
 - `src/` uses `Uint8Array.fromHex`, `.toHex()` and `concatBytes` from `src/utils/bytes.ts`. Tests and the playground use `hex` from `@agntn/encodings/hex`, because the type-aware lint types them without the `esnext` lib.
 - No `as any`, `@ts-ignore` or `@ts-expect-error` in `src/`. Tests may use `@ts-expect-error` for input that's wrong on purpose.
 - `src/index.ts` only re-exports. Public loading goes through `blockchains.chain(options)()`; a direct constructor is for subclassing and explicit imports.

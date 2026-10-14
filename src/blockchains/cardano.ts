@@ -1,10 +1,9 @@
 import { blake2b } from "@agntn/hashes";
 import { bech32 } from "@agntn/encodings/bech32";
-import { AbstractBlockchain } from "../blockchain.ts";
 import { getBIP32Path } from "../utils/bip44/paths.ts";
-import { decodeKeyPublic, generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
-import { ed25519SignMessage, ed25519VerifyMessage } from "../utils/ed25519-chains.ts";
-import type { CardanoAddressType, Curve, KeyOptions, Options, Wallet } from "../types.ts";
+import { decodeKeyPublic } from "../utils/ed25519.ts";
+import { AbstractEd25519Blockchain } from "../utils/ed25519-chains.ts";
+import type { CardanoAddressType, Options, Wallet } from "../types.ts";
 
 const ADDRESS_TYPE = {
   BASE_PAYMENT: 0,
@@ -39,9 +38,8 @@ const NETWORK_PARAMS = {
 } as const;
 
 /** Cardano blockchain implementation. */
-export class Cardano extends AbstractBlockchain {
+export class Cardano extends AbstractEd25519Blockchain {
   override readonly name = "cardano";
-  override readonly curve: Curve = "ed25519";
   override readonly bip44 = 1815;
 
   constructor(options?: Options) {
@@ -55,10 +53,6 @@ export class Cardano extends AbstractBlockchain {
 
   private get params() {
     return this.network === "testnet" ? NETWORK_PARAMS.testnet : NETWORK_PARAMS.mainnet;
-  }
-
-  override getKeyPublic(keyPrivate: string, _options?: KeyOptions): string {
-    return getEd25519KeyPublic(keyPrivate);
   }
 
   /**
@@ -158,23 +152,6 @@ export class Cardano extends AbstractBlockchain {
     } catch {
       return false;
     }
-  }
-
-  override signMessage(
-    message: string | Uint8Array,
-    keyPrivate: string,
-    options?: KeyOptions,
-  ): string {
-    return ed25519SignMessage(message, keyPrivate, options);
-  }
-
-  override verifyMessage(
-    message: string | Uint8Array,
-    signature: string,
-    keyPublic: string,
-    options?: KeyOptions,
-  ): boolean {
-    return ed25519VerifyMessage(message, signature, keyPublic, options);
   }
 }
 
