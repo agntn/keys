@@ -8,7 +8,7 @@ import {
 } from "../../src/utils/electrum/index.ts";
 import { decodeLegacyWords } from "../../src/utils/electrum/legacy.ts";
 import { normalizeElectrumText } from "../../src/utils/electrum/normalize.ts";
-import { deriveElectrumWallet } from "../../src/tool-operations.ts";
+import { deriveElectrumWallet } from "../../src/tool-operations/index.ts";
 import { deriveMnemonicKey } from "../../src/utils/hd.ts";
 import { electrumOldVectors, electrumVectors } from "../fixtures.ts";
 

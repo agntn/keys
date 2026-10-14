@@ -16,7 +16,7 @@ import {
   signMessage,
   validateAddress,
   verifyMessage,
-} from "../../src/tool-operations.ts";
+} from "../../src/tool-operations/index.ts";
 
 describe("Monero", () => {
   const blockchain = useBlockchain(new Monero());

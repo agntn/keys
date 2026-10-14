@@ -10,7 +10,7 @@ import {
   electrumVectors,
 } from "../fixtures";
 import { useBlockchain } from "../../src";
-import { generateBip44Path, getAddress } from "../../src/tool-operations.ts";
+import { generateBip44Path, getAddress } from "../../src/tool-operations/index.ts";
 import { deriveSeed } from "../../src/utils/electrum/index.ts";
 import Bitcoin from "../../src/blockchains/bitcoin";
 import type { Options } from "../../src/types";

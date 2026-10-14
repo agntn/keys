@@ -15,7 +15,7 @@ export default defineBuildConfig({
         "./src/index.ts",
         "./src/cli.ts",
         "./src/mcp.ts",
-        "./src/tool-operations.ts",
+        "./src/tool-operations/index.ts",
         "./src/tools.ts",
         "./src/utils/bip32/index.ts",
         "./src/utils/bip322/index.ts",

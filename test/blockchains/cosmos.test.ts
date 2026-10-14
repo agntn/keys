@@ -15,7 +15,7 @@ import {
   getAddress,
   scanHdWallet,
   validateAddress,
-} from "../../src/tool-operations.ts";
+} from "../../src/tool-operations/index.ts";
 
 describe("Cosmos", () => {
   const blockchain = useBlockchain(new Cosmos());

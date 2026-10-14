@@ -40,15 +40,15 @@ import {
   WIF_ENCODE_PARAMETERS,
 } from "./tool-schemas.ts";
 import { MAX_BIP39_CHECKSUM_SEARCH, MAX_BIP39_REPAIR_WORDS } from "./tool-parameters.ts";
-let operations: Promise<typeof import("./tool-operations.ts")> | undefined;
+let operations: Promise<typeof import("./tool-operations/index.ts")> | undefined;
 
 /**
  * Loads the shared executors once.
  *
- * @returns {Promise<typeof import("./tool-operations.ts")>} The executors.
+ * @returns {Promise<typeof import("./tool-operations/index.ts")>} The executors.
  */
-function loadOperations(): Promise<typeof import("./tool-operations.ts")> {
-  operations ??= import("./tool-operations.ts");
+function loadOperations(): Promise<typeof import("./tool-operations/index.ts")> {
+  operations ??= import("./tool-operations/index.ts");
   return operations;
 }
 
