@@ -33,5 +33,5 @@
     "@iconify-json/vscode-icons": "1.2.86",
     "wrangler": "4.128.0"
   },
-  "packageManager": "pnpm@11.24.0"
+  "packageManager": "pnpm@12.11.2"
 }

@@ -34,3 +34,6 @@ allowBuilds:
 
 patchedDependencies:
   micro-key-producer@0.10.2: patches/micro-key-producer@0.10.2.patch
+
+# Stops pnpm 12 from opening the lockfile with an env document, which GitHub reads as zero dependencies.
+pmOnFail: ignore
