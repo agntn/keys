@@ -39,7 +39,7 @@ import {
   descriptorVectors,
   multisigVector,
 } from "./fixtures.ts";
-import keysExtension from "../packages/pi/extensions/keys.ts";
+import keysExtension from "../extensions/pi/keys.ts";
 import { keysTools } from "../src/tools.ts";
 import { mnemonicToEntropy, validateMnemonic } from "../src/utils/bip39/index.ts";
 
@@ -1326,7 +1326,7 @@ describe("keys Pi extension", () => {
 async function registerThroughHostLoader(): Promise<ReadonlyMap<string, RegisteredTool>> {
   const jiti = createJiti(import.meta.url, { moduleCache: false });
   const extension = await jiti.import<typeof keysExtension>(
-    fileURLToPath(new URL("../packages/pi/extensions/keys.ts", import.meta.url)),
+    fileURLToPath(new URL("../extensions/pi/keys.ts", import.meta.url)),
     { default: true },
   );
   const tools = new Map<string, RegisteredTool>();

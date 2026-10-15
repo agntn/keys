@@ -5,5 +5,5 @@
       "@agntn/keys": ["./dist/index.d.mts"]
     }
   },
-  "include": ["packages"]
+  "include": ["extensions"]
 }
