@@ -1,6 +1,3 @@
-packages:
-  - packages/*
-
 minimumReleaseAgeExclude:
   - typebox
   - vite

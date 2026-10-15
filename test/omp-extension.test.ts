@@ -11,7 +11,7 @@ import {
   ethereumTestVectors,
   wifTestVectors,
 } from "./fixtures.ts";
-import piExtension from "../packages/pi/extensions/keys.ts";
+import piExtension from "../extensions/pi/keys.ts";
 import { TOOL_NAMES } from "../src/tool-parameters.ts";
 import { keysTools } from "../src/tools.ts";
 
@@ -21,7 +21,7 @@ const ompExtension = await createJiti(import.meta.url, {
     "@oh-my-pi/pi-coding-agent": fileURLToPath(new URL("fixtures/omp-host.ts", import.meta.url)),
   },
 }).import<(pi: never) => Promise<void>>(
-  fileURLToPath(new URL("../packages/omp/extensions/keys.ts", import.meta.url)),
+  fileURLToPath(new URL("../extensions/omp/keys.ts", import.meta.url)),
   { default: true },
 );
 

@@ -732,7 +732,7 @@ describe("keys MCP server", () => {
   it.each([
     "README.md",
     "CONTRIBUTING.md",
-    "packages/pi/README.md",
+    "extensions/pi/README.md",
     "docs/DESIGN.md",
     "docs/content/1.guide/1.index.md",
     "docs/app/components/content/LandingHero.vue",

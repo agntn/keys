@@ -3,7 +3,7 @@ import { Client, InMemoryTransport, type Tool } from "@modelcontextprotocol/clie
 import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
-import keysExtension from "../packages/pi/extensions/keys.ts";
+import keysExtension from "../extensions/pi/keys.ts";
 import { createMcpServer } from "../src/mcp.ts";
 import { ed25519TestVectors, ethereumTestVectors, secp256k1TestVectors } from "./fixtures.ts";
 

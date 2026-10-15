@@ -541,7 +541,7 @@ describe("Published extensions", () => {
           alias: { "@oh-my-pi/pi-coding-agent": fileURLToPath(ompHost) },
         });
         const extension = await jiti.import<(pi: ExtensionAPI) => Promise<void>>(
-          join(copy, "packages", host, "extensions/keys.ts"),
+          join(copy, "extensions", host, "keys.ts"),
           { default: true },
         );
         const tools = new Map<string, PackedTool>();

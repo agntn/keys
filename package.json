@@ -38,8 +38,8 @@
   },
   "files": [
     "dist",
-    "packages/omp/extensions",
-    "packages/pi/extensions"
+    "extensions/omp",
+    "extensions/pi"
   ],
   "type": "module",
   "sideEffects": false,
@@ -180,12 +180,12 @@
   "packageManager": "pnpm@12.11.2",
   "omp": {
     "extensions": [
-      "./packages/omp/extensions/keys.ts"
+      "./extensions/omp/keys.ts"
     ]
   },
   "pi": {
     "extensions": [
-      "./packages/pi/extensions/*.ts"
+      "./extensions/pi/*.ts"
     ],
     "image": "https://keys.agntn.dev/image.png"
   }
