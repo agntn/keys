@@ -1,5 +1,54 @@
 # Changelog
 
+## v0.7.0
+
+[compare changes](https://github.com/agntn/keys/compare/v0.6.2...v0.7.0)
+
+### 🚀 Enhancements
+
+- Add Cosmos SDK chains with a bech32 prefix ([#258](https://github.com/agntn/keys/pull/258))
+- Run every tool from the command line ([#261](https://github.com/agntn/keys/pull/261))
+- Add MCP server description and icons ([#264](https://github.com/agntn/keys/pull/264))
+- Add Polkadot SS58 addresses on ed25519 ([#267](https://github.com/agntn/keys/pull/267))
+- Follow the Cosmos coin type of each prefix ([#269](https://github.com/agntn/keys/pull/269))
+- **bip39:** Take a word list in the short helpers ([#272](https://github.com/agntn/keys/pull/272))
+- Add Monero addresses from the 25-word seed ([#276](https://github.com/agntn/keys/pull/276))
+- Add deriveElectrumWallet to chain classes ([#280](https://github.com/agntn/keys/pull/280))
+- Build /mcp with `toToolkitTools` ([#284](https://github.com/agntn/keys/pull/284))
+- **bip39:** Add Coleman's phrase lengths ([#285](https://github.com/agntn/keys/pull/285))
+- Add Monero subaddresses and payment IDs ([#286](https://github.com/agntn/keys/pull/286))
+- Sign and verify Monero messages ([#288](https://github.com/agntn/keys/pull/288))
+
+### 🩹 Fixes
+
+- **tools:** ⚠️  Call the BIP38 field encryptedKey ([#279](https://github.com/agntn/keys/pull/279))
+
+### 💅 Refactors
+
+- ⚠️  Move curve math to agntn/curves ([#262](https://github.com/agntn/keys/pull/262))
+- **cli:** Serve the bundled mcp via runCli ([#273](https://github.com/agntn/keys/pull/273))
+- Share an ed25519 chain base ([#291](https://github.com/agntn/keys/pull/291))
+- Split executors by domain ([#292](https://github.com/agntn/keys/pull/292))
+- Flatten message signing ([#293](https://github.com/agntn/keys/pull/293))
+
+### 📖 Documentation
+
+- Drop AGENTS.md for CONTRIBUTING.md ([#290](https://github.com/agntn/keys/pull/290))
+
+### ✅ Tests
+
+- Drop tautological assertions ([#283](https://github.com/agntn/keys/pull/283))
+
+#### ⚠️ Breaking Changes
+
+- **tools:** ⚠️  Call the BIP38 field encryptedKey ([#279](https://github.com/agntn/keys/pull/279))
+- ⚠️  Move curve math to agntn/curves ([#262](https://github.com/agntn/keys/pull/262))
+
+### ❤️ Contributors
+
+- Aeitwoen ([@aeitwoen](https://github.com/aeitwoen))
+- Ori ([@oritwoen](https://github.com/oritwoen))
+
 ## v0.6.2
 
 [compare changes](https://github.com/agntn/keys/compare/v0.6.1...v0.6.2)
