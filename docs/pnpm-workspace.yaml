@@ -11,6 +11,9 @@ allowBuilds:
   vue-demi: true
   core-js-pure: false
 
-# Workers Builds runs pnpm 11, which holds back day-old releases. The glob lets every @agntn one in.
+# Workers Builds runs pnpm 12, which holds back day-old releases. The glob lets every @agntn one in.
 minimumReleaseAgeExclude:
   - "@agntn/*"
+
+# Stops pnpm 12 from opening the lockfile with an env document, which GitHub reads as zero dependencies.
+pmOnFail: ignore
