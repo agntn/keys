@@ -177,7 +177,7 @@
   "engines": {
     "node": ">=26"
   },
-  "packageManager": "pnpm@11.24.0",
+  "packageManager": "pnpm@12.11.2",
   "omp": {
     "extensions": [
       "./packages/omp/extensions/keys.ts"
