@@ -284,7 +284,7 @@ pnpm install
 pnpm --dir docs install   # the /mcp test borrows Zod and the toolkit from here
 pnpm dev          # vp test in watch mode
 pnpm lint         # builds first, then vp lint and vp fmt --check
-pnpm test:types   # tsc over the library and the type tests
+pnpm test:types   # tsc over the library and the type tests, vue-tsc over the docs app
 pnpm build        # obuild
 pnpm test:mcp     # builds, then calls every tool over stdio
 pnpm playground playground/bip39-demo.ts
