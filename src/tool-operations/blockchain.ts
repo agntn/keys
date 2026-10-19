@@ -94,7 +94,7 @@ function parsePrefix(chain: ToolChain, value: unknown): Pick<Options, "prefix" |
  * @throws {RangeError} When it comes with any chain but cosmos, or is no coin type.
  */
 function parseCoinType(chain: ToolChain, value: unknown): Pick<Options, "coinType"> {
-  const coinType = optionalIndex(value, "coinType");
+  const coinType = optionalIndex(value, { name: "coinType" });
   if (coinType === undefined) return {};
   if (chain !== "cosmos") {
     throw new RangeError(
@@ -104,12 +104,17 @@ function parseCoinType(chain: ToolChain, value: unknown): Pick<Options, "coinTyp
   return { coinType };
 }
 
+/** How a chain tool loads its chain, each field as the host passed it. */
+export interface ChainArguments {
+  readonly network?: unknown;
+  readonly addressType?: unknown;
+  readonly prefix?: unknown;
+  readonly coinType?: unknown;
+}
+
 export async function getBlockchain(
   chainValue: unknown,
-  networkValue?: unknown,
-  addressTypeValue?: unknown,
-  prefixValue?: unknown,
-  coinTypeValue?: unknown,
+  options: ChainArguments = {},
 ): Promise<{ readonly blockchain: AbstractBlockchain; readonly addressType: string | undefined }> {
   const name = requiredString(chainValue, "Chain").toLowerCase();
   const chain = TOOL_CHAINS.find((candidate) => candidate === name);
@@ -118,10 +123,10 @@ export async function getBlockchain(
       `Unknown chain ${JSON.stringify(name)}. Supported: ${TOOL_CHAINS.join(", ")}`,
     );
   }
-  const network = parseChainNetwork(chain, networkValue);
-  const addressType = parseAddressType(chain, addressTypeValue);
-  const prefix = parsePrefix(chain, prefixValue);
-  const coinType = parseCoinType(chain, coinTypeValue);
+  const network = parseChainNetwork(chain, options.network);
+  const addressType = parseAddressType(chain, options.addressType);
+  const prefix = parsePrefix(chain, options.prefix);
+  const coinType = parseCoinType(chain, options.coinType);
   return {
     blockchain: useBlockchain(await blockchains[chain]({ network, ...prefix, ...coinType })()),
     addressType,

@@ -35,8 +35,13 @@ import { normalizeMnemonic, describeInvalidMnemonic } from "../utils/hd.ts";
 import { getMasterKeyFromSeed as getSLIP10MasterKey } from "../utils/slip10/index.ts";
 import { sameAddress } from "./address.ts";
 import { requiredString, optionalString } from "./arguments.ts";
-import { NONSTANDARD_LENGTH_WARNING, colemanFlag, parseBIP39Language } from "./bip39.ts";
-import { addressTypeLines, getBlockchain } from "./blockchain.ts";
+import {
+  type Bip39ListArguments,
+  NONSTANDARD_LENGTH_WARNING,
+  colemanFlag,
+  parseBIP39Language,
+} from "./bip39.ts";
+import { type ChainArguments, addressTypeLines, getBlockchain } from "./blockchain.ts";
 import { type ToolResult, content } from "./results.ts";
 
 /** A seed family the scan did not walk, such as `electrum`, and why. */
@@ -66,16 +71,15 @@ export interface ScannedWalletDetails {
 /**
  * Reads how many accounts or indices the scan walks, refusing 0 and anything above the maximum.
  * @param value - Raw argument
- * @param name - Argument name for the error
- * @param limits - Default and maximum
+ * @param limits - Argument name for the error, default and maximum
+ * @param limits.name - Argument name for the error
  * @param limits.default - Count when the argument is left out
  * @param limits.maximum - Highest count
  * @returns {number} The count
  */
 function scanCount(
   value: unknown,
-  name: string,
-  limits: { readonly default: number; readonly maximum: number },
+  limits: { readonly name: string; readonly default: number; readonly maximum: number },
 ): number {
   if (value === undefined) return limits.default;
   if (
@@ -84,7 +88,7 @@ function scanCount(
     value < 1 ||
     value > limits.maximum
   ) {
-    throw new RangeError(`${name} must be an integer between 1 and ${limits.maximum}`);
+    throw new RangeError(`${limits.name} must be an integer between 1 and ${limits.maximum}`);
   }
   return value;
 }
@@ -105,8 +109,8 @@ interface ScanRead {
 /**
  * Reads the phrase as BIP39 words, or says why the BIP39 schemes are skipped.
  * @param blockchain - Chain whose schemes apply
- * @param schemes - BIP39 schemes of the chain
- * @param input - Phrase, passphrase, word list and checksum override
+ * @param input - Schemes, phrase, passphrase, word list and checksum override
+ * @param input.schemes - BIP39 schemes of the chain
  * @param input.mnemonic - Phrase as given
  * @param input.passphrase - BIP39 passphrase
  * @param input.wordlist - Selected BIP39 word list
@@ -117,8 +121,8 @@ interface ScanRead {
  */
 function bip39ScanSource(
   blockchain: Readonly<AbstractBlockchain>,
-  schemes: readonly ScanScheme[],
   {
+    schemes,
     mnemonic,
     passphrase,
     wordlist,
@@ -126,6 +130,7 @@ function bip39ScanSource(
     allowInvalidChecksum,
     coleman,
   }: {
+    readonly schemes: readonly ScanScheme[];
     readonly mnemonic: string;
     readonly passphrase: string;
     readonly wordlist: readonly string[];
@@ -174,14 +179,14 @@ function bip39ScanSource(
 /**
  * Reads the phrase as a native Electrum seed, or says why the Electrum schemes are skipped.
  * @param blockchain - Bitcoin on the selected network
- * @param mnemonic - Phrase as given
- * @param passphrase - Electrum seed extension
+ * @param seed - Phrase as given and its Electrum seed extension
+ * @param seed.mnemonic - Phrase as given
+ * @param seed.passphrase - Electrum seed extension
  * @returns {ScanRead} Source, or the reason it is skipped
  */
 function electrumScanSource(
   blockchain: Readonly<AbstractBlockchain>,
-  mnemonic: string,
-  passphrase: string,
+  { mnemonic, passphrase }: { readonly mnemonic: string; readonly passphrase: string },
 ): ScanRead {
   if (Array.from(mnemonic).length > MAX_ELECTRUM_TEXT_LENGTH) {
     return { reason: "Longer than any Electrum seed" };
@@ -259,8 +264,8 @@ function scanArguments(args: Readonly<Record<string, unknown>>): ScanArguments {
     allowInvalidChecksum,
     coleman: colemanFlag(args.coleman),
     ranges: {
-      accounts: scanCount(args.accounts, "accounts", SCAN_ACCOUNTS),
-      indices: scanCount(args.indices, "indices", SCAN_INDICES),
+      accounts: scanCount(args.accounts, { name: "accounts", ...SCAN_ACCOUNTS }),
+      indices: scanCount(args.indices, { name: "indices", ...SCAN_INDICES }),
     },
   };
 }
@@ -272,31 +277,31 @@ interface ScanSources {
   readonly warnings: string[];
 }
 
+/** Checked scan arguments with the chain's BIP39 schemes and the raw BIP39 language. */
+interface ScanRequest extends ScanArguments {
+  readonly schemes: readonly ScanScheme[];
+  readonly language: unknown;
+}
+
 /**
  * Reads the phrase as BIP39 words and, on Bitcoin, as an Electrum seed; throws when neither works.
  * @param blockchain - Chain on the selected network
- * @param schemes - BIP39 schemes of the chain
- * @param args - Checked scan arguments
- * @param languageValue - Raw BIP39 language
+ * @param request - Checked scan arguments, the chain's schemes and the raw language
  * @returns {Promise<ScanSources>} Seeds to walk and the families skipped
  */
 async function scanSources(
   blockchain: Readonly<AbstractBlockchain>,
-  schemes: readonly ScanScheme[],
-  args: ScanArguments,
-  languageValue: unknown,
+  request: ScanRequest,
 ): Promise<ScanSources> {
-  const language = parseBIP39Language(languageValue);
+  const language = parseBIP39Language(request.language);
   const found: ScanSources = { sources: [], skipped: [], warnings: [] };
-  const bip39Source = bip39ScanSource(blockchain, schemes, {
-    ...args,
+  const bip39Source = bip39ScanSource(blockchain, {
+    ...request,
     wordlist: await loadBIP39Wordlist(language),
     language,
   });
   const electrum: ScanRead =
-    blockchain.name === "bitcoin"
-      ? electrumScanSource(blockchain, args.mnemonic, args.passphrase)
-      : {};
+    blockchain.name === "bitcoin" ? electrumScanSource(blockchain, request) : {};
   for (const [family, read] of [
     ["bip39", bip39Source],
     ["electrum", electrum],
@@ -386,52 +391,46 @@ function scanRefusal(chain: string): string {
   );
 }
 
+/** Scan tool arguments besides the chain, raw until the executor checks them. */
+export interface HdScanArguments extends Omit<ChainArguments, "addressType">, Bip39ListArguments {
+  /** Public or disposable BIP39 or Electrum phrase. */
+  readonly mnemonic?: unknown;
+  /** Target address on the chain and network. */
+  readonly address?: unknown;
+  /** BIP39 passphrase or Electrum seed extension. */
+  readonly passphrase?: unknown;
+  /** Scan BIP39 words that fail only the checksum, default false. */
+  readonly allowInvalidChecksum?: unknown;
+  /** Accounts from 0, default 3. */
+  readonly accounts?: unknown;
+  /** Address indices from 0, default 20. */
+  readonly indices?: unknown;
+}
+
 /**
  * Scans a fixed, named list of wallet paths for the one that reaches an address.
  * @param chainValue - Blockchain name
- * @param mnemonicValue - Public or disposable BIP39 or Electrum phrase
- * @param addressValue - Target address on the chain and network
- * @param passphraseValue - Optional BIP39 passphrase or Electrum seed extension
- * @param networkValue - Optional network name
- * @param languageValue - Optional BIP39 language key
- * @param allowInvalidChecksumValue - Scan BIP39 words that fail only the checksum, default false
- * @param accountsValue - Accounts from 0, default 3
- * @param indicesValue - Address indices from 0, default 20
- * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot
- * @param coinTypeValue - Optional coin type on cosmos, in place of the one prefix stands for
- * @param colemanValue - Read Ian Coleman's lengths too, default false
+ * @param options - Phrase, target address, ranges, word list and the chain's network options
  * @returns {Promise<ToolResult<ScannedWalletDetails>>} The match, or every scheme tried
  */
 export async function scanHdWallet(
   chainValue: unknown,
-  mnemonicValue: unknown,
-  addressValue: unknown,
-  passphraseValue?: unknown,
-  networkValue?: unknown,
-  languageValue?: unknown,
-  allowInvalidChecksumValue?: unknown,
-  accountsValue?: unknown,
-  indicesValue?: unknown,
-  prefixValue?: unknown,
-  coinTypeValue?: unknown,
-  colemanValue?: unknown,
+  options: HdScanArguments,
 ): Promise<ToolResult<ScannedWalletDetails>> {
   const args = scanArguments({
-    coleman: colemanValue,
-    mnemonic: mnemonicValue,
-    address: addressValue,
-    passphrase: passphraseValue,
-    allowInvalidChecksum: allowInvalidChecksumValue,
-    accounts: accountsValue,
-    indices: indicesValue,
+    coleman: options.coleman,
+    mnemonic: options.mnemonic,
+    address: options.address,
+    passphrase: options.passphrase,
+    allowInvalidChecksum: options.allowInvalidChecksum,
+    accounts: options.accounts,
+    indices: options.indices,
   });
-  const { blockchain } = await getBlockchain(
-    chainValue,
-    networkValue,
-    undefined,
-    prefixValue,
-    coinTypeValue,
-  );
+  const { blockchain } = await getBlockchain(chainValue, {
+    network: options.network,
+    prefix: options.prefix,
+    coinType: options.coinType,
+  });
   const schemes = scanSchemes(blockchain.name, blockchain.network, blockchain.coinType);
   if (schemes === undefined) {
     throw new RangeError(scanRefusal(blockchain.name));
@@ -441,12 +440,11 @@ export async function scanHdWallet(
       `Address is not a ${blockchain.name} ${blockchain.network} address, so no path can reach it`,
     );
   }
-  const { sources, skipped, warnings } = await scanSources(
-    blockchain,
+  const { sources, skipped, warnings } = await scanSources(blockchain, {
+    ...args,
     schemes,
-    args,
-    languageValue,
-  );
+    language: options.language,
+  });
   const { tried, match } = walkSources(sources, args);
   const details: ScannedWalletDetails = {
     chain: blockchain.name,

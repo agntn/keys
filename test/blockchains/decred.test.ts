@@ -18,7 +18,7 @@ describe("Decred", () => {
     expect(getBlockchainPath(chain, 0, 1, 3)).toBe("m/44'/42'/0'/1/3");
     expect(chain.deriveWallet(vector.privateKey).address).toBe(vector.addresses.mainnet);
     expect(chain.getKeyPublic(vector.privateKey)).toBe(vector.publicKey);
-    const result = await deriveWallet("decred", vector.privateKey);
+    const result = await deriveWallet("decred", { privateKey: vector.privateKey });
     expect(result.details.address).toBe(vector.addresses.mainnet);
     expect(JSON.stringify(result)).not.toContain(vector.privateKey);
     const generated = chain.generateWallet();
@@ -65,14 +65,14 @@ describe("Decred", () => {
     await expect(blockchains.decred({ network: "simnet" })()).rejects.toThrow(
       "mainnet and testnet only",
     );
-    await expect(deriveWallet("decred", vector.privateKey, "segwit")).rejects.toThrow(
-      "not supported",
-    );
+    await expect(
+      deriveWallet("decred", { privateKey: vector.privateKey, addressType: "segwit" }),
+    ).rejects.toThrow("not supported");
   });
 
   it("refuses standard BIP32 rather than silently substituting it for Decred HD", async () => {
     await expect(
-      deriveHdWallet("decred", bip39TestVectors.mnemonic, "m/44'/42'/0'/0/0"),
+      deriveHdWallet("decred", { mnemonic: bip39TestVectors.mnemonic, path: "m/44'/42'/0'/0/0" }),
     ).rejects.toThrow("Decred HD derivation is not supported");
   });
 

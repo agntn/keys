@@ -17,8 +17,13 @@ import {
 import { normalizeMnemonic, describeInvalidMnemonic } from "../utils/hd.ts";
 import { decode as decodeWIF } from "../utils/wif/index.ts";
 import { requiredString, optionalString, PRIVATE_KEY_HEX, optionalIndex } from "./arguments.ts";
-import { parseBip39Entropy, colemanFlag, parseBIP39Language } from "./bip39.ts";
-import { getBlockchain, addressTypeLines } from "./blockchain.ts";
+import {
+  type Bip39ListArguments,
+  parseBip39Entropy,
+  colemanFlag,
+  parseBIP39Language,
+} from "./bip39.ts";
+import { type ChainArguments, getBlockchain, addressTypeLines } from "./blockchain.ts";
 import { type ToolResult, content } from "./results.ts";
 import type { DerivedWalletDetails } from "./wallet.ts";
 
@@ -47,20 +52,27 @@ function assertHdWalletPath(chain: string, path: string): void {
   }
 }
 
+/** The mnemonic or its entropy hex, each as the caller passed it. */
+interface MnemonicSource {
+  readonly mnemonic?: unknown;
+  readonly entropy?: unknown;
+}
+
+/** Word list that spells the entropy, and whether to take Coleman's entropy lengths. */
+interface EntropySpelling {
+  readonly wordlist: readonly string[];
+  readonly coleman: boolean;
+}
+
 /**
  * Takes the mnemonic as given, or spells the entropy with the word list; exactly one of them.
- * @param mnemonicValue - Mnemonic as the caller passed it
- * @param entropyValue - Entropy hex as the caller passed it
- * @param wordlist - Word list that spells the entropy
- * @param coleman - Take Coleman's entropy lengths
+ * @param source - Mnemonic or entropy as the caller passed it
+ * @param spelling - Word list and Coleman flag that spell the entropy
  * @returns {string} Mnemonic to derive from
  */
-function mnemonicOrEntropy(
-  mnemonicValue: unknown,
-  entropyValue: unknown,
-  wordlist: readonly string[],
-  coleman: boolean,
-): string {
+function mnemonicOrEntropy(source: MnemonicSource, spelling: EntropySpelling): string {
+  const { wordlist, coleman } = spelling;
+  const { mnemonic: mnemonicValue, entropy: entropyValue } = source;
   if (mnemonicValue !== undefined && entropyValue !== undefined) {
     throw new TypeError("Pass either a BIP39 mnemonic or its entropy, not both");
   }
@@ -71,51 +83,43 @@ function mnemonicOrEntropy(
   return entropyToMnemonic(parseBip39Entropy(entropyValue, coleman), wordlist, { coleman });
 }
 
+/** HD wallet tool arguments besides the chain, raw until the executor checks them. */
+export interface HdWalletArguments
+  extends Omit<ChainArguments, "coinType">, Bip39ListArguments, MnemonicSource {
+  /** Absolute derivation path. */
+  readonly path?: unknown;
+  readonly passphrase?: unknown;
+  /** Accept a checksum failure for a public puzzle, default false. */
+  readonly allowInvalidChecksum?: unknown;
+}
+
 /**
  * Derive public wallet material from a BIP39 mnemonic or its entropy and a path.
  * @param chainValue - Blockchain name.
- * @param mnemonicValue - BIP39 mnemonic in the selected language, or undefined when entropy is given.
- * @param pathValue - Absolute derivation path.
- * @param passphraseValue - Optional BIP39 passphrase.
- * @param addressTypeValue - Optional chain-specific address type.
- * @param networkValue - Optional network name.
- * @param allowInvalidChecksumValue - Accept a checksum failure for a public puzzle, default false.
- * @param languageValue - Optional official BIP39 language key.
- * @param entropyValue - BIP39 entropy as hex, encoded with the selected list in place of a mnemonic.
- * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot.
- * @param colemanValue - Take Ian Coleman's lengths too, default false.
+ * @param options - Mnemonic or entropy, path, passphrase, word list and network options.
  * @returns {Promise<ToolResult<DerivedWalletDetails>>} Derived public wallet material.
  */
 export async function deriveHdWallet(
   chainValue: unknown,
-  mnemonicValue: unknown,
-  pathValue: unknown,
-  passphraseValue?: unknown,
-  addressTypeValue?: unknown,
-  networkValue?: unknown,
-  allowInvalidChecksumValue?: unknown,
-  languageValue?: unknown,
-  entropyValue?: unknown,
-  prefixValue?: unknown,
-  colemanValue?: unknown,
+  options: HdWalletArguments,
 ): Promise<ToolResult<DerivedWalletDetails>> {
+  const allowInvalidChecksumValue = options.allowInvalidChecksum;
   if (allowInvalidChecksumValue !== undefined && typeof allowInvalidChecksumValue !== "boolean") {
     throw new TypeError("allowInvalidChecksum must be a boolean");
   }
   const allowInvalidChecksum = allowInvalidChecksumValue ?? false;
-  const coleman = colemanFlag(colemanValue);
-  const path = requiredString(pathValue, "Derivation path");
-  const { blockchain, addressType } = await getBlockchain(
-    chainValue,
-    networkValue,
-    addressTypeValue,
-    prefixValue,
-  );
+  const coleman = colemanFlag(options.coleman);
+  const path = requiredString(options.path, "Derivation path");
+  const { blockchain, addressType } = await getBlockchain(chainValue, {
+    network: options.network,
+    addressType: options.addressType,
+    prefix: options.prefix,
+  });
   assertHdWalletPath(blockchain.name, path);
-  const passphrase = optionalString(passphraseValue, "BIP39 passphrase");
-  const language = parseBIP39Language(languageValue);
+  const passphrase = optionalString(options.passphrase, "BIP39 passphrase");
+  const language = parseBIP39Language(options.language);
   const wordlist = await loadBIP39Wordlist(language);
-  const mnemonic = mnemonicOrEntropy(mnemonicValue, entropyValue, wordlist, coleman);
+  const mnemonic = mnemonicOrEntropy(options, { wordlist, coleman });
   const words = normalizeMnemonic(mnemonic);
   const inspection = inspectBIP39Mnemonic(words, wordlist, { coleman });
   if (inspection.checksumValid === null) {
@@ -162,33 +166,32 @@ export interface DerivedXpubWalletDetails {
   address: string;
 }
 
+/** Watch-only tool arguments besides the chain, raw until the executor checks them. */
+export interface XpubWalletArguments extends Omit<ChainArguments, "coinType"> {
+  /** Extended public key such as an account `xpub`. */
+  readonly extendedKey?: unknown;
+  /** Normal levels below the key, such as `m/0/0`. */
+  readonly path?: unknown;
+}
+
 /**
  * Derives a watch-only address from an extended public key and normal levels below it.
  * @param chainValue - Blockchain name.
- * @param extendedKeyValue - Extended public key such as an account `xpub`.
- * @param pathValue - Normal levels below the key, such as `m/0/0`.
- * @param addressTypeValue - Optional address type that wins over the one the prefix stands for.
- * @param networkValue - Optional network name.
- * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot.
+ * @param options - Extended key and path, with an address type that wins over the key's prefix.
  * @returns {Promise<ToolResult<DerivedXpubWalletDetails>>} Public key and address at the path.
  */
 export async function deriveXpubWallet(
   chainValue: unknown,
-  extendedKeyValue: unknown,
-  pathValue: unknown,
-  addressTypeValue?: unknown,
-  networkValue?: unknown,
-  prefixValue?: unknown,
+  options: XpubWalletArguments,
 ): Promise<ToolResult<DerivedXpubWalletDetails>> {
-  const extendedKey = requiredString(extendedKeyValue, "Extended key");
-  const path = requiredString(pathValue, "Derivation path");
+  const extendedKey = requiredString(options.extendedKey, "Extended key");
+  const path = requiredString(options.path, "Derivation path");
   if (path.length > 256) throw new TypeError("Invalid derivation path");
-  const { blockchain, addressType } = await getBlockchain(
-    chainValue,
-    networkValue,
-    addressTypeValue,
-    prefixValue,
-  );
+  const { blockchain, addressType } = await getBlockchain(chainValue, {
+    network: options.network,
+    addressType: options.addressType,
+    prefix: options.prefix,
+  });
   const wallet = blockchain.deriveXpubWallet(extendedKey, path, addressType);
   const details = {
     chain: blockchain.name,
@@ -261,27 +264,33 @@ interface ParentArguments {
   revealKey: boolean;
 }
 
+/** Parent recovery arguments besides the extended key, raw until the executor checks them. */
+export interface ParentRecoveryArguments {
+  /** Child xprv, WIF or hex private key. */
+  readonly child?: unknown;
+  /** Child index; required unless the child is an xprv. */
+  readonly index?: unknown;
+  /** Whether to return the parent xprv, false by default. */
+  readonly revealKey?: unknown;
+}
+
 /**
  * Checks the parent recovery arguments for hosts that skip the schema, never echoing a key.
  * @param extendedKeyValue - Raw extended key argument
- * @param childValue - Raw child argument
- * @param indexValue - Raw index argument
- * @param revealKeyValue - Raw revealKey argument
+ * @param options - Raw child, index and revealKey arguments
  * @returns {ParentArguments} The checked arguments
  */
 function parentArguments(
   extendedKeyValue: unknown,
-  childValue: unknown,
-  indexValue: unknown,
-  revealKeyValue: unknown,
+  options: ParentRecoveryArguments,
 ): ParentArguments {
   const extendedKey = requiredString(extendedKeyValue, "Extended key");
   if (extendedKey.length > MAX_EXTENDED_KEY_LENGTH) {
     throw new RangeError("Extended key is too long");
   }
-  const child = childKeyArgument(childValue);
-  const requested = optionalIndex(indexValue, "Index");
-  const revealKey = revealKeyValue ?? false;
+  const child = childKeyArgument(options.child);
+  const requested = optionalIndex(options.index, { name: "Index" });
+  const revealKey = options.revealKey ?? false;
   if (typeof revealKey !== "boolean") throw new TypeError("revealKey must be a boolean");
   if (typeof child !== "string" && requested === undefined) {
     throw new TypeError("Index is required unless the child key is an xprv");
@@ -292,23 +301,14 @@ function parentArguments(
 /**
  * Recovers the parent of a leaked normal child; a child from another xpub is a result, not an error.
  * @param extendedKeyValue - Parent extended public key
- * @param childValue - Child xprv, WIF or hex private key
- * @param indexValue - Child index; required unless the child is an xprv
- * @param revealKeyValue - Whether to return the parent xprv, false by default
+ * @param options - Child key, its index and whether to return the parent xprv
  * @returns {ToolResult<RecoveredParentDetails>} Verdict, fingerprint and the xprv on request
  */
 export function recoverBip32Parent(
   extendedKeyValue: unknown,
-  childValue: unknown,
-  indexValue?: unknown,
-  revealKeyValue?: unknown,
+  options: ParentRecoveryArguments,
 ): ToolResult<RecoveredParentDetails> {
-  const { extendedKey, child, requested, revealKey } = parentArguments(
-    extendedKeyValue,
-    childValue,
-    indexValue,
-    revealKeyValue,
-  );
+  const { extendedKey, child, requested, revealKey } = parentArguments(extendedKeyValue, options);
   const prefix = extendedKey.slice(0, 4);
   let recovered: RecoveredParent;
   try {

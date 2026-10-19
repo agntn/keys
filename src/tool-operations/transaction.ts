@@ -47,14 +47,17 @@ function hashTypeName(hashType: number): string {
  * @returns {{ script: string; value: number }} The script hex and the value
  */
 function spentOutput(value: unknown, position: number): { script: string; value: number } {
-  const item = closedObject(value, `spent[${position}]`, ["script", "value"]);
+  const item = closedObject(value, { name: `spent[${position}]`, keys: ["script", "value"] });
   const script = requiredString(item["script"], `spent[${position}].script`);
   if (script.length > MAX_SPENT_SCRIPT_HEX_LENGTH || !HEX_BYTES.test(script)) {
     throw new TypeError(
       `spent[${position}].script must be hex without 0x, at most ${MAX_SPENT_SCRIPT_HEX_LENGTH} digits`,
     );
   }
-  const amount = optionalIndex(item["value"], `spent[${position}].value`, Number.MAX_SAFE_INTEGER);
+  const amount = optionalIndex(item["value"], {
+    name: `spent[${position}].value`,
+    maximum: Number.MAX_SAFE_INTEGER,
+  });
   if (amount === undefined) throw new TypeError(`spent[${position}].value must be satoshis`);
   return { script, value: amount };
 }
@@ -77,29 +80,37 @@ export function signatureText(signature: Readonly<InputSignature>, position: num
   ].join("\n");
 }
 
+/** The input the transaction tool reads and the outputs it spends, as the host passed them. */
+export interface TransactionSignaturesArguments {
+  readonly index?: unknown;
+  readonly spent?: unknown;
+}
+
 /**
  * Read the signatures of one transaction input with the sighash each one signs.
  * @param transactionValue - Raw signed transaction hex.
- * @param indexValue - Input to read.
- * @param spentValue - Outputs the input spends, one or one per input.
+ * @param options - The input `index` to read and the `spent` outputs, one or one per input.
  * @returns {ToolResult<TransactionSignaturesDetails>} r, s, z, hash type and key of each signature.
  */
 export function extractTransactionSignatures(
   transactionValue: unknown,
-  indexValue: unknown,
-  spentValue: unknown,
+  options: TransactionSignaturesArguments,
 ): ToolResult<TransactionSignaturesDetails> {
+  const { index: indexValue, spent: spentValue } = options;
   const transaction = requiredString(transactionValue, "Transaction");
   if (transaction.length > MAX_TRANSACTION_HEX_LENGTH || !HEX_BYTES.test(transaction)) {
     throw new TypeError(
       `Transaction must be hex without 0x, at most ${MAX_TRANSACTION_HEX_LENGTH} digits`,
     );
   }
-  const index = optionalIndex(indexValue, "Index", MAX_INPUT_INDEX);
+  const index = optionalIndex(indexValue, { name: "Index", maximum: MAX_INPUT_INDEX });
   if (index === undefined) throw new TypeError("Index must be the input to read");
-  const spent = boundedArray(spentValue, "spent", 1, MAX_SPENT_OUTPUTS).map((item, position) =>
-    spentOutput(item, position),
-  );
+  const outputs = boundedArray(spentValue, {
+    name: "spent",
+    minimum: 1,
+    maximum: MAX_SPENT_OUTPUTS,
+  });
+  const spent = outputs.map((item, position) => spentOutput(item, position));
   if (
     spent.reduce((total, output) => total + output.script.length, 0) > MAX_SPENT_SCRIPTS_HEX_LENGTH
   ) {

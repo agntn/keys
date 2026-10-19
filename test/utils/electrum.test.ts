@@ -18,7 +18,10 @@ describe("Electrum seed derivation", () => {
     const result = deriveSeed(vector.mnemonic, vector.passphrase);
     expect(hex.encode(result.seed)).toBe(vector.seed);
     expect(result.scheme).toBe("electrum");
-    const wallet = await deriveElectrumWallet(vector.mnemonic, vector.path, vector.passphrase);
+    const wallet = await deriveElectrumWallet(vector.mnemonic, {
+      path: vector.path,
+      passphrase: vector.passphrase,
+    });
     expect(wallet.details).toMatchObject({
       address: vector.address,
       publicKey: vector.publicKey,
@@ -86,7 +89,9 @@ describe("Electrum seed derivation", () => {
       ["x".repeat(4097), vector.path],
       [vector.mnemonic, vector.path, "x".repeat(4097)],
     ]) {
-      await expect(deriveElectrumWallet(args[0], args[1], args[2], args[3])).rejects.toThrow();
+      await expect(
+        deriveElectrumWallet(args[0], { path: args[1], passphrase: args[2], network: args[3] }),
+      ).rejects.toThrow();
     }
   });
 });
@@ -103,14 +108,10 @@ describe("Old Electrum seeds", () => {
         expect(hex.encode(deriveOldPublicKey(masterPublicKey, child.change, child.index))).toBe(
           child.publicKey,
         );
-        const wallet = await deriveElectrumWallet(
-          vector.mnemonic,
-          undefined,
-          undefined,
-          undefined,
-          child.change,
-          child.index,
-        );
+        const wallet = await deriveElectrumWallet(vector.mnemonic, {
+          change: child.change,
+          index: child.index,
+        });
         expect(wallet.details).toEqual({
           chain: "bitcoin",
           network: "mainnet",
@@ -142,10 +143,13 @@ describe("Old Electrum seeds", () => {
     const [vector] = electrumOldVectors;
     const [first] = vector.children;
     for (const path of [undefined, "", "  "]) {
-      const wallet = await deriveElectrumWallet(vector.mnemonic, path);
+      const wallet = await deriveElectrumWallet(vector.mnemonic, { path });
       expect(wallet.details.address).toBe(first.address);
     }
-    const testnet = await deriveElectrumWallet(vector.mnemonic, undefined, "", "testnet");
+    const testnet = await deriveElectrumWallet(vector.mnemonic, {
+      passphrase: "",
+      network: "testnet",
+    });
     expect(testnet.details).toMatchObject({ network: "testnet", publicKey: first.publicKey });
     expect(testnet.details.address).toMatch(/^[mn]/u);
   });
@@ -167,20 +171,33 @@ describe("Old Electrum seeds", () => {
   it("keeps paths, passphrases, change and index to the seeds that use them", async () => {
     const old = electrumOldVectors[0].mnemonic;
     const segwit = electrumVectors[0];
-    for (const [args, message] of [
-      [[old, "m/0/0"], "Old Electrum seeds have no BIP32 path"],
-      [[old, undefined, "extension"], "Old Electrum seeds take no passphrase"],
-      [[old, undefined, "", "", 2], "Change must be an integer between 0 and 1"],
-      [[old, undefined, "", "", 0, 2 ** 31], "Index must be an integer between 0 and 2147483647"],
+    for (const [mnemonic, options, message] of [
+      [old, { path: "m/0/0" }, "Old Electrum seeds have no BIP32 path"],
+      [old, { passphrase: "extension" }, "Old Electrum seeds take no passphrase"],
       [
-        [segwit.mnemonic, segwit.path, "", "", 0],
+        old,
+        { passphrase: "", network: "", change: 2 },
+        "Change must be an integer between 0 and 1",
+      ],
+      [
+        old,
+        { passphrase: "", network: "", change: 0, index: 2 ** 31 },
+        "Index must be an integer between 0 and 2147483647",
+      ],
+      [
+        segwit.mnemonic,
+        { path: segwit.path, passphrase: "", network: "", change: 0 },
         "Change and index apply to old Electrum seeds only",
       ],
-      [[segwit.mnemonic, segwit.path, "", "", undefined, 0], "Change and index apply"],
-      [[segwit.mnemonic, undefined], "Standard and SegWit Electrum seeds need a BIP32 path"],
-      [[segwit.mnemonic, " "], "need a BIP32 path"],
+      [
+        segwit.mnemonic,
+        { path: segwit.path, passphrase: "", network: "", index: 0 },
+        "Change and index apply",
+      ],
+      [segwit.mnemonic, {}, "Standard and SegWit Electrum seeds need a BIP32 path"],
+      [segwit.mnemonic, { path: " " }, "need a BIP32 path"],
     ] as const) {
-      await expect(deriveElectrumWallet(...args)).rejects.toThrow(message);
+      await expect(deriveElectrumWallet(mnemonic, options)).rejects.toThrow(message);
     }
   });
 });
