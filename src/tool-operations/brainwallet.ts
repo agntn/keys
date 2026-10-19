@@ -10,7 +10,14 @@ import {
   type BrainwalletRecipe,
   derive as deriveBrainwalletKey,
 } from "../utils/brainwallet/index.ts";
-import { isUnset, costArgument, oneOf, requiredString, optionalName } from "./arguments.ts";
+import {
+  isUnset,
+  isUnsetCost,
+  costArgument,
+  oneOf,
+  requiredString,
+  optionalName,
+} from "./arguments.ts";
 import { getBlockchain } from "./blockchain.ts";
 import { type ToolResult, content } from "./results.ts";
 
@@ -28,15 +35,6 @@ export interface DerivedBrainwalletDetails {
 }
 
 const EVEN_HEX = /^(?:[0-9a-f]{2})*$/iu;
-
-/**
- * Tells whether a cost was left out. OMP sends 0 for an unused number, which no KDF takes.
- * @param value - Raw argument
- * @returns {boolean} True for a missing, zero or blank value
- */
-function isUnsetCost(value: unknown): boolean {
-  return value === 0 || isUnset(value);
-}
 
 /**
  * Reads the KDF and its costs, refusing the other KDF's so no option drops silently.

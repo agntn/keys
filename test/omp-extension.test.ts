@@ -153,6 +153,9 @@ describe("keys OMP extension", () => {
     const { mnemonic } = bip39TestVectors;
     const seed = (passphrase: string) => call("keys_bip39_seed_derive", { mnemonic, passphrase });
     expect(await seed("")).not.toBe(await seed(" "));
+    const unusedRounds = await call("keys_bip39_seed_derive", { mnemonic, rounds: 0 });
+    expect(unusedRounds).toContain(bip39TestVectors.seed);
+    expect(unusedRounds).not.toContain("Warning");
 
     const [scrypt, , pbkdf2] = brainwalletVectors;
     const { passphrase, salt } = brainwalletInput;

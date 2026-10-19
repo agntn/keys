@@ -339,6 +339,14 @@ export const DERIVE_BIP39_SEED_PARAMETERS = Type.Object(
     ),
     language: BIP39_LANGUAGE_PARAMETER,
     coleman: COLEMAN_PARAMETER,
+    rounds: Type.Optional(
+      Type.Integer({
+        minimum: 1,
+        maximum: KDF_COST_LIMITS.rounds,
+        description:
+          "PBKDF2-HMAC-SHA512 rounds. Default: 2048, the only count BIP39 knows; any other gives a seed wallet apps never derive",
+      }),
+    ),
   },
   { additionalProperties: false },
 );

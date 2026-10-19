@@ -15,6 +15,7 @@ import {
   loadWordlist,
 } from "../../src/utils/bip39";
 import { hex } from "@agntn/encodings/hex";
+import { getMasterKeyFromSeed } from "../../src/utils/bip32";
 import {
   bip39TestVectors,
   colemanBadChecksum,
@@ -22,6 +23,7 @@ import {
   frenchMuralMnemonic,
   invalidChecksumPuzzle,
   localizedMnemonicVectors,
+  pbkdf2RoundsVectors,
 } from "../fixtures";
 
 describe("BIP39 Utils", () => {
@@ -455,6 +457,48 @@ describe("BIP39 Utils", () => {
         768,
       );
     });
+  });
+
+  describe("PBKDF2 rounds", () => {
+    const { mnemonic, passphrase, fingerprints } = pbkdf2RoundsVectors;
+    const fingerprint = (seed: Uint8Array) =>
+      getMasterKeyFromSeed(seed).fingerprint.toString(16).padStart(8, "0");
+
+    it.each(fingerprints)("finds the Genesis master key at $rounds rounds", (vector) => {
+      const seed = mnemonicToSeed(mnemonic, passphrase, { rounds: vector.rounds });
+      expect(fingerprint(seed)).toBe(vector.fingerprint);
+    });
+
+    it("misses both keys at BIP39's own 2048", () => {
+      const seed = mnemonicToSeed(mnemonic, passphrase);
+      expect(fingerprints.map((vector) => vector.fingerprint)).not.toContain(fingerprint(seed));
+      expect(mnemonicToSeed(mnemonic, passphrase, { rounds: 2048 })).toEqual(seed);
+    });
+
+    it("runs 2048 rounds the way BIP39 does, Coleman lengths included", () => {
+      const { mnemonic: tiny, seed } = colemanMnemonicVectors[0];
+      const { mnemonic: standard, passphrase: trezor, seedWithPassphrase } = bip39TestVectors;
+      expect(hex.encode(mnemonicToSeed(tiny, "", { coleman: true, rounds: 2048 }))).toBe(seed);
+      expect(hex.encode(mnemonicToSeed(standard, trezor, { coleman: true, rounds: 2048 }))).toBe(
+        seedWithPassphrase,
+      );
+    });
+
+    it("keeps the length check when it leaves BIP39's PBKDF2 behind", () => {
+      const { mnemonic: tiny } = colemanMnemonicVectors[0];
+      expect(() => mnemonicToSeed(tiny, "", { rounds: 1 })).toThrow("Invalid mnemonic");
+      expect(() => mnemonicToSeed("abandon abandon", "", { coleman: true, rounds: 1 })).toThrow(
+        "multiple of 3",
+      );
+      expect(mnemonicToSeed(tiny, "", { coleman: true, rounds: 1 })).toHaveLength(64);
+    });
+
+    it.each([0, -1, 1.5, Number.NaN, Number.MAX_SAFE_INTEGER + 1])(
+      "refuses %s rounds",
+      (rounds) => {
+        expect(() => mnemonicToSeed(mnemonic, passphrase, { rounds })).toThrow(RangeError);
+      },
+    );
   });
 
   it("integrates with the wallet generation process", () => {

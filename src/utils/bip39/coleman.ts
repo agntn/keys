@@ -1,4 +1,4 @@
-import { Sha512Hasher, pbkdf2, sha256 } from "@agntn/hashes";
+import { sha256 } from "@agntn/hashes";
 
 /** Word counts BIP39 itself allows. */
 export const BIP39_WORD_COUNTS: readonly number[] = [12, 15, 18, 21, 24];
@@ -77,21 +77,4 @@ export function decodeColeman(
   );
   const checksum = bits & ((1n << checksumLength) - 1n);
   return { entropy, checksumValid: checksum === checksumBits(entropy) };
-}
-
-/**
- * Stretches any phrase into the 64-byte BIP39 seed, PBKDF2-SHA512 at 2048 rounds.
- * @param mnemonic - Phrase, NFKD normalized here
- * @param passphrase - BIP39 passphrase, NFKD normalized and never trimmed
- * @returns {Uint8Array} The seed
- */
-export function colemanSeed(mnemonic: string, passphrase: string): Uint8Array {
-  const encoder = new TextEncoder();
-  return pbkdf2(
-    () => new Sha512Hasher(),
-    encoder.encode(mnemonic.normalize("NFKD")),
-    encoder.encode(`mnemonic${passphrase}`.normalize("NFKD")),
-    2048,
-    64,
-  );
 }

@@ -8,6 +8,7 @@ import {
   bip137MessageVectors,
   bip39TestVectors,
   colemanMnemonicVectors,
+  pbkdf2RoundsVectors,
   bitcoinMessageVectors,
   bitcoinTestVectors,
   electrumOldVectors,
@@ -57,6 +58,7 @@ import {
 import Bitcoin from "../src/blockchains/bitcoin.ts";
 import { callTool, createMcpServer, toolListings } from "../src/mcp.ts";
 import { serverInfo } from "../src/server-info.ts";
+import { getMasterKeyFromSeed } from "../src/utils/bip32/index.ts";
 import {
   TOOL_ADDRESS_TYPES_BY_CHAIN,
   TOOL_CHAINS,
@@ -213,6 +215,39 @@ describe("keys MCP server", () => {
       expect(result.isError).toBe(true);
       expect(text(result.content)).toContain(`Invalid BIP39 mnemonic: ${reason}`);
       expect(text(result.content)).not.toContain("allowInvalidChecksum");
+    }
+  });
+
+  it("runs PBKDF2 at the rounds an agent asks for through MCP", async () => {
+    const client = await connectTestClient();
+    const { mnemonic, passphrase, fingerprints } = pbkdf2RoundsVectors;
+    const [{ rounds, fingerprint }] = fingerprints;
+
+    const result = await client.callTool({
+      name: "keys_bip39_seed_derive",
+      arguments: { mnemonic, passphrase, rounds },
+    });
+    expect(result.isError).not.toBe(true);
+    const seed = /Seed: ([0-9a-f]{128})/u.exec(text(result.content))?.[1] ?? "";
+    expect(getMasterKeyFromSeed(hex.decode(seed)).fingerprint.toString(16).padStart(8, "0")).toBe(
+      fingerprint,
+    );
+    expect(text(result.content)).toContain("Warning: Not BIP39's 2048 PBKDF2 rounds");
+
+    const standard = await client.callTool({
+      name: "keys_bip39_seed_derive",
+      arguments: { mnemonic: bip39TestVectors.mnemonic, rounds: 2048 },
+    });
+    expect(text(standard.content)).toContain(`Seed: ${bip39TestVectors.seed}`);
+    expect(text(standard.content)).not.toContain("Warning");
+
+    for (const bad of [0, 10_000_001, 1.5, "2048"]) {
+      const refused = await client.callTool({
+        name: "keys_bip39_seed_derive",
+        arguments: { mnemonic, rounds: bad },
+      });
+      expect(refused.isError).toBe(true);
+      expect(text(refused.content)).not.toContain(mnemonic);
     }
   });
 

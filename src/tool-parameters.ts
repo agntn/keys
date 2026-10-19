@@ -55,12 +55,13 @@ export const MAX_MNEMONIC_LENGTH = 9216;
 /** Maximum passphrase and salt length the brainwallet tool takes, in characters. */
 export const MAX_BRAINWALLET_INPUT_LENGTH = 4096;
 
-/** Cost ceilings of the brainwallet and keystore tools, the ones `@agntn/hashes` sets on its own tools. */
+/** KDF cost ceilings of the tools, the same ones `@agntn/hashes` sets on its own. */
 export const KDF_COST_LIMITS = {
   N: 2 ** 20,
   r: 32,
   p: 16,
   iterations: 10_000_000,
+  rounds: 10_000_000,
   keyLength: 1024,
 } as const;
 

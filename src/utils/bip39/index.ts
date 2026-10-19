@@ -1,12 +1,7 @@
+import { Sha512Hasher, pbkdf2 } from "@agntn/hashes";
 import * as bip39 from "@scure/bip39";
 import * as english from "@scure/bip39/wordlists/english.js";
-import {
-  BIP39_WORD_COUNTS,
-  colemanSeed,
-  decodeColeman,
-  encodeColeman,
-  isWordCount,
-} from "./coleman.ts";
+import { BIP39_WORD_COUNTS, decodeColeman, encodeColeman, isWordCount } from "./coleman.ts";
 import { isBIP39Language, type BIP39Language } from "./languages.ts";
 
 export { BIP39_LANGUAGES, isBIP39Language } from "./languages.ts";
@@ -24,6 +19,15 @@ export interface MnemonicOptions {
   /** Any 3 words per 32 bits, 3 to 768, as Ian Coleman's tool writes. Not BIP39. Default: false. */
   readonly coleman?: boolean;
 }
+
+/** How a phrase is read and how hard PBKDF2 works it into a seed. */
+export interface SeedOptions extends MnemonicOptions {
+  /** PBKDF2 rounds. Anything but 2048 makes a seed no wallet app will find. Default: 2048. */
+  readonly rounds?: number;
+}
+
+/** Rounds BIP39 fixes for its PBKDF2. */
+const BIP39_ROUNDS = 2048;
 
 /** A normalized word and its index in one BIP39 word list. */
 export interface BIP39WordLookup {
@@ -180,19 +184,55 @@ export function validateMnemonic(
  * Stretches a phrase into the 64-byte BIP39 seed, checking its length but never its checksum.
  * @param mnemonic - Words separated by single spaces
  * @param passphrase - BIP39 passphrase, empty by default
- * @param options - `coleman` takes Ian Coleman's lengths too
+ * @param options - `coleman` takes Ian Coleman's lengths too, `rounds` replaces BIP39's 2048
  * @returns {Uint8Array} The seed, which is not a BIP32 master key yet
  */
 export function mnemonicToSeed(
   mnemonic: string,
   passphrase = "",
-  options: MnemonicOptions = {},
+  options: SeedOptions = {},
 ): Uint8Array {
-  if (options.coleman !== true) return bip39.mnemonicToSeedSync(mnemonic, passphrase);
-  if (!isWordCount(mnemonic.normalize("NFKD").split(" ").length, true)) {
-    throw new Error("Invalid mnemonic: Coleman phrases have a multiple of 3 words, 3 to 768");
+  const rounds = seedRounds(options.rounds);
+  const coleman = options.coleman === true;
+  if (!coleman && rounds === BIP39_ROUNDS) return bip39.mnemonicToSeedSync(mnemonic, passphrase);
+  if (!isWordCount(mnemonic.normalize("NFKD").split(" ").length, coleman)) {
+    throw new Error(
+      coleman
+        ? "Invalid mnemonic: Coleman phrases have a multiple of 3 words, 3 to 768"
+        : "Invalid mnemonic",
+    );
   }
-  return colemanSeed(mnemonic, passphrase);
+  return stretchSeed(mnemonic, passphrase, rounds);
+}
+
+/**
+ * Reads the round count, refusing anything PBKDF2 cannot run.
+ * @param rounds - Requested count, BIP39's 2048 when omitted
+ * @returns {number} The count
+ */
+function seedRounds(rounds = BIP39_ROUNDS): number {
+  if (!Number.isSafeInteger(rounds) || rounds < 1) {
+    throw new RangeError("rounds must be a positive integer");
+  }
+  return rounds;
+}
+
+/**
+ * Runs PBKDF2-HMAC-SHA512 over any phrase, BIP39's salt and NFKD included.
+ * @param mnemonic - Phrase, NFKD normalized here
+ * @param passphrase - BIP39 passphrase, NFKD normalized and never trimmed
+ * @param rounds - PBKDF2 rounds
+ * @returns {Uint8Array} The 64-byte seed
+ */
+function stretchSeed(mnemonic: string, passphrase: string, rounds: number): Uint8Array {
+  const encoder = new TextEncoder();
+  return pbkdf2(
+    () => new Sha512Hasher(),
+    encoder.encode(mnemonic.normalize("NFKD")),
+    encoder.encode(`mnemonic${passphrase}`.normalize("NFKD")),
+    rounds,
+    64,
+  );
 }
 
 /**
