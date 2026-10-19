@@ -3,6 +3,7 @@ import { blockchains } from "../../src/index.ts";
 import { getMasterKeyFromSeed as getBIP32MasterKey } from "../../src/utils/bip32/index.ts";
 import { loadWordlist } from "../../src/utils/bip39/index.ts";
 import { deriveSeed as deriveElectrumSeed } from "../../src/utils/electrum/index.ts";
+import { deriveMnemonicKey } from "../../src/utils/hd.ts";
 import { getMasterKeyFromSeed as getSLIP10MasterKey } from "../../src/utils/slip10/index.ts";
 import { hex } from "@agntn/encodings/hex";
 import {
@@ -132,6 +133,14 @@ describe("HD checksum policy", () => {
     expect(() =>
       chain.deriveHDWallet(mnemonic, { path: "m/44'/501'/0'/0", allowInvalidChecksum: true }),
     ).toThrow("Non-hardened");
+  });
+});
+
+describe("HD curves", () => {
+  it("refuses to walk BIP32 or SLIP-10 for an sr25519 key", () => {
+    expect(() =>
+      deriveMnemonicKey(bip39TestVectors.mnemonic, { path: "m/0'", curve: "sr25519" }),
+    ).toThrow("sr25519 keys walk Substrate junctions");
   });
 });
 
@@ -309,7 +318,7 @@ describe("Electrum wallets through the chain classes", () => {
     );
   });
 
-  it.each(["solana", "cardano", "polkadot", "monero"] as const)(
+  it.each(["solana", "cardano", "monero"] as const)(
     "refuses %s, whose keys are ed25519",
     async (name) => {
       const chain = await blockchains[name]()();
@@ -318,6 +327,13 @@ describe("Electrum wallets through the chain classes", () => {
       );
     },
   );
+
+  it.each(["sr25519", "ed25519"])("refuses polkadot %s keys", async (scheme) => {
+    const chain = await blockchains.polkadot()();
+    expect(() => chain.deriveElectrumWallet(seed, { path: segwit.path, scheme })).toThrow(
+      `polkadot ${scheme} keys do not derive from Electrum seeds`,
+    );
+  });
 
   it("refuses ed25519 on the XRP Ledger and walks secp256k1", async () => {
     const chain = await blockchains.xrpl()();

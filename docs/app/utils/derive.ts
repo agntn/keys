@@ -14,7 +14,7 @@ export type KeysModule = {
 export type AddressRow = {
   readonly id: string;
   readonly chain: string;
-  readonly curve: "secp256k1" | "ed25519";
+  readonly curve: "secp256k1" | "ed25519" | "sr25519";
   readonly format: string;
   readonly address: string;
 };
@@ -248,7 +248,17 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
       ),
       addressRow(near, hex, "near", "NEAR", "ed25519", "implicit"),
       addressRow(cosmos, hex, "atom", "Cosmos", "secp256k1", "bech32"),
-      addressRow(polkadot, hex, "dot", "Polkadot", "ed25519", "ss58"),
+      addressRow(polkadot, hex, "dot", "Polkadot", "sr25519", "ss58"),
+      addressRow(
+        polkadot,
+        hex,
+        "dot-ed25519",
+        "Polkadot",
+        "ed25519",
+        "ss58",
+        { scheme: "ed25519" },
+        "ed25519",
+      ),
       ...moneroRows(monero, hex),
     ],
   };

@@ -1,5 +1,6 @@
 import {
   PRIVATE_KEY_SCHEMA_PATTERN,
+  SIGNING_KEY_SCHEMA_PATTERN,
   CHAIN_PUBLIC_KEY_SCHEMA_PATTERN,
   MONERO_SEED_SCHEMA_PATTERN,
   KDF_COST_LIMITS,
@@ -13,6 +14,8 @@ export function requiredString(value: unknown, name: string): string {
 }
 
 export const PRIVATE_KEY_HEX = new RegExp(PRIVATE_KEY_SCHEMA_PATTERN, "u");
+
+const SIGNING_KEY_HEX = new RegExp(SIGNING_KEY_SCHEMA_PATTERN, "u");
 
 const CHAIN_PUBLIC_KEY = new RegExp(CHAIN_PUBLIC_KEY_SCHEMA_PATTERN, "u");
 
@@ -40,6 +43,28 @@ export function hexArgument(value: unknown, argument: HexArgument): string {
   const text = requiredString(value, name);
   if (!pattern.test(text)) throw new TypeError(`${name} must be ${shape} without 0x`);
   return text;
+}
+
+/**
+ * Reads a hex private key, on polkadot also the 64-byte sr25519 secret of a derived account.
+ * @param value - Argument as the host passed it.
+ * @param chain - Name of the chain the key belongs to.
+ * @returns {string} The key as given.
+ * @throws {TypeError} On any other shape.
+ */
+export function chainPrivateKey(value: unknown, chain: string): string {
+  if (chain !== "polkadot") {
+    return hexArgument(value, {
+      name: "Private key",
+      pattern: PRIVATE_KEY_HEX,
+      shape: "64 hex characters",
+    });
+  }
+  return hexArgument(value, {
+    name: "Private key",
+    pattern: SIGNING_KEY_HEX,
+    shape: "64 hex characters, or 128 for the sr25519 secret of a derived account,",
+  });
 }
 
 /**

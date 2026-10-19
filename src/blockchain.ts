@@ -111,8 +111,8 @@ export abstract class AbstractBlockchain implements Blockchain {
     const compressed = options?.compressed;
     if (compressed === undefined) return;
     const curve = this.resolveCurve(options);
-    if (curve === "ed25519") {
-      throw new RangeError(`${this.name} ed25519 keys take no compressed`);
+    if (curve !== "secp256k1") {
+      throw new RangeError(`${this.name} ${curve} keys take no compressed`);
     }
     const form = this.addressKeyForm;
     if (form === undefined || compressed !== (form === "uncompressed")) return;

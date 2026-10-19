@@ -1,3 +1,4 @@
+import { deriveHard, deriveSoft, expandSeed } from "@agntn/curves/sr25519";
 import { Sha512Hasher, blake2b, pbkdf2 } from "@agntn/hashes";
 import { concatBytes } from "./bytes.ts";
 
@@ -18,6 +19,15 @@ const MAX_JUNCTION_NUMBER = 2n ** 64n - 1n;
 
 /** Bytes of a chain code, the space a junction fills or hashes down to. */
 const CHAIN_CODE_BYTES = 32;
+
+/** Fixed bytes a soft sr25519 step mixes into the child nonce, so one path gives one key. */
+const SOFT_NONCE_RANDOM = "00".repeat(32);
+
+/** One junction of a Substrate path: its chain code, and whether a public key can walk it. */
+export interface Junction {
+  readonly chainCode: Uint8Array;
+  readonly soft: boolean;
+}
 
 /**
  * SCALE's compact length prefix for the byte counts a path can hold.
@@ -81,12 +91,12 @@ function chainCode(name: string): Uint8Array {
 }
 
 /**
- * Splits a Substrate path into chain codes, refusing the soft junctions ed25519 cannot walk.
- * @param path - `//hard` junctions such as `//polkadot//0`; empty or `m` for the root key
- * @returns {Uint8Array[]} One chain code per junction, in order
- * @throws {RangeError} When the path is malformed, holds a soft junction or a `///password`
+ * Splits a Substrate path into junctions.
+ * @param path - Junctions such as `//polkadot/0`; empty or `m` for the root key
+ * @returns {Junction[]} One junction per step, in order
+ * @throws {RangeError} When the path is malformed or holds a `///password`
  */
-export function parseHardJunctions(path: string): Uint8Array[] {
+export function parseJunctions(path: string): Junction[] {
   if (path === "" || path === "m") return [];
   if (path.includes("///")) {
     throw new RangeError("Pass the ///password part of a Substrate URI as the passphrase instead");
@@ -96,12 +106,10 @@ export function parseHardJunctions(path: string): Uint8Array[] {
       "A Substrate path is junctions such as //polkadot//0, or m for the root key",
     );
   }
-  return Array.from(path.matchAll(JUNCTION), ([, hard, name = ""]) => {
-    if (hard !== "/") {
-      throw new RangeError("A soft /junction needs sr25519; ed25519 derives hard //junctions only");
-    }
-    return chainCode(name);
-  });
+  return Array.from(path.matchAll(JUNCTION), ([, hard, name = ""]) => ({
+    chainCode: chainCode(name),
+    soft: hard !== "/",
+  }));
 }
 
 /**
@@ -118,12 +126,31 @@ export function miniSecret(entropy: Uint8Array, password = ""): Uint8Array {
 /**
  * Walks an ed25519 seed down hard junctions the way subkey and polkadot.js do.
  * @param seed - The 32-byte parent seed, the mini secret at the root
- * @param chainCodes - Chain codes from `parseHardJunctions`
+ * @param junctions - Junctions from `parseJunctions`
  * @returns {Uint8Array} The 32-byte seed of the child key
+ * @throws {RangeError} At a soft junction, which ed25519 cannot walk
  */
-export function deriveEd25519Hard(seed: Uint8Array, chainCodes: readonly Uint8Array[]): Uint8Array {
-  return chainCodes.reduce(
-    (parent, code) => blake2b(concatBytes(ED25519_HDKD, parent, code), 32),
-    seed,
-  );
+export function deriveEd25519(seed: Uint8Array, junctions: readonly Junction[]): Uint8Array {
+  return junctions.reduce((parent, { chainCode: code, soft }) => {
+    if (soft) {
+      throw new RangeError("A soft /junction needs sr25519; ed25519 derives hard //junctions only");
+    }
+    return blake2b(concatBytes(ED25519_HDKD, parent, code), 32);
+  }, seed);
+}
+
+/**
+ * Walks sr25519 junctions like subkey: the mini secret at the root, the 64-byte secret below it.
+ * @param seed - The 32-byte mini secret
+ * @param junctions - Junctions from `parseJunctions`
+ * @returns {string} The mini secret at the root, the child's 64-byte secret below it, as hex
+ */
+export function deriveSr25519(seed: Uint8Array, junctions: readonly Junction[]): string {
+  if (junctions.length === 0) return seed.toHex();
+  return junctions.reduce((secret, { chainCode: code, soft }) => {
+    const chain = code.toHex();
+    return soft
+      ? deriveSoft(secret, chain, { random: SOFT_NONCE_RANDOM })
+      : deriveHard(secret, chain);
+  }, expandSeed(seed.toHex()));
 }

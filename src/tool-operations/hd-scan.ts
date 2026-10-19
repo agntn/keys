@@ -5,7 +5,6 @@ import {
   SCAN_ACCOUNTS,
   SCAN_INDICES,
 } from "../tool-parameters.ts";
-import type { Curve } from "../types.ts";
 import { getMasterKeyFromSeed } from "../utils/bip32/index.ts";
 import {
   inspect as inspectBIP39Mnemonic,
@@ -154,11 +153,11 @@ function bip39ScanSource(
     secp256k1: nodeWalker(getMasterKeyFromSeed(seed)),
     ed25519: nodeWalker(getSLIP10MasterKey(seed)),
   };
-  const curveOf = (scheme: ScanScheme): Curve => {
+  const curveOf = (scheme: ScanScheme): keyof typeof walkers => {
     if (scheme.addressType === "ed25519" || scheme.addressType === "secp256k1") {
       return scheme.addressType;
     }
-    return typeof blockchain.curve === "string" ? blockchain.curve : "secp256k1";
+    return blockchain.curve === "ed25519" ? "ed25519" : "secp256k1";
   };
   return {
     source: {

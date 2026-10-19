@@ -5,7 +5,12 @@ import { sha256 } from "@agntn/hashes";
 import { hex } from "@agntn/encodings/hex";
 import { evmSignMessage, evmVerifyMessage } from "../../src/utils/evm";
 import { ed25519SignMessage, ed25519VerifyMessage } from "../../src/utils/ed25519-chains";
-import { secp256k1TestVectors, ed25519TestVectors, testMessages } from "../fixtures";
+import {
+  secp256k1TestVectors,
+  ed25519TestVectors,
+  polkadotSr25519TestVectors,
+  testMessages,
+} from "../fixtures";
 import type { Blockchain, Curve, KeyOptions } from "../../src/types";
 
 describe("Signing utilities", () => {
@@ -347,6 +352,50 @@ describe("Signing utilities", () => {
       const signature = ed25519SignMessage(testMessage, { privateKey: ed25519TestPrivateKey });
 
       expect(hex.decode(signature).length).toBe(64);
+    });
+  });
+
+  describe("sr25519 signing", () => {
+    const { key } = polkadotSr25519TestVectors;
+
+    it("signs the raw bytes under the substrate context, from either key form", () => {
+      for (const privateKey of [ed25519TestPrivateKey, key.secret]) {
+        const signature = signMessage(testMessage, { privateKey, curve: "sr25519" });
+        expect(hex.decode(signature).length).toBe(64);
+        expect(
+          verifyMessage(testMessage, { signature, publicKey: key.publicKey, curve: "sr25519" }),
+        ).toBe(true);
+        expect(
+          verifyMessage(`${testMessage}!`, {
+            signature,
+            publicKey: key.publicKey,
+            curve: "sr25519",
+          }),
+        ).toBe(false);
+      }
+    });
+
+    it("fails a malformed signature or key instead of throwing", () => {
+      const signature = signMessage(testMessage, {
+        privateKey: ed25519TestPrivateKey,
+        curve: "sr25519",
+      });
+      expect(
+        verifyMessage(testMessage, { signature: "00", publicKey: key.publicKey, curve: "sr25519" }),
+      ).toBe(false);
+      expect(
+        verifyMessage(testMessage, { signature, publicKey: "ff".repeat(32), curve: "sr25519" }),
+      ).toBe(false);
+    });
+
+    it("refuses the recovery byte", () => {
+      expect(() =>
+        signMessage(testMessage, {
+          privateKey: ed25519TestPrivateKey,
+          curve: "sr25519",
+          recovered: true,
+        }),
+      ).toThrow("secp256k1 only");
     });
   });
 });

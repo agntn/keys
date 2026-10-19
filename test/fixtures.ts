@@ -758,6 +758,94 @@ export const polkadotTestVectors = {
 } as const;
 
 /**
+ * Accounts by @polkadot/util-crypto 14.0.3, `keyFromPath` on sr25519 over the BIP39 mnemonic:
+ * path, public key, key half of the secret, SS58 0, 2 and 42. Soft steps there draw a random nonce.
+ */
+export const polkadotSr25519TestVectors = {
+  wallets: [
+    [
+      "m",
+      "66933bd1f37070ef87bd1198af3dacceb095237f803f3d32b173e6b425ed7972",
+      "701936e0e7d812861f173d366507a35056421839bda656a94ebf9eb70b1d666b",
+      "13KVd4f2a4S5pLp4gTTFezyXdPWx27vQ9vS6xBXJ9yWVd7xo",
+      "Etp93jqLeBY8TczVXDJQoWNvMoY8VBSXoYNBYou5ghUBeC1",
+      "5EPCUjPxiHAcNooYipQFWr9NmmXJKpNG5RhcntXwbtUySrgH",
+    ],
+    [
+      "//polkadot//0",
+      "68852a8ff5ad05623064600d5c02f33fc6546a30e698127fcc05f987d9e4ca38",
+      "401e9149591f46c69e017aa11c9b934b4de4e193c2c0fc0e9ae6692fc3206474",
+      "13N3YF2JiKJsHjoEkAesZgiSGa19RgDrzvzx7pJvhR9UAiCH",
+      "EwN4E77Uu4KbrcAZEQvKVFHZYHjY3UuNp7DMBbXd8LSjYYK",
+      "5ERkPumErY3PrCninXbsRXtHQx1VjNfivSGTxXKa9L7wzPfD",
+    ],
+    [
+      "//0",
+      "5244eb2b8a9f975c603485c5a76eeec41fdad88aa6ef204b7c56691940ad1671",
+      "208c2ccf218c793ecd08f6f9ce0698524e536f5d19103fe584bf6d7fffb7f87d",
+      "12rsQBSiizNCu3dZDshfkVwB34XDwiqyVQJP6URvGo31YGdp",
+      "ESBvAXXVa7fDASV2wTiWJU2L2op4671sHQeKqiXCWDz6uGu",
+      "5DvaFrBesD6jTWd3GEefcM72BSXaFRHqQuZtwBSZii1VMnuP",
+    ],
+    [
+      `//${"x".repeat(40)}`,
+      "d0916aa196c0ba2b9439533980246f01b4e9c7f9c19776ce3dae3e46c0481d18",
+      "30db47126485b40f044e26fa8da5b4435b0bc44532c9fb54a2796a1951b22f44",
+      "15iUA9g1QS42ZMHw6jtoYRMDLKbtiPXuAXVkZWLZCWS2oZ6p",
+      "HHng8kpB1oUsU6ruoerJDt4dHtUpknwYQc1nsdA8Dd1NDiX",
+      "5GnB1pQwYenZ7pHR96qoQGX4UhcF25ym62mGQDMCeRQWdCLj",
+    ],
+    [
+      "/0",
+      "0c4f096369eaeea12066045a810c9e5ea73b81d420c1b606324050ec477ab676",
+      "f88bdf08b4d8be4bc493661b1d88fc1fdfa2911f30ed48b5373fd7d1c9e27522",
+      "1H946gSKhhSKfnXR8ekj9EDH4DCzfSB8zAVfG3GtfauiuaQ",
+      "CrTa5mF6HStdnbTECQoUwm4a2Vo72hDWsGktdKspNmtHUJG",
+      "5CLqumRNTvRxt8n1TVbkazQ4RSDZJMt34VS1Vy3vLaZPYJom",
+    ],
+    [
+      "//polkadot/0",
+      "c2cb78846562cdbf41fcd022f38316e050829010e4805a2658b8e0a59eb3312b",
+      "c0a3ce46e962d9aadce0ac9eecc64d5a8c7c95bab7e06827ef23423d6083b662",
+      "15QQjX54qES39Qp8cGuNrmNQn6sPH9Zon2kc91PK49gyWiZN",
+      "GyjFW9sbpBVTXd4RLfRcZuG559yPWpr9ursNNfuyrsx5VQa",
+      "5GU7bBozyTAZhsocedrNicYFvUsjar1fhY27yiPxW4fTLDKr",
+    ],
+    [
+      "/soft//hard",
+      "22a4b002522d29238e8b228ed863c57e50d958ad1d6987be5dbd7263a5ac716d",
+      "30b0e1c54c19289e5dd107186b9d935fb046e71158ad4eb28729d1fb3bd4c145",
+      "1nRYvsXYkUCCZKKtDci4qMF3BmYx96xQyMxRDVfiafkK37D",
+      "DMk4uxLKLDeWg8FhHNkpdt6LA494WMznrUDeanGeHriswp4",
+      "5Cr8QbcTgyCim2JovaZhvgX6BZmuFqYpLUdUFvWKAVeE8bYJ",
+    ],
+    [
+      "/1/2",
+      "8c31d285c60a02dd9ec8e8fa6169a96bdfe6038eb0c4d5e59eabf7901940a610",
+      "70e535140530494a7115c6558a06fe84d9a12d36a97a83acae51f6a088034a49",
+      "14ApWF6Ma3jKisvETSrTLuLzhJxyWRH23ohWh3zkPgwM7E2k",
+      "Fk92EBALdUn2zjAGWcW6hsqzHFZcnY4RgomvRHMKQ8KfgSD",
+      "5FEXMuqHiGTrHLuiVooTCkWqqgyKp7isyJy2Xm1PqbupvYB4",
+    ],
+  ],
+  /** The whole 64-byte secret at `//polkadot//0`, hard all the way down. */
+  hardSecret:
+    "401e9149591f46c69e017aa11c9b934b4de4e193c2c0fc0e9ae6692fc32064741fde894a2d3ce875619c3e49cc78e0e23da60d4f2dcc0e1d2f24de00426e9f00",
+  passphrasePublicKey: "baa4036a6b212012c67b91fd47c2e3e64b65bbd538969544c71b2f905227374c",
+  /** `ed25519TestVectors.privateKey` read as a mini secret: `sr25519PairFromSeed`. */
+  key: {
+    publicKey: "44a996beb1eef7bdcab976ab6d2ca26104834164ecf28fb375600576fcc6eb0f",
+    secret:
+      "307c83864f2833cb427a2ef1c00a013cfdff2768d980c0a3a520f006904de94f9b4f0afe280b746a778684e75442502057b7473a03f08f96f5a38e9287e01f8f",
+  },
+  /** `sr25519Sign` by that key over `polkadotTestVectors.message`, wrapped and raw. */
+  signature:
+    "de7354dc0d010f1aa260476d6a609a5001b2b0a878b1b693d33c16f9c25287002a9a9e3c50bd78ec65a5d3bfa43d98e34e624adb94188c87aa93a491ddfcd18f",
+  rawSignature:
+    "48f5f8285b16cdf6025500c4680efc572f02ef6b3f388f66bbd37fe20e5eec5669cc0c0657a5c25e89493e3c78667778c00d4b51ce3566fdab794e30ca260589",
+} as const;
+
+/**
  * Disposable key 1 through @stellar/stellar-sdk 17.1.0: SEP-53 `signMessage` digests and
  * signatures. The HD rows are SEP-0005 test case 1, the SDK derives the same keys.
  */
