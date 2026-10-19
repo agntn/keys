@@ -29,7 +29,7 @@ const { copied, copy } = useCopied();
 const changedBytes = ref<ReadonlySet<number>>(new Set());
 
 const bytes = computed(() => {
-  const hex = current.hex;
+  const hex = current.value.hex;
   const firstSignificant = hex.search(/[^0]/u);
   const list: { value: string; dim: boolean; hot: boolean }[] = [];
   for (let index = 0; index < 32; index += 1) {
@@ -67,12 +67,11 @@ const columns = [
 ];
 
 let chains: ExplorerChains | undefined;
-const current = reactive<ParsedKey>({ hex: "1".padStart(64, "0"), decimal: 1n });
+const current = shallowRef<ParsedKey>({ hex: "1".padStart(64, "0"), decimal: 1n });
 
 function applyKey(parsed: ParsedKey, writeHash = true) {
-  changedBytes.value = diffBytes(current.hex, parsed.hex);
-  current.hex = parsed.hex;
-  current.decimal = parsed.decimal;
+  changedBytes.value = diffBytes(current.value.hex, parsed.hex);
+  current.value = parsed;
   hexInput.value = parsed.hex;
   decimalInput.value = parsed.decimal.toString();
   error.value = "";
@@ -113,7 +112,7 @@ function onDecimal() {
 }
 
 function step(delta: bigint) {
-  applyKey(stepKey(current.decimal, delta));
+  applyKey(stepKey(current.value.decimal, delta));
 }
 
 function randomKey() {
@@ -144,7 +143,7 @@ onMounted(async () => {
       error.value = `The key in the link was rejected. ${linked.error}`;
       derivation.value = null;
     } else {
-      applyKey(linked ?? current, false);
+      applyKey(linked ?? current.value, false);
     }
   } catch (cause) {
     loadError.value = cause instanceof Error ? cause.message : "Failed to load blockchains.";

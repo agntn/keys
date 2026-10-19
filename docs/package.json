@@ -7,6 +7,7 @@
     "build": "NUXT_SITE_URL=https://keys.agntn.dev nuxt build --extends docus",
     "generate": "NUXT_SITE_URL=https://keys.agntn.dev nuxt generate --extends docus",
     "preview": "nuxt preview --extends docus",
+    "typecheck": "nuxt prepare --extends docus && node scripts/typecheck.ts",
     "deploy": "pnpm build && wrangler deploy"
   },
   "dependencies": {
@@ -31,6 +32,8 @@
     "@iconify-json/simple-icons": "1.2.100",
     "@iconify-json/token": "1.2.42",
     "@iconify-json/vscode-icons": "1.2.89",
+    "typescript": "6.0.3",
+    "vue-tsc": "3.3.13",
     "wrangler": "4.128.0"
   },
   "packageManager": "pnpm@12.11.2"

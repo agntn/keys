@@ -45,6 +45,7 @@ The lint scripts build first, because the Pi and OMP extensions take their tool 
 
 `pnpm docs` serves it on port 3000.
 
+- `pnpm --dir docs typecheck` runs vue-tsc over the app, `.vue` files too. `pnpm test:types` calls it. Docus ships raw TypeScript that fails this config, so the script skips its errors and fails on yours.
 - A page under `docs/app/pages/` calls `useSeo` and `defineOgImage` itself, gets appended in `server/routes/sitemap.xml.ts` and listed in `llms.sections` in `nuxt.config.ts`. Skip one and crawlers or agents never see it.
 - A frontmatter `description` stays under 160 characters, with periods instead of commas, since the OG card drops commas. The landing's SEO description has no trailing period, or the OG image silently skips the prerender; `test/docs-og.test.ts` checks that one.
 - Icons: `token` for chains by ticker, Lucide for the interface, `simple-icons` for GitHub and npm, `vscode-icons` for file types. A chain icon that only comes in colour doesn't justify a second set.
