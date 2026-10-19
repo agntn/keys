@@ -27,7 +27,13 @@ import {
   entropyHashAlgorithms,
 } from "../utils/entropy-profile.ts";
 import { describeInvalidMnemonic } from "../utils/hd.ts";
-import { costArgument, requiredString, optionalString, stringArray } from "./arguments.ts";
+import {
+  costArgument,
+  isUnsetCost,
+  requiredString,
+  optionalString,
+  stringArray,
+} from "./arguments.ts";
 import { type ToolResult, content } from "./results.ts";
 
 /** What a result says when a phrase has one of Coleman's lengths but not one of BIP39's own. */
@@ -146,7 +152,7 @@ export async function deriveBip39Seed(
   options: Bip39SeedArguments,
 ): Promise<ToolResult<DerivedBIP39SeedDetails>> {
   const coleman = colemanFlag(options.coleman);
-  const rounds = options.rounds === undefined ? 2048 : costArgument(options.rounds, "rounds");
+  const rounds = isUnsetCost(options.rounds) ? 2048 : costArgument(options.rounds, "rounds");
   const input = requiredString(mnemonicValue, "BIP39 mnemonic");
   const passphrase = optionalString(options.passphrase, "BIP39 passphrase") ?? "";
   if (Array.from(input).length > MAX_MNEMONIC_LENGTH) {

@@ -86,6 +86,15 @@ export function isUnset(value: unknown): boolean {
   return value === undefined || (typeof value === "string" && value.trim() === "");
 }
 
+/**
+ * Tells whether a cost was left out. OMP sends 0 for an unused number, which no KDF takes.
+ * @param value - Raw argument
+ * @returns {boolean} True for a missing, zero or blank value
+ */
+export function isUnsetCost(value: unknown): boolean {
+  return value === 0 || isUnset(value);
+}
+
 export function optionalName(value: unknown, name: string): string | undefined {
   return isUnset(value) ? undefined : requiredString(value, name);
 }
