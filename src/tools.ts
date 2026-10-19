@@ -85,7 +85,7 @@ export const bip39SeedDeriveTool = defineTool({
   name: "keys_bip39_seed_derive",
   title: "Derive BIP39 Seed",
   description:
-    "Derive a 64-byte BIP39 seed from a valid mnemonic and optional passphrase; coleman also takes the 3 to 768 word phrases Ian Coleman's tool writes. Not a BIP32 master key. Inputs and seed enter the transcript; use only public or disposable material, never keys controlling real funds.",
+    "Derive a 64-byte BIP39 seed from a valid mnemonic and optional passphrase; coleman also takes the 3 to 768 word phrases Ian Coleman's tool writes, and rounds runs PBKDF2 at a count other than 2048. Not a BIP32 master key. Inputs and seed enter the transcript; use only public or disposable material, never keys controlling real funds.",
   effect: "read",
   input: DERIVE_BIP39_SEED_PARAMETERS,
   execute: async (params) =>
@@ -94,6 +94,7 @@ export const bip39SeedDeriveTool = defineTool({
       params.passphrase,
       params.language,
       params.coleman,
+      params.rounds,
     ),
 });
 

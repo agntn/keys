@@ -66,6 +66,16 @@ export const colemanMnemonicVectors = [
   },
 ] as const;
 
+/** The Genesis puzzle's seed, PBKDF2 at two odd counts; fingerprints from agntn/puzzles#545. */
+export const pbkdf2RoundsVectors = {
+  mnemonic: "scan amateur fit scrap light over fire flip cushion reject hurt ugly",
+  passphrase: "Satoshi Nakamoto",
+  fingerprints: [
+    { rounds: 181_505, fingerprint: "0852014c" },
+    { rounds: 200_913, fingerprint: "040e2791" },
+  ],
+} as const;
+
 /** Three words Coleman's `check` refuses: entropy `00000001` with a checksum bit of 0. */
 export const colemanBadChecksum = "abandon abandon able";
 

@@ -27,12 +27,16 @@ import {
   entropyHashAlgorithms,
 } from "../utils/entropy-profile.ts";
 import { describeInvalidMnemonic } from "../utils/hd.ts";
-import { requiredString, optionalString, stringArray } from "./arguments.ts";
+import { costArgument, requiredString, optionalString, stringArray } from "./arguments.ts";
 import { type ToolResult, content } from "./results.ts";
 
 /** What a result says when a phrase has one of Coleman's lengths but not one of BIP39's own. */
 export const NONSTANDARD_LENGTH_WARNING =
   "Not a BIP39 length. Read the way Ian Coleman's tool reads it; wallet apps will refuse these words.";
+
+/** What a seed result says when PBKDF2 ran some count other than BIP39's 2048. */
+export const NONSTANDARD_ROUNDS_WARNING =
+  "Not BIP39's 2048 PBKDF2 rounds. Wallet apps derive a different seed from these words.";
 
 /** A disposable BIP39 seed, never a BIP32 master private key. */
 export interface DerivedBIP39SeedDetails {
@@ -129,6 +133,7 @@ export function normalizedMnemonic(value: unknown): string {
  * @param passphraseValue - BIP39 passphrase, defaulting to empty.
  * @param languageValue - Optional official BIP39 language key.
  * @param colemanValue - Take Ian Coleman's lengths too, default false.
+ * @param roundsValue - PBKDF2 rounds, default 2048.
  * @returns {Promise<ToolResult<DerivedBIP39SeedDetails>>} Seed hex and transcript warning.
  */
 export async function deriveBip39Seed(
@@ -136,8 +141,10 @@ export async function deriveBip39Seed(
   passphraseValue?: unknown,
   languageValue?: unknown,
   colemanValue?: unknown,
+  roundsValue?: unknown,
 ): Promise<ToolResult<DerivedBIP39SeedDetails>> {
   const coleman = colemanFlag(colemanValue);
+  const rounds = roundsValue === undefined ? 2048 : costArgument(roundsValue, "rounds");
   const input = requiredString(mnemonicValue, "BIP39 mnemonic");
   const passphrase = optionalString(passphraseValue, "BIP39 passphrase") ?? "";
   if (Array.from(input).length > MAX_MNEMONIC_LENGTH) {
@@ -155,8 +162,11 @@ export async function deriveBip39Seed(
   if (!inspection.valid) {
     throw new TypeError(describeInvalidMnemonic(mnemonic, inspection, wordlist, language));
   }
-  const seed = mnemonicToSeed(mnemonic, passphrase, { coleman }).toHex();
-  const warnings = inspection.standardLength === false ? [NONSTANDARD_LENGTH_WARNING] : [];
+  const seed = mnemonicToSeed(mnemonic, passphrase, { coleman, rounds }).toHex();
+  const warnings = [
+    ...(inspection.standardLength === false ? [NONSTANDARD_LENGTH_WARNING] : []),
+    ...(rounds === 2048 ? [] : [NONSTANDARD_ROUNDS_WARNING]),
+  ];
   return {
     content: content(
       [
