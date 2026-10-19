@@ -4,6 +4,7 @@ import {
   MONERO_SEED_SCHEMA_PATTERN,
   KDF_COST_LIMITS,
   HEX_BYTES_SCHEMA_PATTERN,
+  MAX_MONERO_SUBADDRESS_INDEX,
 } from "../tool-parameters.ts";
 
 export function requiredString(value: unknown, name: string): string {
@@ -99,6 +100,36 @@ export function optionalIndex(
     throw new RangeError(`${name} must be an integer between 0 and ${maximum}`);
   }
   return value;
+}
+
+/** Account and index of a Monero subaddress. */
+export interface SubaddressIndices {
+  readonly account: number;
+  readonly index: number;
+}
+
+/**
+ * Reads the account and index of a Monero subaddress, each 0 when only the other is given.
+ * @param chain - Name of the chain the wallet is on
+ * @param accountValue - Raw account argument
+ * @param indexValue - Raw address index argument
+ * @returns {SubaddressIndices | undefined} The indices, undefined when neither is given
+ * @throws {RangeError} When either is no uint32, or the chain is not monero
+ */
+export function subaddressIndices(
+  chain: string,
+  accountValue: unknown,
+  indexValue: unknown,
+): SubaddressIndices | undefined {
+  const account = optionalIndex(accountValue, "account", MAX_MONERO_SUBADDRESS_INDEX);
+  const index = optionalIndex(indexValue, "addressIndex", MAX_MONERO_SUBADDRESS_INDEX);
+  if (account === undefined && index === undefined) return undefined;
+  if (chain !== "monero") {
+    throw new RangeError(
+      `account and addressIndex pick a Monero subaddress; ${chain} takes neither here`,
+    );
+  }
+  return { account: account ?? 0, index: index ?? 0 };
 }
 
 export function stringArray(value: unknown, name: string): readonly string[] {

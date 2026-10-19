@@ -2961,6 +2961,9 @@ export const moneroTestVectors = {
   /** `foo` signed by subaddress 0/1 with its spend key. */
   subaddressSignature:
     "SigV2gRZmdDjNykzM5yqHcgGCkZ7Gq1b7GvTUA856kNdMnpbtRrfDRkTNFi7dBLybu17dKuiSDodJc58e2bbWWDbaSKkJ",
+  /** `foo` signed by subaddress 1/2 with its view key, monero-wallet-rpc 0.18.5.3 `sign`. */
+  subaddressViewSignature:
+    "SigV2KqesfU8aQdC2Yc3j3GFsKBJkUgjXVY9uj5qJYM3HkdZyBRRsCXV2eZ64CroD9hEgrcdugEA9EVc2Bj7wzUhYW688",
   /** `foo` as SigV1, built here; monero-wallet-rpc 0.18.5.3 `verify` reads each as version 1. */
   v1Signatures: {
     spend:

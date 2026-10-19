@@ -674,6 +674,7 @@ export const messageSignTool = defineTool({
     "cosmos signs like Keplr's signArbitrary (ADR-036), with the signer's address under prefix inside the signed doc",
     "polkadot signs the message wrapped in <Bytes>, as the polkadot.js extension does in signRaw",
     "monero signs SigV2 like monero-wallet-cli sign, with the spend key or, given signingKey view, the view key",
+    "On monero account and addressIndex sign as that subaddress, like sign <account>,<index>; verify it against the subaddress pair",
     "Pass recovered on Ethereum, Base or TRON for 65-byte r||s||v, what ethers and TronWeb need",
     "Pass recovered on the Bitcoin family or decred for signmessage's base64, which a wallet verifies against an address",
   ],
@@ -689,6 +690,8 @@ export const messageSignTool = defineTool({
       params.recovered,
       params.prefix,
       params.signingKey,
+      params.account,
+      params.addressIndex,
     ),
 });
 

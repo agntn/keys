@@ -132,7 +132,18 @@ monero.verifyMessage(
 
 `verifyMessage` tries both keys, the way `monero-wallet-cli verify` does. The hash covers a `MoneroMessageSignature` tag, both public keys, which key signed and the message. So a view key signature can't pose as a spend key one. Old `SigV1` signatures hash the bare message, and they still check out.
 
-A subaddress signature checks against the pair of that subaddress, the one `getSubaddressKeyPublic` gives. Signing as a subaddress isn't here yet. Checking one is.
+Won something paid to an `8...` address? Proving it with the wallet's `4...` one is showing the wrong ID. Pass `account` and `addressIndex`, the same two numbers `getSubaddress` takes, and keys signs as that subaddress, like `sign 1,2` in monero-wallet-cli:
+
+```js
+const signature = monero.signMessage("foo", wallet.keys.private, { account: 1, addressIndex: 2 });
+
+monero.verifyMessage("foo", signature, monero.getSubaddressKeyPublic(wallet.keys.public, viewKey, 1, 2));
+// true
+monero.verifyMessage("foo", signature, wallet.keys.public);
+// false
+```
+
+That `false` is the good news. A subaddress signs with `b + m` and `a * (b + m)`, the secrets behind its own two keys, so it can't vouch for the wallet or for its siblings. `signingKey: "view"` works here too. monero-wallet-rpc 0.18.5.3 accepts what keys signs this way, and the tests check keys against what the RPC signed.
 
 Hex, base64 or a truncated signature throws instead of answering `false`. A typo isn't a verdict.
 
@@ -142,7 +153,7 @@ No BIP39 words and no BIP44 paths. `deriveHDWallet` and `getDerivationPath()` th
 
 ## Agents
 
-On `chain: "monero"` the `privateKey` of `keys_wallet_derive` takes the seed words as well as hex, and `network` takes `stagenet` too. Add `account` and `addressIndex` and it prints that subaddress, the view key never leaving the call. `keys_address_get` wants the 64-byte public key, the one `keys_wallet_derive` prints. `addressType: "subaddress"` writes a subaddress pair, `paymentId` the integrated address. `keys_message_sign` writes SigV2, with `signingKey: "view"` for the view key, and `keys_message_verify` takes SigV2 or SigV1 against that same 64-byte key.
+On `chain: "monero"` the `privateKey` of `keys_wallet_derive` takes the seed words as well as hex, and `network` takes `stagenet` too. Add `account` and `addressIndex` and it prints that subaddress, the view key never leaving the call. `keys_address_get` wants the 64-byte public key, the one `keys_wallet_derive` prints. `addressType: "subaddress"` writes a subaddress pair, `paymentId` the integrated address. `keys_message_sign` writes SigV2, with `signingKey: "view"` for the view key and `account` with `addressIndex` for a subaddress. `keys_message_verify` takes SigV2 or SigV1 against the 64-byte key of the address that signed.
 
 ## Where it lives
 

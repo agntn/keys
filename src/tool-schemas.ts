@@ -538,6 +538,24 @@ export const GENERATE_WALLET_PARAMETERS = Type.Object(
   { additionalProperties: false },
 );
 
+const moneroAccountArgument = Type.Optional(
+  Type.Integer({
+    description:
+      "monero only: account of the subaddress, the major index monero-wallet-cli shows. Default: 0",
+    minimum: 0,
+    maximum: MAX_MONERO_SUBADDRESS_INDEX,
+  }),
+);
+
+const moneroAddressIndexArgument = Type.Optional(
+  Type.Integer({
+    description:
+      "monero only: address within the account, the minor index. Account 0, index 0 is the standard address. Default: 0",
+    minimum: 0,
+    maximum: MAX_MONERO_SUBADDRESS_INDEX,
+  }),
+);
+
 export const DERIVE_WALLET_PARAMETERS = Type.Object(
   {
     chain: chainArgument,
@@ -556,22 +574,8 @@ export const DERIVE_WALLET_PARAMETERS = Type.Object(
           "secp256k1 only: SEC1 form of the public key, which a legacy address hashes. Old wallets and brainwallets wrote uncompressed. ethereum, base and tron hash the uncompressed key and refuse true, sui and xrpl refuse false. Default: true",
       }),
     ),
-    account: Type.Optional(
-      Type.Integer({
-        description:
-          "monero only: account of the subaddress, the major index monero-wallet-cli shows. Default: 0",
-        minimum: 0,
-        maximum: MAX_MONERO_SUBADDRESS_INDEX,
-      }),
-    ),
-    addressIndex: Type.Optional(
-      Type.Integer({
-        description:
-          "monero only: address within the account, the minor index. Account 0, index 0 is the standard address. Default: 0",
-        minimum: 0,
-        maximum: MAX_MONERO_SUBADDRESS_INDEX,
-      }),
-    ),
+    account: moneroAccountArgument,
+    addressIndex: moneroAddressIndexArgument,
   },
   { additionalProperties: false },
 );
@@ -931,6 +935,8 @@ export const SIGN_MESSAGE_PARAMETERS = Type.Object(
         enum: MONERO_SIGNING_KEYS,
       }),
     ),
+    account: moneroAccountArgument,
+    addressIndex: moneroAddressIndexArgument,
   },
   { additionalProperties: false },
 );

@@ -10,7 +10,7 @@ import {
   MAX_ADDRESS_LENGTH,
   MAX_TYPED_DATA_LENGTH,
 } from "../tool-parameters.ts";
-import type { MoneroSigningKey, MessageSigner } from "../types.ts";
+import type { MoneroSigningKey, MessageSigner, SigningOptions } from "../types.ts";
 import { type TypedData, hashTypedData } from "../utils/eip712.ts";
 import { sameAddress } from "./address.ts";
 import {
@@ -19,6 +19,8 @@ import {
   PRIVATE_KEY_HEX,
   optionalName,
   chainPublicKey,
+  type SubaddressIndices,
+  subaddressIndices,
 } from "./arguments.ts";
 import { getBlockchain } from "./blockchain.ts";
 import { type ToolResult, content } from "./results.ts";
@@ -79,6 +81,8 @@ const DIGEST_HEX = new RegExp(DIGEST_SCHEMA_PATTERN, "u");
  * @param recoveredValue - Append the recovery byte as `v`, default false.
  * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot.
  * @param signingKeyValue - Monero key that signs, spend or view; spend when left out.
+ * @param accountValue - Account of the Monero subaddress that signs.
+ * @param addressIndexValue - Index of that subaddress within its account.
  * @returns {Promise<ToolResult<SignatureDetails>>} Generated signature.
  */
 export async function signMessage(
@@ -89,6 +93,8 @@ export async function signMessage(
   recoveredValue?: unknown,
   prefixValue?: unknown,
   signingKeyValue?: unknown,
+  accountValue?: unknown,
+  addressIndexValue?: unknown,
 ): Promise<ToolResult<SignatureDetails>> {
   if (recoveredValue !== undefined && typeof recoveredValue !== "boolean") {
     throw new TypeError("recovered must be a boolean");
@@ -96,6 +102,7 @@ export async function signMessage(
   const recovered = recoveredValue ?? false;
   const { blockchain } = await getBlockchain(chainValue, networkValue, undefined, prefixValue);
   const signingKey = moneroSigningKey(signingKeyValue, blockchain.name);
+  const subaddress = subaddressIndices(blockchain.name, accountValue, addressIndexValue);
   const message = requiredString(messageValue, "Message");
   const privateKey = hexArgument(
     privateKeyValue,
@@ -103,15 +110,31 @@ export async function signMessage(
     PRIVATE_KEY_HEX,
     "64 hex characters",
   );
-  /** Only pass options when one is set, so every other chain keeps its current defaults. */
+  const options = signingOptions(recovered, signingKey, subaddress);
   const signature =
-    recovered || signingKey !== undefined
-      ? blockchain.signMessage(message, privateKey, { recovered, signingKey })
-      : blockchain.signMessage(message, privateKey);
+    options === undefined
+      ? blockchain.signMessage(message, privateKey)
+      : blockchain.signMessage(message, privateKey, options);
   return {
     content: content(`Signature: ${signature}`),
     details: { chain: blockchain.name, network: blockchain.network, signature, recovered },
   };
+}
+
+/**
+ * Only builds options when one is set, so every other chain keeps its current defaults.
+ * @param recovered - Whether to append the recovery byte.
+ * @param signingKey - Monero key that signs.
+ * @param subaddress - Monero subaddress that signs.
+ * @returns {SigningOptions | undefined} The options, undefined when none is set.
+ */
+function signingOptions(
+  recovered: boolean,
+  signingKey: MoneroSigningKey | undefined,
+  subaddress: SubaddressIndices | undefined,
+): SigningOptions | undefined {
+  if (!recovered && signingKey === undefined && subaddress === undefined) return undefined;
+  return { recovered, signingKey, account: subaddress?.account, addressIndex: subaddress?.index };
 }
 
 /**

@@ -1,17 +1,14 @@
 import { blockchains } from "../_blockchains.ts";
 import type { AbstractBlockchain } from "../blockchain.ts";
-import {
-  FAMILY_SEED_SCHEMA_PATTERN,
-  MAX_MONERO_SUBADDRESS_INDEX,
-  MAX_WALLET_SECRET_LENGTH,
-} from "../tool-parameters.ts";
+import { FAMILY_SEED_SCHEMA_PATTERN, MAX_WALLET_SECRET_LENGTH } from "../tool-parameters.ts";
 import type { KeyOptions, Wallet } from "../types.ts";
 import {
   MONERO_SEED,
   hexArgument,
   PRIVATE_KEY_HEX,
-  optionalIndex,
   requiredString,
+  type SubaddressIndices,
+  subaddressIndices,
 } from "./arguments.ts";
 import { getBlockchain, addressTypeLines } from "./blockchain.ts";
 import { type ToolResult, content } from "./results.ts";
@@ -131,36 +128,6 @@ function secretWallet(
     "64 hex characters, a family seed (s...) on xrpl or the seed words on monero,",
   );
   return blockchain.deriveWallet(keyPrivate, options, addressType);
-}
-
-/** Account and index of a Monero subaddress. */
-interface SubaddressIndices {
-  readonly account: number;
-  readonly index: number;
-}
-
-/**
- * Reads the account and index of a Monero subaddress, each 0 when only the other is given.
- * @param chain - Name of the chain the wallet is on
- * @param accountValue - Raw account argument
- * @param indexValue - Raw address index argument
- * @returns {SubaddressIndices | undefined} The indices, undefined when neither is given
- * @throws {RangeError} When either is no uint32, or the chain is not monero
- */
-function subaddressIndices(
-  chain: string,
-  accountValue: unknown,
-  indexValue: unknown,
-): SubaddressIndices | undefined {
-  const account = optionalIndex(accountValue, "account", MAX_MONERO_SUBADDRESS_INDEX);
-  const index = optionalIndex(indexValue, "addressIndex", MAX_MONERO_SUBADDRESS_INDEX);
-  if (account === undefined && index === undefined) return undefined;
-  if (chain !== "monero") {
-    throw new RangeError(
-      `account and addressIndex pick a Monero subaddress; ${chain} takes neither here`,
-    );
-  }
-  return { account: account ?? 0, index: index ?? 0 };
 }
 
 /**
