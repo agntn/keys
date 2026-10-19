@@ -18,8 +18,21 @@ const BASE64URL = /^[A-Za-z0-9_-]+$/u;
 /** 43 characters of a 32-byte hash, so the last digit keeps its two low bits at zero. */
 const ADDRESS = /^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/u;
 
-const URL_ALPHABET = { alphabet: "url" } as const;
+const CANONICAL = { alphabet: "url", canonical: true } as const;
 const UNPADDED = { alphabet: "url", padding: false } as const;
+
+/**
+ * Lets the decoder refuse stray bits and swaps its error for ours.
+ * @param text - Unpadded base64url that doesn't end on a dangling digit.
+ * @returns {Uint8Array | null} Bytes, or null for stray bits past the last byte.
+ */
+function decodeCanonical(text: string): Uint8Array | null {
+  try {
+    return base64.decode(text, CANONICAL);
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Reads canonical unpadded base64url only, so stray bits can't hash to a second address.
@@ -27,11 +40,8 @@ const UNPADDED = { alphabet: "url", padding: false } as const;
  * @returns {Uint8Array} Modulus bytes.
  */
 function decodeModulus(text: string): Uint8Array {
-  const bytes =
-    BASE64URL.test(text) && text.length % 4 !== 1 ? base64.decode(text, URL_ALPHABET) : null;
-  if (bytes === null || base64.encode(bytes, UNPADDED) !== text) {
-    throw new TypeError("Arweave modulus must be unpadded base64url");
-  }
+  const bytes = BASE64URL.test(text) && text.length % 4 !== 1 ? decodeCanonical(text) : null;
+  if (bytes === null) throw new TypeError("Arweave modulus must be unpadded base64url");
   if (bytes.length > MAX_MODULUS_BYTES) {
     throw new RangeError(`Arweave modulus must not exceed ${MAX_MODULUS_BYTES} bytes`);
   }
