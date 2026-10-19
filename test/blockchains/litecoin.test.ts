@@ -18,7 +18,9 @@ describe("Litecoin", () => {
     expect(chain).toBeInstanceOf(NamedLitecoin);
     expect(chain.name).toBe("litecoin");
     expect(chain.curve).toBe("secp256k1");
-    expect(getBlockchainPath(chain, 0, 1, 3)).toBe("m/44'/2'/0'/1/3");
+    expect(getBlockchainPath(chain, { account: 0, change: 1, addressIndex: 3 })).toBe(
+      "m/44'/2'/0'/1/3",
+    );
     expect(chain.getKeyPublic(vector.privateKey)).toBe(vector.publicKey);
     expect(chain.deriveWallet(vector.privateKey).address).toBe(vector.address);
     expect(() => new Litecoin({ network: "regtest" })).toThrow("mainnet and testnet only");
@@ -84,14 +86,18 @@ describe("Litecoin", () => {
     (purpose, format, privateKey, publicKey) => {
       const chain = new Litecoin();
       const path = `m/${purpose}'/2'/0'/1/2`;
-      const wallet = chain.deriveHDWallet(bip39TestVectors.mnemonic, path, {
+      const wallet = chain.deriveHDWallet(bip39TestVectors.mnemonic, {
+        path,
         passphrase: "TREZOR",
       });
       expect(wallet.keys.private).toBe(privateKey);
       expect(wallet.address).toBe(chain.getAddress(publicKey, format));
       expect(
-        chain.deriveHDWallet(bip39TestVectors.mnemonic, path, { passphrase: "TREZOR" }, "legacy")
-          .address,
+        chain.deriveHDWallet(bip39TestVectors.mnemonic, {
+          path,
+          passphrase: "TREZOR",
+          addressType: "legacy",
+        }).address,
       ).toBe(chain.getAddress(publicKey, "legacy"));
     },
   );
@@ -100,8 +106,8 @@ describe("Litecoin", () => {
     const chain = new Litecoin({ network: "testnet" });
     const { privateKey, address, message, signature } = vector.signed;
     const publicKey = chain.getKeyPublic(privateKey);
-    expect(chain.signMessage(message, privateKey, { recovered: true })).toBe(signature);
-    expect(chain.verifyMessage(message, signature, publicKey)).toBe(true);
+    expect(chain.signMessage(message, { privateKey, recovered: true })).toBe(signature);
+    expect(chain.verifyMessage(message, { signature, publicKey })).toBe(true);
     const signer = chain.recoverMessageSigner(message, signature);
     expect(chain.getAddress(signer.publicKey, signer.addressType)).toBe(address);
   });
@@ -109,34 +115,41 @@ describe("Litecoin", () => {
   it("rejects a signature carrying Ethereum's recovery byte", () => {
     const chain = new Litecoin();
     const [message] = vector.messageHashes[0];
-    const signature = chain.signMessage(message, vector.privateKey);
+    const signature = chain.signMessage(message, { privateKey: vector.privateKey });
 
-    expect(chain.verifyMessage(message, signature + "1b", vector.publicKey)).toBe(false);
-    expect(chain.verifyMessage(message, signature + "1c", vector.publicKey)).toBe(false);
+    expect(
+      chain.verifyMessage(message, { signature: signature + "1b", publicKey: vector.publicKey }),
+    ).toBe(false);
+    expect(
+      chain.verifyMessage(message, { signature: signature + "1c", publicKey: vector.publicKey }),
+    ).toBe(false);
   });
 
   it.each(vector.messageHashes)(
     "signs Core message vector %# without another hash",
     (message, digest) => {
       const chain = new Litecoin();
-      const signature = chain.signMessage(message, vector.privateKey);
+      const signature = chain.signMessage(message, { privateKey: vector.privateKey });
       expect(
         secp256k1.verify(hex.decode(signature), hex.decode(digest), hex.decode(vector.publicKey), {
           prehash: false,
         }),
       ).toBe(true);
-      expect(chain.verifyMessage(message, signature, vector.publicKey)).toBe(true);
-      expect(chain.signMessage(new TextEncoder().encode(message), vector.privateKey)).toBe(
-        signature,
-      );
-      expect(chain.verifyMessage(message + "!", signature, vector.publicKey)).toBe(false);
-      expect(chain.verifyMessage(message, "invalid", vector.publicKey)).toBe(false);
+      expect(chain.verifyMessage(message, { signature, publicKey: vector.publicKey })).toBe(true);
       expect(
-        chain.verifyMessage(
-          message,
-          new Bitcoin().signMessage(message, vector.privateKey),
-          vector.publicKey,
-        ),
+        chain.signMessage(new TextEncoder().encode(message), { privateKey: vector.privateKey }),
+      ).toBe(signature);
+      expect(chain.verifyMessage(message + "!", { signature, publicKey: vector.publicKey })).toBe(
+        false,
+      );
+      expect(
+        chain.verifyMessage(message, { signature: "invalid", publicKey: vector.publicKey }),
+      ).toBe(false);
+      expect(
+        chain.verifyMessage(message, {
+          signature: new Bitcoin().signMessage(message, { privateKey: vector.privateKey }),
+          publicKey: vector.publicKey,
+        }),
       ).toBe(false);
     },
   );

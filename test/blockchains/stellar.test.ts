@@ -70,13 +70,21 @@ describe("Stellar", () => {
           ed25519.verify(hex.decode(signature), hex.decode(digest), hex.decode(vector.publicKey)),
         ).toBe(true);
 
-        expect(blockchain.signMessage(message, vector.privateKey)).toBe(signature);
-        expect(blockchain.signMessage(new TextEncoder().encode(message), vector.privateKey)).toBe(
-          signature,
+        expect(blockchain.signMessage(message, { privateKey: vector.privateKey })).toBe(signature);
+        expect(
+          blockchain.signMessage(new TextEncoder().encode(message), {
+            privateKey: vector.privateKey,
+          }),
+        ).toBe(signature);
+        expect(blockchain.verifyMessage(message, { signature, publicKey: vector.publicKey })).toBe(
+          true,
         );
-        expect(blockchain.verifyMessage(message, signature, vector.publicKey)).toBe(true);
-        expect(blockchain.verifyMessage(message + "!", signature, vector.publicKey)).toBe(false);
-        expect(blockchain.verifyMessage(message, "invalid", vector.publicKey)).toBe(false);
+        expect(
+          blockchain.verifyMessage(message + "!", { signature, publicKey: vector.publicKey }),
+        ).toBe(false);
+        expect(
+          blockchain.verifyMessage(message, { signature: "invalid", publicKey: vector.publicKey }),
+        ).toBe(false);
       },
     );
 
@@ -86,29 +94,35 @@ describe("Stellar", () => {
         ed25519.sign(new TextEncoder().encode(message), hex.decode(vector.privateKey)),
       );
       expect(raw).not.toBe(signature);
-      expect(blockchain.verifyMessage(message, raw, vector.publicKey)).toBe(false);
+      expect(
+        blockchain.verifyMessage(message, { signature: raw, publicKey: vector.publicKey }),
+      ).toBe(false);
     });
   });
 
   describe("HD derivation", () => {
     it.each(vector.hd.accounts)("derives SEP-0005 account %s", (path, privateKey, address) => {
-      const wallet = blockchain.deriveHDWallet(vector.hd.mnemonic, path);
+      const wallet = blockchain.deriveHDWallet(vector.hd.mnemonic, { path });
       expect(wallet.keys.private).toBe(privateKey);
       expect(wallet.address).toBe(address);
       expect(wallet.warnings).toBeUndefined();
     });
 
     it("refuses an unhardened segment", () => {
-      expect(() => blockchain.deriveHDWallet(vector.hd.mnemonic, "m/44'/148'/0")).toThrow();
+      expect(() =>
+        blockchain.deriveHDWallet(vector.hd.mnemonic, { path: "m/44'/148'/0" }),
+      ).toThrow();
     });
 
     it("generates the SEP-0005 account path and nothing deeper", () => {
       for (const [index, [path, , address]] of vector.hd.accounts.entries()) {
-        expect(blockchain.getDerivationPath(index)).toBe(path);
-        expect(blockchain.deriveHDWallet(vector.hd.mnemonic, path).address).toBe(address);
+        expect(blockchain.getDerivationPath({ account: index })).toBe(path);
+        expect(blockchain.deriveHDWallet(vector.hd.mnemonic, { path }).address).toBe(address);
       }
-      expect(() => blockchain.getDerivationPath(0, 1)).toThrow(RangeError);
-      expect(() => blockchain.getDerivationPath(0, 0, 1)).toThrow(RangeError);
+      expect(() => blockchain.getDerivationPath({ account: 0, change: 1 })).toThrow(RangeError);
+      expect(() =>
+        blockchain.getDerivationPath({ account: 0, change: 0, addressIndex: 1 }),
+      ).toThrow(RangeError);
     });
   });
 });

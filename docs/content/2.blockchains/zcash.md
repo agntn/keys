@@ -64,7 +64,7 @@ BIP32 on `m/44'/133'/account'/change/index`, coin type 133 from SLIP-0044.
 const mnemonic =
   "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
-zcashChain.deriveHDWallet(mnemonic, "m/44'/133'/0'/0/0").address;
+zcashChain.deriveHDWallet(mnemonic, { path: "m/44'/133'/0'/0/0" }).address;
 // t1XVXWCvpMgBvUaed4XDqWtgQgJSu1Ghz7F, the same address Ledger Live derives
 ```
 

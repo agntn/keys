@@ -23,7 +23,7 @@ export class ECash extends AbstractCashAddrBlockchain {
   protected override readonly messagePreamble = "\u0016eCash Signed Message:\n";
 
   constructor(options?: Options) {
-    super(options, "eCash", CASHADDR_PARAMS);
+    super(options, { ...CASHADDR_PARAMS, label: "eCash" });
   }
 }
 

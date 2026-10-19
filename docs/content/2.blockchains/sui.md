@@ -16,7 +16,7 @@ const suiChain = useBlockchain(await blockchains.sui()());
 suiChain.curve; // ['ed25519', 'secp256k1']
 ```
 
-## Two curves, one argument
+## Two curves, one option
 
 Sui accepts several signature schemes and tags each key with a flag byte. The driver supports two of them:
 
@@ -34,10 +34,10 @@ The address is `Blake2b-256(flag + publicKey)` with `0x` in front. Because the f
 const wallet = suiChain.generateWallet();
 
 // secp256k1: the address type doubles as the scheme
-const walletSecp = suiChain.generateWallet({}, "secp256k1");
+const walletSecp = suiChain.generateWallet({ addressType: "secp256k1" });
 ```
 
-Passing `"secp256k1"` as the address type sets the scheme for the key as well, so `generateWallet`, `deriveWallet`, and `deriveHDWallet` all stay consistent with one argument. When you go step by step you have to say it twice:
+Passing `"secp256k1"` as the address type sets the scheme for the key as well, so `generateWallet`, `deriveWallet`, and `deriveHDWallet` all stay consistent with one option. When you go step by step you have to say it twice:
 
 ```js
 const secpKey = suiChain.getKeyPublic(privateKey, { scheme: "secp256k1" });
@@ -60,8 +60,8 @@ suiChain.validateAddress("7e08ac7940568c91564ddc6f5f3bf91b15a9334194ab7855daeac5
 ed25519 goes through SLIP-10 and needs every segment hardened, `m/44'/784'/0'/0'/0'`. secp256k1 goes through BIP32 and takes the usual `m/54'/784'/0'/0/0` shape. Pass the scheme as the address type and the driver picks the right derivation:
 
 ```js
-suiChain.deriveHDWallet(mnemonic, "m/44'/784'/0'/0'/0'").address; // ed25519
-suiChain.deriveHDWallet(mnemonic, "m/54'/784'/0'/0/0", {}, "secp256k1").address;
+suiChain.deriveHDWallet(mnemonic, { path: "m/44'/784'/0'/0'/0'" }).address; // ed25519
+suiChain.deriveHDWallet(mnemonic, { path: "m/54'/784'/0'/0/0", addressType: "secp256k1" }).address;
 ```
 
 ## Signing
@@ -69,11 +69,11 @@ suiChain.deriveHDWallet(mnemonic, "m/54'/784'/0'/0/0", {}, "secp256k1").address;
 `signMessage` signs what the Sui SDK's `signPersonalMessage` signs: the message as a BCS byte vector behind the `PersonalMessage` intent (`0x03 0x00 0x00`), hashed with Blake2b-256. ed25519 signs that digest as is, secp256k1 signs its SHA-256 the way `Secp256k1Keypair` does, so the same key gives the same bytes here and there. The scheme comes from the options, ed25519 by default.
 
 ```js
-const signature = suiChain.signMessage("hello", privateKey);
-suiChain.verifyMessage("hello", signature, publicKey); // true
+const signature = suiChain.signMessage("hello", { privateKey });
+suiChain.verifyMessage("hello", { signature, publicKey }); // true
 
-const secpSignature = suiChain.signMessage("hello", privateKey, { scheme: "secp256k1" });
-suiChain.verifyMessage("hello", secpSignature, secpKey, { scheme: "secp256k1" }); // true
+const secpSignature = suiChain.signMessage("hello", { privateKey, scheme: "secp256k1" });
+suiChain.verifyMessage("hello", { signature: secpSignature, publicKey: secpKey, scheme: "secp256k1" }); // true
 ```
 
 What comes back is the 64 signature bytes in hex, `r||s` without a recovery byte on secp256k1, no flag and no public key. `{ recovered: true }` throws on both schemes, Sui carries the public key in the serialized signature and never recovers it from a `v`. Sui tooling wants the serialized form, `flag || signature || publicKey` in base64, so build that before you hand it to `verifyPersonalMessageSignature`:

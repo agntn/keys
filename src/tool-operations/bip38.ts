@@ -118,7 +118,10 @@ export async function decryptBip38(
     };
   }
   const { blockchain } = await getBlockchain("bitcoin");
-  const wallet = blockchain.deriveWallet(decrypted.privateKey.toHex(), { compressed }, "legacy");
+  const wallet = blockchain.deriveWallet(decrypted.privateKey.toHex(), {
+    compressed,
+    addressType: "legacy",
+  });
   const details: DecryptedBip38Details = {
     ...base,
     unlocked: true,

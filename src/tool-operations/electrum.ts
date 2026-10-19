@@ -70,7 +70,7 @@ export async function deriveElectrumWallet(
   const path = electrumPath(options.path, change !== undefined || index !== undefined);
   const { blockchain } = await getBlockchain("bitcoin", { network });
   const seed = deriveElectrumSeed(mnemonic, passphrase);
-  const wallet = blockchain.deriveElectrumWallet(seed, path);
+  const wallet = blockchain.deriveElectrumWallet(seed, { path });
   const { scheme, seedType } = seed;
   const details = {
     chain: "bitcoin",

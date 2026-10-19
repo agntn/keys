@@ -73,9 +73,9 @@ describe("Electrum seed derivation", () => {
     const bip39 = deriveMnemonicKey(vector.mnemonic, vector.path, "secp256k1", "", true);
     const { blockchains } = await import("../../src/index.ts");
     const bitcoin = await blockchains.bitcoin()();
-    expect(bitcoin.deriveWallet(bip39.privateKey, { compressed: true }, "segwit").address).not.toBe(
-      vector.address,
-    );
+    expect(
+      bitcoin.deriveWallet(bip39.privateKey, { compressed: true, addressType: "segwit" }).address,
+    ).not.toBe(vector.address);
   });
 
   it("rejects malformed direct executor inputs", async () => {

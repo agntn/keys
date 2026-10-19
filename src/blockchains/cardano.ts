@@ -3,7 +3,8 @@ import { bech32 } from "@agntn/encodings/bech32";
 import { getBIP32Path } from "../utils/bip44/paths.ts";
 import { decodeKeyPublic } from "../utils/ed25519.ts";
 import { AbstractEd25519Blockchain } from "../utils/ed25519-chains.ts";
-import type { CardanoAddressType, Options, Wallet } from "../types.ts";
+import { readPathOptions } from "../utils/options.ts";
+import type { CardanoAddressType, DerivationPathOptions, Options, Wallet } from "../types.ts";
 
 const ADDRESS_TYPE = {
   BASE_PAYMENT: 0,
@@ -58,12 +59,12 @@ export class Cardano extends AbstractEd25519Blockchain {
   /**
    * Shelley wallets sit at `m/1852'/1815'/account'/role/index` per CIP-1852, the change branch
    * being the role. Right for Cardano tooling even though `deriveHDWallet` here can't walk it.
-   * @param account - Account index
-   * @param role - CIP-1852 role, 0 external, 1 internal, 2 staking, up to 5
-   * @param addressIndex - Address index
+   * @param options - Account, address index, and `change` as the CIP-1852 role: 0 external,
+   * 1 internal, 2 staking, up to 5
    * @returns {string} The CIP-1852 path
    */
-  override getDerivationPath(account = 0, role = 0, addressIndex = 0): string {
+  override getDerivationPath(options?: DerivationPathOptions): string {
+    const { account = 0, change: role = 0, addressIndex = 0 } = readPathOptions(options);
     return getBIP32Path(CIP1852_PURPOSE, this.bip44, account, role, addressIndex, CIP1852_MAX_ROLE);
   }
 
@@ -76,7 +77,11 @@ export class Cardano extends AbstractEd25519Blockchain {
     return blake2b(decodeKeyPublic(keyPublic, "Cardano"), 28);
   }
 
-  private encodeAddress(hrp: string, header: number, payload: Uint8Array): string {
+  private encodeAddress(
+    payload: Uint8Array,
+    prefix: { readonly hrp: string; readonly header: number },
+  ): string {
+    const { hrp, header } = prefix;
     const bytes = new Uint8Array(1 + payload.length);
     bytes[0] = header;
     bytes.set(payload, 1);
@@ -104,29 +109,26 @@ export class Cardano extends AbstractEd25519Blockchain {
     const keyHash = this.getKeyHash(keyPublic);
 
     if (type === "stake") {
-      return this.encodeAddress(
-        this.params.hrpStake,
-        this.header(ADDRESS_TYPE.REWARD_KEY),
-        keyHash,
-      );
+      return this.encodeAddress(keyHash, {
+        hrp: this.params.hrpStake,
+        header: this.header(ADDRESS_TYPE.REWARD_KEY),
+      });
     }
 
     if (type === "enterprise") {
-      return this.encodeAddress(
-        this.params.hrpAddress,
-        this.header(ADDRESS_TYPE.ENTERPRISE_KEY),
-        keyHash,
-      );
+      return this.encodeAddress(keyHash, {
+        hrp: this.params.hrpAddress,
+        header: this.header(ADDRESS_TYPE.ENTERPRISE_KEY),
+      });
     }
 
     const basePayload = new Uint8Array(keyHash.length * 2);
     basePayload.set(keyHash);
     basePayload.set(keyHash, keyHash.length);
-    return this.encodeAddress(
-      this.params.hrpAddress,
-      this.header(ADDRESS_TYPE.BASE_PAYMENT),
-      basePayload,
-    );
+    return this.encodeAddress(basePayload, {
+      hrp: this.params.hrpAddress,
+      header: this.header(ADDRESS_TYPE.BASE_PAYMENT),
+    });
   }
 
   override validateAddress(address: string): boolean {

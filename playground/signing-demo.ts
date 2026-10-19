@@ -30,16 +30,22 @@ console.log(`Private key: ${ethWallet.keys.private}`);
 // Podpisanie wiadomości
 const ethMessage = "Hello Ethereum World!";
 console.log(`\nSigning message: "${ethMessage}"`);
-const ethSignature = ethBlockchain.signMessage(ethMessage, ethWallet.keys.private);
+const ethSignature = ethBlockchain.signMessage(ethMessage, { privateKey: ethWallet.keys.private });
 console.log(`Signature: ${ethSignature}`);
 
 // Weryfikacja podpisu
-const ethValid = ethBlockchain.verifyMessage(ethMessage, ethSignature, ethWallet.keys.public);
+const ethValid = ethBlockchain.verifyMessage(ethMessage, {
+  signature: ethSignature,
+  publicKey: ethWallet.keys.public,
+});
 console.log(`Verification result: ${ethValid ? "Valid ✓" : "Invalid ✗"}`);
 
 // Test negatywny (zły klucz publiczny)
 const ethRandomPubkey = ethBlockchain.getKeyPublic(generateRandomKeyPrivate());
-const ethInvalid = ethBlockchain.verifyMessage(ethMessage, ethSignature, ethRandomPubkey);
+const ethInvalid = ethBlockchain.verifyMessage(ethMessage, {
+  signature: ethSignature,
+  publicKey: ethRandomPubkey,
+});
 console.log(`Verification with wrong key: ${ethInvalid ? "Valid (error!)" : "Invalid ✓"}`);
 
 // Demo dla podpisów Solana (Ed25519)
@@ -55,19 +61,21 @@ console.log(`Private key: ${solWallet.keys.private}`);
 // Podpisanie wiadomości
 const solMessage = "Hello Solana World!";
 console.log(`\nSigning message: "${solMessage}"`);
-const solSignature = solBlockchain.signMessage(solMessage, solWallet.keys.private);
+const solSignature = solBlockchain.signMessage(solMessage, { privateKey: solWallet.keys.private });
 console.log(`Signature: ${solSignature}`);
 
 // Weryfikacja podpisu
-const solValid = solBlockchain.verifyMessage(solMessage, solSignature, solWallet.keys.public);
+const solValid = solBlockchain.verifyMessage(solMessage, {
+  signature: solSignature,
+  publicKey: solWallet.keys.public,
+});
 console.log(`Verification result: ${solValid ? "Valid ✓" : "Invalid ✗"}`);
 
 // Test negatywny (zła wiadomość)
-const solInvalid = solBlockchain.verifyMessage(
-  "Different message",
-  solSignature,
-  solWallet.keys.public,
-);
+const solInvalid = solBlockchain.verifyMessage("Different message", {
+  signature: solSignature,
+  publicKey: solWallet.keys.public,
+});
 console.log(`Verification with wrong message: ${solInvalid ? "Valid (error!)" : "Invalid ✓"}`);
 
 // Różnice między podpisami EVM i Ed25519

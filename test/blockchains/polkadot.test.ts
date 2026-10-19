@@ -78,22 +78,45 @@ describe("Polkadot", () => {
 
   describe("Message signing", () => {
     it("signs the message wrapped in <Bytes> like the polkadot.js extension", () => {
-      const signature = blockchain.signMessage(vector.message, ed25519TestVectors.privateKey);
+      const signature = blockchain.signMessage(vector.message, {
+        privateKey: ed25519TestVectors.privateKey,
+      });
       expect(signature).toBe(vector.signature);
     });
 
     it("does not wrap a message twice", () => {
       const wrapped = `<Bytes>${vector.message}</Bytes>`;
-      expect(blockchain.signMessage(wrapped, ed25519TestVectors.privateKey)).toBe(vector.signature);
+      expect(blockchain.signMessage(wrapped, { privateKey: ed25519TestVectors.privateKey })).toBe(
+        vector.signature,
+      );
     });
 
     it("verifies the wrapped and the raw signature, nothing else", () => {
       const key = ed25519TestVectors.publicKey;
-      expect(blockchain.verifyMessage(vector.message, vector.signature, key)).toBe(true);
-      expect(blockchain.verifyMessage(vector.message, vector.rawSignature, key)).toBe(true);
-      expect(blockchain.verifyMessage(`${vector.message}!`, vector.signature, key)).toBe(false);
-      expect(blockchain.verifyMessage(vector.message, vector.signature, rootPublic)).toBe(false);
-      expect(blockchain.verifyMessage(vector.message, vector.signature, "02")).toBe(false);
+      expect(
+        blockchain.verifyMessage(vector.message, { signature: vector.signature, publicKey: key }),
+      ).toBe(true);
+      expect(
+        blockchain.verifyMessage(vector.message, {
+          signature: vector.rawSignature,
+          publicKey: key,
+        }),
+      ).toBe(true);
+      expect(
+        blockchain.verifyMessage(`${vector.message}!`, {
+          signature: vector.signature,
+          publicKey: key,
+        }),
+      ).toBe(false);
+      expect(
+        blockchain.verifyMessage(vector.message, {
+          signature: vector.signature,
+          publicKey: rootPublic,
+        }),
+      ).toBe(false);
+      expect(
+        blockchain.verifyMessage(vector.message, { signature: vector.signature, publicKey: "02" }),
+      ).toBe(false);
     });
   });
 
@@ -101,21 +124,22 @@ describe("Polkadot", () => {
     it.each(vector.wallets)(
       "derives %s like polkadot.js",
       (path, publicKey, address, kusamaAddress, genericAddress) => {
-        const wallet = blockchain.deriveHDWallet(mnemonic, path);
+        const wallet = blockchain.deriveHDWallet(mnemonic, { path });
         expect(wallet.keys.public).toBe(publicKey);
         expect(wallet.address).toBe(address);
-        expect(kusama.deriveHDWallet(mnemonic, path).address).toBe(kusamaAddress);
-        expect(generic.deriveHDWallet(mnemonic, path).address).toBe(genericAddress);
+        expect(kusama.deriveHDWallet(mnemonic, { path }).address).toBe(kusamaAddress);
+        expect(generic.deriveHDWallet(mnemonic, { path }).address).toBe(genericAddress);
       },
     );
 
     it("keeps the mini secret as the root key, whichever way the root is written", () => {
-      expect(blockchain.deriveHDWallet(mnemonic, "").keys.private).toBe(vector.rootSeed);
-      expect(blockchain.deriveHDWallet(mnemonic, "m").keys.private).toBe(vector.rootSeed);
+      expect(blockchain.deriveHDWallet(mnemonic, { path: "" }).keys.private).toBe(vector.rootSeed);
+      expect(blockchain.deriveHDWallet(mnemonic, { path: "m" }).keys.private).toBe(vector.rootSeed);
     });
 
     it("takes the ///password of a Substrate URI as the passphrase", () => {
-      const wallet = blockchain.deriveHDWallet(mnemonic, "m", {
+      const wallet = blockchain.deriveHDWallet(mnemonic, {
+        path: "m",
         passphrase: bip39TestVectors.passphrase,
       });
       expect(wallet.keys.public).toBe(vector.passphrasePublicKey);
@@ -123,8 +147,8 @@ describe("Polkadot", () => {
 
     it("derives from the entropy, so a bad checksum lands on the same account with a warning", () => {
       const twelve = Array.from({ length: 12 }, () => "abandon").join(" ");
-      expect(() => blockchain.deriveHDWallet(twelve, "m")).toThrow(/checksum/);
-      const wallet = blockchain.deriveHDWallet(twelve, "m", { allowInvalidChecksum: true });
+      expect(() => blockchain.deriveHDWallet(twelve, { path: "m" })).toThrow(/checksum/);
+      const wallet = blockchain.deriveHDWallet(twelve, { path: "m", allowInvalidChecksum: true });
       expect(wallet.address).toBe(rootAddress);
       expect(wallet.warnings).toEqual([
         "BIP39 checksum is invalid. Derived from the supplied words without repairing the checksum.",
@@ -139,11 +163,13 @@ describe("Polkadot", () => {
       ["a number past 64 bits", "//18446744073709551616", /fit 64 bits/],
       ["a BIP32 path", "m/44'/354'/0'/0'/0'", /Substrate path/],
     ])("refuses %s", (_label, path, message) => {
-      expect(() => blockchain.deriveHDWallet(mnemonic, path)).toThrow(message);
+      expect(() => blockchain.deriveHDWallet(mnemonic, { path })).toThrow(message);
     });
 
     it("takes the largest 64-bit number junction", () => {
-      expect(() => blockchain.deriveHDWallet(mnemonic, "//18446744073709551615")).not.toThrow();
+      expect(() =>
+        blockchain.deriveHDWallet(mnemonic, { path: "//18446744073709551615" }),
+      ).not.toThrow();
     });
 
     it("refuses a BIP44 path to walk", () => {

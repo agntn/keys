@@ -82,13 +82,24 @@ describe("Sui", () => {
           keyPublicSecp256k1,
         );
         expect(() => blockchain.getKeyPublic(keyPrivate, options)).toThrow(unsupported);
-        expect(() => blockchain.getDerivationPath(0, 0, 0, options)).toThrow(unsupported);
-        expect(() => blockchain.signMessage("hi", keyPrivate, options)).toThrow(unsupported);
         expect(() =>
-          blockchain.verifyMessage("hi", "00".repeat(64), keyPublicEd25519, options),
+          blockchain.getDerivationPath({ account: 0, change: 0, addressIndex: 0, ...options }),
+        ).toThrow(unsupported);
+        expect(() => blockchain.signMessage("hi", { privateKey: keyPrivate, ...options })).toThrow(
+          unsupported,
+        );
+        expect(() =>
+          blockchain.verifyMessage("hi", {
+            signature: "00".repeat(64),
+            publicKey: keyPublicEd25519,
+            ...options,
+          }),
         ).toThrow(unsupported);
         expect(() =>
-          blockchain.deriveHDWallet(bip39TestVectors.mnemonic, "m/44'/784'/0'/0'/0'", options),
+          blockchain.deriveHDWallet(bip39TestVectors.mnemonic, {
+            path: "m/44'/784'/0'/0'/0'",
+            ...options,
+          }),
         ).toThrow(unsupported);
       });
     });
@@ -107,9 +118,9 @@ describe("Sui", () => {
 
       expect(wallet.keys.public).toBe(keyPublicSecp256k1);
       expect(wallet.address).toBe(addressSecp256k1);
-      expect(blockchain.deriveWallet(keyPrivate, { scheme: "ed25519" }, "secp256k1")).toEqual(
-        wallet,
-      );
+      expect(
+        blockchain.deriveWallet(keyPrivate, { scheme: "ed25519", addressType: "secp256k1" }),
+      ).toEqual(wallet);
     });
 
     describe("Address validation", () => {
@@ -195,19 +206,29 @@ describe("Sui", () => {
 
     it("generates the SDK path for each scheme", () => {
       expect(blockchain.getDerivationPath()).toBe(path);
-      expect(blockchain.getDerivationPath(1, 0, 2, { scheme: "ed25519" })).toBe(
-        "m/44'/784'/1'/0'/2'",
-      );
-      expect(blockchain.getDerivationPath(1, 0, 2, { scheme: "secp256k1" })).toBe(
-        "m/54'/784'/1'/0/2",
-      );
-      expect(() => blockchain.getDerivationPath(0, 2, 0, { scheme: "secp256k1" })).toThrow(
-        RangeError,
-      );
+      expect(
+        blockchain.getDerivationPath({ account: 1, change: 0, addressIndex: 2, scheme: "ed25519" }),
+      ).toBe("m/44'/784'/1'/0'/2'");
+      expect(
+        blockchain.getDerivationPath({
+          account: 1,
+          change: 0,
+          addressIndex: 2,
+          scheme: "secp256k1",
+        }),
+      ).toBe("m/54'/784'/1'/0/2");
+      expect(() =>
+        blockchain.getDerivationPath({
+          account: 0,
+          change: 2,
+          addressIndex: 0,
+          scheme: "secp256k1",
+        }),
+      ).toThrow(RangeError);
     });
 
     it("derives the ed25519 wallet over SLIP-10 by default", () => {
-      const wallet = blockchain.deriveHDWallet(mnemonic, path);
+      const wallet = blockchain.deriveHDWallet(mnemonic, { path });
 
       expect(wallet.keys.public).toBe(vector.publicKey);
       expect(wallet.address).toBe(vector.address);
@@ -215,17 +236,27 @@ describe("Sui", () => {
 
     it("switches to BIP32 when the scheme is secp256k1", () => {
       const options = { scheme: "secp256k1" };
-      const secp256k1Path = blockchain.getDerivationPath(0, 0, 0, options);
+      const secp256k1Path = blockchain.getDerivationPath({
+        account: 0,
+        change: 0,
+        addressIndex: 0,
+        ...options,
+      });
       expect(secp256k1Path).toBe("m/54'/784'/0'/0/0");
-      const fromAddressType = blockchain.deriveHDWallet(mnemonic, secp256k1Path, {}, "secp256k1");
-      const fromScheme = blockchain.deriveHDWallet(mnemonic, secp256k1Path, options);
+      const fromAddressType = blockchain.deriveHDWallet(mnemonic, {
+        path: secp256k1Path,
+        addressType: "secp256k1",
+      });
+      const fromScheme = blockchain.deriveHDWallet(mnemonic, { path: secp256k1Path, ...options });
 
       expect(fromAddressType).toEqual(fromScheme);
       expect(fromAddressType.keys.public).toMatch(/^0[23][0-9a-f]{64}$/);
       expect(fromAddressType).toEqual(
-        blockchain.deriveWallet(fromAddressType.keys.private, {}, "secp256k1"),
+        blockchain.deriveWallet(fromAddressType.keys.private, { addressType: "secp256k1" }),
       );
-      expect(fromAddressType.address).not.toBe(blockchain.deriveHDWallet(mnemonic, path).address);
+      expect(fromAddressType.address).not.toBe(
+        blockchain.deriveHDWallet(mnemonic, { path }).address,
+      );
     });
   });
 
@@ -259,32 +290,48 @@ describe("Sui", () => {
         ] as const;
         for (const [scheme, publicKey, signature] of schemes) {
           const options = { scheme };
-          expect(blockchain.signMessage(message, vector.privateKey, options)).toBe(signature);
           expect(
-            blockchain.signMessage(new TextEncoder().encode(message), vector.privateKey, options),
+            blockchain.signMessage(message, { privateKey: vector.privateKey, ...options }),
           ).toBe(signature);
-          expect(blockchain.verifyMessage(message, signature, publicKey, options)).toBe(true);
-          expect(blockchain.verifyMessage(message + "!", signature, publicKey, options)).toBe(
-            false,
+          expect(
+            blockchain.signMessage(new TextEncoder().encode(message), {
+              privateKey: vector.privateKey,
+              ...options,
+            }),
+          ).toBe(signature);
+          expect(blockchain.verifyMessage(message, { signature, publicKey, ...options })).toBe(
+            true,
           );
-          expect(blockchain.verifyMessage(message, "invalid", publicKey, options)).toBe(false);
+          expect(
+            blockchain.verifyMessage(message + "!", { signature, publicKey, ...options }),
+          ).toBe(false);
+          expect(
+            blockchain.verifyMessage(message, { signature: "invalid", publicKey, ...options }),
+          ).toBe(false);
         }
       },
     );
 
     it("signs ed25519 without a scheme", () => {
       const [message, , signature] = vector.messages[1];
-      expect(blockchain.signMessage(message, vector.privateKey)).toBe(signature);
-      expect(blockchain.verifyMessage(message, signature, vector.ed25519.publicKey)).toBe(true);
+      expect(blockchain.signMessage(message, { privateKey: vector.privateKey })).toBe(signature);
+      expect(
+        blockchain.verifyMessage(message, { signature, publicKey: vector.ed25519.publicKey }),
+      ).toBe(true);
     });
 
     it("rejects a signature from the other scheme", () => {
       const [message, , ed25519Signature, secp256k1Signature] = vector.messages[1];
-      expect(blockchain.verifyMessage(message, secp256k1Signature, vector.ed25519.publicKey)).toBe(
-        false,
-      );
       expect(
-        blockchain.verifyMessage(message, ed25519Signature, vector.secp256k1.publicKey, {
+        blockchain.verifyMessage(message, {
+          signature: secp256k1Signature,
+          publicKey: vector.ed25519.publicKey,
+        }),
+      ).toBe(false);
+      expect(
+        blockchain.verifyMessage(message, {
+          signature: ed25519Signature,
+          publicKey: vector.secp256k1.publicKey,
           scheme: "secp256k1",
         }),
       ).toBe(false);
@@ -293,18 +340,24 @@ describe("Sui", () => {
     it("refuses the recovery byte on either scheme", () => {
       const [message, , ed25519Signature, secp256k1Signature] = vector.messages[1];
       expect(
-        blockchain.verifyMessage(message, ed25519Signature + "1b", vector.ed25519.publicKey),
+        blockchain.verifyMessage(message, {
+          signature: ed25519Signature + "1b",
+          publicKey: vector.ed25519.publicKey,
+        }),
       ).toBe(false);
       expect(
-        blockchain.verifyMessage(message, secp256k1Signature + "1c", vector.secp256k1.publicKey, {
+        blockchain.verifyMessage(message, {
+          signature: secp256k1Signature + "1c",
+          publicKey: vector.secp256k1.publicKey,
           scheme: "secp256k1",
         }),
       ).toBe(false);
-      expect(() => blockchain.signMessage(message, vector.privateKey, { recovered: true })).toThrow(
-        /flag\|\|signature\|\|publicKey/,
-      );
       expect(() =>
-        blockchain.signMessage(message, vector.privateKey, {
+        blockchain.signMessage(message, { privateKey: vector.privateKey, recovered: true }),
+      ).toThrow(/flag\|\|signature\|\|publicKey/);
+      expect(() =>
+        blockchain.signMessage(message, {
+          privateKey: vector.privateKey,
           scheme: "secp256k1",
           recovered: true,
         }),
@@ -316,13 +369,17 @@ describe("Sui", () => {
       const raw = hex.encode(
         ed25519.sign(new TextEncoder().encode(message), hex.decode(vector.privateKey)),
       );
-      const ethereum = new Ethereum().signMessage(message, vector.privateKey);
+      const ethereum = new Ethereum().signMessage(message, { privateKey: vector.privateKey });
 
       expect(raw).not.toBe(ed25519Signature);
-      expect(blockchain.verifyMessage(message, raw, vector.ed25519.publicKey)).toBe(false);
+      expect(
+        blockchain.verifyMessage(message, { signature: raw, publicKey: vector.ed25519.publicKey }),
+      ).toBe(false);
       expect(ethereum).not.toBe(secp256k1Signature);
       expect(
-        blockchain.verifyMessage(message, ethereum, vector.secp256k1.publicKey, {
+        blockchain.verifyMessage(message, {
+          signature: ethereum,
+          publicKey: vector.secp256k1.publicKey,
           scheme: "secp256k1",
         }),
       ).toBe(false);

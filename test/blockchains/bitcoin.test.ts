@@ -304,15 +304,15 @@ describe("Bitcoin blockchain", () => {
         `Address type "${type}" is not supported for bitcoin`,
       );
     }
-    expect(() => blockchain.deriveWallet("00".repeat(31) + "01", {}, "bech32")).toThrow(
-      "Supported: legacy, p2sh, segwit, p2wsh, taproot",
-    );
+    expect(() =>
+      blockchain.deriveWallet("00".repeat(31) + "01", { addressType: "bech32" }),
+    ).toThrow("Supported: legacy, p2sh, segwit, p2wsh, taproot");
   });
 
   describe("Message signing", () => {
     it("should sign a message and return a hex string", () => {
       const wallet = blockchain.generateWallet();
-      const signature = blockchain.signMessage("Test message", wallet.keys.private);
+      const signature = blockchain.signMessage("Test message", { privateKey: wallet.keys.private });
 
       expect(signature).toBeTypeOf("string");
       expect(signature).toMatch(/^[0-9a-f]+$/);
@@ -325,8 +325,8 @@ describe("Bitcoin blockchain", () => {
       const wallet = blockchain.generateWallet();
       const message = "Test message";
 
-      const btcSig = blockchain.signMessage(message, wallet.keys.private);
-      const ethSig = ethBlockchain.signMessage(message, wallet.keys.private);
+      const btcSig = blockchain.signMessage(message, { privateKey: wallet.keys.private });
+      const ethSig = ethBlockchain.signMessage(message, { privateKey: wallet.keys.private });
 
       expect(btcSig).not.toBe(ethSig);
     });
@@ -335,11 +335,14 @@ describe("Bitcoin blockchain", () => {
       const testnet = useBlockchain(new Bitcoin({ network: "testnet" }));
       const publicKey = testnet.getKeyPublic(messageVectors.privateKey);
       expect(testnet.getAddress(publicKey)).toBe(messageVectors.address);
-      expect(testnet.signMessage(messageVectors.message, messageVectors.privateKey)).toBe(
-        messageVectors.signature,
-      );
       expect(
-        testnet.verifyMessage(messageVectors.message, messageVectors.signature, publicKey),
+        testnet.signMessage(messageVectors.message, { privateKey: messageVectors.privateKey }),
+      ).toBe(messageVectors.signature);
+      expect(
+        testnet.verifyMessage(messageVectors.message, {
+          signature: messageVectors.signature,
+          publicKey,
+        }),
       ).toBe(true);
     });
 
@@ -348,9 +351,11 @@ describe("Bitcoin blockchain", () => {
       const { message, privateKey, compactSignature } = messageVectors;
       const publicKey = testnet.getKeyPublic(privateKey);
 
-      expect(testnet.signMessage(message, privateKey, { recovered: true })).toBe(compactSignature);
-      expect(testnet.verifyMessage(message, compactSignature, publicKey)).toBe(true);
-      expect(testnet.verifyMessage(`${message}!`, compactSignature, publicKey)).toBe(false);
+      expect(testnet.signMessage(message, { privateKey, recovered: true })).toBe(compactSignature);
+      expect(testnet.verifyMessage(message, { signature: compactSignature, publicKey })).toBe(true);
+      expect(testnet.verifyMessage(`${message}!`, { signature: compactSignature, publicKey })).toBe(
+        false,
+      );
       const signer = testnet.recoverMessageSigner(message, compactSignature);
       expect(signer).toEqual({ publicKey, addressType: "legacy" });
       expect(testnet.getAddress(signer.publicKey, signer.addressType)).toBe(messageVectors.address);
@@ -389,37 +394,49 @@ describe("Bitcoin blockchain", () => {
         /recovers no public key/,
       );
       const publicKey = blockchain.getKeyPublic(messageVectors.privateKey);
-      expect(blockchain.verifyMessage(message, withHeader(26), publicKey)).toBe(false);
-      expect(blockchain.verifyMessage(message, zero, publicKey)).toBe(false);
+      expect(blockchain.verifyMessage(message, { signature: withHeader(26), publicKey })).toBe(
+        false,
+      );
+      expect(blockchain.verifyMessage(message, { signature: zero, publicKey })).toBe(false);
       expect(() => blockchain.recoverDigestSigner(new Uint8Array(32), "00".repeat(65))).toThrow(
         "bitcoin does not sign digests as r||s||v",
       );
     });
 
     it("rejects Ethereum's r||s||v", () => {
-      const signature = blockchain.signMessage(messageVectors.message, messageVectors.privateKey);
+      const signature = blockchain.signMessage(messageVectors.message, {
+        privateKey: messageVectors.privateKey,
+      });
       const publicKey = blockchain.getKeyPublic(messageVectors.privateKey);
 
-      expect(blockchain.verifyMessage(messageVectors.message, signature, publicKey)).toBe(true);
-      expect(blockchain.verifyMessage(messageVectors.message, signature + "1b", publicKey)).toBe(
-        false,
-      );
-      expect(blockchain.verifyMessage(messageVectors.message, signature + "1c", publicKey)).toBe(
-        false,
-      );
+      expect(blockchain.verifyMessage(messageVectors.message, { signature, publicKey })).toBe(true);
+      expect(
+        blockchain.verifyMessage(messageVectors.message, {
+          signature: signature + "1b",
+          publicKey,
+        }),
+      ).toBe(false);
+      expect(
+        blockchain.verifyMessage(messageVectors.message, {
+          signature: signature + "1c",
+          publicKey,
+        }),
+      ).toBe(false);
     });
 
     it.each(messageVectors.messageHashes)(
       "signs the Core digest %# without another hash",
       (message, digest) => {
         const publicKey = blockchain.getKeyPublic(messageVectors.privateKey);
-        const signature = blockchain.signMessage(message, messageVectors.privateKey);
+        const signature = blockchain.signMessage(message, {
+          privateKey: messageVectors.privateKey,
+        });
         expect(
           secp256k1.verify(hex.decode(signature), hex.decode(digest), hex.decode(publicKey), {
             prehash: false,
           }),
         ).toBe(true);
-        expect(blockchain.verifyMessage(message, signature, publicKey)).toBe(true);
+        expect(blockchain.verifyMessage(message, { signature, publicKey })).toBe(true);
       },
     );
   });
@@ -498,14 +515,14 @@ describe("Bitcoin blockchain", () => {
       ["m/84'/0'/0'/0/1", "bc1qnjg0jd8228aq7egyzacy8cys3knf9xvrerkf9g"],
       ["m/86'/0'/0'/0/0", "bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr"],
     ])("picks the address type from the purpose of %s", (path, address) => {
-      const wallet = blockchain.deriveHDWallet(mnemonic, path);
+      const wallet = blockchain.deriveHDWallet(mnemonic, { path });
       expect(wallet.address).toBe(address);
 
       for (const equivalentPath of [
         ...["M/", "m'/", "M'/", "m/0"].map((prefix) => prefix + path.slice(2)),
         path.replaceAll("'", "h"),
       ]) {
-        const equivalentWallet = blockchain.deriveHDWallet(mnemonic, equivalentPath);
+        const equivalentWallet = blockchain.deriveHDWallet(mnemonic, { path: equivalentPath });
         expect(equivalentWallet.keys).toEqual(wallet.keys);
         expect(equivalentWallet.address, equivalentPath).toBe(address);
       }
@@ -514,7 +531,7 @@ describe("Bitcoin blockchain", () => {
     it.each(["m/84'/0'/0'/0/0", "M'/084'/0'/0'/0/0"])(
       "keeps an explicit address type over the purpose of %s",
       (path) => {
-        const wallet = blockchain.deriveHDWallet(mnemonic, path, {}, "legacy");
+        const wallet = blockchain.deriveHDWallet(mnemonic, { path, addressType: "legacy" });
 
         expect(wallet.keys.private).toBe(
           "4604b4b710fe91f584fff084e1a9159fe4f8408fff380596a604948474ce4fa3",
@@ -526,7 +543,7 @@ describe("Bitcoin blockchain", () => {
     it.each(["m/0/0", "M/84/0/0", "m'/084/0/0", "M/85'/0'/0'/0/0"])(
       "falls back to legacy without a known hardened purpose in %s",
       (path) => {
-        const wallet = blockchain.deriveHDWallet(mnemonic, path);
+        const wallet = blockchain.deriveHDWallet(mnemonic, { path });
 
         expect(wallet.address).toBe(blockchain.getAddress(wallet.keys.public, "legacy"));
       },
@@ -535,7 +552,7 @@ describe("Bitcoin blockchain", () => {
     it("derives testnet addresses on the testnet coin type", () => {
       const testnet = useBlockchain(new Bitcoin({ network: "testnet" }));
 
-      expect(testnet.deriveHDWallet(mnemonic, "m/44'/1'/0'/0/0").address).toBe(
+      expect(testnet.deriveHDWallet(mnemonic, { path: "m/44'/1'/0'/0/0" }).address).toBe(
         "mkpZhYtJu2r87Js3pDiWJDmPte2NRZ8bJV",
       );
     });
@@ -555,7 +572,7 @@ describe("Bitcoin blockchain", () => {
   describe("Electrum wallets", () => {
     it.each(electrumVectors)("derives the $name vector as Electrum does", (vector) => {
       const seed = deriveSeed(vector.mnemonic, vector.passphrase);
-      const wallet = blockchain.deriveElectrumWallet(seed, vector.path);
+      const wallet = blockchain.deriveElectrumWallet(seed, { path: vector.path });
 
       expect(wallet.keys.public).toBe(vector.publicKey);
       expect(wallet.address).toBe(vector.address);
@@ -565,7 +582,10 @@ describe("Bitcoin blockchain", () => {
     it("keeps an explicit address type over the seed version, and takes h for '", () => {
       const [vector] = electrumVectors;
       const seed = deriveSeed(vector.mnemonic);
-      const wallet = blockchain.deriveElectrumWallet(seed, "m/0h/0/0", {}, "legacy");
+      const wallet = blockchain.deriveElectrumWallet(seed, {
+        path: "m/0h/0/0",
+        addressType: "legacy",
+      });
 
       expect(wallet.keys.public).toBe(vector.publicKey);
       expect(wallet.address).toBe(blockchain.getAddress(vector.publicKey, "legacy"));
@@ -581,7 +601,10 @@ describe("Bitcoin blockchain", () => {
       ["a short seed", { scheme: "electrum", seedType: "segwit", seed: new Uint8Array(32) }],
     ])("refuses %s, which deriveSeed didn't return", (_label, seed) => {
       expect(() => {
-        Reflect.apply(blockchain.deriveElectrumWallet.bind(blockchain), undefined, [seed, "m/0/0"]);
+        Reflect.apply(blockchain.deriveElectrumWallet.bind(blockchain), undefined, [
+          seed,
+          { path: "m/0/0" },
+        ]);
       }).toThrow(TypeError);
     });
   });
@@ -608,9 +631,9 @@ describe("Bitcoin blockchain", () => {
       for (const type of ["p2sh", "segwit", "p2wsh"]) {
         expect(() => blockchain.getAddress(uncompressed, type)).toThrow("compressed");
       }
-      expect(() => blockchain.deriveWallet(keyPrivate, { compressed: false }, "segwit")).toThrow(
-        "compressed",
-      );
+      expect(() =>
+        blockchain.deriveWallet(keyPrivate, { compressed: false, addressType: "segwit" }),
+      ).toThrow("compressed");
     });
 
     it("keys_address_get passes the rejection on", async () => {

@@ -248,7 +248,7 @@ export async function deriveBrainwallet(
   const wallet =
     compressed === undefined
       ? blockchain.deriveWallet(privateKey)
-      : blockchain.deriveWallet(privateKey, { compressed }, "legacy");
+      : blockchain.deriveWallet(privateKey, { compressed, addressType: "legacy" });
   const matches =
     chain === "ethereum"
       ? wallet.address.toLowerCase() === target?.toLowerCase()

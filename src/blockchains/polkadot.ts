@@ -5,7 +5,14 @@ import { AbstractEd25519Blockchain } from "../utils/ed25519-chains.ts";
 import { deriveMnemonicEntropy } from "../utils/hd.ts";
 import { decodeSS58, encodeSS58, isSS58Prefix, MAX_SS58_PREFIX } from "../utils/ss58.ts";
 import { deriveEd25519Hard, miniSecret, parseHardJunctions } from "../utils/substrate.ts";
-import type { AddressType, HDWalletOptions, Options, SigningOptions, Wallet } from "../types.ts";
+import type {
+  AddressType,
+  HDWalletOptions,
+  Options,
+  SignMessageOptions,
+  VerifyMessageOptions,
+  Wallet,
+} from "../types.ts";
 
 /** Polkadot's own prefix, written on mainnet unless the options name another. */
 const POLKADOT_PREFIX = 0;
@@ -18,17 +25,16 @@ const WRAP_OPEN = new TextEncoder().encode("<Bytes>");
 const WRAP_CLOSE = new TextEncoder().encode("</Bytes>");
 
 /**
- * Checks whether bytes start and end with the given markers.
+ * Checks whether bytes already start with `<Bytes>` and end with `</Bytes>`.
  * @param bytes - The bytes to check
- * @param open - Expected first bytes
- * @param close - Expected last bytes
  * @returns {boolean} Whether both markers are in place
  */
-function isWrapped(bytes: Uint8Array, open: Uint8Array, close: Uint8Array): boolean {
-  if (bytes.length < open.length + close.length) return false;
-  const tail = bytes.subarray(bytes.length - close.length);
+function isWrapped(bytes: Uint8Array): boolean {
+  if (bytes.length < WRAP_OPEN.length + WRAP_CLOSE.length) return false;
+  const tail = bytes.subarray(bytes.length - WRAP_CLOSE.length);
   return (
-    open.every((byte, at) => bytes[at] === byte) && close.every((byte, at) => tail[at] === byte)
+    WRAP_OPEN.every((byte, at) => bytes[at] === byte) &&
+    WRAP_CLOSE.every((byte, at) => tail[at] === byte)
   );
 }
 
@@ -39,9 +45,7 @@ function isWrapped(bytes: Uint8Array, open: Uint8Array, close: Uint8Array): bool
  */
 function wrapBytes(message: string | Uint8Array): Uint8Array {
   const bytes = typeof message === "string" ? new TextEncoder().encode(message) : message;
-  return isWrapped(bytes, WRAP_OPEN, WRAP_CLOSE)
-    ? bytes
-    : concatBytes(WRAP_OPEN, bytes, WRAP_CLOSE);
+  return isWrapped(bytes) ? bytes : concatBytes(WRAP_OPEN, bytes, WRAP_CLOSE);
 }
 
 /** Polkadot and any Substrate chain on ed25519 accounts. sr25519, the wallet default, waits. */
@@ -75,19 +79,22 @@ export class Polkadot extends AbstractEd25519Blockchain {
   /**
    * Derives like subkey and polkadot.js: the mini secret from the entropy, then hard junctions.
    * @param mnemonic - BIP39 words
-   * @param path - `//hard` junctions such as `//polkadot//0`, or empty or `m` for the root key
-   * @param options - Checksum override, word list, the `///password` passphrase; `coleman` throws
-   * @param addressType - Any type throws, Polkadot has one address format
+   * @param options - The path, `//hard` junctions such as `//polkadot//0` or empty or `m` for the
+   * root key, then checksum override, word list and the `///password` passphrase; `coleman` and
+   * any address type throw, Polkadot has one address format
    * @returns {Wallet} The wallet at the path
    */
-  override deriveHDWallet(
-    mnemonic: string,
-    path: string,
-    options?: HDWalletOptions,
-    addressType?: AddressType,
-  ): Wallet {
+  override deriveHDWallet(mnemonic: string, options: HDWalletOptions): Wallet {
+    const {
+      path,
+      passphrase,
+      allowInvalidChecksum,
+      wordlist,
+      coleman,
+      addressType,
+      ...keyOptions
+    } = options;
     this.refuseAddressType(addressType);
-    const { passphrase, allowInvalidChecksum, wordlist, coleman, ...keyOptions } = options ?? {};
     if (coleman !== undefined && coleman !== false) {
       throw new Error(
         "Polkadot reads BIP39 lengths only, as subkey and polkadot.js do; drop coleman",
@@ -133,35 +140,22 @@ export class Polkadot extends AbstractEd25519Blockchain {
   /**
    * Signs the message wrapped in `<Bytes>`, as the polkadot.js extension does in `signRaw`.
    * @param message - The message to sign
-   * @param keyPrivate - The 32-byte ed25519 seed as hex
-   * @param options - Key options
+   * @param options - The 32-byte ed25519 seed as hex
    * @returns {string} The 64-byte ed25519 signature as hex
    */
-  override signMessage(
-    message: string | Uint8Array,
-    keyPrivate: string,
-    options?: SigningOptions,
-  ): string {
-    return super.signMessage(wrapBytes(message), keyPrivate, options);
+  override signMessage(message: string | Uint8Array, options: SignMessageOptions): string {
+    return super.signMessage(wrapBytes(message), options);
   }
 
   /**
    * Checks ed25519 over the wrapped message, or the raw one as polkadot.js `signatureVerify` does.
    * @param message - The signed message
-   * @param signature - The signature as hex
-   * @param keyPublic - The public key as hex
-   * @param options - Key options
+   * @param options - The signature and the public key as hex
    * @returns {boolean} Whether the signature is valid, false for a malformed key too
    */
-  override verifyMessage(
-    message: string | Uint8Array,
-    signature: string,
-    keyPublic: string,
-    options?: SigningOptions,
-  ): boolean {
+  override verifyMessage(message: string | Uint8Array, options: VerifyMessageOptions): boolean {
     return (
-      super.verifyMessage(wrapBytes(message), signature, keyPublic, options) ||
-      super.verifyMessage(message, signature, keyPublic, options)
+      super.verifyMessage(wrapBytes(message), options) || super.verifyMessage(message, options)
     );
   }
 }

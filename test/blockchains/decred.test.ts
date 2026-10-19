@@ -15,7 +15,9 @@ describe("Decred", () => {
     expect(Decred).toBe(NamedDecred);
     expect(chain.name).toBe("decred");
     expect(chain.curve).toBe("secp256k1");
-    expect(getBlockchainPath(chain, 0, 1, 3)).toBe("m/44'/42'/0'/1/3");
+    expect(getBlockchainPath(chain, { account: 0, change: 1, addressIndex: 3 })).toBe(
+      "m/44'/42'/0'/1/3",
+    );
     expect(chain.deriveWallet(vector.privateKey).address).toBe(vector.addresses.mainnet);
     expect(chain.getKeyPublic(vector.privateKey)).toBe(vector.publicKey);
     const result = await deriveWallet("decred", { privateKey: vector.privateKey });
@@ -79,40 +81,56 @@ describe("Decred", () => {
   it("refuses an Electrum seed for the same reason", () => {
     const [electrum] = electrumVectors;
     const chain: AbstractBlockchain = new Decred();
-    expect(() => chain.deriveElectrumWallet(deriveSeed(electrum.mnemonic), electrum.path)).toThrow(
-      "Decred HD derivation is not supported",
-    );
+    expect(() =>
+      chain.deriveElectrumWallet(deriveSeed(electrum.mnemonic), { path: electrum.path }),
+    ).toThrow("Decred HD derivation is not supported");
   });
 
   it.each(vector.messageHashes)("matches the dcrd message digest %#", async (message, digest) => {
     const chain = await blockchains.decred()();
-    const signature = chain.signMessage(message, vector.privateKey);
+    const signature = chain.signMessage(message, { privateKey: vector.privateKey });
     expect(
       secp256k1.verify(hex.decode(signature), hex.decode(digest), hex.decode(vector.publicKey), {
         prehash: false,
       }),
     ).toBe(true);
-    expect(chain.verifyMessage(message, signature, vector.publicKey)).toBe(true);
-    expect(chain.signMessage(new TextEncoder().encode(message), vector.privateKey)).toBe(signature);
-    expect(chain.verifyMessage(message + "!", signature, vector.publicKey)).toBe(false);
-    expect(chain.verifyMessage(message, "invalid", vector.publicKey)).toBe(false);
-    expect(chain.verifyMessage(message, signature, "02")).toBe(false);
+    expect(chain.verifyMessage(message, { signature, publicKey: vector.publicKey })).toBe(true);
+    expect(
+      chain.signMessage(new TextEncoder().encode(message), { privateKey: vector.privateKey }),
+    ).toBe(signature);
+    expect(chain.verifyMessage(message + "!", { signature, publicKey: vector.publicKey })).toBe(
+      false,
+    );
+    expect(
+      chain.verifyMessage(message, { signature: "invalid", publicKey: vector.publicKey }),
+    ).toBe(false);
+    expect(chain.verifyMessage(message, { signature, publicKey: "02" })).toBe(false);
   });
 
   it("signs dcrd's base64 vectors and recovers their signers", async () => {
     const chain = await blockchains.decred()();
     const { message, compressed, uncompressed, otherMessage } = vector.signed;
-    expect(chain.signMessage(message, vector.privateKey, { recovered: true })).toBe(compressed);
+    expect(chain.signMessage(message, { privateKey: vector.privateKey, recovered: true })).toBe(
+      compressed,
+    );
     expect(
-      chain.signMessage(message, vector.privateKey, { recovered: true, compressed: false }),
+      chain.signMessage(message, {
+        privateKey: vector.privateKey,
+        recovered: true,
+        compressed: false,
+      }),
     ).toBe(uncompressed);
     const signer = chain.recoverMessageSigner(message, compressed);
     expect(signer).toEqual({ publicKey: vector.publicKey, addressType: "legacy" });
     expect(chain.getAddress(signer.publicKey)).toBe(vector.addresses.mainnet);
     const loose = chain.recoverMessageSigner(message, uncompressed);
     expect(chain.getAddress(loose.publicKey)).toBe(vector.uncompressedAddresses.mainnet);
-    expect(chain.verifyMessage(message, compressed, vector.publicKey)).toBe(true);
-    expect(chain.verifyMessage(message, otherMessage, vector.publicKey)).toBe(false);
+    expect(
+      chain.verifyMessage(message, { signature: compressed, publicKey: vector.publicKey }),
+    ).toBe(true);
+    expect(
+      chain.verifyMessage(message, { signature: otherMessage, publicKey: vector.publicKey }),
+    ).toBe(false);
   });
 
   it("refuses the BIP137 headers dcrd does not read", async () => {
@@ -125,13 +143,25 @@ describe("Decred", () => {
   it("rejects a signature carrying Ethereum's recovery byte", async () => {
     const chain = await blockchains.decred()();
 
-    expect(chain.verifyMessage("hello", vector.signature + "1b", vector.publicKey)).toBe(false);
-    expect(chain.verifyMessage("hello", vector.signature + "1c", vector.publicKey)).toBe(false);
+    expect(
+      chain.verifyMessage("hello", {
+        signature: vector.signature + "1b",
+        publicKey: vector.publicKey,
+      }),
+    ).toBe(false);
+    expect(
+      chain.verifyMessage("hello", {
+        signature: vector.signature + "1c",
+        publicKey: vector.publicKey,
+      }),
+    ).toBe(false);
   });
 
   it("verifies the compact r/s bytes from dcrd SignCompact", async () => {
     const chain = await blockchains.decred()();
-    expect(chain.verifyMessage("hello", vector.signature, vector.publicKey)).toBe(true);
-    expect(chain.signMessage("hello", vector.privateKey)).toBe(vector.signature);
+    expect(
+      chain.verifyMessage("hello", { signature: vector.signature, publicKey: vector.publicKey }),
+    ).toBe(true);
+    expect(chain.signMessage("hello", { privateKey: vector.privateKey })).toBe(vector.signature);
   });
 });

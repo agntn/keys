@@ -108,28 +108,34 @@ describe("Cosmos", () => {
 
   describe("Message signing", () => {
     it("signs ADR-036 like Keplr's signArbitrary", () => {
-      expect(blockchain.signMessage(vector.message, privateKey)).toBe(vector.signature);
+      expect(blockchain.signMessage(vector.message, { privateKey })).toBe(vector.signature);
     });
 
     it("verifies against the key, with the signer address under its own prefix", () => {
-      expect(blockchain.verifyMessage(vector.message, vector.signature, publicKey)).toBe(true);
-      expect(blockchain.verifyMessage(`${vector.message}!`, vector.signature, publicKey)).toBe(
-        false,
-      );
-      expect(osmosis.verifyMessage(vector.message, vector.signature, publicKey)).toBe(false);
-      expect(blockchain.verifyMessage(vector.message, `${vector.signature}1b`, publicKey)).toBe(
-        false,
-      );
-      expect(blockchain.verifyMessage(vector.message, vector.signature, "02")).toBe(false);
+      expect(
+        blockchain.verifyMessage(vector.message, { signature: vector.signature, publicKey }),
+      ).toBe(true);
+      expect(
+        blockchain.verifyMessage(`${vector.message}!`, { signature: vector.signature, publicKey }),
+      ).toBe(false);
+      expect(
+        osmosis.verifyMessage(vector.message, { signature: vector.signature, publicKey }),
+      ).toBe(false);
+      expect(
+        blockchain.verifyMessage(vector.message, { signature: `${vector.signature}1b`, publicKey }),
+      ).toBe(false);
+      expect(
+        blockchain.verifyMessage(vector.message, { signature: vector.signature, publicKey: "02" }),
+      ).toBe(false);
     });
 
     it("signs bytes the same as their text", () => {
       const bytes = new TextEncoder().encode(vector.message);
-      expect(blockchain.signMessage(bytes, privateKey)).toBe(vector.signature);
+      expect(blockchain.signMessage(bytes, { privateKey })).toBe(vector.signature);
     });
 
     it("refuses a recovery byte", () => {
-      expect(() => blockchain.signMessage(vector.message, privateKey, { recovered: true })).toThrow(
+      expect(() => blockchain.signMessage(vector.message, { privateKey, recovered: true })).toThrow(
         /no recovery byte/,
       );
     });
@@ -137,20 +143,24 @@ describe("Cosmos", () => {
 
   describe("HD derivation", () => {
     it.each(vector.wallets)("derives %s like cosmjs", (path, key, _public, account, osmo) => {
-      expect(blockchain.deriveHDWallet(bip39TestVectors.mnemonic, path).keys.private).toBe(key);
-      expect(blockchain.deriveHDWallet(bip39TestVectors.mnemonic, path).address).toBe(account);
-      expect(osmosis.deriveHDWallet(bip39TestVectors.mnemonic, path).address).toBe(osmo);
+      expect(blockchain.deriveHDWallet(bip39TestVectors.mnemonic, { path }).keys.private).toBe(key);
+      expect(blockchain.deriveHDWallet(bip39TestVectors.mnemonic, { path }).address).toBe(account);
+      expect(osmosis.deriveHDWallet(bip39TestVectors.mnemonic, { path }).address).toBe(osmo);
     });
 
     it("writes BIP44 under coin type 118", () => {
       expect(blockchain.getDerivationPath()).toBe("m/44'/118'/0'/0/0");
-      expect(blockchain.getDerivationPath(1, 0, 3)).toBe("m/44'/118'/1'/0/3");
+      expect(blockchain.getDerivationPath({ account: 1, change: 0, addressIndex: 3 })).toBe(
+        "m/44'/118'/1'/0/3",
+      );
     });
 
     it("walks Terra's 330 to the key terra.js derives", () => {
       const terra = new Cosmos({ prefix: "terra" });
       expect(terra.coinType).toBe(330);
-      const wallet = terra.deriveHDWallet(terraTestVectors.mnemonic, terra.getDerivationPath());
+      const wallet = terra.deriveHDWallet(terraTestVectors.mnemonic, {
+        path: terra.getDerivationPath(),
+      });
       expect(wallet.keys.public).toBe(terraTestVectors.publicKey);
       expect(wallet.address).toBe(terraTestVectors.address);
     });

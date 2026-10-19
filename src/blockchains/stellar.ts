@@ -5,7 +5,14 @@ import { BIP44 } from "../utils/bip44/index.ts";
 import { getHardenedPath } from "../utils/bip44/paths.ts";
 import { decodeKeyPublic } from "../utils/ed25519.ts";
 import { AbstractEd25519Blockchain } from "../utils/ed25519-chains.ts";
-import type { AddressType, KeyOptions } from "../types.ts";
+import { readPathOptions } from "../utils/options.ts";
+import type {
+  AddressType,
+  DerivationPathOptions,
+  KeyOptions,
+  SignMessageOptions,
+  VerifyMessageOptions,
+} from "../types.ts";
 
 /** SEP-23 StrKey address types: the version byte and the decoded length, checksum included. */
 const STRKEY_TYPES: Readonly<
@@ -63,12 +70,11 @@ export class Stellar extends AbstractEd25519Blockchain {
   /**
    * SEP-0005 puts account `x` at `m/44'/148'/x'` and stops there, so neither a change branch nor
    * an address index has a level to land on.
-   * @param account - Account index
-   * @param change - Must stay 0
-   * @param addressIndex - Must stay 0
+   * @param options - Account; `change` and `addressIndex` must stay 0
    * @returns {string} The SLIP-10 path
    */
-  override getDerivationPath(account = 0, change = 0, addressIndex = 0): string {
+  override getDerivationPath(options?: DerivationPathOptions): string {
+    const { account = 0, change = 0, addressIndex = 0 } = readPathOptions(options);
     if (change !== 0 || addressIndex !== 0) {
       throw new RangeError(
         "Stellar paths end at the account, so change and addressIndex must be 0",
@@ -114,25 +120,21 @@ export class Stellar extends AbstractEd25519Blockchain {
   /**
    * Signs the SEP-53 digest of the message, what the Stellar SDK's `signMessage` signs.
    * @param message - The message to sign
-   * @param keyPrivate - The private key as hex
-   * @param options - Key options
+   * @param options - The private key as hex
    * @returns {string} The 64-byte ed25519 signature as hex
    */
   override signMessage(
     message: string | Uint8Array,
-    keyPrivate: string,
-    options?: KeyOptions,
+    options: SignMessageOptions<KeyOptions>,
   ): string {
-    return super.signMessage(hashMessage(message), keyPrivate, options);
+    return super.signMessage(hashMessage(message), options);
   }
 
   override verifyMessage(
     message: string | Uint8Array,
-    signature: string,
-    keyPublic: string,
-    options?: KeyOptions,
+    options: VerifyMessageOptions<KeyOptions>,
   ): boolean {
-    return super.verifyMessage(hashMessage(message), signature, keyPublic, options);
+    return super.verifyMessage(hashMessage(message), options);
   }
 }
 

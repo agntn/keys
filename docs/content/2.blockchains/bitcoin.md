@@ -38,7 +38,7 @@ bitcoinChain.getAddress(publicKey, "p2sh"); // 3...
 bitcoinChain.getAddress(publicKey, "segwit"); // bc1q...
 bitcoinChain.getAddress(publicKey, "taproot"); // bc1p...
 
-bitcoinChain.generateWallet({}, "segwit"); // whole wallet, segwit address
+bitcoinChain.generateWallet({ addressType: "segwit" }); // whole wallet, segwit address
 ```
 
 Legacy and p2sh both start from `RIPEMD160(SHA256(pubkey))`. p2sh wraps that hash in a `0 <20 bytes>` redeem script and hashes again. Segwit puts the same 20 bytes behind witness version 0. Taproot is the real thing: the x only key gets tweaked with `TapTweak` per BIP341, so the address matches what Bitcoin Core derives for a key path spend, not a shortcut that only looks right.
@@ -59,9 +59,9 @@ The prefix picks the decoder, then the checksum has to hold. A mainnet driver re
 `deriveHDWallet` reads the BIP43 purpose when you don't pass an address type:
 
 ```js
-bitcoinChain.deriveHDWallet(mnemonic, "m/84'/0'/0'/0/0").address; // bc1q..., segwit from purpose 84
-bitcoinChain.deriveHDWallet(mnemonic, "m/86'/0'/0'/0/0").address; // bc1p..., taproot from purpose 86
-bitcoinChain.deriveHDWallet(mnemonic, "m/44'/0'/0'/0/0", {}, "segwit"); // explicit type wins
+bitcoinChain.deriveHDWallet(mnemonic, { path: "m/84'/0'/0'/0/0" }).address; // bc1q..., segwit from purpose 84
+bitcoinChain.deriveHDWallet(mnemonic, { path: "m/86'/0'/0'/0/0" }).address; // bc1p..., taproot from purpose 86
+bitcoinChain.deriveHDWallet(mnemonic, { path: "m/44'/0'/0'/0/0", addressType: "segwit" }); // explicit type wins
 ```
 
 Purpose 44 is legacy, 49 is p2sh, 84 segwit, 86 taproot. Anything else with no explicit type falls back to legacy. A puzzle phrase with a broken checksum goes through with `{ allowInvalidChecksum: true }`, the [wallets guide](/guide/wallets#puzzle-mnemonics) has the details.
@@ -87,9 +87,9 @@ Version `0x80` on mainnet, `0xef` on testnet, a trailing `0x01` when the public 
 `bitcoin-cli signmessage` prints something else. Base64, with a header byte in front of `r||s` that says how to get the key back. Ask for that one with `recovered`:
 
 ```js
-const signature = bitcoinChain.signMessage("hello", privateKey, { recovered: true });
+const signature = bitcoinChain.signMessage("hello", { privateKey, recovered: true });
 // base64, byte for byte what signmessagewithprivkey prints for the same key
-bitcoinChain.verifyMessage("hello", signature, publicKey); // true
+bitcoinChain.verifyMessage("hello", { signature, publicKey }); // true
 
 const signer = bitcoinChain.recoverMessageSigner("hello", signature);
 // { publicKey: "02...", addressType: "legacy" }

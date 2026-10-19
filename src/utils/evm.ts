@@ -1,6 +1,7 @@
 import { keccak256 } from "@agntn/hashes";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { generateAddress, validateAddress } from "./evm-address.ts";
+import { assertSignOptions, assertVerifyOptions } from "./options.ts";
 import { generateKeyPublic as getSecp256k1KeyPublic } from "./secp256k1/keys.ts";
 import { recoverSecp256k1Signer, signMessage, verifyMessage } from "./signing.ts";
 import type {
@@ -8,6 +9,8 @@ import type {
   KeyOptions,
   MessageSigner,
   RecoverableSigningOptions,
+  SignMessageOptions,
+  VerifyMessageOptions,
 } from "../types.ts";
 
 export { generateAddress, toChecksumAddress, validateAddress } from "./evm-address.ts";
@@ -39,19 +42,19 @@ export function hashWithPreamble(
  * For Ethereum, generally uses the keccak256 hash and a specific preamble
  *
  * @param message - The message to sign
- * @param keyPrivate - The private key
- * @param options - Optional parameters; `recovered` appends `v`, the form ethers and viem read
+ * @param options - The private key; `recovered` appends `v`, the form ethers and viem read
  * @returns {string} The signature as hex, 65 bytes of `r||s||v` when recovered
  */
 export function evmSignMessage(
   message: string | Uint8Array,
-  keyPrivate: string,
-  options: RecoverableSigningOptions = {},
+  options: SignMessageOptions<RecoverableSigningOptions>,
 ): string {
+  assertSignOptions(options);
+  const { privateKey, ...signingOptions } = options;
   const hash = hashWithPreamble(message);
 
-  return signMessage(hash, keyPrivate, {
-    ...options,
+  return signMessage(hash, privateKey, {
+    ...signingOptions,
     curve: "secp256k1",
     hash: false,
   });
@@ -61,22 +64,20 @@ export function evmSignMessage(
  * Verifies a message signature for EVM chains
  *
  * @param message - The original message
- * @param signature - The signature to verify
- * @param keyPublic - The public key
- * @param options - Optional parameters
+ * @param options - The signature and the public key
  * @returns {boolean} Whether the signature is valid; a 65-byte signature must carry the right `v`
  */
 export function evmVerifyMessage(
   message: string | Uint8Array,
-  signature: string,
-  keyPublic: string,
-  options: RecoverableSigningOptions = {},
+  options: VerifyMessageOptions<RecoverableSigningOptions>,
 ): boolean {
+  assertVerifyOptions(options);
+  const { signature, publicKey, ...signingOptions } = options;
   const hash = hashWithPreamble(message);
 
   try {
-    return verifyMessage(hash, signature, keyPublic, {
-      ...options,
+    return verifyMessage(hash, signature, publicKey, {
+      ...signingOptions,
       curve: "secp256k1",
       hash: false,
     });
@@ -114,19 +115,16 @@ export abstract class AbstractEVMBlockchain extends AbstractBlockchain {
 
   override signMessage(
     message: string | Uint8Array,
-    keyPrivate: string,
-    options?: RecoverableSigningOptions,
+    options: SignMessageOptions<RecoverableSigningOptions>,
   ): string {
-    return evmSignMessage(message, keyPrivate, options);
+    return evmSignMessage(message, options);
   }
 
   override verifyMessage(
     message: string | Uint8Array,
-    signature: string,
-    keyPublic: string,
-    options?: RecoverableSigningOptions,
+    options: VerifyMessageOptions<RecoverableSigningOptions>,
   ): boolean {
-    return evmVerifyMessage(message, signature, keyPublic, options);
+    return evmVerifyMessage(message, options);
   }
 
   /**

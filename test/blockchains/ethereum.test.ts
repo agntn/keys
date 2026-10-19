@@ -194,15 +194,15 @@ describe("Ethereum blockchain", () => {
     const { mnemonic, passphrase } = bip39TestVectors;
 
     it("derives the first BIP44 account address", () => {
-      expect(blockchain.deriveHDWallet(mnemonic, "m/44'/60'/0'/0/0").address).toBe(
+      expect(blockchain.deriveHDWallet(mnemonic, { path: "m/44'/60'/0'/0/0" }).address).toBe(
         "0x9858EfFD232B4033E47d90003D41EC34EcaEda94",
       );
     });
 
     it("salts the seed with the BIP39 passphrase", () => {
-      expect(blockchain.deriveHDWallet(mnemonic, "m/44'/60'/0'/0/0", { passphrase }).address).toBe(
-        "0x9c32F71D4DB8Fb9e1A58B0a80dF79935e7256FA6",
-      );
+      expect(
+        blockchain.deriveHDWallet(mnemonic, { path: "m/44'/60'/0'/0/0", passphrase }).address,
+      ).toBe("0x9c32F71D4DB8Fb9e1A58B0a80dF79935e7256FA6");
     });
   });
 
@@ -225,10 +225,12 @@ describe("Ethereum blockchain", () => {
         const signature = signatureWithV.slice(0, 128);
         const recovery = Number.parseInt(signatureWithV.slice(128), 16) - 27;
         const publicKey = hex.decode(vector.publicKey);
-        expect(blockchain.signMessage(message, vector.privateKey)).toBe(signature);
-        expect(blockchain.signMessage(new TextEncoder().encode(message), vector.privateKey)).toBe(
-          signature,
-        );
+        expect(blockchain.signMessage(message, { privateKey: vector.privateKey })).toBe(signature);
+        expect(
+          blockchain.signMessage(new TextEncoder().encode(message), {
+            privateKey: vector.privateKey,
+          }),
+        ).toBe(signature);
         expect(
           secp256k1.verify(hex.decode(signature), hex.decode(digest), publicKey, {
             prehash: false,
@@ -238,28 +240,51 @@ describe("Ethereum blockchain", () => {
           .addRecoveryBit(recovery)
           .recoverPublicKey(hex.decode(digest));
         expect(hex.encode(recovered.toBytes(true))).toBe(vector.publicKey);
-        expect(blockchain.verifyMessage(message, signature, vector.publicKey)).toBe(true);
-        expect(blockchain.verifyMessage(message + "!", signature, vector.publicKey)).toBe(false);
-        expect(blockchain.verifyMessage(message, "invalid", vector.publicKey)).toBe(false);
+        expect(blockchain.verifyMessage(message, { signature, publicKey: vector.publicKey })).toBe(
+          true,
+        );
+        expect(
+          blockchain.verifyMessage(message + "!", { signature, publicKey: vector.publicKey }),
+        ).toBe(false);
+        expect(
+          blockchain.verifyMessage(message, { signature: "invalid", publicKey: vector.publicKey }),
+        ).toBe(false);
       },
     );
 
     it.each(vector.messages)(
       "matches the whole ethers signature %# when asked for the recovery byte",
       (message, _digest, signatureWithV) => {
-        const recovered = blockchain.signMessage(message, vector.privateKey, { recovered: true });
+        const recovered = blockchain.signMessage(message, {
+          privateKey: vector.privateKey,
+          recovered: true,
+        });
         expect(recovered).toBe(signatureWithV);
         expect(hex.decode(recovered).length).toBe(65);
-        expect(blockchain.verifyMessage(message, recovered, vector.publicKey)).toBe(true);
-        expect(blockchain.verifyMessage(message + "!", recovered, vector.publicKey)).toBe(false);
+        expect(
+          blockchain.verifyMessage(message, { signature: recovered, publicKey: vector.publicKey }),
+        ).toBe(true);
+        expect(
+          blockchain.verifyMessage(message + "!", {
+            signature: recovered,
+            publicKey: vector.publicKey,
+          }),
+        ).toBe(false);
       },
     );
 
     it("rejects a 65-byte signature carrying the other recovery byte", () => {
       const [message, , signatureWithV] = vector.messages[1];
       const flipped = signatureWithV.slice(0, 128) + (signatureWithV.endsWith("1c") ? "1b" : "1c");
-      expect(blockchain.verifyMessage(message, signatureWithV, vector.publicKey)).toBe(true);
-      expect(blockchain.verifyMessage(message, flipped, vector.publicKey)).toBe(false);
+      expect(
+        blockchain.verifyMessage(message, {
+          signature: signatureWithV,
+          publicKey: vector.publicKey,
+        }),
+      ).toBe(true);
+      expect(
+        blockchain.verifyMessage(message, { signature: flipped, publicKey: vector.publicKey }),
+      ).toBe(false);
     });
 
     it.each(vector.messages)(

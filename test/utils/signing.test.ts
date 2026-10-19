@@ -116,11 +116,24 @@ describe("Signing utilities", () => {
     });
 
     it("should separate signing options from key options", () => {
-      type Signing = NonNullable<Parameters<Blockchain["signMessage"]>[2]>;
-      type Verification = NonNullable<Parameters<Blockchain["verifyMessage"]>[3]>;
+      type Signing = Omit<Parameters<Blockchain["signMessage"]>[1], "privateKey">;
+      type Verification = Omit<
+        Parameters<Blockchain["verifyMessage"]>[1],
+        "signature" | "publicKey"
+      >;
       type KeyGeneration = NonNullable<Parameters<Blockchain["generateKeys"]>[0]>;
-      type EvmAdapter = NonNullable<Parameters<typeof evmSignMessage>[2]>;
-      type Ed25519Adapter = NonNullable<Parameters<typeof ed25519SignMessage>[2]>;
+      type EvmAdapter = Omit<Parameters<typeof evmSignMessage>[1], "privateKey">;
+      type Ed25519Adapter = Omit<Parameters<typeof ed25519SignMessage>[1], "privateKey">;
+
+      expectTypeOf<
+        Parameters<Blockchain["signMessage"]>[1]["privateKey"]
+      >().toEqualTypeOf<string>();
+      expectTypeOf<
+        Parameters<Blockchain["verifyMessage"]>[1]["signature"]
+      >().toEqualTypeOf<string>();
+      expectTypeOf<
+        Parameters<Blockchain["verifyMessage"]>[1]["publicKey"]
+      >().toEqualTypeOf<string>();
 
       expectTypeOf<"curve" extends keyof Signing ? true : false>().toEqualTypeOf<true>();
       expectTypeOf<"hash" extends keyof Signing ? true : false>().toEqualTypeOf<true>();
@@ -142,26 +155,30 @@ describe("Signing utilities", () => {
 
   describe("EVM specific signing", () => {
     it("should sign and verify EVM messages", () => {
-      const signature = evmSignMessage(testMessage, secp256k1TestPrivateKey);
+      const signature = evmSignMessage(testMessage, { privateKey: secp256k1TestPrivateKey });
 
       expect(signature).toBeTypeOf("string");
 
-      const isValid = evmVerifyMessage(testMessage, signature, secp256k1TestPublicKey);
+      const isValid = evmVerifyMessage(testMessage, {
+        signature,
+        publicKey: secp256k1TestPublicKey,
+      });
 
       expect(isValid).toBe(true);
     });
 
     it("should apply EVM-specific preamble", () => {
       // EVM signature with preamble will be different than standard secp256k1
-      const evmSig = evmSignMessage(testMessage, secp256k1TestPrivateKey);
+      const evmSig = evmSignMessage(testMessage, { privateKey: secp256k1TestPrivateKey });
       const basicSig = signMessage(testMessage, secp256k1TestPrivateKey, { curve: "secp256k1" });
 
       expect(evmSig).not.toBe(basicSig);
     });
 
     it("should not allow options to override EVM signing rules", () => {
-      const signature = evmSignMessage(testMessage, secp256k1TestPrivateKey);
-      const signatureWithOverrides = evmSignMessage(testMessage, secp256k1TestPrivateKey, {
+      const signature = evmSignMessage(testMessage, { privateKey: secp256k1TestPrivateKey });
+      const signatureWithOverrides = evmSignMessage(testMessage, {
+        privateKey: secp256k1TestPrivateKey,
         // @ts-expect-error Fixed EVM adapter rejects curve and hash overrides.
         curve: "ed25519",
         hash: true,
@@ -174,8 +191,8 @@ describe("Signing utilities", () => {
       const messageString = "Hello";
       const messageBytes = new TextEncoder().encode(messageString);
 
-      const sigFromString = evmSignMessage(messageString, secp256k1TestPrivateKey);
-      const sigFromBytes = evmSignMessage(messageBytes, secp256k1TestPrivateKey);
+      const sigFromString = evmSignMessage(messageString, { privateKey: secp256k1TestPrivateKey });
+      const sigFromBytes = evmSignMessage(messageBytes, { privateKey: secp256k1TestPrivateKey });
 
       expect(sigFromBytes).toBe(sigFromString);
     });
@@ -183,7 +200,7 @@ describe("Signing utilities", () => {
     it("should sign Uint8Array messages", () => {
       const messageBytes = new TextEncoder().encode(testMessage);
 
-      const signature = evmSignMessage(messageBytes, secp256k1TestPrivateKey);
+      const signature = evmSignMessage(messageBytes, { privateKey: secp256k1TestPrivateKey });
 
       expect(signature).toBeTypeOf("string");
       expect(hex.decode(signature).length).toBeGreaterThanOrEqual(64);
@@ -260,17 +277,21 @@ describe("Signing utilities", () => {
 
   describe("Ed25519 specific signing", () => {
     it("should sign and verify Ed25519 messages", () => {
-      const signature = ed25519SignMessage(testMessage, ed25519TestPrivateKey);
+      const signature = ed25519SignMessage(testMessage, { privateKey: ed25519TestPrivateKey });
 
       expect(signature).toBeTypeOf("string");
-      const isValid = ed25519VerifyMessage(testMessage, signature, ed25519TestPublicKey);
+      const isValid = ed25519VerifyMessage(testMessage, {
+        signature,
+        publicKey: ed25519TestPublicKey,
+      });
 
       expect(isValid).toBe(true);
     });
 
     it("should not allow options to override the Ed25519 curve", () => {
-      const signature = ed25519SignMessage(testMessage, ed25519TestPrivateKey);
-      const signatureWithOverride = ed25519SignMessage(testMessage, ed25519TestPrivateKey, {
+      const signature = ed25519SignMessage(testMessage, { privateKey: ed25519TestPrivateKey });
+      const signatureWithOverride = ed25519SignMessage(testMessage, {
+        privateKey: ed25519TestPrivateKey,
         // @ts-expect-error Fixed Ed25519 adapter rejects curve overrides.
         curve: "secp256k1",
       });
@@ -279,7 +300,7 @@ describe("Signing utilities", () => {
     });
 
     it("should have correct Ed25519 signature length", () => {
-      const signature = ed25519SignMessage(testMessage, ed25519TestPrivateKey);
+      const signature = ed25519SignMessage(testMessage, { privateKey: ed25519TestPrivateKey });
 
       expect(hex.decode(signature).length).toBe(64);
     });

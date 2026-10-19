@@ -5,6 +5,7 @@ import { hash160 } from "../utils/address.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { COSMOS_PREFIX_PATTERN } from "../utils/cosmos-prefix.ts";
 import { HARDENED_OFFSET } from "../utils/hd-index.ts";
+import { assertSignOptions, assertVerifyOptions } from "../utils/options.ts";
 import { decodePublicPoint } from "../utils/secp256k1/decode.ts";
 import { generateKeyPublic } from "../utils/secp256k1/keys.ts";
 import {
@@ -13,7 +14,14 @@ import {
   signMessage,
   verifyMessage,
 } from "../utils/signing.ts";
-import type { AddressType, Curve, KeyOptions, Options, SigningOptions } from "../types.ts";
+import type {
+  AddressType,
+  Curve,
+  KeyOptions,
+  Options,
+  SignMessageOptions,
+  VerifyMessageOptions,
+} from "../types.ts";
 
 /** Prefix of the Cosmos Hub, used when the options name no other chain. */
 const DEFAULT_PREFIX = "cosmos";
@@ -164,22 +172,19 @@ export class Cosmos extends AbstractBlockchain {
   /**
    * Signs like Keplr's `signArbitrary`: ADR-036 sign doc, SHA-256, 64 bytes of `r||s`.
    * @param message - The message to sign
-   * @param keyPrivate - The private key as hex
-   * @param options - Key options
+   * @param options - The private key as hex
    * @returns {string} The 64-byte signature as hex
    */
-  override signMessage(
-    message: string | Uint8Array,
-    keyPrivate: string,
-    options?: SigningOptions,
-  ): string {
+  override signMessage(message: string | Uint8Array, options: SignMessageOptions): string {
+    assertSignOptions(options);
+    const { privateKey, ...signingOptions } = options;
     assertNoRecoveryByte(
-      options,
+      signingOptions,
       "Cosmos signs ADR-036 as 64 bytes of r||s, with no recovery byte",
     );
-    const signer = this.getAddress(generateKeyPublic(keyPrivate));
-    return signMessage(signDoc(signer, message), keyPrivate, {
-      ...options,
+    const signer = this.getAddress(generateKeyPublic(privateKey));
+    return signMessage(signDoc(signer, message), privateKey, {
+      ...signingOptions,
       curve: "secp256k1",
       hash: true,
     });
@@ -188,21 +193,16 @@ export class Cosmos extends AbstractBlockchain {
   /**
    * Checks an ADR-036 signature, with the signer address taken from the key and this prefix.
    * @param message - The signed message
-   * @param signature - The signature as hex
-   * @param keyPublic - The public key as SEC1 hex
-   * @param options - Key options
+   * @param options - The signature as hex and the public key as SEC1 hex
    * @returns {boolean} Whether the signature is valid, false for a malformed key too
    */
-  override verifyMessage(
-    message: string | Uint8Array,
-    signature: string,
-    keyPublic: string,
-    options?: SigningOptions,
-  ): boolean {
+  override verifyMessage(message: string | Uint8Array, options: VerifyMessageOptions): boolean {
+    assertVerifyOptions(options);
+    const { signature, publicKey, ...signingOptions } = options;
     if (hasRecoveryByte(signature)) return false;
     try {
-      return verifyMessage(signDoc(this.getAddress(keyPublic), message), signature, keyPublic, {
-        ...options,
+      return verifyMessage(signDoc(this.getAddress(publicKey), message), signature, publicKey, {
+        ...signingOptions,
         curve: "secp256k1",
         hash: true,
       });

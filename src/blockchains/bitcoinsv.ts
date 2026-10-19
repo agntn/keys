@@ -24,7 +24,7 @@ export class BitcoinSV extends AbstractBitcoinP2PKHBlockchain {
   protected override readonly messagePreamble = "\u0018Bitcoin Signed Message:\n";
 
   constructor(options?: Options) {
-    super(options, "Bitcoin SV", NETWORK_PARAMS);
+    super(options, { label: "Bitcoin SV", networks: NETWORK_PARAMS });
   }
 }
 

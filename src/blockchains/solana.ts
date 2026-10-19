@@ -3,7 +3,8 @@ import { decodeKeyPublic } from "../utils/ed25519.ts";
 import { AbstractEd25519Blockchain } from "../utils/ed25519-chains.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { BIP44Change, getHardenedPath } from "../utils/bip44/paths.ts";
-import type { AddressType } from "../types.ts";
+import { readPathOptions } from "../utils/options.ts";
+import type { AddressType, DerivationPathOptions } from "../types.ts";
 
 /** Solana blockchain implementation. */
 export class Solana extends AbstractEd25519Blockchain {
@@ -13,16 +14,15 @@ export class Solana extends AbstractEd25519Blockchain {
   /**
    * Phantom and the Solana CLI put account `a` at `m/44'/501'/a'/change'`, every level hardened
    * and nothing below the change branch, so an address index has nowhere to go.
-   * @param account - Account index
-   * @param change - Change branch, 0 in every wallet
-   * @param addressIndex - Must stay 0
+   * @param options - Account and change branch, 0 in every wallet; `addressIndex` must stay 0
    * @returns {string} The SLIP-10 path
    */
-  override getDerivationPath(
-    account = 0,
-    change: number = BIP44Change.EXTERNAL,
-    addressIndex = 0,
-  ): string {
+  override getDerivationPath(options?: DerivationPathOptions): string {
+    const {
+      account = 0,
+      change = BIP44Change.EXTERNAL,
+      addressIndex = 0,
+    } = readPathOptions(options);
     if (addressIndex !== 0) {
       throw new RangeError("Solana paths end at the change branch, so addressIndex must be 0");
     }

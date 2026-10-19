@@ -3,10 +3,10 @@ import { sha512 } from "@agntn/hashes";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { hash160 } from "../utils/address.ts";
-import { BIP44Change } from "../utils/bip44/paths.ts";
 import { concatBytes } from "../utils/bytes.ts";
 import { AbstractDualCurveBlockchain } from "../utils/dual-curve.ts";
 import { generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
+import { assertSignOptions, assertVerifyOptions, readPathOptions } from "../utils/options.ts";
 import { convertPublicKey } from "../utils/secp256k1/index.ts";
 import { decodeKeyPrivate } from "../utils/secp256k1/decode.ts";
 import { generateKeyPublic as getSecp256k1KeyPublic } from "../utils/secp256k1/keys.ts";
@@ -14,10 +14,13 @@ import { assertNoRecoveryByte } from "../utils/signing.ts";
 import type {
   AddressType,
   Curve,
+  DerivationPathOptions,
   HDWalletOptions,
   KeyOptions,
-  SigningOptions,
+  SignMessageOptions,
+  VerifyMessageOptions,
   Wallet,
+  WalletOptions,
 } from "../types.ts";
 
 /** secp256k1 first: rippled's `wallet_propose` default, and the only curve BIP39 words reach. */
@@ -182,41 +185,32 @@ export class XRPL extends AbstractDualCurveBlockchain {
    * @param options - Key options; an ed25519 scheme is refused
    * @returns {string} The BIP44 path
    */
-  override getDerivationPath(
-    account = 0,
-    change: number = BIP44Change.EXTERNAL,
-    addressIndex = 0,
-    options?: KeyOptions,
-  ): string {
-    this.refuseEd25519HD(options?.scheme);
-    return super.getDerivationPath(account, change, addressIndex, options);
+  override getDerivationPath(options?: DerivationPathOptions): string {
+    const levels = readPathOptions(options);
+    this.refuseEd25519HD(levels.scheme);
+    return super.getDerivationPath(levels);
   }
 
-  override deriveHDWallet(
-    mnemonic: string,
-    path: string,
-    options?: HDWalletOptions,
-    addressType?: AddressType,
-  ): Wallet {
-    this.refuseEd25519HD(addressType ?? options?.scheme);
-    return super.deriveHDWallet(mnemonic, path, options, addressType);
+  override deriveHDWallet(mnemonic: string, options: HDWalletOptions): Wallet {
+    this.refuseEd25519HD(options.addressType ?? options.scheme);
+    return super.deriveHDWallet(mnemonic, options);
   }
 
   /**
    * Derives the wallet behind a family seed, the `s...` secret XRPL wallets print. Its version
    * picks the curve, and an address type overrides it like `deriveKeypair` in ripple-keypairs.
    * @param seed - Family seed, `s...` for secp256k1 or `sEd...` for ed25519
-   * @param options - Key options of the wallet
-   * @param addressType - Scheme that wins over the one the seed names
+   * @param options - Key options of the wallet; an address type is the scheme, and wins over the
+   * one the seed names
    * @returns {Wallet} The private key, the public key and the classic address of account 0
    */
-  override deriveSeedWallet(seed: string, options?: KeyOptions, addressType?: AddressType): Wallet {
+  override deriveSeedWallet(seed: string, options: WalletOptions = {}): Wallet {
     const { entropy, curve: seedCurve } = decodeSeed(seed);
-    const scheme = addressType ?? options?.scheme ?? seedCurve;
+    const scheme = options.addressType ?? options.scheme ?? seedCurve;
     const curve = this.resolveCurve({ scheme });
     const keyPrivate =
       curve === "ed25519" ? sha512Half(entropy).toHex() : deriveSecp256k1Key(entropy);
-    return this.deriveWallet(keyPrivate, options, curve);
+    return this.deriveWallet(keyPrivate, { ...options, addressType: curve });
   }
 
   override getKeyPublic(keyPrivate: string, options?: KeyOptions): string {
@@ -266,22 +260,19 @@ export class XRPL extends AbstractDualCurveBlockchain {
    * Signs like `sign` in ripple-keypairs: secp256k1 as DER over the SHA-512Half of the message,
    * ed25519 over the message itself.
    * @param message - The message to sign
-   * @param keyPrivate - The private key as hex
-   * @param options - Key options; `scheme` picks the curve, secp256k1 by default
+   * @param options - The private key as hex; `scheme` picks the curve, secp256k1 by default
    * @returns {string} A DER signature on secp256k1, 64 bytes on ed25519, as hex
    */
-  override signMessage(
-    message: string | Uint8Array,
-    keyPrivate: string,
-    options?: SigningOptions,
-  ): string {
-    assertNoRecoveryByte(options, "XRPL signs secp256k1 as DER, with no recovery byte");
+  override signMessage(message: string | Uint8Array, options: SignMessageOptions): string {
+    assertSignOptions(options);
+    const { privateKey, ...signingOptions } = options;
+    assertNoRecoveryByte(signingOptions, "XRPL signs secp256k1 as DER, with no recovery byte");
     const bytes = messageBytes(message);
-    if (this.resolveCurve(options) === "ed25519") {
-      return ed25519.sign(bytes, Uint8Array.fromHex(keyPrivate)).toHex();
+    if (this.resolveCurve(signingOptions) === "ed25519") {
+      return ed25519.sign(bytes, Uint8Array.fromHex(privateKey)).toHex();
     }
     return secp256k1
-      .sign(sha512Half(bytes), decodeKeyPrivate(keyPrivate), { prehash: false, format: "der" })
+      .sign(sha512Half(bytes), decodeKeyPrivate(privateKey), { prehash: false, format: "der" })
       .toHex();
   }
 
@@ -289,18 +280,18 @@ export class XRPL extends AbstractDualCurveBlockchain {
    * Checks a signature the way `verify` in ripple-keypairs does, with the curve read from the key
    * unless the options name it.
    * @param message - The signed message
-   * @param signature - DER on secp256k1, 64 bytes on ed25519, as hex
-   * @param keyPublic - SEC1 key, or an ed25519 key with or without its `ED` byte
-   * @param options - Key options that may name the scheme
+   * @param options - The signature, DER on secp256k1 or 64 bytes on ed25519 as hex, and the key,
+   * SEC1 or ed25519 with or without its `ED` byte; the scheme may be named too
    * @returns {boolean} Whether the signature matches
    */
   override verifyMessage(
     message: string | Uint8Array,
-    signature: string,
-    keyPublic: string,
-    options?: KeyOptions,
+    options: VerifyMessageOptions<KeyOptions>,
   ): boolean {
-    const curve = options?.scheme === undefined ? keyCurve(keyPublic) : this.resolveCurve(options);
+    assertVerifyOptions(options);
+    const { signature, publicKey: keyPublic, ...keyOptions } = options;
+    const curve =
+      keyOptions.scheme === undefined ? keyCurve(keyPublic) : this.resolveCurve(keyOptions);
     const bytes = messageBytes(message);
     try {
       const signatureBytes = Uint8Array.fromHex(signature);

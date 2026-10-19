@@ -78,9 +78,9 @@ Want a fresh address for every payment without a new seed? That's what subaddres
 ```js
 const viewKey = monero.getViewKey(wallet.keys.private);
 
-monero.getSubaddress(wallet.keys.public, viewKey, 0, 1);
+monero.getSubaddress(wallet.keys.public, { viewKey, account: 0, index: 1 });
 // 84QRUYawRNrU3NN1VpFRndSukeyEb3Xpv8qZjjsoJZnTYpDYceuUTpog13D7qPxpviS7J29bSgSkR11hFFoXWk2yNdsR9WF
-monero.getSubaddress(wallet.keys.public, viewKey, 1, 0);
+monero.getSubaddress(wallet.keys.public, { viewKey, account: 1, index: 0 });
 // 82pP87g1Vkd3LUMssBCumk3MfyEsFqLAaGDf6oxddu61EgSFzt8gCwUD4tr3kp9TUfdPs2CnpD7xLZzyC1Ei9UsW3oyCWDf
 ```
 
@@ -110,10 +110,10 @@ Every address on this page comes from monero-wallet-cli 0.18.5.3, restored offli
 Want to show an address is yours without moving a single piconero? Monero wallets have `sign` for that, and keys writes the same SigV2:
 
 ```js
-const signature = monero.signMessage("foo", wallet.keys.private);
+const signature = monero.signMessage("foo", { privateKey: wallet.keys.private });
 // SigV2 and 88 characters of base58, with a fresh nonce every time
 
-monero.verifyMessage("foo", signature, wallet.keys.public);
+monero.verifyMessage("foo", { signature, publicKey: wallet.keys.public });
 // true
 ```
 
@@ -124,8 +124,7 @@ And the other way round? Here's what monero-wallet-rpc 0.18.5.3 signed for that 
 ```js
 monero.verifyMessage(
   "foo",
-  "SigV28r6htFqF3fA4brb5tVALH661nNdrpfociHRduyn29JYpSJ2b9jUudSNbziPuGkQfiS4idjLzHHxrfKs6kC8vgEPj",
-  wallet.keys.public,
+  { signature: "SigV28r6htFqF3fA4brb5tVALH661nNdrpfociHRduyn29JYpSJ2b9jUudSNbziPuGkQfiS4idjLzHHxrfKs6kC8vgEPj", publicKey: wallet.keys.public },
 );
 // true
 ```
@@ -135,11 +134,11 @@ monero.verifyMessage(
 Won something paid to an `8...` address? Proving it with the wallet's `4...` one is showing the wrong ID. Pass `account` and `addressIndex`, the same two numbers `getSubaddress` takes, and keys signs as that subaddress, like `sign 1,2` in monero-wallet-cli:
 
 ```js
-const signature = monero.signMessage("foo", wallet.keys.private, { account: 1, addressIndex: 2 });
+const signature = monero.signMessage("foo", { privateKey: wallet.keys.private, account: 1, addressIndex: 2 });
 
-monero.verifyMessage("foo", signature, monero.getSubaddressKeyPublic(wallet.keys.public, viewKey, 1, 2));
+monero.verifyMessage("foo", { signature, publicKey: monero.getSubaddressKeyPublic(wallet.keys.public, { viewKey, account: 1, index: 2 }) });
 // true
-monero.verifyMessage("foo", signature, wallet.keys.public);
+monero.verifyMessage("foo", { signature, publicKey: wallet.keys.public });
 // false
 ```
 

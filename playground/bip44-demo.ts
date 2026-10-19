@@ -47,14 +47,14 @@ for (const chain of chains) {
 // Create paths with different accounts and address indexes
 console.log("\nBIP44 Paths for Bitcoin with different accounts:");
 for (let account = 0; account < 3; account++) {
-  const path = getBlockchainPath(chains[0], account);
+  const path = getBlockchainPath(chains[0], { account });
   console.log(`Account ${account}: ${path}`);
 }
 
 // Demonstrate change addresses (external vs internal)
 console.log("\nBIP44 Paths for Ethereum with external/internal chains:");
-const externalPath = getBlockchainPath(chains[1], 0, BIP44Change.EXTERNAL);
-const internalPath = getBlockchainPath(chains[1], 0, BIP44Change.INTERNAL);
+const externalPath = getBlockchainPath(chains[1], { account: 0, change: BIP44Change.EXTERNAL });
+const internalPath = getBlockchainPath(chains[1], { account: 0, change: BIP44Change.INTERNAL });
 console.log(`External (receiving): ${externalPath}`);
 console.log(`Internal (change): ${internalPath}`);
 
@@ -62,13 +62,17 @@ console.log(
   "\nSLIP-10 paths for Solana with multiple accounts, the path ends at the change branch:",
 );
 for (let account = 0; account < 5; account++) {
-  const path = getBlockchainPath(chains[2], account);
+  const path = getBlockchainPath(chains[2], { account });
   console.log(`Account ${account}: ${path}`);
 }
 
 console.log("\nSLIP-10 paths for Aptos with multiple address indexes:");
 for (let index = 0; index < 5; index++) {
-  const path = getBlockchainPath(chains[5], 0, BIP44Change.EXTERNAL, index);
+  const path = getBlockchainPath(chains[5], {
+    account: 0,
+    change: BIP44Change.EXTERNAL,
+    addressIndex: index,
+  });
   console.log(`Address index ${index}: ${path}`);
 }
 

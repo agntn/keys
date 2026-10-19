@@ -60,8 +60,8 @@ One extra: the old P2SH prefix, `3...` on mainnet and `2...` on testnet, still v
 `deriveHDWallet` reads the purpose the way Bitcoin does, with coin type 2:
 
 ```js
-litecoinChain.deriveHDWallet(mnemonic, "m/84'/2'/0'/0/0").address; // ltc1q..., segwit from purpose 84
-litecoinChain.deriveHDWallet(mnemonic, "m/44'/2'/0'/0/0").address; // L..., legacy from purpose 44
+litecoinChain.deriveHDWallet(mnemonic, { path: "m/84'/2'/0'/0/0" }).address; // ltc1q..., segwit from purpose 84
+litecoinChain.deriveHDWallet(mnemonic, { path: "m/44'/2'/0'/0/0" }).address; // L..., legacy from purpose 44
 ```
 
 ## WIF

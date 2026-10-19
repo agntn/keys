@@ -28,8 +28,10 @@ describe("extended public key derivation", () => {
     "writes the $addressType address a $prefix stands for",
     async (vector) => {
       const bitcoin = await blockchains.bitcoin()();
-      expect(bitcoin.deriveXpubWallet(vector.extendedKey, "m/0/0")).toEqual({
-        keys: { public: bitcoin.deriveHDWallet(mnemonic, `${vector.path}/0/0`).keys.public },
+      expect(bitcoin.deriveXpubWallet(vector.extendedKey, { path: "m/0/0" })).toEqual({
+        keys: {
+          public: bitcoin.deriveHDWallet(mnemonic, { path: `${vector.path}/0/0` }).keys.public,
+        },
         address: vector.address,
         prefix: vector.prefix,
         addressType: vector.addressType,
@@ -49,8 +51,8 @@ describe("extended public key derivation", () => {
     const [, , zpub] = slip132Vectors;
     const xpub = accountKey(zpub.path, XPUB);
 
-    expect(bitcoin.deriveXpubWallet(xpub, "m/0/0").address).not.toBe(zpub.address);
-    expect(bitcoin.deriveXpubWallet(xpub, "m/0/0", "segwit")).toMatchObject({
+    expect(bitcoin.deriveXpubWallet(xpub, { path: "m/0/0" }).address).not.toBe(zpub.address);
+    expect(bitcoin.deriveXpubWallet(xpub, { path: "m/0/0", addressType: "segwit" })).toMatchObject({
       address: zpub.address,
       prefix: "xpub",
       addressType: "segwit",
@@ -78,8 +80,8 @@ describe("extended public key derivation", () => {
       ["m/0/0", `${account}/0/0`],
       ["m/1/7", `${account}/1/7`],
     ]) {
-      const expected = chain.deriveHDWallet(mnemonic, full);
-      const wallet = chain.deriveXpubWallet(xpub, below);
+      const expected = chain.deriveHDWallet(mnemonic, { path: full });
+      const wallet = chain.deriveXpubWallet(xpub, { path: below });
       expect(wallet.address, `${name} ${below}`).toBe(expected.address);
       expect(wallet.keys.public).toBe(expected.keys.public);
     }
@@ -87,18 +89,20 @@ describe("extended public key derivation", () => {
 
   it("reads Litecoin's own prefixes and the testnet ones", async () => {
     const litecoin = await blockchains.litecoin()();
-    const legacy = litecoin.deriveHDWallet(mnemonic, "m/44'/2'/0'/0/0");
-    const p2sh = litecoin.deriveHDWallet(mnemonic, "m/49'/2'/0'/0/0");
-    expect(litecoin.deriveXpubWallet(accountKey("m/44'/2'/0'", 0x019da462), "m/0/0")).toMatchObject(
-      { address: legacy.address, prefix: "Ltub", addressType: "legacy" },
-    );
-    expect(litecoin.deriveXpubWallet(accountKey("m/49'/2'/0'", 0x01b26ef6), "m/0/0")).toMatchObject(
-      { address: p2sh.address, prefix: "Mtub", addressType: "p2sh" },
-    );
+    const legacy = litecoin.deriveHDWallet(mnemonic, { path: "m/44'/2'/0'/0/0" });
+    const p2sh = litecoin.deriveHDWallet(mnemonic, { path: "m/49'/2'/0'/0/0" });
+    expect(
+      litecoin.deriveXpubWallet(accountKey("m/44'/2'/0'", 0x019da462), { path: "m/0/0" }),
+    ).toMatchObject({ address: legacy.address, prefix: "Ltub", addressType: "legacy" });
+    expect(
+      litecoin.deriveXpubWallet(accountKey("m/49'/2'/0'", 0x01b26ef6), { path: "m/0/0" }),
+    ).toMatchObject({ address: p2sh.address, prefix: "Mtub", addressType: "p2sh" });
 
     const testnet = await blockchains.bitcoin({ network: "testnet" })();
-    const segwit = testnet.deriveHDWallet(mnemonic, "m/84'/1'/0'/0/0");
-    expect(testnet.deriveXpubWallet(accountKey("m/84'/1'/0'", 0x045f1cf6), "m/0/0")).toMatchObject({
+    const segwit = testnet.deriveHDWallet(mnemonic, { path: "m/84'/1'/0'/0/0" });
+    expect(
+      testnet.deriveXpubWallet(accountKey("m/84'/1'/0'", 0x045f1cf6), { path: "m/0/0" }),
+    ).toMatchObject({
       address: segwit.address,
       prefix: "vpub",
       addressType: "segwit",
@@ -118,20 +122,20 @@ describe("extended public key derivation", () => {
       ["1BoatSLRHtKNngkdXEeobR76b53LETtpyT", "m/0", "Invalid extended key encoding or checksum"],
     ] as const;
     for (const [key, path, message] of cases) {
-      expect(() => bitcoin.deriveXpubWallet(key, path)).toThrow(message);
+      expect(() => bitcoin.deriveXpubWallet(key, { path })).toThrow(message);
       try {
-        bitcoin.deriveXpubWallet(key, path);
+        bitcoin.deriveXpubWallet(key, { path });
       } catch (error) {
         expect(String(error)).not.toContain(key.slice(4, 40));
       }
     }
 
     const testnet = await blockchains.bitcoin({ network: "testnet" })();
-    expect(() => testnet.deriveXpubWallet(zpub.extendedKey, "m/0")).toThrow(
+    expect(() => testnet.deriveXpubWallet(zpub.extendedKey, { path: "m/0" })).toThrow(
       'Extended key "zpub" is not accepted for bitcoin testnet. Accepted: tpub, upub, vpub',
     );
     const ethereum = await blockchains.ethereum()();
-    expect(() => ethereum.deriveXpubWallet(zpub.extendedKey, "m/0")).toThrow(
+    expect(() => ethereum.deriveXpubWallet(zpub.extendedKey, { path: "m/0" })).toThrow(
       'Extended key "zpub" is not accepted for ethereum mainnet. Accepted: xpub',
     );
   });
@@ -140,7 +144,9 @@ describe("extended public key derivation", () => {
     "refuses %s, which has no standard secp256k1 extended public key",
     async (name) => {
       const chain: AbstractBlockchain = await blockchains[name]()();
-      expect(() => chain.deriveXpubWallet(slip132Vectors[0].extendedKey, "m/0/0")).toThrow();
+      expect(() =>
+        chain.deriveXpubWallet(slip132Vectors[0].extendedKey, { path: "m/0/0" }),
+      ).toThrow();
     },
   );
 });

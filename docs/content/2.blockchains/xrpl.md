@@ -33,7 +33,7 @@ xrpChain.getAddress(publicKey); // rBgGZ9tc4him9KBzD8fKFiQz3fSZpaSwMH
 
 Bitcoin writes the same key as `1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH`. Squint. 21 of the 34 characters line up. 35 of the 58 letters sit exactly where Bitcoin keeps them.
 
-## Two curves, one argument
+## Two curves, one option
 
 Like [Sui](/blockchains/sui), the address type is the signature scheme. Unlike Sui, secp256k1 is the default. rippled proposes it when nobody asks, and it's the only curve BIP39 words reach.
 
@@ -46,7 +46,7 @@ That `ED` byte is XRPL's, not ours. xrpl.js prints it as `publicKey` too. Same w
 
 ```js
 const wallet = xrpChain.generateWallet(); // secp256k1
-const walletEd = xrpChain.generateWallet({}, "ed25519");
+const walletEd = xrpChain.generateWallet({ addressType: "ed25519" });
 walletEd.keys.public; // 'ed...'
 ```
 
@@ -71,7 +71,7 @@ secp256k1 takes two steps. A root key comes out of SHA-512Half over the seed and
 The seed's version picks the curve, and an address type overrides it, as `deriveKeypair` allows:
 
 ```js
-xrpChain.deriveSeedWallet("sp6JdwovBCsiwnMhXuvZGZtPUoGVj", {}, "ed25519").address;
+xrpChain.deriveSeedWallet("sp6JdwovBCsiwnMhXuvZGZtPUoGVj", { addressType: "ed25519" }).address;
 // rGMTQpyhaDwWTqmw4dcYHj5NPJhtWNhtRW, the sEd seed above has the same 16 bytes
 ```
 
@@ -94,7 +94,7 @@ BIP32 on secp256k1 at `m/44'/144'/account'/change/index`. `Wallet.fromMnemonic` 
 const mnemonic =
   "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
-xrpChain.deriveHDWallet(mnemonic, "m/44'/144'/0'/0/0").address;
+xrpChain.deriveHDWallet(mnemonic, { path: "m/44'/144'/0'/0/0" }).address;
 // rHsMGQEkVNJmpGWs8XUBoTBiAAbwxZN5v3
 ```
 
@@ -107,9 +107,9 @@ Phrase should reach an address, but you don't know where? `keys_hd_wallet_scan` 
 `signMessage` signs like `sign` in ripple-keypairs. secp256k1 signs the SHA-512Half of the message and writes DER, ed25519 signs the message itself.
 
 ```js
-const signature = xrpChain.signMessage("Hello, XRPL!", privateKey);
+const signature = xrpChain.signMessage("Hello, XRPL!", { privateKey });
 // '3044...', DER, the bytes ripple-keypairs gives for this key
-xrpChain.verifyMessage("Hello, XRPL!", signature, publicKey); // true
+xrpChain.verifyMessage("Hello, XRPL!", { signature, publicKey }); // true
 ```
 
 Yes, DER. Every other secp256k1 driver here hands back 64 bytes of `r||s`. But ripple-keypairs only reads DER, and a signature it can't read isn't much of a signature. `verifyMessage` reads the curve from the key, `ED` or 32 bytes means ed25519. `{ recovered: true }` throws, XRPL never recovers a key from a `v`.

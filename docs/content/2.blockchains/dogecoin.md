@@ -55,7 +55,7 @@ BIP32 on `m/44'/3'/account'/change/index`, coin type 3 from SLIP-0044.
 const mnemonic =
   "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
-dogeChain.deriveHDWallet(mnemonic, "m/44'/3'/0'/0/0").address;
+dogeChain.deriveHDWallet(mnemonic, { path: "m/44'/3'/0'/0/0" }).address;
 // DBus3bamQjgJULBJtYXpEzDWQRwF5iwxgC, the same address Ledger Live derives
 ```
 

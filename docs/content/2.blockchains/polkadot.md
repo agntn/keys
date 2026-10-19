@@ -57,9 +57,9 @@ Not BIP32, and not even the BIP39 seed. Substrate runs PBKDF2 over the phrase's 
 const mnemonic =
   "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
-polkadot.deriveHDWallet(mnemonic, "m").address;
+polkadot.deriveHDWallet(mnemonic, { path: "m" }).address;
 // 14HKDhPM8fr6JB9yk9TGZTsBUdk8WJq1AiMbi1YAzUarv1Jp
-polkadot.deriveHDWallet(mnemonic, "//polkadot//0").address;
+polkadot.deriveHDWallet(mnemonic, { path: "//polkadot//0" }).address;
 // 14a9YHn5Mast138yujPzW3NKQw83fZS2gN2QQPmsZAf5NC8U
 ```
 
@@ -76,8 +76,8 @@ There's no BIP44 path to build, so `getDerivationPath()` throws. `keys_hd_wallet
 `signMessage` wraps the message in `<Bytes>` and `</Bytes>` first. That's what the polkadot.js extension does in `signRaw`, so your signature matches the one it hands out. You get 64 bytes of ed25519 in hex.
 
 ```js
-const signature = polkadot.signMessage("Hello, Polkadot!", privateKey);
-polkadot.verifyMessage("Hello, Polkadot!", signature, publicKey); // true
+const signature = polkadot.signMessage("Hello, Polkadot!", { privateKey });
+polkadot.verifyMessage("Hello, Polkadot!", { signature, publicKey }); // true
 ```
 
 `verifyMessage` takes a signature over the raw message too, like polkadot.js `signatureVerify`. Got one from a script that never wrapped anything? It still checks out.

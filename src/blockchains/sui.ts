@@ -4,6 +4,7 @@ import { addSchemeByte, createPrefixedAddress, validateAddressHex } from "../uti
 import { BIP44Change, getBIP32Path, getHardenedPath } from "../utils/bip44/paths.ts";
 import { AbstractDualCurveBlockchain } from "../utils/dual-curve.ts";
 import { decodeKeyPublic, generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
+import { assertSignOptions, assertVerifyOptions, readPathOptions } from "../utils/options.ts";
 import { convertPublicKey } from "../utils/secp256k1/index.ts";
 import { generateKeyPublic as getSecp256k1KeyPublic } from "../utils/secp256k1/keys.ts";
 import {
@@ -12,7 +13,13 @@ import {
   signMessage,
   verifyMessage,
 } from "../utils/signing.ts";
-import type { AddressType, KeyOptions } from "../types.ts";
+import type {
+  AddressType,
+  DerivationPathOptions,
+  KeyOptions,
+  SignMessageOptions,
+  VerifyMessageOptions,
+} from "../types.ts";
 
 const CURVES = ["ed25519", "secp256k1"] as const;
 const SIGNATURE_SCHEME_FLAGS = {
@@ -70,12 +77,12 @@ export class Sui extends AbstractDualCurveBlockchain {
    * @param options - Key options that may carry the scheme
    * @returns {string} The path for that scheme
    */
-  override getDerivationPath(
-    account = 0,
-    change: number = BIP44Change.EXTERNAL,
-    addressIndex = 0,
-    options?: KeyOptions,
-  ): string {
+  override getDerivationPath(options?: DerivationPathOptions): string {
+    const {
+      account = 0,
+      change = BIP44Change.EXTERNAL,
+      addressIndex = 0,
+    } = readPathOptions(options);
     if (this.resolveCurve(options) === "secp256k1") {
       return getBIP32Path(SECP256K1_PURPOSE, this.bip44, account, change, addressIndex);
     }
@@ -133,38 +140,38 @@ export class Sui extends AbstractDualCurveBlockchain {
   /**
    * Signs the personal message digest: ed25519 takes it raw, secp256k1 signs its sha256 like the SDK.
    * @param message - The message to sign
-   * @param keyPrivate - The private key as hex
-   * @param options - Key options; `scheme` picks the curve, ed25519 by default
+   * @param options - The private key as hex; `scheme` picks the curve, ed25519 by default
    * @returns {string} The 64-byte signature as hex, without the scheme flag
    */
   override signMessage(
     message: string | Uint8Array,
-    keyPrivate: string,
-    options?: KeyOptions,
+    options: SignMessageOptions<KeyOptions>,
   ): string {
+    assertSignOptions(options);
+    const { privateKey, ...keyOptions } = options;
     assertNoRecoveryByte(
-      options,
+      keyOptions,
       "Sui serializes a signature as flag||signature||publicKey, with no recovery byte",
     );
-    return signMessage(hashPersonalMessage(message), keyPrivate, {
-      ...options,
-      curve: this.resolveCurve(options),
+    return signMessage(hashPersonalMessage(message), privateKey, {
+      ...keyOptions,
+      curve: this.resolveCurve(keyOptions),
       hash: true,
     });
   }
 
   override verifyMessage(
     message: string | Uint8Array,
-    signature: string,
-    keyPublic: string,
-    options?: KeyOptions,
+    options: VerifyMessageOptions<KeyOptions>,
   ): boolean {
+    assertVerifyOptions(options);
+    const { signature, publicKey, ...keyOptions } = options;
     if (hasRecoveryByte(signature)) {
       return false;
     }
-    return verifyMessage(hashPersonalMessage(message), signature, keyPublic, {
-      ...options,
-      curve: this.resolveCurve(options),
+    return verifyMessage(hashPersonalMessage(message), signature, publicKey, {
+      ...keyOptions,
+      curve: this.resolveCurve(keyOptions),
       hash: true,
     });
   }

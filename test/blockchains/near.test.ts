@@ -70,31 +70,48 @@ describe("NEAR", () => {
 
   describe("Message signing", () => {
     it("signs the raw bytes like tweetnacl", () => {
-      expect(blockchain.signMessage(vector.message, privateKey)).toBe(vector.signature);
+      expect(blockchain.signMessage(vector.message, { privateKey })).toBe(vector.signature);
     });
 
     it("verifies against either key form", () => {
-      expect(blockchain.verifyMessage(vector.message, vector.signature, publicKey)).toBe(true);
-      expect(blockchain.verifyMessage(vector.message, vector.signature, nearKey)).toBe(true);
-      expect(blockchain.verifyMessage(`${vector.message}!`, vector.signature, nearKey)).toBe(false);
-      expect(blockchain.verifyMessage(vector.message, vector.signature, "ed25519:0OIl")).toBe(
-        false,
-      );
+      expect(
+        blockchain.verifyMessage(vector.message, { signature: vector.signature, publicKey }),
+      ).toBe(true);
+      expect(
+        blockchain.verifyMessage(vector.message, {
+          signature: vector.signature,
+          publicKey: nearKey,
+        }),
+      ).toBe(true);
+      expect(
+        blockchain.verifyMessage(`${vector.message}!`, {
+          signature: vector.signature,
+          publicKey: nearKey,
+        }),
+      ).toBe(false);
+      expect(
+        blockchain.verifyMessage(vector.message, {
+          signature: vector.signature,
+          publicKey: "ed25519:0OIl",
+        }),
+      ).toBe(false);
     });
   });
 
   describe("HD derivation", () => {
     it.each(vector.wallets)("derives %s like near-seed-phrase", (path, key, account) => {
-      const wallet = blockchain.deriveHDWallet(bip39TestVectors.mnemonic, path);
+      const wallet = blockchain.deriveHDWallet(bip39TestVectors.mnemonic, { path });
       expect(wallet.keys.private).toBe(key);
       expect(wallet.address).toBe(account);
     });
 
     it("puts an account at the third level and nothing deeper", () => {
       expect(blockchain.getDerivationPath()).toBe("m/44'/397'/0'");
-      expect(blockchain.getDerivationPath(1)).toBe("m/44'/397'/1'");
-      expect(() => blockchain.getDerivationPath(0, 1)).toThrow(RangeError);
-      expect(() => blockchain.getDerivationPath(0, 0, 1)).toThrow(RangeError);
+      expect(blockchain.getDerivationPath({ account: 1 })).toBe("m/44'/397'/1'");
+      expect(() => blockchain.getDerivationPath({ account: 0, change: 1 })).toThrow(RangeError);
+      expect(() =>
+        blockchain.getDerivationPath({ account: 0, change: 0, addressIndex: 1 }),
+      ).toThrow(RangeError);
     });
   });
 });

@@ -103,13 +103,15 @@ describe("Aptos Blockchain", () => {
     it("derives the first account address over SLIP-10", () => {
       const path = blockchain.getDerivationPath();
       expect(path).toBe(vector.path);
-      expect(blockchain.deriveHDWallet(bip39TestVectors.mnemonic, path).address).toBe(
+      expect(blockchain.deriveHDWallet(bip39TestVectors.mnemonic, { path }).address).toBe(
         vector.address,
       );
     });
 
     it("hardens all five levels like the SDK's isValidHardenedPath", () => {
-      expect(blockchain.getDerivationPath(2, 1, 5)).toBe("m/44'/637'/2'/1'/5'");
+      expect(blockchain.getDerivationPath({ account: 2, change: 1, addressIndex: 5 })).toBe(
+        "m/44'/637'/2'/1'/5'",
+      );
     });
   });
 });

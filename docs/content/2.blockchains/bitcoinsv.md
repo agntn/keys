@@ -59,7 +59,7 @@ BIP32 on `m/44'/236'/account'/change/index`, coin type 236 from SLIP-0044. That'
 const mnemonic =
   "chief december immune nominee forest scheme slight tornado cupboard post summer program";
 
-bsvChain.deriveHDWallet(mnemonic, "m/44'/236'/0'/0/0").address;
+bsvChain.deriveHDWallet(mnemonic, { path: "m/44'/236'/0'/0/0" }).address;
 // 127kSo2jNBnSoZeQniZ86WpUQjPvMhSVdA, the key py-sdk's own tests expect
 ```
 

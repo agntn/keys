@@ -1,20 +1,22 @@
 import { AbstractBlockchain } from "../blockchain.ts";
-import type { AddressType, ElectrumSeed, HDWalletOptions, KeyOptions, Wallet } from "../types.ts";
+import type {
+  ElectrumSeed,
+  ElectrumWalletOptions,
+  HDWalletOptions,
+  Wallet,
+  WalletOptions,
+} from "../types.ts";
 
 /**
- * Lets the address type name the signature scheme, so one argument drives key, address, and curve.
- * @param options - Key options that may already carry a scheme
- * @param addressType - Scheme given as the address type, if any
- * @returns {{ scheme: string | undefined; keyOptions: HDWalletOptions | undefined }} The scheme to use and options carrying it
+ * Lets the address type name the signature scheme, so one option drives key, address, and curve.
+ * @param options - Wallet options that may carry a scheme, an address type, or both
+ * @returns {T} The options with the address type as the scheme, or the scheme as the address type
  */
-export function withScheme(
-  options: HDWalletOptions | undefined,
-  addressType?: AddressType,
-): { readonly scheme: string | undefined; readonly keyOptions: HDWalletOptions | undefined } {
-  if (addressType === undefined) {
-    return { scheme: options?.scheme, keyOptions: options };
+export function withScheme<T extends WalletOptions>(options: T): T {
+  if (options.addressType === undefined) {
+    return { ...options, addressType: options.scheme };
   }
-  return { scheme: addressType, keyOptions: { ...options, scheme: addressType } };
+  return { ...options, scheme: options.addressType };
 }
 
 /**
@@ -22,37 +24,19 @@ export function withScheme(
  * The scheme in the options and the address type are one choice, so either one picks the curve.
  */
 export abstract class AbstractDualCurveBlockchain extends AbstractBlockchain {
-  override deriveWallet(
-    keyPrivate: string,
-    options?: KeyOptions,
-    addressType?: AddressType,
-  ): Wallet {
-    const { scheme, keyOptions } = withScheme(options, addressType);
-    return super.deriveWallet(keyPrivate, keyOptions, scheme);
+  override deriveWallet(keyPrivate: string, options: WalletOptions = {}): Wallet {
+    return super.deriveWallet(keyPrivate, withScheme(options));
   }
 
-  override deriveHDWallet(
-    mnemonic: string,
-    path: string,
-    options?: HDWalletOptions,
-    addressType?: AddressType,
-  ): Wallet {
-    const { scheme, keyOptions } = withScheme(options, addressType);
-    return super.deriveHDWallet(mnemonic, path, keyOptions, scheme);
+  override deriveHDWallet(mnemonic: string, options: HDWalletOptions): Wallet {
+    return super.deriveHDWallet(mnemonic, withScheme(options));
   }
 
-  override deriveElectrumWallet(
-    seed: ElectrumSeed,
-    path: string,
-    options?: KeyOptions,
-    addressType?: AddressType,
-  ): Wallet {
-    const { scheme, keyOptions } = withScheme(options, addressType);
-    return super.deriveElectrumWallet(seed, path, keyOptions, scheme);
+  override deriveElectrumWallet(seed: ElectrumSeed, options: ElectrumWalletOptions): Wallet {
+    return super.deriveElectrumWallet(seed, withScheme(options));
   }
 
-  override generateWallet(options?: KeyOptions, addressType?: AddressType): Wallet {
-    const { scheme, keyOptions } = withScheme(options, addressType);
-    return super.generateWallet(keyOptions, scheme);
+  override generateWallet(options: WalletOptions = {}): Wallet {
+    return super.generateWallet(withScheme(options));
   }
 }

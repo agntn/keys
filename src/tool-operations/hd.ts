@@ -125,12 +125,14 @@ export async function deriveHdWallet(
   if (inspection.checksumValid === null) {
     throw new TypeError(describeInvalidMnemonic(words, inspection, wordlist, language));
   }
-  const wallet = blockchain.deriveHDWallet(
-    mnemonic,
+  const wallet = blockchain.deriveHDWallet(mnemonic, {
     path,
-    { passphrase, allowInvalidChecksum, wordlist, ...(coleman ? { coleman } : {}) },
+    passphrase,
+    allowInvalidChecksum,
+    wordlist,
+    ...(coleman ? { coleman } : {}),
     addressType,
-  );
+  });
   const details = {
     chain: blockchain.name,
     network: blockchain.network,
@@ -192,7 +194,7 @@ export async function deriveXpubWallet(
     addressType: options.addressType,
     prefix: options.prefix,
   });
-  const wallet = blockchain.deriveXpubWallet(extendedKey, path, addressType);
+  const wallet = blockchain.deriveXpubWallet(extendedKey, { path, addressType });
   const details = {
     chain: blockchain.name,
     network: blockchain.network,

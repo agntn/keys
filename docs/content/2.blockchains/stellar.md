@@ -42,18 +42,18 @@ Three kinds of StrKey pass: an account (`G`), a muxed account (`M`, the account 
 SEP-0005 puts accounts at `m/44'/148'/x'`, three hardened levels, SLIP-10 underneath:
 
 ```js
-stellarChain.deriveHDWallet(mnemonic, "m/44'/148'/0'").address; // GDRXE2BQ... for the SEP-0005 test phrase
+stellarChain.deriveHDWallet(mnemonic, { path: "m/44'/148'/0'" }).address; // GDRXE2BQ... for the SEP-0005 test phrase
 ```
 
-That is the path SEP-0005 wallets, Freighter among them, walk for the first account. `stellarChain.getDerivationPath(x)` writes it for account `x`, and there's no change or index level to ask for. The SEP's own test vectors are in the test suite.
+That is the path SEP-0005 wallets, Freighter among them, walk for the first account. `stellarChain.getDerivationPath({ account: x })` writes it for account `x`, and there's no change or index level to ask for. The SEP's own test vectors are in the test suite.
 
 ## Signing
 
 `signMessage` signs what the Stellar SDK's `Keypair.signMessage` signs under SEP-53: SHA-256 over `"Stellar Signed Message:\n"` and the message bytes, then plain ed25519 over that digest. The same key gives the same 64 bytes here and there, and `verifyMessage` on either side accepts them.
 
 ```js
-const signature = stellarChain.signMessage("hello", privateKey);
-stellarChain.verifyMessage("hello", signature, publicKey); // true
+const signature = stellarChain.signMessage("hello", { privateKey });
+stellarChain.verifyMessage("hello", { signature, publicKey }); // true
 
 import { Keypair } from "@stellar/stellar-sdk";
 Keypair.fromPublicKey(address).verifyMessage("hello", hexToBytes(signature)); // true
