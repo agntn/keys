@@ -177,14 +177,13 @@ export class Cosmos extends AbstractBlockchain {
    */
   override signMessage(message: string | Uint8Array, options: SignMessageOptions): string {
     assertSignOptions(options);
-    const { privateKey, ...signingOptions } = options;
     assertNoRecoveryByte(
-      signingOptions,
+      options,
       "Cosmos signs ADR-036 as 64 bytes of r||s, with no recovery byte",
     );
-    const signer = this.getAddress(generateKeyPublic(privateKey));
-    return signMessage(signDoc(signer, message), privateKey, {
-      ...signingOptions,
+    const signer = this.getAddress(generateKeyPublic(options.privateKey));
+    return signMessage(signDoc(signer, message), {
+      ...options,
       curve: "secp256k1",
       hash: true,
     });
@@ -198,11 +197,10 @@ export class Cosmos extends AbstractBlockchain {
    */
   override verifyMessage(message: string | Uint8Array, options: VerifyMessageOptions): boolean {
     assertVerifyOptions(options);
-    const { signature, publicKey, ...signingOptions } = options;
-    if (hasRecoveryByte(signature)) return false;
+    if (hasRecoveryByte(options.signature)) return false;
     try {
-      return verifyMessage(signDoc(this.getAddress(publicKey), message), signature, publicKey, {
-        ...signingOptions,
+      return verifyMessage(signDoc(this.getAddress(options.publicKey), message), {
+        ...options,
         curve: "secp256k1",
         hash: true,
       });

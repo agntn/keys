@@ -47,4 +47,9 @@ export {
 } from "@agntn/curves/secp256k1";
 export type { LiftedPoints, Scalar } from "@agntn/curves/secp256k1";
 export { recoverReusedNonce } from "./nonce.ts";
-export type { NonceRecoveryOptions, NonceSignature, RecoveredNonceKey } from "./nonce.ts";
+export type {
+  NonceRecoveryOptions,
+  NonceSignature,
+  NonceSignaturePair,
+  RecoveredNonceKey,
+} from "./nonce.ts";

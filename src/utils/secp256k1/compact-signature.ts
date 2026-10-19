@@ -22,6 +22,18 @@ const HEADER_LAST = 42;
 
 const SIGNATURE_SHAPE = "Message signature must be 65 bytes of base64: a header byte, then r and s";
 
+/** The key that signs and whether the header names its compressed form and address. */
+interface CompactSigning {
+  readonly privateKey: string;
+  readonly compressed: boolean;
+}
+
+/** A Core style signature and the key it should recover. */
+interface CompactCheck {
+  readonly signature: string;
+  readonly publicKey: string;
+}
+
 /**
  * Tell Core's base64 signature from the hex forms, so callers can route it before decoding.
  * @param signature - Signature as the caller passed it
@@ -38,16 +50,12 @@ export function isCompactSignature(signature: string): boolean {
 /**
  * Sign a prepared digest the way `signmessage` in Bitcoin Core, dcrd and their forks does.
  * @param messageHash - The digest to sign
- * @param keyPrivate - The private key as hex
- * @param compressed - Whether the header names the compressed key and its address
+ * @param options - The private key as hex, and whether the header names the compressed key
  * @returns {string} Base64 of the header byte, then `r` and `s`
  */
-export function signCompact(
-  messageHash: Uint8Array,
-  keyPrivate: string,
-  compressed: boolean,
-): string {
-  const signature = secp256k1.sign(messageHash, decodeKeyPrivate(keyPrivate), {
+export function signCompact(messageHash: Uint8Array, options: CompactSigning): string {
+  const { privateKey, compressed } = options;
+  const signature = secp256k1.sign(messageHash, decodeKeyPrivate(privateKey), {
     prehash: false,
     format: "recovered",
   });
@@ -96,22 +104,18 @@ export function recoverCompact(messageHash: Uint8Array, signature: string): Mess
 }
 
 /**
- * Check a Core style signature by recovering its key and comparing points with `keyPublic`.
+ * Check a Core style signature by recovering its key and comparing points with `publicKey`.
  * @param messageHash - The digest that was signed
- * @param signature - Base64 of the header byte, then `r` and `s`
- * @param keyPublic - Compressed or uncompressed SEC1 public key as hex
+ * @param check - Base64 of the header byte, `r` and `s`, and the SEC1 public key as hex,
+ * compressed or not
  * @returns {boolean} True when the signature recovers that key; false for any unreadable input
  */
-export function verifyCompact(
-  messageHash: Uint8Array,
-  signature: string,
-  keyPublic: string,
-): boolean {
+export function verifyCompact(messageHash: Uint8Array, check: CompactCheck): boolean {
   try {
-    const signer = recoverCompact(messageHash, signature);
+    const signer = recoverCompact(messageHash, check.signature);
     return equalBytes(
       decodePublicPoint(signer.publicKey).toBytes(true),
-      decodePublicPoint(keyPublic).toBytes(true),
+      decodePublicPoint(check.publicKey).toBytes(true),
     );
   } catch {
     return false;

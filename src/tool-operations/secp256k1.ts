@@ -99,8 +99,10 @@ export function recoverSecp256k1Nonce(
         shape: "SEC1 or x-only hex",
       });
   const recovered = recoverReusedNonce(
-    { type, ...(first ?? { r: "", s: "", z: "" }) },
-    { type, ...(second ?? { r: "", s: "", z: "" }) },
+    [
+      { type, ...(first ?? { r: "", s: "", z: "" }) },
+      { type, ...(second ?? { r: "", s: "", z: "" }) },
+    ],
     publicKey === undefined ? {} : { publicKey },
   );
   const lines = [

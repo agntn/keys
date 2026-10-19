@@ -1,9 +1,10 @@
 import { ecb } from "@agntn/ciphers/aes";
-import { Sha256Hasher, create, keccak256, pbkdf2, type ScryptOptions } from "@agntn/hashes";
+import { Sha256Hasher, keccak256, pbkdf2, scrypt } from "@agntn/hashes";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { equalBytes, randomBytes } from "@noble/curves/utils.js";
 import { concatBytes } from "../bytes.ts";
 import { generateAddress, toChecksumAddress } from "../evm-address.ts";
+import { assertEncryptOptions } from "../options.ts";
 
 /** Key derivation of a keystore, with the cost parameters the file names. */
 export type KeystoreKDF =
@@ -54,8 +55,10 @@ export type KeystoreInspection = KeystoreKDF & {
   readonly mac: Uint8Array;
 };
 
-/** Options of `encrypt`; salt, IV and id are random unless given. */
+/** Options of `encrypt`: the password, then salt, IV and id, random unless given. */
 export interface KeystoreEncryptOptions {
+  /** Password, hashed as UTF-8 without normalization. */
+  readonly password: string;
   /** Default: scrypt with n 262144, r 8, p 1, geth's standard cost. */
   readonly kdf?: KeystoreKDF;
   /** Default: 32 random bytes. */
@@ -92,14 +95,29 @@ function object(value: unknown, name: string): Readonly<Record<string, unknown>>
   return Object.fromEntries(Object.entries(value));
 }
 
+/** A hex field's name for the error, and its exact byte length when it has one. */
+interface HexField {
+  readonly name: string;
+  readonly length?: number;
+}
+
+/** What the KDF needs besides the password: KDF and costs, salt and output length. */
+type KeyDerivation = KeystoreKDF & { readonly salt: Uint8Array; readonly dklen: number };
+
+/** The AES-128 key and the initial counter block. */
+interface CtrKey {
+  readonly key: Uint8Array;
+  readonly iv: Uint8Array;
+}
+
 /**
  * Reads a hex field, with or without 0x, of an exact or minimum length.
  * @param value - Raw field
- * @param name - Field name for the error
- * @param length - Byte length the field must have, or undefined for any non-empty length
+ * @param field - Field name for the error and the byte length it must have
  * @returns {Uint8Array} The bytes
  */
-function bytes(value: unknown, name: string, length?: number): Uint8Array {
+function bytes(value: unknown, field: HexField): Uint8Array {
+  const { name, length } = field;
   const text = typeof value === "string" ? value.replace(/^0x/iu, "") : "";
   if (!/^(?:[0-9a-f]{2})+$/iu.test(text)) {
     throw new TypeError(`Keystore ${name} must be hex digit pairs`);
@@ -136,7 +154,7 @@ function readKDF(crypto: Readonly<Record<string, unknown>>): KeystoreKDF & {
   const params = object(crypto["kdfparams"], "kdfparams");
   const dklen = integer(params["dklen"], "dklen");
   if (dklen < DKLEN) throw new RangeError(`Keystore dklen must be at least ${DKLEN}`);
-  const salt = bytes(params["salt"], "salt");
+  const salt = bytes(params["salt"], { name: "salt" });
   if (crypto["kdf"] === "scrypt") {
     const n = integer(params["n"], "n");
     if (n < 2 || (n & (n - 1)) !== 0) throw new RangeError("Keystore n must be a power of 2");
@@ -177,11 +195,14 @@ export function inspect(keystore: string | object): KeystoreInspection {
   const crypto = object(file["crypto"] ?? file["Crypto"], "crypto");
   if (crypto["cipher"] !== "aes-128-ctr")
     throw new RangeError("Keystore cipher must be aes-128-ctr");
-  const iv = bytes(object(crypto["cipherparams"], "cipherparams")["iv"], "iv", BLOCK);
-  const ciphertext = bytes(crypto["ciphertext"], "ciphertext");
+  const iv = bytes(object(crypto["cipherparams"], "cipherparams")["iv"], {
+    name: "iv",
+    length: BLOCK,
+  });
+  const ciphertext = bytes(crypto["ciphertext"], { name: "ciphertext" });
   if (ciphertext.length > DKLEN)
     throw new RangeError("Keystore ciphertext must be at most 32 bytes");
-  const mac = bytes(crypto["mac"], "mac", DKLEN);
+  const mac = bytes(crypto["mac"], { name: "mac", length: DKLEN });
   const id = file["id"];
   const address = file["address"];
   return {
@@ -202,46 +223,32 @@ export function inspect(keystore: string | object): KeystoreInspection {
  * @returns {string} The EIP-55 address
  */
 function storedAddress(value: unknown): string {
-  return `0x${toChecksumAddress(bytes(value, "address", 20).toHex())}`;
+  return `0x${toChecksumAddress(bytes(value, { name: "address", length: 20 }).toHex())}`;
 }
 
 /**
  * Runs the KDF over the password.
  * @param password - Password as UTF-8 bytes
- * @param kdf - KDF and costs
- * @param salt - Salt bytes
- * @param dklen - Output length
+ * @param derivation - KDF and costs, salt bytes and output length
  * @returns {Uint8Array} The derived key
  */
-function deriveKey(
-  password: Uint8Array,
-  kdf: KeystoreKDF,
-  salt: Uint8Array,
-  dklen: number,
-): Uint8Array {
-  if (kdf.kdf === "pbkdf2") return pbkdf2(() => new Sha256Hasher(), password, salt, kdf.c, dklen);
-  const options: ScryptOptions = {
-    salt,
-    N: kdf.n,
-    r: kdf.r,
-    p: kdf.p,
-    keyLength: dklen,
-    encoding: "binary",
-  };
-  const { digest } = create("scrypt").hash(password, options);
-  if (!(digest instanceof Uint8Array)) throw new TypeError("scrypt returned text, not bytes");
-  return digest;
+function deriveKey(password: Uint8Array, derivation: KeyDerivation): Uint8Array {
+  const { salt, dklen } = derivation;
+  if (derivation.kdf === "pbkdf2") {
+    return pbkdf2(() => new Sha256Hasher(), password, salt, derivation.c, dklen);
+  }
+  return scrypt(password, salt, derivation.n, derivation.r, derivation.p, dklen);
 }
 
 /**
  * AES-128-CTR with the whole IV as a big-endian counter, the keystream from AES-ECB over the
  * counter blocks. Encryption and decryption are the same step.
  * @param data - Any number of bytes
- * @param key - 16 key bytes
- * @param iv - 16-byte initial counter block
+ * @param ctr - 16 key bytes and the 16-byte initial counter block
  * @returns {Uint8Array} As many bytes as came in
  */
-function aes128Ctr(data: Uint8Array, key: Uint8Array, iv: Uint8Array): Uint8Array {
+function aes128Ctr(data: Uint8Array, ctr: CtrKey): Uint8Array {
+  const { key, iv } = ctr;
   const blocks = Math.ceil(data.length / BLOCK);
   const counters = new Uint8Array(blocks * BLOCK);
   const counter = iv.slice();
@@ -284,9 +291,9 @@ function addressOf(privateKey: Uint8Array): string {
  */
 export function decrypt(keystore: string | object, password: string): Uint8Array {
   const file = inspect(keystore);
-  const derivedKey = deriveKey(encoder.encode(password), file, file.salt, file.dklen);
+  const derivedKey = deriveKey(encoder.encode(password), file);
   if (!equalBytes(macOf(derivedKey, file.ciphertext), file.mac)) throw new KeystorePasswordError();
-  const plaintext = aes128Ctr(file.ciphertext, derivedKey.slice(0, 16), file.iv);
+  const plaintext = aes128Ctr(file.ciphertext, { key: derivedKey.slice(0, 16), iv: file.iv });
   const privateKey = new Uint8Array(DKLEN);
   privateKey.set(plaintext, DKLEN - plaintext.length);
   if (!secp256k1.utils.isValidSecretKey(privateKey)) {
@@ -327,23 +334,20 @@ function randomInputs(options: KeystoreEncryptOptions): { salt: Uint8Array; iv: 
 /**
  * Encrypts a private key as a version 3 keystore with AES-128-CTR, the address included.
  * @param privateKey - 32-byte secp256k1 private key
- * @param password - Password, hashed as UTF-8 without normalization
- * @param options - KDF and costs, plus fixed salt, IV or id for reproducible files
+ * @param options - The password, KDF and costs, plus fixed salt, IV or id for reproducible files
  * @returns {Keystore} The file as an object, ready for `JSON.stringify`
+ * @throws {TypeError} When the options carry no password string, as an old positional call does
  * @throws {RangeError} When the key is not a secp256k1 scalar or the salt or IV is the wrong size
  */
-export function encrypt(
-  privateKey: Uint8Array,
-  password: string,
-  options: KeystoreEncryptOptions = {},
-): Keystore {
+export function encrypt(privateKey: Uint8Array, options: KeystoreEncryptOptions): Keystore {
+  assertEncryptOptions(options);
   if (privateKey.length !== DKLEN || !secp256k1.utils.isValidSecretKey(privateKey)) {
     throw new RangeError("Private key must be a 32-byte secp256k1 scalar");
   }
   const kdf = options.kdf ?? STANDARD_SCRYPT;
   const { salt, iv } = randomInputs(options);
-  const derivedKey = deriveKey(encoder.encode(password), kdf, salt, DKLEN);
-  const ciphertext = aes128Ctr(privateKey, derivedKey.slice(0, 16), iv);
+  const derivedKey = deriveKey(encoder.encode(options.password), { ...kdf, salt, dklen: DKLEN });
+  const ciphertext = aes128Ctr(privateKey, { key: derivedKey.slice(0, 16), iv });
   const kdfparams =
     kdf.kdf === "scrypt"
       ? { dklen: DKLEN, n: kdf.n, r: kdf.r, p: kdf.p, salt: salt.toHex() }

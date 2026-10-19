@@ -1,12 +1,4 @@
-import {
-  Sha256Hasher,
-  Sha512Hasher,
-  create,
-  keccak256,
-  pbkdf2,
-  sha256,
-  type ScryptOptions,
-} from "@agntn/hashes";
+import { Sha256Hasher, Sha512Hasher, keccak256, pbkdf2, scrypt, sha256 } from "@agntn/hashes";
 import { concatBytes } from "../bytes.ts";
 
 /** Key derivation a salted brainwallet runs the passphrase through, with its cost parameters. */
@@ -70,38 +62,20 @@ function digestRounds(password: Uint8Array, options: PlainBrainwalletOptions): U
 /**
  * Runs the KDF the recipe names over the passphrase bytes.
  * @param password - Passphrase as UTF-8 bytes
- * @param salt - Salt bytes
- * @param options - KDF, cost parameters and output length
+ * @param options - KDF, cost parameters and output length, the salt already as bytes
  * @returns {Uint8Array} The KDF output
  */
-function stretch(password: Uint8Array, salt: Uint8Array, options: BrainwalletOptions): Uint8Array {
+function stretch(
+  password: Uint8Array,
+  options: BrainwalletOptions & { readonly salt: Uint8Array },
+): Uint8Array {
+  const { salt } = options;
   const keyLength = options.keyLength ?? 32;
   if (options.kdf === "pbkdf2") {
     const hasher = options.digest === "sha512" ? Sha512Hasher : Sha256Hasher;
     return pbkdf2(() => new hasher(), password, salt, options.iterations, keyLength);
   }
-  return scrypt(password, salt, options, keyLength);
-}
-
-/**
- * Runs scrypt over the passphrase bytes.
- * @param password - Passphrase bytes
- * @param salt - Salt bytes
- * @param cost - N, r and p
- * @param keyLength - Output length in bytes
- * @returns {Uint8Array} The scrypt output
- */
-function scrypt(
-  password: Uint8Array,
-  salt: Uint8Array,
-  cost: { readonly N: number; readonly r: number; readonly p: number },
-  keyLength: number,
-): Uint8Array {
-  const { N, r, p } = cost;
-  const options: ScryptOptions = { salt, N, r, p, keyLength, encoding: "binary" };
-  const { digest } = create("scrypt").hash(password, options);
-  if (!(digest instanceof Uint8Array)) throw new TypeError("scrypt returned text, not bytes");
-  return digest;
+  return scrypt(password, salt, options.N, options.r, options.p, keyLength);
 }
 
 /**
@@ -112,7 +86,8 @@ function scrypt(
  */
 function warp(password: Uint8Array, salt: Uint8Array): Uint8Array {
   const tagged = (bytes: Uint8Array, tag: number) => concatBytes(bytes, Uint8Array.of(tag));
-  const s1 = scrypt(tagged(password, 1), tagged(salt, 1), WARP_SCRYPT, 32);
+  const { N, r, p } = WARP_SCRYPT;
+  const s1 = scrypt(tagged(password, 1), tagged(salt, 1), N, r, p, 32);
   const s2 = pbkdf2(
     () => new Sha256Hasher(),
     tagged(password, 2),
@@ -144,6 +119,6 @@ export function derive(passphrase: string, options: BrainwalletRecipe): Uint8Arr
   }
   const salt = typeof options.salt === "string" ? encoder.encode(options.salt) : options.salt;
   if (options.kdf === "warpwallet") return warp(encoder.encode(passphrase), salt);
-  const stretched = stretch(encoder.encode(passphrase), salt, options);
+  const stretched = stretch(encoder.encode(passphrase), { ...options, salt });
   return sha256(options.hashed === "hex" ? encoder.encode(stretched.toHex()) : stretched);
 }

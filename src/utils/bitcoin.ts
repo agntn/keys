@@ -202,13 +202,13 @@ export abstract class AbstractBitcoinMessageBlockchain extends AbstractBlockchai
    */
   override signMessage(message: string | Uint8Array, options: SignMessageOptions): string {
     assertSignOptions(options);
-    const { privateKey, ...signingOptions } = options;
+    const { privateKey } = options;
     const hash = this.hashWithMessagePreamble(message);
-    if (readRecoveredFlag(signingOptions)) {
-      return signCompact(hash, privateKey, signingOptions.compressed !== false);
+    if (readRecoveredFlag(options)) {
+      return signCompact(hash, { privateKey, compressed: options.compressed !== false });
     }
-    return genericSignMessage(hash, privateKey, {
-      ...signingOptions,
+    return genericSignMessage(hash, {
+      ...options,
       curve: "secp256k1",
       hash: false,
     });
@@ -216,17 +216,17 @@ export abstract class AbstractBitcoinMessageBlockchain extends AbstractBlockchai
 
   override verifyMessage(message: string | Uint8Array, options: VerifyMessageOptions): boolean {
     assertVerifyOptions(options);
-    const { signature, publicKey, ...signingOptions } = options;
+    const { signature } = options;
     if (hasRecoveryByte(signature)) {
       return false;
     }
     const hash = this.hashWithMessagePreamble(message);
     if (isCompactSignature(signature)) {
-      return verifyCompact(hash, signature, publicKey);
+      return verifyCompact(hash, options);
     }
     try {
-      return genericVerifyMessage(hash, signature, publicKey, {
-        ...signingOptions,
+      return genericVerifyMessage(hash, {
+        ...options,
         curve: "secp256k1",
         hash: false,
       });

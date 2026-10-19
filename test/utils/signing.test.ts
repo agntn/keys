@@ -20,14 +20,17 @@ describe("Signing utilities", () => {
 
   describe("Generic signing utilities", () => {
     it("should sign and verify with secp256k1", () => {
-      const signature = signMessage(testMessage, secp256k1TestPrivateKey, {
+      const signature = signMessage(testMessage, {
+        privateKey: secp256k1TestPrivateKey,
         curve: "secp256k1",
       });
 
       expect(signature).toBeTypeOf("string");
       expect(hex.decode(signature).length).toBeGreaterThanOrEqual(64); // Secp256k1 sigs are at least 64 bytes
 
-      const isValid = verifyMessage(testMessage, signature, secp256k1TestPublicKey, {
+      const isValid = verifyMessage(testMessage, {
+        signature,
+        publicKey: secp256k1TestPublicKey,
         curve: "secp256k1",
       });
 
@@ -35,7 +38,8 @@ describe("Signing utilities", () => {
     });
 
     it("hashes a secp256k1 message once before signing", () => {
-      const signature = signMessage(testMessage, secp256k1TestPrivateKey, {
+      const signature = signMessage(testMessage, {
+        privateKey: secp256k1TestPrivateKey,
         curve: "secp256k1",
       });
       const digest = sha256(new TextEncoder().encode(testMessage));
@@ -46,19 +50,26 @@ describe("Signing utilities", () => {
         }),
       ).toBe(true);
       expect(
-        signMessage(digest, secp256k1TestPrivateKey, { curve: "secp256k1", hash: false }),
+        signMessage(digest, {
+          privateKey: secp256k1TestPrivateKey,
+          curve: "secp256k1",
+          hash: false,
+        }),
       ).toBe(signature);
     });
 
     it("should sign and verify with ed25519", () => {
-      const signature = signMessage(testMessage, ed25519TestPrivateKey, {
+      const signature = signMessage(testMessage, {
+        privateKey: ed25519TestPrivateKey,
         curve: "ed25519",
       });
 
       expect(signature).toBeTypeOf("string");
       expect(hex.decode(signature).length).toBe(64); // Ed25519 sigs are exactly 64 bytes
 
-      const isValid = verifyMessage(testMessage, signature, ed25519TestPublicKey, {
+      const isValid = verifyMessage(testMessage, {
+        signature,
+        publicKey: ed25519TestPublicKey,
         curve: "ed25519",
       });
 
@@ -66,11 +77,14 @@ describe("Signing utilities", () => {
     });
 
     it("should fail verification with wrong message", () => {
-      const signature = signMessage(testMessage, secp256k1TestPrivateKey, {
+      const signature = signMessage(testMessage, {
+        privateKey: secp256k1TestPrivateKey,
         curve: "secp256k1",
       });
 
-      const isValid = verifyMessage("Wrong message", signature, secp256k1TestPublicKey, {
+      const isValid = verifyMessage("Wrong message", {
+        signature,
+        publicKey: secp256k1TestPublicKey,
         curve: "secp256k1",
       });
 
@@ -78,13 +92,16 @@ describe("Signing utilities", () => {
     });
 
     it("should fail verification with wrong public key", () => {
-      const signature = signMessage(testMessage, secp256k1TestPrivateKey, {
+      const signature = signMessage(testMessage, {
+        privateKey: secp256k1TestPrivateKey,
         curve: "secp256k1",
       });
 
       const wrongPublicKey = "04" + hex.encode(new Uint8Array(64).fill(1));
 
-      const isValid = verifyMessage(testMessage, signature, wrongPublicKey, {
+      const isValid = verifyMessage(testMessage, {
+        signature,
+        publicKey: wrongPublicKey,
         curve: "secp256k1",
       });
 
@@ -92,26 +109,24 @@ describe("Signing utilities", () => {
     });
 
     it("should return false for a malformed secp256k1 public key", () => {
-      const signature = signMessage(testMessage, secp256k1TestPrivateKey, {
+      const signature = signMessage(testMessage, {
+        privateKey: secp256k1TestPrivateKey,
         curve: "secp256k1",
       });
 
       expect(
-        verifyMessage(testMessage, signature, "not-hex", {
-          curve: "secp256k1",
-        }),
+        verifyMessage(testMessage, { signature, publicKey: "not-hex", curve: "secp256k1" }),
       ).toBe(false);
     });
 
     it("should return false for a malformed ed25519 public key", () => {
-      const signature = signMessage(testMessage, ed25519TestPrivateKey, {
+      const signature = signMessage(testMessage, {
+        privateKey: ed25519TestPrivateKey,
         curve: "ed25519",
       });
 
       expect(
-        verifyMessage(testMessage, signature, "not-hex", {
-          curve: "ed25519",
-        }),
+        verifyMessage(testMessage, { signature, publicKey: "not-hex", curve: "ed25519" }),
       ).toBe(false);
     });
 
@@ -170,7 +185,10 @@ describe("Signing utilities", () => {
     it("should apply EVM-specific preamble", () => {
       // EVM signature with preamble will be different than standard secp256k1
       const evmSig = evmSignMessage(testMessage, { privateKey: secp256k1TestPrivateKey });
-      const basicSig = signMessage(testMessage, secp256k1TestPrivateKey, { curve: "secp256k1" });
+      const basicSig = signMessage(testMessage, {
+        privateKey: secp256k1TestPrivateKey,
+        curve: "secp256k1",
+      });
 
       expect(evmSig).not.toBe(basicSig);
     });
@@ -211,8 +229,9 @@ describe("Signing utilities", () => {
     const digest = sha256(new TextEncoder().encode(testMessage));
 
     it("appends v as 27 or 28 and keeps r||s unchanged", () => {
-      const compact = signMessage(digest, secp256k1TestPrivateKey, { hash: false });
-      const recovered = signMessage(digest, secp256k1TestPrivateKey, {
+      const compact = signMessage(digest, { privateKey: secp256k1TestPrivateKey, hash: false });
+      const recovered = signMessage(digest, {
+        privateKey: secp256k1TestPrivateKey,
         hash: false,
         recovered: true,
       });
@@ -223,7 +242,8 @@ describe("Signing utilities", () => {
     });
 
     it("carries the v that recovers the signer", () => {
-      const recovered = signMessage(digest, secp256k1TestPrivateKey, {
+      const recovered = signMessage(digest, {
+        privateKey: secp256k1TestPrivateKey,
         hash: false,
         recovered: true,
       });
@@ -233,44 +253,68 @@ describe("Signing utilities", () => {
         .recoverPublicKey(digest);
 
       expect(hex.encode(signer.toBytes(true))).toBe(secp256k1TestPublicKey);
-      expect(verifyMessage(digest, recovered, secp256k1TestPublicKey, { hash: false })).toBe(true);
+      expect(
+        verifyMessage(digest, {
+          signature: recovered,
+          publicKey: secp256k1TestPublicKey,
+          hash: false,
+        }),
+      ).toBe(true);
     });
 
     it("rejects a signature whose v points at the other key", () => {
-      const recovered = signMessage(digest, secp256k1TestPrivateKey, {
+      const recovered = signMessage(digest, {
+        privateKey: secp256k1TestPrivateKey,
         hash: false,
         recovered: true,
       });
       const flipped = recovered.slice(0, 128) + (recovered.endsWith("1c") ? "1b" : "1c");
       const outOfRange = recovered.slice(0, 128) + "20";
 
-      expect(verifyMessage(digest, flipped, secp256k1TestPublicKey, { hash: false })).toBe(false);
-      expect(verifyMessage(digest, outOfRange, secp256k1TestPublicKey, { hash: false })).toBe(
-        false,
-      );
+      expect(
+        verifyMessage(digest, {
+          signature: flipped,
+          publicKey: secp256k1TestPublicKey,
+          hash: false,
+        }),
+      ).toBe(false);
+      expect(
+        verifyMessage(digest, {
+          signature: outOfRange,
+          publicKey: secp256k1TestPublicKey,
+          hash: false,
+        }),
+      ).toBe(false);
     });
 
     it("accepts the bare 0 or 1 other libraries emit", () => {
-      const recovered = signMessage(digest, secp256k1TestPrivateKey, {
+      const recovered = signMessage(digest, {
+        privateKey: secp256k1TestPrivateKey,
         hash: false,
         recovered: true,
       });
       const bare = recovered.slice(0, 128) + (recovered.endsWith("1c") ? "01" : "00");
 
-      expect(verifyMessage(digest, bare, secp256k1TestPublicKey, { hash: false })).toBe(true);
+      expect(
+        verifyMessage(digest, { signature: bare, publicKey: secp256k1TestPublicKey, hash: false }),
+      ).toBe(true);
     });
 
     it("has no ed25519 form and takes only a boolean", () => {
       expect(() =>
-        signMessage(testMessage, ed25519TestPrivateKey, { curve: "ed25519", recovered: true }),
+        signMessage(testMessage, {
+          privateKey: ed25519TestPrivateKey,
+          curve: "ed25519",
+          recovered: true,
+        }),
       ).toThrow(/secp256k1 only/);
       expect(() =>
         // @ts-expect-error The flag is a boolean, not a truthy value.
-        signMessage(testMessage, secp256k1TestPrivateKey, { recovered: "yes" }),
+        signMessage(testMessage, { privateKey: secp256k1TestPrivateKey, recovered: "yes" }),
       ).toThrow(TypeError);
       expect(() =>
         // @ts-expect-error Null is not an absent flag either.
-        signMessage(testMessage, secp256k1TestPrivateKey, { recovered: null }),
+        signMessage(testMessage, { privateKey: secp256k1TestPrivateKey, recovered: null }),
       ).toThrow(TypeError);
     });
   });

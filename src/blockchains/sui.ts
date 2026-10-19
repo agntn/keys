@@ -153,14 +153,13 @@ export class Sui extends AbstractDualCurveBlockchain {
     options: SignMessageOptions<KeyOptions>,
   ): string {
     assertSignOptions(options);
-    const { privateKey, ...keyOptions } = options;
     assertNoRecoveryByte(
-      keyOptions,
+      options,
       "Sui serializes a signature as flag||signature||publicKey, with no recovery byte",
     );
-    return signMessage(hashPersonalMessage(message), privateKey, {
-      ...keyOptions,
-      curve: this.resolveCurve(keyOptions),
+    return signMessage(hashPersonalMessage(message), {
+      ...options,
+      curve: this.resolveCurve(options),
       hash: true,
     });
   }
@@ -170,13 +169,12 @@ export class Sui extends AbstractDualCurveBlockchain {
     options: VerifyMessageOptions<KeyOptions>,
   ): boolean {
     assertVerifyOptions(options);
-    const { signature, publicKey, ...keyOptions } = options;
-    if (hasRecoveryByte(signature)) {
+    if (hasRecoveryByte(options.signature)) {
       return false;
     }
-    return verifyMessage(hashPersonalMessage(message), signature, publicKey, {
-      ...keyOptions,
-      curve: this.resolveCurve(keyOptions),
+    return verifyMessage(hashPersonalMessage(message), {
+      ...options,
+      curve: this.resolveCurve(options),
       hash: true,
     });
   }

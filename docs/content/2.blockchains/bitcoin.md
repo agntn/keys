@@ -134,7 +134,7 @@ const [first] = extractSignatures(rawTx, { index: 0, spent });
 const [second] = extractSignatures(rawTx, { index: 1, spent });
 // both: { type: "ecdsa", r: "d47ce4c0...", s, z, hashType: 1, publicKey: "04dbd0c6..." }
 
-recoverReusedNonce(first, second); // { privateKey, nonce, publicKey: "03dbd0c6..." }
+recoverReusedNonce([first, second]); // { privateKey, nonce, publicKey: "03dbd0c6..." }
 ```
 
 `spent` is what each input spends. Grab the script and the value from any explorer. Legacy, SegWit v0 and Taproot key path all work, with every hash type. That 2012 transaction even has DER from before BIP66, and it reads fine. Taproot wants every spent output, unless it signs with `ANYONECANPAY`. Script paths and `OP_CODESEPARATOR` get refused, not guessed.

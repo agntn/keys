@@ -7,7 +7,10 @@ import * as bip322 from "../../src/utils/bip322/index.ts";
 import { getPath } from "../../src/utils/bip44/index.ts";
 import { deriveOldMasterPublicKey, deriveOldPublicKey } from "../../src/utils/electrum/index.ts";
 import * as script from "../../src/utils/script/index.ts";
+import { recoverReusedNonce } from "../../src/utils/secp256k1/index.ts";
+import { signMessage, verifyMessage } from "../../src/utils/signing.ts";
 import { deriveHDKey, getMasterKeyFromSeed } from "../../src/utils/slip10/index.ts";
+import { encrypt } from "../../src/utils/store/index.ts";
 import { extractSignatures } from "../../src/utils/transaction/index.ts";
 import { multisigVector, secp256k1TestVectors, transactionVectors } from "../fixtures.ts";
 
@@ -98,6 +101,34 @@ describe("calls still written with positional arguments", () => {
     expect(() => {
       Reflect.apply(call, undefined, args);
     }).toThrow(/^Pass the options as an object: \w+\(/u);
+  });
+
+  it("root signing, nonce recovery and keystore encryption refuse their old shape", () => {
+    const { privateKey, publicKeyCompressed: publicKey } = secp256k1TestVectors;
+    const signature = signMessage("hi", { privateKey });
+    expect(verifyMessage("hi", { signature, publicKey })).toBe(true);
+    expect(() => {
+      Reflect.apply(signMessage, undefined, ["hi", privateKey]);
+    }).toThrow(
+      "signMessage takes the private key in its options: signMessage(message, { privateKey })",
+    );
+    expect(() => {
+      Reflect.apply(verifyMessage, undefined, ["hi", signature, publicKey]);
+    }).toThrow("verifyMessage takes the signature and the key in its options");
+    const signatures = [0, 1].map((z) => ({ r: "1", s: "1", z: String(z) }));
+    expect(() => {
+      Reflect.apply(recoverReusedNonce, undefined, signatures);
+    }).toThrow(
+      new TypeError(
+        "Pass the two signatures as a pair: recoverReusedNonce([first, second], { publicKey })",
+      ),
+    );
+    expect(() => {
+      Reflect.apply(recoverReusedNonce, undefined, [signatures, "02aa"]);
+    }).toThrow(/^Pass the options as an object: recoverReusedNonce\(/u);
+    expect(() => {
+      Reflect.apply(encrypt, undefined, [new Uint8Array(32).fill(1), "password"]);
+    }).toThrow("encrypt takes the password in its options: encrypt(privateKey, { password })");
   });
 
   it("lookupIndices rejects a language handed over positionally", async () => {

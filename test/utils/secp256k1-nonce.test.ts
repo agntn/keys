@@ -48,7 +48,12 @@ const schnorrPair = (
 
 describe("recoverReusedNonce", () => {
   it("solves the ECDSA vector of agntn/keys#196 for d and k", () => {
-    expect(recoverReusedNonce({ r, ...first }, { r, ...second })).toEqual({
+    expect(
+      recoverReusedNonce([
+        { r, ...first },
+        { r, ...second },
+      ]),
+    ).toEqual({
       privateKey: padded(reusedNonceVector.privateKey),
       nonce: padded(reusedNonceVector.nonce),
       publicKey: hex.encode(secp256k1.getPublicKey(Fn.toBytes(0x1234567890abcdefn))),
@@ -57,7 +62,10 @@ describe("recoverReusedNonce", () => {
 
   it("takes s negated to the other half and still finds the key", () => {
     const high = Fn.toBytes(Fn.neg(BigInt(`0x${second.s}`)));
-    const recovered = recoverReusedNonce({ r, ...first }, { r, s: hex.encode(high), z: second.z });
+    const recovered = recoverReusedNonce([
+      { r, ...first },
+      { r, s: hex.encode(high), z: second.z },
+    ]);
     expect(recovered.privateKey).toBe(padded(reusedNonceVector.privateKey));
   });
 
@@ -65,7 +73,7 @@ describe("recoverReusedNonce", () => {
     const { transaction, spent, publicKey } = transactionVectors.reusedNonce2012;
     const [a, b] = [0, 1].flatMap((index) => extractSignatures(transaction, { index, spent }));
     if (a === undefined || b === undefined) throw new Error("missing signature");
-    const recovered = recoverReusedNonce(a, b);
+    const recovered = recoverReusedNonce([a, b]);
     const derived = secp256k1.getPublicKey(hex.decode(recovered.privateKey), false);
     expect(hex.encode(derived)).toBe(publicKey);
     const compressed = secp256k1.Point.fromBytes(hex.decode(publicKey)).toBytes(true);
@@ -77,15 +85,20 @@ describe("recoverReusedNonce", () => {
     const [a, b] = signatures;
     if (a === undefined || b === undefined) throw new Error("missing signature");
     const recovered = recoverReusedNonce(
-      { ...a, type: "schnorr" },
-      { ...b, type: "schnorr" },
+      [
+        { ...a, type: "schnorr" },
+        { ...b, type: "schnorr" },
+      ],
       { publicKey },
     );
     expect(recovered.privateKey).toBe(hex.encode(Fn.toBytes(privateKey)));
     expect(recovered.publicKey).toBe(publicKey);
-    expect(() => recoverReusedNonce({ ...a, type: "schnorr" }, { ...b, type: "schnorr" })).toThrow(
-      /x-only public key/u,
-    );
+    expect(() =>
+      recoverReusedNonce([
+        { ...a, type: "schnorr" },
+        { ...b, type: "schnorr" },
+      ]),
+    ).toThrow(/x-only public key/u);
   });
 
   it("tells apart Schnorr messages that differ by the curve order", () => {
@@ -95,8 +108,10 @@ describe("recoverReusedNonce", () => {
     const [a, b] = signatures;
     if (a === undefined || b === undefined) throw new Error("missing signature");
     const recovered = recoverReusedNonce(
-      { ...a, type: "schnorr" },
-      { ...b, type: "schnorr" },
+      [
+        { ...a, type: "schnorr" },
+        { ...b, type: "schnorr" },
+      ],
       { publicKey },
     );
     expect(recovered.privateKey).toBe(hex.encode(Fn.toBytes(privateKey)));
@@ -108,8 +123,10 @@ describe("recoverReusedNonce", () => {
     if (a === undefined || b === undefined) throw new Error("missing signature");
     const recover = (r: bigint): unknown =>
       recoverReusedNonce(
-        { ...a, r: r.toString(16), type: "schnorr" },
-        { ...b, r: r.toString(16), type: "schnorr" },
+        [
+          { ...a, r: r.toString(16), type: "schnorr" },
+          { ...b, r: r.toString(16), type: "schnorr" },
+        ],
         { publicKey },
       );
     expect(() => recover(Fn.ORDER)).toThrow(/does not match publicKey/u);
@@ -119,20 +136,23 @@ describe("recoverReusedNonce", () => {
   it("refuses pairs that leak nothing or disagree", () => {
     const one = { r, ...first };
     const two = { r, ...second };
-    expect(() => recoverReusedNonce(one, { ...two, r: "01" })).toThrow(/different r/u);
-    expect(() => recoverReusedNonce(one, { ...two, z: first.z })).toThrow(/same digest/u);
+    expect(() => recoverReusedNonce([one, { ...two, r: "01" }])).toThrow(/different r/u);
+    expect(() => recoverReusedNonce([one, { ...two, z: first.z }])).toThrow(/same digest/u);
     const wrapped = (1n + Fn.ORDER).toString(16);
-    expect(() => recoverReusedNonce({ ...one, z: "1" }, { ...two, z: wrapped })).toThrow(
-      /same digest/u,
-    );
-    expect(() => recoverReusedNonce(one, { ...two, type: "schnorr" })).toThrow(TypeError);
-    expect(() => recoverReusedNonce(one, { ...two, s: "0" })).toThrow(/from 1/u);
-    expect(() => recoverReusedNonce(one, { ...two, s: "0x1" })).toThrow(TypeError);
-    const other = hex.encode(secp256k1.getPublicKey(Fn.toBytes(2n)));
-    expect(() => recoverReusedNonce(one, two, { publicKey: other })).toThrow(/does not match/u);
     expect(() =>
-      recoverReusedNonce({ ...one, publicKey: other }, two, { publicKey: one.r }),
+      recoverReusedNonce([
+        { ...one, z: "1" },
+        { ...two, z: wrapped },
+      ]),
+    ).toThrow(/same digest/u);
+    expect(() => recoverReusedNonce([one, { ...two, type: "schnorr" }])).toThrow(TypeError);
+    expect(() => recoverReusedNonce([one, { ...two, s: "0" }])).toThrow(/from 1/u);
+    expect(() => recoverReusedNonce([one, { ...two, s: "0x1" }])).toThrow(TypeError);
+    const other = hex.encode(secp256k1.getPublicKey(Fn.toBytes(2n)));
+    expect(() => recoverReusedNonce([one, two], { publicKey: other })).toThrow(/does not match/u);
+    expect(() =>
+      recoverReusedNonce([{ ...one, publicKey: other }, two], { publicKey: one.r }),
     ).toThrow(TypeError);
-    expect(() => recoverReusedNonce(one, { ...two, s: first.s })).toThrow(/No key verifies/u);
+    expect(() => recoverReusedNonce([one, { ...two, s: first.s }])).toThrow(/No key verifies/u);
   });
 });

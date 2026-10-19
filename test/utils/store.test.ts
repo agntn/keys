@@ -108,14 +108,15 @@ describe("keystore inspect", () => {
 
 describe("keystore encrypt", () => {
   it.each([cheap, { kdf: "pbkdf2", c: 16 }] as const)("round trips a key through $kdf", (kdf) => {
-    const file = encrypt(privateKey, "zażółć gęślą jaźń", { kdf });
+    const file = encrypt(privateKey, { password: "zażółć gęślą jaźń", kdf });
     expect(file.crypto.kdf).toBe(kdf.kdf);
     expect(hex.encode(decrypt(file, "zażółć gęślą jaźń"))).toBe(pbkdf2Vector.privateKey);
   });
 
   it("writes the file ethers writes for the same salt, IV, id and costs", () => {
     const { keystore, password } = ethersVector;
-    const file = encrypt(privateKey, password, {
+    const file = encrypt(privateKey, {
+      password,
       kdf: { kdf: "scrypt", n: 1024, r: 8, p: 1 },
       salt: hex.decode(keystore.Crypto.kdfparams.salt),
       iv: hex.decode(keystore.Crypto.cipherparams.iv),
@@ -127,14 +128,14 @@ describe("keystore encrypt", () => {
   });
 
   it("defaults to geth's scrypt cost", { timeout: 30_000 }, () => {
-    const file = encrypt(privateKey, "testpassword");
+    const file = encrypt(privateKey, { password: "testpassword" });
     expect(file.crypto.kdfparams).toMatchObject({ dklen: 32, n: 262144, r: 8, p: 1 });
   });
 
   it("draws a new salt, IV and UUID v4 for every file unless given", () => {
     const [first, second] = [
-      encrypt(privateKey, "", { kdf: cheap }),
-      encrypt(privateKey, "", { kdf: cheap }),
+      encrypt(privateKey, { password: "", kdf: cheap }),
+      encrypt(privateKey, { password: "", kdf: cheap }),
     ];
     expect(first.crypto.cipherparams.iv).not.toBe(second.crypto.cipherparams.iv);
     expect(first.crypto.kdfparams.salt).not.toBe(second.crypto.kdfparams.salt);
@@ -145,7 +146,9 @@ describe("keystore encrypt", () => {
   });
 
   it("refuses a key outside the curve order and an IV of the wrong size", () => {
-    expect(() => encrypt(new Uint8Array(32), "", { kdf: cheap })).toThrow(/scalar/);
-    expect(() => encrypt(privateKey, "", { kdf: cheap, iv: new Uint8Array(8) })).toThrow(/IV/);
+    expect(() => encrypt(new Uint8Array(32), { password: "", kdf: cheap })).toThrow(/scalar/);
+    expect(() => encrypt(privateKey, { password: "", kdf: cheap, iv: new Uint8Array(8) })).toThrow(
+      /IV/,
+    );
   });
 });

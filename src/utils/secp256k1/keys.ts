@@ -1,5 +1,4 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { sha256 } from "@agntn/hashes";
 import { decodeKeyPrivate } from "./decode.ts";
 
 type KeyPublicOptions = {
@@ -24,73 +23,4 @@ export function generateKeyPublic(keyPrivate: string, options: KeyPublicOptions 
 
   // Return hex string
   return keyPublic.toHex();
-}
-
-/**
- * Signs a message using secp256k1 elliptic curve
- * Hashing happens here, so `@noble/curves` gets `prehash: false` and doesn't hash again.
- *
- * @param message - The message to sign as a string or Uint8Array
- * @param keyPrivate - The private key as a hex string
- * @param options - Options for signature generation
- * @returns {string} The signature as a hex string
- */
-export function signMessage(
-  message: string | Uint8Array,
-  keyPrivate: string,
-  options: { readonly hash?: boolean } = {},
-): string {
-  const { hash = true } = options;
-
-  const keyPrivateBytes = decodeKeyPrivate(keyPrivate);
-
-  // Convert message to Uint8Array if it's a string
-  let messageBytes = typeof message === "string" ? new TextEncoder().encode(message) : message;
-
-  // Hash the message with SHA-256 if hash option is true
-  if (hash) {
-    messageBytes = sha256(messageBytes);
-  }
-
-  // Sign the message (in @noble/curves v2, returns Uint8Array directly)
-  const signature = secp256k1.sign(messageBytes, keyPrivateBytes, { prehash: false });
-
-  // Return hex string
-  return signature.toHex();
-}
-
-/**
- * Verifies a signature using secp256k1 elliptic curve
- * Same `prehash: false` as signing, so the bytes are checked exactly as hashed here.
- *
- * @param message - The original message as a string or Uint8Array
- * @param signature - The signature as a hex string
- * @param keyPublic - The public key as a hex string
- * @param options - Options for signature verification
- * @returns {boolean} True if the signature is valid, false otherwise
- */
-export function verifyMessage(
-  message: string | Uint8Array,
-  signature: string,
-  keyPublic: string,
-  options: { readonly hash?: boolean } = {},
-): boolean {
-  const { hash = true } = options;
-
-  // Convert signature from hex string to Uint8Array (v2 accepts bytes directly)
-  const signatureBytes = Uint8Array.fromHex(signature);
-
-  // Convert public key from hex string to Uint8Array
-  const keyPublicBytes = Uint8Array.fromHex(keyPublic);
-
-  // Convert message to Uint8Array if it's a string
-  let messageBytes = typeof message === "string" ? new TextEncoder().encode(message) : message;
-
-  // Hash the message with SHA-256 if hash option is true
-  if (hash) {
-    messageBytes = sha256(messageBytes);
-  }
-
-  // Verify the signature
-  return secp256k1.verify(signatureBytes, messageBytes, keyPublicBytes, { prehash: false });
 }

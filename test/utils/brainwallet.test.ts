@@ -37,6 +37,14 @@ describe("brainwallet derive", () => {
     expect(() => derive(passphrase, { ...scryptHex.recipe, N: 1000, salt })).toThrow(/N/);
   });
 
+  /* RFC 7914 test vector 1, empty password and salt, then SHA-256. */
+  it("takes an empty salt, as pbkdf2 and WarpWallet already did", () => {
+    const recipe = { kdf: "scrypt", N: 16, r: 1, p: 1, keyLength: 64, hashed: "bytes" } as const;
+    expect(hex.encode(derive("", { ...recipe, salt: "" }))).toBe(
+      "960b76889dd45d85001d8b406bf061e855f4bbedfbaa6c0f37a3364d9d81a148",
+    );
+  });
+
   it.each(plainBrainwalletVectors)(
     "derives $privateKey straight from $recipe.kdf of the passphrase",
     ({ passphrase: plain, recipe, privateKey }) => {

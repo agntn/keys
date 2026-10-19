@@ -267,7 +267,7 @@ describe("Public transaction exports", () => {
     );
     expect([a?.r, b?.r]).toEqual([r, r]);
     if (a === undefined || b === undefined) throw new Error("missing signature");
-    expect(recoverReusedNonce(a, b).publicKey).toMatch(/^0[23]dbd0c615/u);
+    expect(recoverReusedNonce([a, b]).publicKey).toMatch(/^0[23]dbd0c615/u);
     expect(new Set(Object.keys(transaction))).toEqual(new Set(["extractSignatures"]));
     expect(await import("@agntn/keys")).not.toHaveProperty("extractSignatures");
   });
@@ -290,7 +290,8 @@ describe("Public keystore exports", () => {
     const store = await import("@agntn/keys/store");
     const { keystore, password, privateKey } = storeVectors[1];
     expect(hex.encode(store.decrypt(keystore, password))).toBe(privateKey);
-    const file = store.encrypt(hex.decode(privateKey), password, {
+    const file = store.encrypt(hex.decode(privateKey), {
+      password,
       kdf: { kdf: "pbkdf2", c: 16 },
     });
     expect(hex.encode(store.decrypt(file, password))).toBe(privateKey);
