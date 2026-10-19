@@ -1,6 +1,7 @@
 import { sha256 } from "@agntn/hashes";
 import { schnorr, secp256k1 } from "@noble/curves/secp256k1.js";
 import { concatBytes } from "../bytes.ts";
+import { assertOptions } from "../options.ts";
 
 const { Point } = secp256k1;
 const { Fn, Fp } = Point;
@@ -17,6 +18,9 @@ export interface NonceSignature {
   /** The signer's key, SEC1 hex, or x-only for Schnorr. */
   readonly publicKey?: string;
 }
+
+/** The two signatures `recoverReusedNonce` takes, sharing one r. */
+export type NonceSignaturePair = readonly [Readonly<NonceSignature>, Readonly<NonceSignature>];
 
 /** Options for `recoverReusedNonce`. */
 export interface NonceRecoveryOptions {
@@ -41,6 +45,15 @@ interface Pair {
   readonly s: readonly [bigint, bigint];
   readonly z: readonly [bigint, bigint];
 }
+
+/** One ECDSA signature as numbers, over the digest it signs. */
+interface EcdsaSignature {
+  readonly r: bigint;
+  readonly s: bigint;
+  readonly z: bigint;
+}
+
+const PAIR_USAGE = "recoverReusedNonce([first, second], { publicKey })";
 
 /**
  * Reads hex up to 64 digits as a number.
@@ -67,17 +80,13 @@ function digestBytes(digest: bigint): Uint8Array {
 
 /**
  * Reads s from 1 to n minus 1, r as a scalar for ECDSA or an x coordinate below p for Schnorr, and the digests, refusing two signatures that leak nothing.
- * @param first - One signature
- * @param second - The other
+ * @param signatures - The two signatures
  * @param schnorr - Whether r is the x coordinate BIP340 signs with
  * @returns {Pair} The numbers, digests as given
  * @throws {RangeError} When r or s is out of range, the r values differ or the digests match
  */
-function readPair(
-  first: Readonly<NonceSignature>,
-  second: Readonly<NonceSignature>,
-  schnorr: boolean,
-): Pair {
+function readPair(signatures: NonceSignaturePair, schnorr: boolean): Pair {
+  const [first, second] = signatures;
   const r = readHex(first.r, "r");
   const s: [bigint, bigint] = [readHex(first.s, "s"), readHex(second.s, "s")];
   const z: [bigint, bigint] = [readHex(first.z, "z"), readHex(second.z, "z")];
@@ -101,12 +110,11 @@ function readPair(
 /**
  * Checks an ECDSA signature against a key, taking either s.
  * @param key - Public key bytes
- * @param r - r
- * @param s - s
- * @param z - Digest
+ * @param numbers - r, s and the digest z
  * @returns {boolean} Whether it verifies
  */
-function verifiesEcdsa(key: Uint8Array, r: bigint, s: bigint, z: bigint): boolean {
+function verifiesEcdsa(key: Uint8Array, numbers: EcdsaSignature): boolean {
+  const { r, s, z } = numbers;
   const signature = concatBytes(Fn.toBytes(r), Fn.toBytes(s));
   const options = { prehash: false, lowS: false, format: "compact" } as const;
   return secp256k1.verify(signature, digestBytes(z), key, options);
@@ -168,7 +176,9 @@ function recoverEcdsa(pair: Readonly<Pair>, expected: string | undefined): Recov
     const privateKey = Fn.div(Fn.sub(Fn.mul(s[0], nonce), Fn.create(z[0])), Fn.create(r));
     if (!Fn.isValidNot0(privateKey)) continue;
     const key = Point.BASE.multiply(privateKey).toBytes(true);
-    const verified = s.every((each, index) => verifiesEcdsa(key, r, each, z[index] ?? 0n));
+    const verified = s.every((each, index) =>
+      verifiesEcdsa(key, { r, s: each, z: z[index] ?? 0n }),
+    );
     if (verified && (expected === undefined || expected === key.toHex())) {
       return {
         privateKey: Fn.toBytes(privateKey).toHex(),
@@ -216,24 +226,38 @@ function recoverSchnorr(pair: Readonly<Pair>, publicKey: string): RecoveredNonce
 }
 
 /**
+ * Refuses the old call shape: two loose signatures instead of a pair, or options that aren't one.
+ * @param signatures - What the caller passed as the pair
+ * @param options - What the caller passed as options
+ * @throws {TypeError} When either has the wrong shape
+ */
+function assertPairCall(signatures: unknown, options: unknown): void {
+  if (!Array.isArray(signatures) || signatures.length !== 2) {
+    throw new TypeError(`Pass the two signatures as a pair: ${PAIR_USAGE}`);
+  }
+  assertOptions(options, PAIR_USAGE);
+}
+
+/**
  * Recovers the key behind two signatures with one r, once its public key verifies both.
- * @param first - One signature with its digest
- * @param second - The other
+ * @param signatures - The two signatures, each with its digest
  * @param options - The key the result must match
  * @returns {RecoveredNonceKey} The private key, the shared nonce and the public key
- * @throws {TypeError} When a value is no hex or the signatures disagree on type
+ * @throws {TypeError} When the signatures are not a pair, a value is no hex or the signatures
+ * disagree on type
  * @throws {RangeError} When r differs, the digests match, Schnorr has no key, or nothing verifies
  */
 export function recoverReusedNonce(
-  first: Readonly<NonceSignature>,
-  second: Readonly<NonceSignature>,
+  signatures: NonceSignaturePair,
   options: Readonly<NonceRecoveryOptions> = {},
 ): RecoveredNonceKey {
+  assertPairCall(signatures, options);
+  const [first, second] = signatures;
   const type = first.type ?? "ecdsa";
   if ((second.type ?? "ecdsa") !== type || (type !== "ecdsa" && type !== "schnorr")) {
     throw new TypeError("Both signatures must be ecdsa or both schnorr");
   }
-  const pair = readPair(first, second, type === "schnorr");
+  const pair = readPair(signatures, type === "schnorr");
   const expected = expectedKey(
     [options.publicKey, first.publicKey, second.publicKey],
     type === "schnorr",

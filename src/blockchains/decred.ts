@@ -122,7 +122,10 @@ export class Decred extends AbstractBlockchain {
     assertSignOptions(options);
     const { privateKey, ...signingOptions } = options;
     if (readRecoveredFlag(signingOptions)) {
-      return signCompact(hashMessage(message), privateKey, signingOptions.compressed !== false);
+      return signCompact(hashMessage(message), {
+        privateKey,
+        compressed: signingOptions.compressed !== false,
+      });
     }
     return secp256k1
       .sign(hashMessage(message), decodeKeyPrivate(privateKey), { prehash: false })
@@ -136,7 +139,7 @@ export class Decred extends AbstractBlockchain {
       return false;
     }
     if (isCompactSignature(signature)) {
-      return verifyCompact(hashMessage(message), signature, keyPublic);
+      return verifyCompact(hashMessage(message), { signature, publicKey: keyPublic });
     }
     try {
       return secp256k1.verify(

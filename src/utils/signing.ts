@@ -3,8 +3,9 @@ import { ed25519 } from "@noble/curves/ed25519.js";
 import { equalBytes } from "@noble/curves/utils.js";
 import { sha256 } from "@agntn/hashes";
 import { concatBytes } from "./bytes.ts";
+import { assertSignOptions, assertVerifyOptions } from "./options.ts";
 import { decodeKeyPrivate } from "./secp256k1/decode.ts";
-import type { SigningOptions } from "../types.ts";
+import type { SignMessageOptions, SigningOptions, VerifyMessageOptions } from "../types.ts";
 
 export type { SigningOptions } from "../types.ts";
 
@@ -13,6 +14,18 @@ const RECOVERY_BYTE_OFFSET = 27;
 
 /** Bytes in a compact `r||s` secp256k1 signature. */
 const COMPACT_SIGNATURE_LENGTH = 64;
+
+/** The key that signs a digest, and whether `v` goes on the end. */
+interface DigestSigning {
+  readonly privateKey: Uint8Array;
+  readonly recovered: boolean;
+}
+
+/** What a signature is checked against: the signed bytes and the key that should have made it. */
+interface SignatureCheck {
+  readonly message: Uint8Array;
+  readonly publicKey: string;
+}
 
 /**
  * Read the recovery flag from options a caller may have built without types.
@@ -64,19 +77,15 @@ export function hasRecoveryByte(signature: string): boolean {
  * Sign a prepared digest with `prehash: false`, or noble v2 would hash it a second time.
  * noble puts the recovery byte first; Ethereum wants it last, as `v`.
  * @param messageHash - The digest to sign
- * @param keyPrivateBytes - The private key bytes
- * @param recovered - Append the recovery byte as 27 or 28
+ * @param options - The private key bytes, and `recovered` to append the recovery byte as 27 or 28
  * @returns {string} 64 bytes of `r||s`, or 65 bytes of `r||s||v`, as hex
  */
-function signSecp256k1(
-  messageHash: Uint8Array,
-  keyPrivateBytes: Uint8Array,
-  recovered: boolean,
-): string {
+function signSecp256k1(messageHash: Uint8Array, options: DigestSigning): string {
+  const { privateKey, recovered } = options;
   if (!recovered) {
-    return secp256k1.sign(messageHash, keyPrivateBytes, { prehash: false }).toHex();
+    return secp256k1.sign(messageHash, privateKey, { prehash: false }).toHex();
   }
-  const signature = secp256k1.sign(messageHash, keyPrivateBytes, {
+  const signature = secp256k1.sign(messageHash, privateKey, {
     prehash: false,
     format: "recovered",
   });
@@ -138,15 +147,12 @@ export function recoverSecp256k1Signer(messageHash: Uint8Array, signature: strin
  * Check an `r||s||v` signature by recovering the signer from `v` and comparing keys,
  * so a signature carrying the wrong `v` fails instead of passing on `r||s` alone.
  * @param signatureBytes - 65 signature bytes
- * @param messageHash - The digest that was signed
- * @param keyPublicBytes - The public key to check against, SEC1
+ * @param check - The digest that was signed and the SEC1 public key as hex
  * @returns {boolean} True when the signature and its recovery byte both match the key
  */
-function verifyRecoveredSignature(
-  signatureBytes: Uint8Array,
-  messageHash: Uint8Array,
-  keyPublicBytes: Uint8Array,
-): boolean {
+function verifyRecoveredSignature(signatureBytes: Uint8Array, check: SignatureCheck): boolean {
+  const { message: messageHash } = check;
+  const keyPublicBytes = Uint8Array.fromHex(check.publicKey);
   const recovery = recoveryBit(signatureBytes[COMPACT_SIGNATURE_LENGTH]);
   if (recovery === undefined) {
     return false;
@@ -187,28 +193,22 @@ function secp256k1Digest(message: string | Uint8Array, options: SigningOptions):
 /**
  * Sign a message: secp256k1 over its SHA-256 unless `hash` is false, ed25519 over the raw bytes.
  * @param message - The message to sign as a string or Uint8Array
- * @param keyPrivate - The private key as a hex string
- * @param options - Curve, hashing and recovery byte
+ * @param options - The private key as hex, then curve, hashing and recovery byte
  * @returns {string} The signature as a hex string
+ * @throws {TypeError} When the options carry no private key, as an old positional call does
  */
-export function signMessage(
-  message: string | Uint8Array,
-  keyPrivate: string,
-  options: SigningOptions = {},
-): string {
+export function signMessage(message: string | Uint8Array, options: SignMessageOptions): string {
+  assertSignOptions(options);
   /** Read as plain string: untyped callers can pass anything, the final throw guards them. */
   const curve: string = options.curve || "secp256k1";
   const recovered = readRecoveredFlag(options);
   if (curve === "secp256k1") {
-    return signSecp256k1(
-      secp256k1Digest(message, options),
-      decodeKeyPrivate(keyPrivate),
-      recovered,
-    );
+    const privateKey = decodeKeyPrivate(options.privateKey);
+    return signSecp256k1(secp256k1Digest(message, options), { privateKey, recovered });
   }
   if (curve === "ed25519") {
     if (recovered) throw new Error("Recovered signatures are secp256k1 only");
-    return ed25519.sign(messageBytes(message), Uint8Array.fromHex(keyPrivate)).toHex();
+    return ed25519.sign(messageBytes(message), Uint8Array.fromHex(options.privateKey)).toHex();
   }
   throw new Error(`Unsupported curve: ${curve}`);
 }
@@ -216,18 +216,17 @@ export function signMessage(
 /**
  * Check a signature of either length: 64 bytes on `r||s`, 65 bytes through the recovery byte.
  * @param signature - Signature as hex
- * @param messageHash - The digest that was signed
- * @param keyPublic - Public key as hex
+ * @param check - The digest that was signed and the public key as hex
  * @returns {boolean} Whether the signature matches the key
  */
-function verifySecp256k1(signature: string, messageHash: Uint8Array, keyPublic: string): boolean {
+function verifySecp256k1(signature: string, check: SignatureCheck): boolean {
   try {
-    const keyPublicBytes = Uint8Array.fromHex(keyPublic);
     const signatureBytes = Uint8Array.fromHex(signature);
     if (signatureBytes.length === COMPACT_SIGNATURE_LENGTH + 1) {
-      return verifyRecoveredSignature(signatureBytes, messageHash, keyPublicBytes);
+      return verifyRecoveredSignature(signatureBytes, check);
     }
-    return secp256k1.verify(signatureBytes, messageHash, keyPublicBytes, { prehash: false });
+    const keyPublicBytes = Uint8Array.fromHex(check.publicKey);
+    return secp256k1.verify(signatureBytes, check.message, keyPublicBytes, { prehash: false });
   } catch {
     return false;
   }
@@ -236,14 +235,13 @@ function verifySecp256k1(signature: string, messageHash: Uint8Array, keyPublic: 
 /**
  * Check an ed25519 signature, where bad hex is a failed check, not an error.
  * @param signature - Signature as hex
- * @param message - The signed bytes
- * @param keyPublic - Public key as hex
+ * @param check - The signed bytes and the public key as hex
  * @returns {boolean} Whether the signature matches the key
  */
-function verifyEd25519(signature: string, message: Uint8Array, keyPublic: string): boolean {
+function verifyEd25519(signature: string, check: SignatureCheck): boolean {
   try {
-    const keyPublicBytes = Uint8Array.fromHex(keyPublic);
-    return ed25519.verify(Uint8Array.fromHex(signature), message, keyPublicBytes);
+    const keyPublicBytes = Uint8Array.fromHex(check.publicKey);
+    return ed25519.verify(Uint8Array.fromHex(signature), check.message, keyPublicBytes);
   } catch {
     return false;
   }
@@ -252,22 +250,24 @@ function verifyEd25519(signature: string, message: Uint8Array, keyPublic: string
 /**
  * Verify a signature over the same bytes `signMessage` signs for that curve and `hash` setting.
  * @param message - The original message as a string or Uint8Array
- * @param signature - The signature as a hex string
- * @param keyPublic - The public key as a hex string
- * @param options - Curve and hashing, as given to `signMessage`
+ * @param options - The signature and public key as hex, then curve and hashing as given to
+ * `signMessage`
  * @returns {boolean} True if the signature is valid, false otherwise
+ * @throws {TypeError} When the options carry no signature or key, as an old positional call does
  */
 export function verifyMessage(
   message: string | Uint8Array,
-  signature: string,
-  keyPublic: string,
-  options: SigningOptions = {},
+  options: VerifyMessageOptions,
 ): boolean {
+  assertVerifyOptions(options);
   /** Read as plain string: untyped callers can pass anything, the final throw guards them. */
   const curve: string = options.curve || "secp256k1";
+  const { signature, publicKey } = options;
   if (curve === "secp256k1") {
-    return verifySecp256k1(signature, secp256k1Digest(message, options), keyPublic);
+    return verifySecp256k1(signature, { message: secp256k1Digest(message, options), publicKey });
   }
-  if (curve === "ed25519") return verifyEd25519(signature, messageBytes(message), keyPublic);
+  if (curve === "ed25519") {
+    return verifyEd25519(signature, { message: messageBytes(message), publicKey });
+  }
   throw new Error(`Unsupported curve: ${curve}`);
 }

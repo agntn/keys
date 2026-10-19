@@ -1,5 +1,5 @@
 import { ecb } from "@agntn/ciphers/aes";
-import { create, sha256, type ScryptOptions } from "@agntn/hashes";
+import { scrypt, sha256 } from "@agntn/hashes";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { equalBytes } from "@noble/curves/utils.js";
 import { generateAddressLegacy } from "../address.ts";
@@ -55,6 +55,12 @@ const NON_EC_PREFIX = 0x42;
 const EC_MULTIPLY_PREFIX = 0x43;
 const COMPRESSED = 0x20;
 const LOT_SEQUENCE = 0x04;
+
+/** What an EC multiply key opens with: passphrase bytes, and whether a lot and sequence ride in. */
+interface EcMultiplySecret {
+  readonly passphrase: Uint8Array;
+  readonly hasLotSequence: boolean;
+}
 
 /**
  * First four bytes of the double SHA-256 of an address string, as BIP38 stores it.
@@ -174,26 +180,6 @@ function readOwnerEntropy(ownerEntropy: Uint8Array, hasLotSequence: boolean) {
 }
 
 /**
- * scrypt with the costs BIP38 fixes for each step.
- * @param password - Passphrase or passpoint bytes
- * @param salt - Salt bytes
- * @param cost - N, r and p
- * @param keyLength - Output length in bytes
- * @returns {Uint8Array} The derived bytes
- */
-function scrypt(
-  password: Uint8Array,
-  salt: Uint8Array,
-  cost: { readonly N: number; readonly r: number; readonly p: number },
-  keyLength: number,
-): Uint8Array {
-  const options: ScryptOptions = { salt, ...cost, keyLength, encoding: "binary" };
-  const { digest } = create("scrypt").hash(password, options);
-  if (!(digest instanceof Uint8Array)) throw new TypeError("scrypt returned text, not bytes");
-  return digest;
-}
-
-/**
  * XOR of two byte arrays, as long as the first.
  * @param left - First bytes
  * @param right - Second bytes
@@ -210,7 +196,7 @@ function xor(left: Uint8Array, right: Uint8Array): Uint8Array {
  * @returns {Uint8Array} 32 key bytes
  */
 function decryptNonEc(payload: Uint8Array, passphrase: Uint8Array): Uint8Array {
-  const derived = scrypt(passphrase, payload.slice(3, 7), { N: 16_384, r: 8, p: 8 }, 64);
+  const derived = scrypt(passphrase, payload.slice(3, 7), 16_384, 8, 8, 64);
   const halves = ecb(payload.slice(7, 39), derived.slice(32), "decrypt");
   return xor(halves, derived.slice(0, 32));
 }
@@ -218,24 +204,20 @@ function decryptNonEc(payload: Uint8Array, passphrase: Uint8Array): Uint8Array {
 /**
  * EC multiply key: the passfactor times `factorb`, the double SHA-256 of the hidden seed.
  * @param payload - The 39 byte payload
- * @param passphrase - NFC passphrase as UTF-8
- * @param hasLotSequence - Flag bit 0x04
+ * @param secret - NFC passphrase as UTF-8, and flag bit 0x04 as `hasLotSequence`
  * @returns {Uint8Array} 32 key bytes
  */
-function decryptEcMultiply(
-  payload: Uint8Array,
-  passphrase: Uint8Array,
-  hasLotSequence: boolean,
-): Uint8Array {
+function decryptEcMultiply(payload: Uint8Array, secret: EcMultiplySecret): Uint8Array {
+  const { passphrase, hasLotSequence } = secret;
   const ownerEntropy = payload.slice(7, 15);
   const ownerSalt = hasLotSequence ? ownerEntropy.slice(0, 4) : ownerEntropy;
-  const prefactor = scrypt(passphrase, ownerSalt, { N: 16_384, r: 8, p: 8 }, 32);
+  const prefactor = scrypt(passphrase, ownerSalt, 16_384, 8, 8, 32);
   const passfactor = hasLotSequence
     ? sha256(sha256(concatBytes(prefactor, ownerEntropy)))
     : prefactor;
   if (!secp256k1.utils.isValidSecretKey(passfactor)) throw new BIP38PassphraseError();
   const passpoint = secp256k1.getPublicKey(passfactor, true);
-  const derived = scrypt(passpoint, payload.slice(3, 15), { N: 1024, r: 1, p: 1 }, 64);
+  const derived = scrypt(passpoint, payload.slice(3, 15), 1024, 1, 1, 64);
   const key = derived.slice(32);
   const part2 = xor(ecb(payload.slice(23, 39), key, "decrypt"), derived.slice(16, 32));
   const part1 = xor(
@@ -265,7 +247,7 @@ export function decrypt(encrypted: string, passphrase: string): DecryptedBIP38 {
   const privateKey =
     mode === "non-ec"
       ? decryptNonEc(payload, password)
-      : decryptEcMultiply(payload, password, hasLotSequence);
+      : decryptEcMultiply(payload, { passphrase: password, hasLotSequence });
   if (!secp256k1.utils.isValidSecretKey(privateKey)) throw new BIP38PassphraseError();
   const publicKey = secp256k1.getPublicKey(privateKey, compressed).toHex();
   const address = generateAddressLegacy(publicKey, { bytesVersion: 0x00 });

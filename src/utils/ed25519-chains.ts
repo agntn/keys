@@ -16,11 +16,7 @@ export function ed25519SignMessage(
   options: SignMessageOptions<KeyOptions>,
 ): string {
   assertSignOptions(options);
-  const { privateKey, ...keyOptions } = options;
-  return signMessage(message, privateKey, {
-    ...keyOptions,
-    curve: "ed25519",
-  });
+  return signMessage(message, { ...options, curve: "ed25519" });
 }
 
 /**
@@ -35,11 +31,7 @@ export function ed25519VerifyMessage(
   options: VerifyMessageOptions<KeyOptions>,
 ): boolean {
   assertVerifyOptions(options);
-  const { signature, publicKey, ...keyOptions } = options;
-  return verifyMessage(message, signature, publicKey, {
-    ...keyOptions,
-    curve: "ed25519",
-  });
+  return verifyMessage(message, { ...options, curve: "ed25519" });
 }
 
 /** Base for ed25519 chains. It signs the bytes raw, so a chain that wraps or hashes them first calls `super`. */

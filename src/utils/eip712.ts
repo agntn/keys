@@ -44,6 +44,30 @@ const TWO_256 = 1n << 256n;
 
 type Types = Readonly<Record<string, readonly Readonly<TypedDataField>[]>>;
 
+/** A struct by name, with the definitions its fields resolve against. */
+interface StructName {
+  readonly types: Types;
+  readonly name: string;
+}
+
+/** A field's type and where it sits, for the error. */
+interface FieldAt {
+  readonly type: string;
+  readonly path: string;
+}
+
+/** Sign and width of an integer type. */
+interface IntegerShape {
+  readonly signed: boolean;
+  readonly bits: bigint;
+}
+
+/** A field's type and place inside the struct definitions, with the structs and arrays above it. */
+interface FieldIn extends FieldAt {
+  readonly types: Types;
+  readonly depth: number;
+}
+
 /**
  * Quote a caller's name in an error only when it is identifier text, never a line break or bidi.
  * @param value - Name from the typed data
@@ -82,9 +106,9 @@ function baseType(type: string): string {
 /**
  * Width and sign of an integer type, or undefined for anything else, `uint7` included.
  * @param type - Field type
- * @returns {{ signed: boolean; bits: bigint } | undefined} The integer's shape
+ * @returns {IntegerShape | undefined} The integer's shape
  */
-function integerType(type: string): { signed: boolean; bits: bigint } | undefined {
+function integerType(type: string): IntegerShape | undefined {
   const match = INTEGER_TYPE.exec(type);
   if (!match) return undefined;
   const bits = match[2] === "" ? 256 : Number(match[2]);
@@ -131,12 +155,12 @@ function isField(value: unknown): value is TypedDataField {
 
 /**
  * Check one struct's fields, so a typo fails before hashing instead of hashing something else.
- * @param types - Struct definitions with the domain resolved
- * @param name - Struct name
- * @param fields - Its field list as given
+ * @param fields - The field list as given
+ * @param struct - Struct definitions with the domain resolved, and the struct's name
  * @returns {void} Nothing; it throws on the first bad field
  */
-function checkFields(types: Types, name: string, fields: unknown): void {
+function checkFields(fields: unknown, struct: StructName): void {
+  const { types, name } = struct;
   if (!Array.isArray(fields)) throw new TypeError(`Type ${name} must list its fields`);
   const list: readonly unknown[] = fields;
   for (const field of list) {
@@ -166,7 +190,7 @@ function checkFields(types: Types, name: string, fields: unknown): void {
 function checkTypes(types: Types): void {
   for (const [name, fields] of Object.entries(types)) {
     if (!IDENTIFIER.test(name)) throw new TypeError(`Type name ${quoted(name)} is invalid`);
-    checkFields(types, name, fields);
+    checkFields(fields, { types, name });
   }
 }
 
@@ -291,13 +315,15 @@ const SIMPLE_ENCODERS: Readonly<Record<string, (value: unknown, path: string) =>
 
 /**
  * Write `bytesN` right padded.
- * @param type - The `bytesN` type, for the error
- * @param length - N
  * @param value - Raw value
- * @param path - Field path for the error
+ * @param field - The `bytesN` type and field path for the error, and N as `length`
  * @returns {Uint8Array} 32 bytes
  */
-function encodeFixedBytes(type: string, length: number, value: unknown, path: string): Uint8Array {
+function encodeFixedBytes(
+  value: unknown,
+  field: FieldAt & { readonly length: number },
+): Uint8Array {
+  const { type, length, path } = field;
   const bytes = readHex(value, path);
   if (bytes.length !== length) throw new TypeError(`${path} must be ${length} bytes for ${type}`);
   const padded = new Uint8Array(WORD);
@@ -307,23 +333,16 @@ function encodeFixedBytes(type: string, length: number, value: unknown, path: st
 
 /**
  * Write an integer after checking it fits its type.
- * @param type - The integer type, for the error
- * @param shape - Its sign and width
- * @param shape.signed - Whether it is `intN`
- * @param shape.bits - N
  * @param value - Raw value
- * @param path - Field path for the error
+ * @param field - The integer type and field path for the error, its sign as `signed` and N as
+ * `bits`
  * @returns {Uint8Array} 32 bytes
  */
-function encodeInteger(
-  type: string,
-  shape: Readonly<{ signed: boolean; bits: bigint }>,
-  value: unknown,
-  path: string,
-): Uint8Array {
+function encodeInteger(value: unknown, field: FieldAt & IntegerShape): Uint8Array {
+  const { type, signed, bits, path } = field;
   const number = readInteger(value, path);
-  const minimum = shape.signed ? -(1n << (shape.bits - 1n)) : 0n;
-  const maximum = shape.signed ? (1n << (shape.bits - 1n)) - 1n : (1n << shape.bits) - 1n;
+  const minimum = signed ? -(1n << (bits - 1n)) : 0n;
+  const maximum = signed ? (1n << (bits - 1n)) - 1n : (1n << bits) - 1n;
   if (number < minimum || number > maximum)
     throw new RangeError(`${path} is out of range for ${type}`);
   return word(number);
@@ -331,38 +350,31 @@ function encodeInteger(
 
 /**
  * Encode one atomic value as the 32 bytes `encodeData` puts in its place.
- * @param type - Atomic type
  * @param value - Raw value
- * @param path - Field path for the error
+ * @param field - Atomic type and field path for the error
  * @returns {Uint8Array} 32 bytes
  */
-function encodeAtomic(type: string, value: unknown, path: string): Uint8Array {
+function encodeAtomic(value: unknown, field: FieldAt): Uint8Array {
+  const { type, path } = field;
   const simple = Object.hasOwn(SIMPLE_ENCODERS, type) ? SIMPLE_ENCODERS[type] : undefined;
   if (simple) return simple(value, path);
   const length = fixedBytesLength(type);
-  if (length !== undefined) return encodeFixedBytes(type, length, value, path);
+  if (length !== undefined) return encodeFixedBytes(value, { type, length, path });
   const integer = integerType(type);
   if (integer === undefined)
     throw new TypeError(`${path} has unknown type ${quoted(type, TYPE_TEXT)}`);
-  return encodeInteger(type, integer, value, path);
+  return encodeInteger(value, { type, ...integer, path });
 }
 
 /**
  * Encode a value of any field type as the 32 bytes its struct hashes.
- * @param types - Struct definitions
- * @param type - Field type
  * @param value - Raw value
- * @param path - Field path for the error
- * @param depth - Structs and arrays above this value
+ * @param field - Struct definitions, field type, field path for the error and the structs and
+ * arrays above this value as `depth`
  * @returns {Uint8Array} 32 bytes
  */
-function encodeValue(
-  types: Types,
-  type: string,
-  value: unknown,
-  path: string,
-  depth: number,
-): Uint8Array {
+function encodeValue(value: unknown, field: FieldIn): Uint8Array {
+  const { types, type, path, depth } = field;
   if (depth > MAX_DEPTH) throw new RangeError(`${path} nests deeper than ${MAX_DEPTH} levels`);
   const array = ARRAY_SUFFIX.exec(type);
   if (array) {
@@ -375,33 +387,26 @@ function encodeValue(
     return keccak256(
       concatBytes(
         ...items.map((item, index) =>
-          encodeValue(types, element, item, `${path}[${index}]`, depth + 1),
+          encodeValue(item, { types, type: element, path: `${path}[${index}]`, depth: depth + 1 }),
         ),
       ),
     );
   }
   if (structFields(types, type) !== undefined) {
-    return hashStruct(types, type, value, path, depth + 1);
+    return hashStruct(value, { types, type, path, depth: depth + 1 });
   }
-  return encodeAtomic(type, value, path);
+  return encodeAtomic(value, { type, path });
 }
 
 /**
  * `hashStruct`: keccak256 of the type hash and every field's encoding.
- * @param types - Struct definitions
- * @param name - Struct name
  * @param value - Raw struct value
- * @param path - Field path for the error
- * @param depth - Structs and arrays above this value
+ * @param field - Struct definitions, the struct name as `type`, field path for the error and the
+ * structs and arrays above this value as `depth`
  * @returns {Uint8Array} 32 bytes
  */
-function hashStruct(
-  types: Types,
-  name: string,
-  value: unknown,
-  path: string,
-  depth: number,
-): Uint8Array {
+function hashStruct(value: unknown, field: FieldIn): Uint8Array {
+  const { types, type: name, path, depth } = field;
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new TypeError(`${path} must be an object for ${name}`);
   }
@@ -409,7 +414,7 @@ function hashStruct(
   const encoded = (structFields(types, name) ?? []).map((field) => {
     const fieldPath = `${path}.${field.name}`;
     if (!Object.hasOwn(record, field.name)) throw new TypeError(`${fieldPath} is missing`);
-    return encodeValue(types, field.type, record[field.name], fieldPath, depth);
+    return encodeValue(record[field.name], { types, type: field.type, path: fieldPath, depth });
   });
   return keccak256(
     concatBytes(keccak256(new TextEncoder().encode(encodeType(types, name))), ...encoded),
@@ -458,10 +463,17 @@ export function hashTypedData(typedData: Readonly<TypedData>): Uint8Array {
   if (typeof primaryType !== "string" || structFields(types, primaryType) === undefined) {
     throw new TypeError(`Primary type ${quoted(primaryType)} is not one of types`);
   }
-  const domain = hashStruct(types, DOMAIN_TYPE, typedData.domain, "domain", 0);
+  const domain = hashStruct(typedData.domain, {
+    types,
+    type: DOMAIN_TYPE,
+    path: "domain",
+    depth: 0,
+  });
   const parts = [Uint8Array.of(0x19, 0x01), domain];
   if (primaryType !== DOMAIN_TYPE) {
-    parts.push(hashStruct(types, primaryType, typedData.message, "message", 0));
+    parts.push(
+      hashStruct(typedData.message, { types, type: primaryType, path: "message", depth: 0 }),
+    );
   }
   return keccak256(concatBytes(...parts));
 }

@@ -50,14 +50,9 @@ export function evmSignMessage(
   options: SignMessageOptions<RecoverableSigningOptions>,
 ): string {
   assertSignOptions(options);
-  const { privateKey, ...signingOptions } = options;
   const hash = hashWithPreamble(message);
 
-  return signMessage(hash, privateKey, {
-    ...signingOptions,
-    curve: "secp256k1",
-    hash: false,
-  });
+  return signMessage(hash, { ...options, curve: "secp256k1", hash: false });
 }
 
 /**
@@ -72,12 +67,11 @@ export function evmVerifyMessage(
   options: VerifyMessageOptions<RecoverableSigningOptions>,
 ): boolean {
   assertVerifyOptions(options);
-  const { signature, publicKey, ...signingOptions } = options;
   const hash = hashWithPreamble(message);
 
   try {
-    return verifyMessage(hash, signature, publicKey, {
-      ...signingOptions,
+    return verifyMessage(hash, {
+      ...options,
       curve: "secp256k1",
       hash: false,
     });

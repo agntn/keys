@@ -60,9 +60,8 @@ export class Tron extends AbstractBlockchain {
     options: SignMessageOptions<RecoverableSigningOptions>,
   ): string {
     assertSignOptions(options);
-    const { privateKey, ...signingOptions } = options;
-    return signMessage(hashWithPreamble(message, MESSAGE_PREAMBLE), privateKey, {
-      ...signingOptions,
+    return signMessage(hashWithPreamble(message, MESSAGE_PREAMBLE), {
+      ...options,
       curve: "secp256k1",
       hash: false,
     });
@@ -73,9 +72,8 @@ export class Tron extends AbstractBlockchain {
     options: VerifyMessageOptions<RecoverableSigningOptions>,
   ): boolean {
     assertVerifyOptions(options);
-    const { signature, publicKey, ...signingOptions } = options;
-    return verifyMessage(hashWithPreamble(message, MESSAGE_PREAMBLE), signature, publicKey, {
-      ...signingOptions,
+    return verifyMessage(hashWithPreamble(message, MESSAGE_PREAMBLE), {
+      ...options,
       curve: "secp256k1",
       hash: false,
     });

@@ -59,6 +59,19 @@ export function assertVerifyOptions(options: unknown): void {
 }
 
 /**
+ * Refuses keystore `encrypt` options without the password, which is what a JS call still written
+ * as `encrypt(privateKey, password)` hands over.
+ * @param options - The caller's options
+ * @throws {TypeError} When the options carry no password string
+ */
+export function assertEncryptOptions(options: unknown): void {
+  if (hasStrings(options, ["password"])) return;
+  throw new TypeError(
+    "encrypt takes the password in its options: encrypt(privateKey, { password })",
+  );
+}
+
+/**
  * Reads derivation path options, refusing the account number a JS call still written as
  * `getDerivationPath(account, change, addressIndex)` passes, which would quietly give account 0.
  * @param options - The caller's options
