@@ -1,6 +1,7 @@
 import { ripemd160, sha256 } from "@agntn/hashes";
 import { schnorr, secp256k1 } from "@noble/curves/secp256k1.js";
 import { concatBytes } from "../bytes.ts";
+import { assertOptions } from "../options.ts";
 import { pushOf, scriptOperations, scriptPushes } from "./script.ts";
 import { legacySighash, segwitSighash, taprootSighash } from "./sighash.ts";
 import {
@@ -41,6 +42,20 @@ interface Spend {
   readonly input: TransactionInput;
   readonly spent: readonly TransactionOutput[];
   readonly output: TransactionOutput;
+}
+
+/** The input to read and the outputs it spends. */
+export interface SignatureExtractionOptions {
+  /** Input to read, from 0. */
+  readonly index: number;
+  /** Output this input spends, or one per input; Taproot needs all unless `ANYONECANPAY`. */
+  readonly spent: readonly Readonly<SpentOutput>[];
+}
+
+/** What an ECDSA signature is checked against: the digest it signs and the keys that may sign. */
+interface SignerSearch {
+  readonly digest: Uint8Array;
+  readonly keys: readonly Uint8Array[];
 }
 
 /** The script code an input's signatures commit to, and whether BIP143 hashes them. */
@@ -106,16 +121,12 @@ function readTransaction(transaction: string): Transaction {
 /**
  * Reads the transaction and picks the input and the output it spends.
  * @param transaction - Raw transaction hex
- * @param index - Input to read
- * @param spent - The output this input spends, or one per input in order
+ * @param options - Input to read and the output it spends, or one per input in order
  * @returns {Spend} The input with its spent outputs
  * @throws {RangeError} When the index or the number of spent outputs does not fit the transaction
  */
-function readSpend(
-  transaction: string,
-  index: number,
-  spent: readonly Readonly<SpentOutput>[],
-): Spend {
+function readSpend(transaction: string, options: SignatureExtractionOptions): Spend {
+  const { index, spent } = options;
   const decoded = readTransaction(transaction);
   const input = Number.isSafeInteger(index) ? decoded.inputs[index] : undefined;
   if (input === undefined) {
@@ -213,18 +224,16 @@ function publicKeys(items: readonly Uint8Array[]): Uint8Array[] {
 
 /**
  * Finds the key an ECDSA signature verifies under, high s included.
- * @param r - r
- * @param s - s
- * @param digest - The sighash
- * @param keys - Candidate keys
+ * @param signature - r and s
+ * @param search - The sighash and the candidate keys
  * @returns {string | undefined} The key as hex, or undefined
  */
 function ecdsaSigner(
-  r: bigint,
-  s: bigint,
-  digest: Uint8Array,
-  keys: readonly Uint8Array[],
+  signature: { readonly r: bigint; readonly s: bigint },
+  search: SignerSearch,
 ): string | undefined {
+  const { r, s } = signature;
+  const { digest, keys } = search;
   const compact = concatBytes(Fn.toBytes(r), Fn.toBytes(s));
   const options = { prehash: false, lowS: false, format: "compact" } as const;
   return keys.find((key) => secp256k1.verify(compact, digest, key, options))?.toHex();
@@ -288,28 +297,31 @@ function assertNoCodeSeparator(scriptCode: Uint8Array): void {
  */
 function digestOf(rules: Readonly<SighashRules>, hashType: number): Uint8Array {
   const { spend, scriptCode } = rules;
+  const { transaction, index } = spend;
   return rules.segwit
-    ? segwitSighash(spend.transaction, spend.index, scriptCode, spend.output.value, hashType)
-    : legacySighash(spend.transaction, spend.index, scriptCode, hashType);
+    ? segwitSighash(transaction, { index, scriptCode, amount: spend.output.value, hashType })
+    : legacySighash(transaction, { index, scriptCode, hashType });
 }
 
 /**
  * Reads every ECDSA signature among the items and computes its sighash.
  * @param items - Pushed items of the scriptSig or witness
- * @param keys - Candidate keys
- * @param rulesOf - How to hash for each signature
+ * @param check - Candidate keys and how to hash for each signature
  * @returns {InputSignature[]} The signatures in item order
  */
 function ecdsaSignatures(
   items: readonly Uint8Array[],
-  keys: readonly Uint8Array[],
-  rulesOf: (signature: Uint8Array) => Readonly<SighashRules>,
+  check: {
+    readonly keys: readonly Uint8Array[];
+    readonly rulesOf: (signature: Uint8Array) => Readonly<SighashRules>;
+  },
 ): InputSignature[] {
+  const { keys, rulesOf } = check;
   return items.flatMap((item) => {
     const parts = readEcdsa(item);
     if (parts === undefined) return [];
     const z = digestOf(rulesOf(item), parts.hashType);
-    const publicKey = ecdsaSigner(parts.r, parts.s, z, keys);
+    const publicKey = ecdsaSigner(parts, { digest: z, keys });
     return [
       {
         type: "ecdsa",
@@ -326,25 +338,27 @@ function ecdsaSignatures(
 /**
  * Reads a legacy spend: P2PKH, P2PK, bare multisig or a P2SH redeem script.
  * @param spend - The input
- * @param scriptCode - Script the signatures commit to
- * @param items - Pushed items that may hold signatures
+ * @param script - Script the signatures commit to and the pushed items that may hold them
  * @returns {InputSignature[]} The signatures
  * @throws {RangeError} When the script holds `OP_CODESEPARATOR`, or a signature beside `OP_CHECKMULTISIG`
  */
 function legacySignatures(
   spend: Readonly<Spend>,
-  scriptCode: Uint8Array,
-  items: readonly Uint8Array[],
+  script: { readonly scriptCode: Uint8Array; readonly items: readonly Uint8Array[] },
 ): InputSignature[] {
+  const { scriptCode, items } = script;
   assertNoCodeSeparator(scriptCode);
   const keys = publicKeys([...scriptPushes(spend.input.scriptSig), ...scriptPushes(scriptCode)]);
   const signatures = items.filter((item) => readEcdsa(item) !== undefined);
   assertNoSignatureBesideMultisig(scriptCode, signatures);
-  return ecdsaSignatures(items, keys, (signature) => ({
-    spend,
-    scriptCode: findAndDelete(scriptCode, signature),
-    segwit: false,
-  }));
+  return ecdsaSignatures(items, {
+    keys,
+    rulesOf: (signature) => ({
+      spend,
+      scriptCode: findAndDelete(scriptCode, signature),
+      segwit: false,
+    }),
+  });
 }
 
 /**
@@ -362,11 +376,10 @@ function witnessSignatures(spend: Readonly<Spend>, program: Uint8Array): InputSi
       program,
       Uint8Array.of(0x88, 0xac),
     );
-    return ecdsaSignatures(witness, publicKeys(witness), () => ({
-      spend,
-      scriptCode,
-      segwit: true,
-    }));
+    return ecdsaSignatures(witness, {
+      keys: publicKeys(witness),
+      rulesOf: () => ({ spend, scriptCode, segwit: true }),
+    });
   }
   const witnessScript = witness.at(-1);
   if (witnessScript === undefined) return [];
@@ -376,7 +389,10 @@ function witnessSignatures(spend: Readonly<Spend>, program: Uint8Array): InputSi
   assertNoCodeSeparator(witnessScript);
   const items = witness.slice(0, -1);
   const keys = publicKeys([...items, ...scriptPushes(witnessScript)]);
-  return ecdsaSignatures(items, keys, () => ({ spend, scriptCode: witnessScript, segwit: true }));
+  return ecdsaSignatures(items, {
+    keys,
+    rulesOf: () => ({ spend, scriptCode: witnessScript, segwit: true }),
+  });
 }
 
 /**
@@ -406,7 +422,7 @@ function scriptHashSignatures(spend: Readonly<Spend>): InputSignature[] {
   }
   const program = witnessProgram(redeem);
   if (program !== undefined) return witnessSignatures(spend, program);
-  return legacySignatures(spend, redeem, pushes.slice(0, -1));
+  return legacySignatures(spend, { scriptCode: redeem, items: pushes.slice(0, -1) });
 }
 
 /**
@@ -444,7 +460,8 @@ function taprootSignatures(spend: Readonly<Spend>, outputKey: Uint8Array): Input
     );
   }
   const hashType = taprootHashType(signature);
-  const z = taprootSighash(spend.transaction, spend.index, spend.spent, hashType, annex);
+  const { transaction, index, spent } = spend;
+  const z = taprootSighash(transaction, { index, spent, hashType, annex });
   const verified = schnorr.verify(signature.subarray(0, 64), z, outputKey);
   return [
     {
@@ -461,9 +478,7 @@ function taprootSignatures(spend: Readonly<Spend>, outputKey: Uint8Array): Input
 /**
  * Reads r, s and the sighash z of each signature on an input, by the rules its spent script picks.
  * @param transaction - Raw signed transaction hex, with or without witnesses
- * @param index - Input to read, from 0
- * @param spent - The output this input spends, or one per input in order; a Taproot input
- *   needs every one unless it signs with `ANYONECANPAY`
+ * @param options - Input to read and the outputs it spends
  * @returns {InputSignature[]} Each signature in the order the input holds them, empty when none
  * @throws {TypeError} When a hex argument or a value is malformed
  * @throws {RangeError} When the transaction does not decode, the index or spent outputs do not
@@ -472,10 +487,10 @@ function taprootSignatures(spend: Readonly<Spend>, outputKey: Uint8Array): Input
  */
 export function extractSignatures(
   transaction: string,
-  index: number,
-  spent: readonly Readonly<SpentOutput>[],
+  options: SignatureExtractionOptions,
 ): InputSignature[] {
-  const spend = readSpend(transaction, index, spent);
+  assertOptions(options, "extractSignatures(transaction, { index, spent })");
+  const spend = readSpend(transaction, options);
   const { script } = spend.output;
   if (script.length === 34 && script[0] === 0x51 && script[1] === 0x20) {
     return taprootSignatures(spend, script.subarray(2));
@@ -485,5 +500,8 @@ export function extractSignatures(
   if (script.length === 23 && script[0] === 0xa9 && script[1] === 0x14 && script[22] === 0x87) {
     return scriptHashSignatures(spend);
   }
-  return legacySignatures(spend, script, scriptPushes(spend.input.scriptSig));
+  return legacySignatures(spend, {
+    scriptCode: script,
+    items: scriptPushes(spend.input.scriptSig),
+  });
 }

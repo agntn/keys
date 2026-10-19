@@ -259,12 +259,11 @@ export abstract class AbstractBitcoinBlockchain extends AbstractBitcoinMessageBl
       );
     }
     if (["segwit", "p2wsh", "taproot"].includes(type)) {
-      const segwitOptions = {
+      return generateAddressSegWit(keyPublic, {
         hrp: this.params.hrpSegWit,
         witnessVersion: type === "taproot" ? 1 : 0,
-      };
-      const segwitType = type === "p2wsh" ? "p2wsh" : "p2wpkh";
-      return generateAddressSegWit(keyPublic, segwitOptions, segwitType);
+        type: type === "p2wsh" ? "p2wsh" : "p2wpkh",
+      });
     }
 
     if (type === "p2sh") {
@@ -415,7 +414,7 @@ export abstract class AbstractCashAddrBlockchain extends AbstractBitcoinMessageB
     if (type !== "legacy") throw new RangeError(`${this.label} supports legacy P2PKH only`);
     decodePublicPoint(keyPublic);
     const bytesKeyPublic = Uint8Array.fromHex(keyPublic);
-    return encodeCashAddr(this.prefix, 0, hash160(bytesKeyPublic));
+    return encodeCashAddr(hash160(bytesKeyPublic), { prefix: this.prefix, type: 0 });
   }
 
   /**

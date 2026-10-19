@@ -218,8 +218,11 @@ describe("Public BIP322 exports", () => {
   it("verifies and signs from the built package, outside the root", async () => {
     const bip322 = await import("@agntn/keys/bip322");
     const { address, message, signature } = bip322Vectors.unprefixed;
-    expect(bip322.verify(address, message, signature).state).toBe("valid");
-    const signed = bip322.sign(message, secp256k1TestVectors.privateKey, "taproot");
+    expect(bip322.verify(address, { message, signature }).state).toBe("valid");
+    const signed = bip322.sign(message, {
+      privateKey: secp256k1TestVectors.privateKey,
+      addressType: "taproot",
+    });
     expect(signed.startsWith("smp")).toBe(true);
     expect(new Set(Object.keys(bip322))).toEqual(new Set(["sign", "verify"]));
     expect(await import("@agntn/keys")).not.toHaveProperty("verify");
@@ -231,9 +234,9 @@ describe("Public script and descriptor exports", () => {
     const script = await import("@agntn/keys/script");
     const descriptor = await import("@agntn/keys/descriptor");
     const [g, double] = multisigVector.keys;
-    expect(script.address(script.multisig(2, [g, double]), "p2wsh")).toBe(
-      multisigVector.mainnet.p2wsh,
-    );
+    expect(
+      script.address(script.multisig([g, double], { threshold: 2 }), { addressType: "p2wsh" }),
+    ).toBe(multisigVector.mainnet.p2wsh);
     expect(descriptor.parse(`wsh(multi(2,${g},${double}))`).derive().address).toBe(
       multisigVector.mainnet.p2wsh,
     );
@@ -257,7 +260,10 @@ describe("Public transaction exports", () => {
     const { recoverReusedNonce } = await import("@agntn/keys/secp256k1");
     const { spent, r } = transactionVectors.reusedNonce2012;
     const [a, b] = [0, 1].flatMap((index) =>
-      transaction.extractSignatures(transactionVectors.reusedNonce2012.transaction, index, spent),
+      transaction.extractSignatures(transactionVectors.reusedNonce2012.transaction, {
+        index,
+        spent,
+      }),
     );
     expect([a?.r, b?.r]).toEqual([r, r]);
     if (a === undefined || b === undefined) throw new Error("missing signature");

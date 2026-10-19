@@ -103,7 +103,7 @@ export interface OptionsAddressHex {
  * @deprecated Use addSchemeByte instead
  */
 export function createVersionedHash(hash: Uint8Array, bytesVersion: number): Uint8Array {
-  return addSchemeByte(hash, bytesVersion, true);
+  return addSchemeByte(hash, { schemeByte: bytesVersion });
 }
 
 /**
@@ -133,10 +133,10 @@ export function generateAddressLegacy(keyPublic: string, options: OptionsAddress
  */
 export function validateAddressLegacy(address: string, options: OptionsAddressLegacy): boolean {
   // Get expected prefix for this version
-  const expectedPrefix = options.bytesVersion === 0x00 ? "1" : undefined;
+  const prefix = options.bytesVersion === 0x00 ? "1" : undefined;
 
   // Use common validation function
-  return validateBase58Check(address, options.bytesVersion, expectedPrefix);
+  return validateBase58Check(address, { bytesVersion: options.bytesVersion, prefix });
 }
 
 /**
@@ -175,24 +175,24 @@ export function generateAddressP2SH(keyPublic: string, options: OptionsAddressP2
  */
 export function validateAddressP2SH(address: string, options: OptionsAddressP2SH): boolean {
   // Get expected prefix for this version
-  const expectedPrefix = options.bytesVersion === 0x05 ? "3" : undefined;
+  const prefix = options.bytesVersion === 0x05 ? "3" : undefined;
 
   // Use common validation function
-  return validateBase58Check(address, options.bytesVersion, expectedPrefix);
+  return validateBase58Check(address, { bytesVersion: options.bytesVersion, prefix });
 }
 
 /**
  * Generate SegWit (bech32 or bech32m) address for Bitcoin-like blockchains
  * @param keyPublic - The public key as a hex string
- * @param options - Options for SegWit address generation
- * @param type - Optional type of SegWit address ('p2wpkh' or 'p2wsh')
+ * @param options - Options for SegWit address generation, and the type of a v0 address
+ *   ('p2wpkh' by default, or 'p2wsh')
  * @returns {string} SegWit address (bech32 or bech32m format, depending on witness version)
  */
 export function generateAddressSegWit(
   keyPublic: string,
-  options: OptionsAddressSegWit,
-  type: "p2wpkh" | "p2wsh" = "p2wpkh",
+  options: OptionsAddressSegWit & { readonly type?: "p2wpkh" | "p2wsh" },
 ): string {
+  const { type = "p2wpkh" } = options;
   const bytesKeyPublic = publicKeyBytes(keyPublic, options.witnessVersion === 0);
 
   let programBytes: Uint8Array;
@@ -304,15 +304,14 @@ export function createPrefixedAddress(hash: Uint8Array, prefix: string = "0x"): 
  * Used by many blockchains like Sui, Aptos
  *
  * @param data - The main data bytes
- * @param schemeByte - The scheme or flag byte to prepend/append
- * @param prepend - Whether to prepend (true) or append (false) the scheme byte
+ * @param options - The scheme or flag byte, and whether to prepend it (the default) or append it
  * @returns {Uint8Array} Combined byte array
  */
 export function addSchemeByte(
   data: Uint8Array,
-  schemeByte: number,
-  prepend: boolean = true,
+  options: { readonly schemeByte: number; readonly prepend?: boolean },
 ): Uint8Array {
+  const { schemeByte, prepend = true } = options;
   // Create new array with extra byte
   const result = new Uint8Array(data.length + 1);
 

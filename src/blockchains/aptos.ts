@@ -28,7 +28,10 @@ export class Aptos extends AbstractEd25519Blockchain {
 
   override getAddress(keyPublic: string, type?: AddressType): string {
     this.refuseAddressType(type);
-    const dataToHash = addSchemeByte(decodeKeyPublic(keyPublic, "Aptos"), 0x00, false);
+    const dataToHash = addSchemeByte(decodeKeyPublic(keyPublic, "Aptos"), {
+      schemeByte: 0x00,
+      prepend: false,
+    });
     return createPrefixedAddress(sha3_256(dataToHash));
   }
 

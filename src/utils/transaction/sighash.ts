@@ -41,6 +41,57 @@ interface HashTypeParts {
   readonly anyoneCanPay: boolean;
 }
 
+/** The input being signed and the output rule of its hash type. */
+interface SignedOutputRule {
+  readonly index: number;
+  readonly base: number;
+}
+
+/** The input a legacy sighash signs, the script code it gets and how the hash type picks. */
+interface LegacyInputRule {
+  readonly index: number;
+  readonly scriptCode: Uint8Array;
+  readonly parts: Readonly<HashTypeParts>;
+}
+
+/** The input a BIP341 sighash signs and the outputs it spends. */
+interface TaprootInputRule {
+  readonly index: number;
+  readonly spent: readonly TransactionOutput[];
+  readonly anyoneCanPay: boolean;
+}
+
+/** The input a legacy sighash signs. */
+export interface LegacySighashOptions {
+  readonly index: number;
+  /** Script of the output it spends, or the P2SH redeem script. */
+  readonly scriptCode: Uint8Array;
+  /** `SIGHASH_ALL` by default; the whole 32-bit value goes into the hash. */
+  readonly hashType?: number;
+}
+
+/** The SegWit v0 input a BIP143 sighash signs. */
+export interface SegwitSighashOptions {
+  readonly index: number;
+  /** Script code of the input, the P2PKH script of the key hash for P2WPKH. */
+  readonly scriptCode: Uint8Array;
+  /** Value of the output it spends. */
+  readonly amount: bigint;
+  /** `SIGHASH_ALL` by default. */
+  readonly hashType?: number;
+}
+
+/** The Taproot key path input a BIP341 sighash signs. */
+export interface TaprootSighashOptions {
+  readonly index: number;
+  /** Outputs every input spends, in order; under `ANYONECANPAY` the one at the index will do. */
+  readonly spent: readonly TransactionOutput[];
+  /** `SIGHASH_DEFAULT`, or `ALL`, `NONE` and `SINGLE`, those three also with `ANYONECANPAY`. */
+  readonly hashType: number;
+  /** The annex the witness ends with, 0x50 first, when it has one. */
+  readonly annex?: Uint8Array;
+}
+
 /**
  * Splits a hash type into its output rule and the `ANYONECANPAY` flag.
  * @param hashType - Hash type, the byte after a signature
@@ -66,17 +117,14 @@ export function withoutCodeSeparators(script: Uint8Array): Uint8Array {
 /**
  * The inputs a legacy sighash serializes: the signed one with the script code, others blank.
  * @param transaction - Spending transaction
- * @param index - Input being signed
- * @param scriptCode - Script code for that input
- * @param parts - The hash type rules
+ * @param rule - Input being signed, the script code for it and the hash type rules
  * @returns {TransactionInput[]} Inputs in the order they are hashed
  */
 function legacyInputs(
   transaction: Readonly<Transaction>,
-  index: number,
-  scriptCode: Uint8Array,
-  parts: Readonly<HashTypeParts>,
+  rule: Readonly<LegacyInputRule>,
 ): TransactionInput[] {
+  const { index, scriptCode, parts } = rule;
   const blankSequence = parts.base === SIGHASH_NONE || parts.base === SIGHASH_SINGLE;
   const inputs = transaction.inputs.map((input, position) => ({
     ...input,
@@ -90,15 +138,14 @@ function legacyInputs(
 /**
  * The outputs a legacy sighash serializes under the hash type.
  * @param transaction - Spending transaction
- * @param index - Input being signed
- * @param base - Output rule of the hash type
+ * @param rule - Input being signed and the output rule of the hash type
  * @returns {readonly TransactionOutput[]} Outputs in the order they are hashed
  */
 function legacyOutputs(
   transaction: Readonly<Transaction>,
-  index: number,
-  base: number,
+  rule: Readonly<SignedOutputRule>,
 ): readonly TransactionOutput[] {
+  const { index, base } = rule;
   if (base === SIGHASH_NONE) return [];
   if (base !== SIGHASH_SINGLE) return transaction.outputs;
   return transaction.outputs
@@ -111,18 +158,15 @@ function legacyOutputs(
 /**
  * Legacy sighash of one input, any hash type, Core's `SIGHASH_SINGLE` bug included.
  * @param transaction - Spending transaction
- * @param index - Input being signed
- * @param scriptCode - Script of the output it spends, or the P2SH redeem script
- * @param hashType - Hash type, `SIGHASH_ALL` by default; the whole 32-bit value goes into the hash
+ * @param options - Input being signed, its script code and hash type
  * @returns {Uint8Array} The digest ECDSA signs; one for `SIGHASH_SINGLE` past the last output
  * @throws {RangeError} When the transaction has no input at the index
  */
 export function legacySighash(
   transaction: Readonly<Transaction>,
-  index: number,
-  scriptCode: Uint8Array,
-  hashType: number = SIGHASH_ALL,
+  options: LegacySighashOptions,
 ): Uint8Array {
+  const { index, scriptCode, hashType = SIGHASH_ALL } = options;
   if (transaction.inputs[index] === undefined) {
     throw new RangeError(`Transaction has no input ${index}`);
   }
@@ -134,8 +178,8 @@ export function legacySighash(
   const unsigned = serializeTransaction(
     {
       ...transaction,
-      inputs: legacyInputs(transaction, index, code, parts),
-      outputs: legacyOutputs(transaction, index, parts.base),
+      inputs: legacyInputs(transaction, { index, scriptCode: code, parts }),
+      outputs: legacyOutputs(transaction, { index, base: parts.base }),
     },
     false,
   );
@@ -145,15 +189,14 @@ export function legacySighash(
 /**
  * The output hash BIP143 and BIP341 commit to: every output, the one at the index, or none.
  * @param transaction - Spending transaction
- * @param index - Input being signed
- * @param base - Output rule of the hash type
+ * @param rule - Input being signed and the output rule of the hash type
  * @returns {Uint8Array | undefined} Serialized outputs to hash, undefined when none are signed
  */
 function signedOutputs(
   transaction: Readonly<Transaction>,
-  index: number,
-  base: number,
+  rule: Readonly<SignedOutputRule>,
 ): Uint8Array | undefined {
+  const { index, base } = rule;
   if (base === SIGHASH_SINGLE) {
     const output = transaction.outputs[index];
     return output === undefined ? undefined : serializeOutput(output);
@@ -183,25 +226,20 @@ function segwitInputHashes(
 /**
  * BIP143 sighash of one SegWit v0 input.
  * @param transaction - Spending transaction
- * @param index - Input being signed
- * @param scriptCode - Script code of the input, the P2PKH script of the key hash for P2WPKH
- * @param amount - Value of the output it spends
- * @param hashType - Hash type, `SIGHASH_ALL` by default
+ * @param options - Input being signed, its script code, the amount it spends and the hash type
  * @returns {Uint8Array} The digest ECDSA signs
  * @throws {RangeError} When the transaction has no input at the index
  */
 export function segwitSighash(
   transaction: Readonly<Transaction>,
-  index: number,
-  scriptCode: Uint8Array,
-  amount: bigint,
-  hashType: number = SIGHASH_ALL,
+  options: SegwitSighashOptions,
 ): Uint8Array {
+  const { index, scriptCode, amount, hashType = SIGHASH_ALL } = options;
   const input = transaction.inputs[index];
   if (input === undefined) throw new RangeError(`Transaction has no input ${index}`);
   const parts = hashTypeParts(hashType, 0x1f);
   const [hashPrevouts, hashSequence] = segwitInputHashes(transaction, parts);
-  const outputs = signedOutputs(transaction, index, parts.base);
+  const outputs = signedOutputs(transaction, { index, base: parts.base });
   return hash256(
     concatBytes(
       uint32(transaction.version),
@@ -242,18 +280,16 @@ function taprootInputHashes(
 /**
  * What BIP341 signs about the input: its whole prevout under `ANYONECANPAY`, else its index.
  * @param transaction - Spending transaction
- * @param index - Input being signed
- * @param spent - Spent outputs, every input's or the one at the index alone
- * @param anyoneCanPay - Whether the hash type carries `ANYONECANPAY`
+ * @param rule - Input being signed, the spent outputs (every input's or the one at the index
+ *   alone) and whether the hash type carries `ANYONECANPAY`
  * @returns {Uint8Array} Those bytes
  * @throws {RangeError} When the input or its spent output is missing
  */
 function taprootInputData(
   transaction: Readonly<Transaction>,
-  index: number,
-  spent: readonly TransactionOutput[],
-  anyoneCanPay: boolean,
+  rule: Readonly<TaprootInputRule>,
 ): Uint8Array {
+  const { index, spent, anyoneCanPay } = rule;
   if (!anyoneCanPay) return uint32(index);
   const input = transaction.inputs[index];
   const output = spent.length === 1 ? spent[0] : spent[index];
@@ -276,7 +312,7 @@ function taprootInputData(
  * @throws {RangeError} When no output sits at the index, which leaves nothing to sign
  */
 function taprootSingleOutput(transaction: Readonly<Transaction>, index: number): Uint8Array {
-  const output = signedOutputs(transaction, index, SIGHASH_SINGLE);
+  const output = signedOutputs(transaction, { index, base: SIGHASH_SINGLE });
   if (output === undefined) {
     throw new RangeError(`SIGHASH_SINGLE needs an output ${index}, and Taproot has no fallback`);
   }
@@ -295,29 +331,24 @@ function isTaprootHashType(hashType: number): boolean {
 /**
  * BIP341 sighash of a Taproot key path spend.
  * @param transaction - Spending transaction
- * @param index - Input being signed
- * @param spent - The outputs every input spends, in input order; under `ANYONECANPAY` the one
- *   at the index is enough
- * @param hashType - `SIGHASH_DEFAULT`, `SIGHASH_ALL`, `SIGHASH_NONE` or `SIGHASH_SINGLE`, each
- *   but the default also with `ANYONECANPAY`
- * @param annex - The annex the witness ends with, 0x50 first, when it has one
+ * @param options - Input being signed, the outputs spent, the hash type and the annex
  * @returns {Uint8Array} The digest Schnorr signs
  * @throws {RangeError} When the hash type is none of those, an input or output it signs is
  *   missing, or `spent` is short
  */
 export function taprootSighash(
   transaction: Readonly<Transaction>,
-  index: number,
-  spent: readonly TransactionOutput[],
-  hashType: number,
-  annex?: Uint8Array,
+  options: TaprootSighashOptions,
 ): Uint8Array {
+  const { index, spent, hashType, annex } = options;
   if (!isTaprootHashType(hashType)) {
     throw new RangeError(`Taproot takes no hash type 0x${hashType.toString(16)}`);
   }
   const parts = hashTypeParts(hashType, 0x03);
   const outputs =
-    parts.base <= SIGHASH_ALL ? signedOutputs(transaction, index, SIGHASH_ALL) : undefined;
+    parts.base <= SIGHASH_ALL
+      ? signedOutputs(transaction, { index, base: SIGHASH_ALL })
+      : undefined;
   const message = concatBytes(
     Uint8Array.of(0, hashType),
     uint32(transaction.version),
@@ -325,7 +356,7 @@ export function taprootSighash(
     parts.anyoneCanPay ? new Uint8Array(0) : taprootInputHashes(transaction, spent),
     outputs === undefined ? new Uint8Array(0) : sha256(outputs),
     Uint8Array.of(annex === undefined ? 0 : 1),
-    taprootInputData(transaction, index, spent, parts.anyoneCanPay),
+    taprootInputData(transaction, { index, spent, anyoneCanPay: parts.anyoneCanPay }),
     annex === undefined ? new Uint8Array(0) : sha256(varBytes(annex)),
     parts.base === SIGHASH_SINGLE ? taprootSingleOutput(transaction, index) : new Uint8Array(0),
   );

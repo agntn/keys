@@ -3,9 +3,13 @@ import { blockchains } from "../../src/_blockchains.ts";
 import { getBlockchainPath } from "../../src/blockchain.ts";
 import { recoverParent } from "../../src/utils/bip32/index.ts";
 import * as bip39 from "../../src/utils/bip39/index.ts";
+import * as bip322 from "../../src/utils/bip322/index.ts";
 import { getPath } from "../../src/utils/bip44/index.ts";
 import { deriveOldMasterPublicKey, deriveOldPublicKey } from "../../src/utils/electrum/index.ts";
+import * as script from "../../src/utils/script/index.ts";
 import { deriveHDKey, getMasterKeyFromSeed } from "../../src/utils/slip10/index.ts";
+import { extractSignatures } from "../../src/utils/transaction/index.ts";
+import { multisigVector, secp256k1TestVectors, transactionVectors } from "../fixtures.ts";
 
 const mnemonic =
   "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
@@ -28,6 +32,11 @@ const positionalCalls: [string, (...args: readonly never[]) => unknown, unknown[
   ["slip10 deriveHDKey", deriveHDKey, [master, "m/0'", false]],
   ["deriveOldPublicKey", deriveOldPublicKey, [masterPublicKey, 0, 5]],
   ["recoverParent", recoverParent, [xpub, new Uint8Array(32).fill(1), 0]],
+  ["multisig", script.multisig, [2, multisigVector.keys]],
+  ["script address", script.address, [Uint8Array.of(0x51), "p2wsh"]],
+  ["bip322 sign", bip322.sign, ["hi", secp256k1TestVectors.privateKey, "taproot"]],
+  ["bip322 verify", bip322.verify, [multisigVector.mainnet.p2wsh, "hi", "smpAA=="]],
+  ["extractSignatures", extractSignatures, [transactionVectors.reusedNonce2012.transaction, 0, []]],
 ];
 
 const names = Object.keys(blockchains) as (keyof typeof blockchains)[];

@@ -118,7 +118,7 @@ export function extractTransactionSignatures(
       `spent scripts together take at most ${MAX_SPENT_SCRIPTS_HEX_LENGTH} hex digits`,
     );
   }
-  const signatures = extractSignatures(transaction, index, spent);
+  const signatures = extractSignatures(transaction, { index, spent });
   const text =
     signatures.length === 0
       ? `Input ${index} carries no signature, or none this tool reads`

@@ -45,11 +45,14 @@ export class Tron extends AbstractBlockchain {
     const keyBytesForHashing = decodePublicPoint(keyPublic).toBytes(false).slice(1);
 
     const addressBytes = keccak256(keyBytesForHashing).slice(-20);
-    return encodeBase58Check(addSchemeByte(addressBytes, ADDRESS_PREFIX_BYTE, true));
+    return encodeBase58Check(addSchemeByte(addressBytes, { schemeByte: ADDRESS_PREFIX_BYTE }));
   }
 
   override validateAddress(address: string): boolean {
-    return validateBase58Check(address, ADDRESS_PREFIX_BYTE, ADDRESS_PREFIX_CHAR);
+    return validateBase58Check(address, {
+      bytesVersion: ADDRESS_PREFIX_BYTE,
+      prefix: ADDRESS_PREFIX_CHAR,
+    });
   }
 
   override signMessage(

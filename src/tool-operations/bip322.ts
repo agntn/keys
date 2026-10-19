@@ -91,7 +91,9 @@ export async function signBip322(
       "compressed applies to legacy only; the other types take the compressed key",
     );
   }
-  const signature = signBIP322Message(message, privateKey, addressType, {
+  const signature = signBIP322Message(message, {
+    privateKey,
+    addressType,
     network,
     ...(compressedValue === undefined ? {} : { compressed: compressedValue }),
   });
@@ -145,7 +147,7 @@ export function verifyBip322(
     );
   }
   const network = parseNetwork(options.network);
-  const verdict = verifyBIP322Message(address, message, signature, { network });
+  const verdict = verifyBIP322Message(address, { message, signature, network });
   const lines = [bip322VerdictLine(verdict)];
   if (verdict.publicKey !== undefined) lines.push(`Public key: ${verdict.publicKey}`);
   if ((verdict.lockTime ?? 0) > 0 || (verdict.sequence ?? 0) > 0) {

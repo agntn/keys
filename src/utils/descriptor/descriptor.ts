@@ -25,7 +25,7 @@ import {
   checksum as computeChecksum,
   splitChecksum,
 } from "./checksum.ts";
-import { parseKey, type DescriptorKey, type KeyContext } from "./keys.ts";
+import { parseKey, type DescriptorKey, type KeyScope } from "./keys.ts";
 
 /** Network of the addresses. */
 export interface DescriptorOptions {
@@ -121,23 +121,17 @@ function split(text: string): string[] {
 
 /**
  * Reads the one key argument of `pk`, `pkh` or `wpkh`.
- * @param name - Expression name
- * @param args - Its arguments
- * @param context - Where the key lands
- * @param network - Network of the key
+ * @param args - Arguments of the expression
+ * @param scope - Expression name, where the key lands and its network
  * @returns {DescriptorKey} The key
  */
-function singleKey(
-  name: string,
-  args: string,
-  context: KeyContext,
-  network: ScriptNetwork,
-): DescriptorKey {
+function singleKey(args: string, scope: KeyScope & { readonly name: string }): DescriptorKey {
+  const { name, context, network } = scope;
   const parts = split(args);
   if (parts.length !== 1 || parts[0] === "" || /[()]/u.test(args)) {
     throw new TypeError(`${name}() takes one key`);
   }
-  return parseKey(args, context, network);
+  return parseKey(args, { context, network });
 }
 
 /**
@@ -181,18 +175,15 @@ function pkhScript(key: Uint8Array): Uint8Array {
 
 /**
  * Reads the threshold and keys of a multisig expression.
- * @param name - Expression name
- * @param args - Its arguments
- * @param context - Where the keys land
- * @param network - Network of the keys
+ * @param args - Arguments of the expression
+ * @param scope - Expression name, where the keys land and their network
  * @returns {[number, DescriptorKey[]]} The threshold and the keys
  */
 function multisigArguments(
-  name: string,
   args: string,
-  context: KeyContext,
-  network: ScriptNetwork,
+  scope: KeyScope & { readonly name: string },
 ): [number, DescriptorKey[]] {
+  const { name, context, network } = scope;
   const [threshold = "", ...keys] = split(args);
   const limit = context === "taproot" ? MAX_MULTI_A_KEYS : MAX_MULTISIG_KEYS;
   if (!/^[0-9]{1,4}$/u.test(threshold) || keys.length === 0 || keys.length > limit) {
@@ -204,28 +195,28 @@ function multisigArguments(
       `${name}() threshold must be from 1 to the number of keys, ${keys.length}`,
     );
   }
-  return [required, keys.map((key) => parseKey(key, context, network))];
+  return [required, keys.map((key) => parseKey(key, { context, network }))];
 }
 
 /**
  * Builds a script inside `sh()` or `wsh()`: `pk`, `pkh`, `multi` or `sortedmulti`.
  * @param text - Script expression
- * @param context - legacy under `sh()`, segwit under `wsh()`
- * @param network - Network of the keys
+ * @param scope - legacy under `sh()`, segwit under `wsh()`, and the network of the keys
  * @returns {Part} The script
  */
-function innerScript(text: string, context: KeyContext, network: ScriptNetwork): Part {
+function innerScript(text: string, scope: KeyScope): Part {
+  const { context, network } = scope;
   const [name, args] = call(text);
   if (name === "pk") {
-    return mapped(singleKey(name, args, context, network), (key) =>
+    return mapped(singleKey(args, { name, context, network }), (key) =>
       concatBytes(pushOf(key), Uint8Array.of(OP.CHECKSIG)),
     );
   }
   if (name === "pkh") {
-    return mapped(singleKey(name, args, context, network), pkhScript);
+    return mapped(singleKey(args, { name, context, network }), pkhScript);
   }
   if (name === "multi" || name === "sortedmulti") {
-    const [threshold, keys] = multisigArguments(name, args, context, network);
+    const [threshold, keys] = multisigArguments(args, { name, context, network });
     return joined(keys, (values) =>
       multisigScript(threshold, name === "multi" ? values : sortKeys(values)),
     );
@@ -260,10 +251,10 @@ function multiAScript(threshold: number, keys: readonly Uint8Array[]): Uint8Arra
 function leafScript(text: string, network: ScriptNetwork): Part {
   const [name, args] = call(text);
   if (name === "pk" || name === "pkh") {
-    return innerScript(text, "taproot", network);
+    return innerScript(text, { context: "taproot", network });
   }
   if (name === "multi_a" || name === "sortedmulti_a") {
-    const [threshold, keys] = multisigArguments(name, args, "taproot", network);
+    const [threshold, keys] = multisigArguments(args, { name, context: "taproot", network });
     return joined(keys, (values) =>
       multiAScript(threshold, name === "multi_a" ? values : sortKeys(values)),
     );
@@ -276,17 +267,20 @@ function leafScript(text: string, network: ScriptNetwork): Part {
 /**
  * Hashes a script tree, `{A,B}` for a branch, into its Merkle root.
  * @param text - Tree expression
- * @param network - Network of the keys
- * @param depth - Branches above this node
+ * @param node - Network of the keys and the branches above this node
  * @returns {Part} The root
  */
-function tree(text: string, network: ScriptNetwork, depth: number): Part {
+function tree(
+  text: string,
+  node: { readonly network: ScriptNetwork; readonly depth: number },
+): Part {
+  const { network, depth } = node;
   if (depth > MAX_TREE_DEPTH)
     throw new RangeError(`tr() tree is deeper than ${MAX_TREE_DEPTH} levels`);
   if (text.startsWith("{") && text.endsWith("}")) {
     const branches = split(text.slice(1, -1));
     if (branches.length !== 2) throw new TypeError("A tr() branch {A,B} holds exactly two parts");
-    const [left, right] = branches.map((branch) => tree(branch, network, depth + 1));
+    const [left, right] = branches.map((branch) => tree(branch, { network, depth: depth + 1 }));
     if (left === undefined || right === undefined) throw new TypeError("A tr() branch is empty");
     return {
       ranged: left.ranged || right.ranged,
@@ -307,8 +301,8 @@ function tree(text: string, network: ScriptNetwork, depth: number): Part {
 function taproot(args: string, network: ScriptNetwork): Part {
   const [key = "", ...trees] = split(args);
   if (trees.length > 1) throw new TypeError("tr() takes a key and at most one tree");
-  const internal = parseKey(key, "taproot", network);
-  const root = trees[0] === undefined ? undefined : tree(trees[0], network, 0);
+  const internal = parseKey(key, { context: "taproot", network });
+  const root = trees[0] === undefined ? undefined : tree(trees[0], { network, depth: 0 });
   return {
     ranged: internal.ranged || root?.ranged === true,
     at: (index) => {
@@ -342,14 +336,14 @@ function shSized(script: Uint8Array): Uint8Array {
 function shInner(text: string, network: ScriptNetwork): Part {
   const [name, args] = call(text);
   if (name === "wpkh") {
-    return mapped(singleKey(name, args, "segwit", network), (key) =>
+    return mapped(singleKey(args, { name, context: "segwit", network }), (key) =>
       concatBytes(Uint8Array.of(0), pushOf(hash160(key))),
     );
   }
   if (name === "wsh") {
-    return mapped(innerScript(args, "segwit", network), p2wshProgram);
+    return mapped(innerScript(args, { context: "segwit", network }), p2wshProgram);
   }
-  return innerScript(text, "legacy", network);
+  return innerScript(text, { context: "legacy", network });
 }
 
 /**
@@ -364,7 +358,7 @@ function top(
 ): { readonly ranged: boolean; readonly at: (index: number) => DescriptorOutput } {
   const [name, args] = call(text);
   if (name === "pkh") {
-    const key = singleKey(name, args, "legacy", network);
+    const key = singleKey(args, { name, context: "legacy", network });
     return {
       ranged: key.ranged,
       at: (index) => {
@@ -379,14 +373,14 @@ function top(
     };
   }
   if (name === "wpkh") {
-    const key = singleKey(name, args, "segwit", network);
+    const key = singleKey(args, { name, context: "segwit", network });
     return {
       ranged: key.ranged,
       at: (index) => {
         const program = hash160(key.at(index));
         return {
           script: concatBytes(Uint8Array.of(0), pushOf(program)),
-          address: segwitAddress(0, program, network),
+          address: segwitAddress(program, { version: 0, network }),
         };
       },
     };
@@ -402,12 +396,15 @@ function top(
     };
   }
   if (name === "wsh") {
-    const witness = innerScript(args, "segwit", network);
+    const witness = innerScript(args, { context: "segwit", network });
     return {
       ranged: witness.ranged,
       at: (index) => {
         const script = witness.at(index);
-        return { script: p2wshProgram(script), address: segwitAddress(0, sha256(script), network) };
+        return {
+          script: p2wshProgram(script),
+          address: segwitAddress(sha256(script), { version: 0, network }),
+        };
       },
     };
   }
@@ -419,7 +416,7 @@ function top(
         const key = output.at(index);
         return {
           script: concatBytes(Uint8Array.of(0x51), pushOf(key)),
-          address: segwitAddress(1, key, network),
+          address: segwitAddress(key, { version: 1, network }),
         };
       },
     };

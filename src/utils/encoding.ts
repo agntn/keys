@@ -39,21 +39,25 @@ function hasValidBase58Format(address: string, expectedPrefix?: string): boolean
   return address.length >= 26 && address.length <= 35;
 }
 
+/** What a Base58Check address must carry. */
+export interface Base58CheckOptions {
+  /** The expected version byte. */
+  readonly bytesVersion: number;
+  /** The expected prefix character(s). */
+  readonly prefix?: string;
+  /** Expected length of decoded bytes (default: 21). */
+  readonly length?: number;
+}
+
 /**
  * Validate a Base58Check address with specific version byte
  * @param address - The address to validate
- * @param bytesVersion - The expected version byte
- * @param expectedPrefix - The expected prefix character(s)
- * @param expectedLength - Expected length of decoded bytes (default: 21)
+ * @param options - The expected version byte, prefix and decoded length
  * @returns {boolean} Whether the address is valid
  */
-export function validateBase58Check(
-  address: string,
-  bytesVersion: number,
-  expectedPrefix?: string,
-  expectedLength: number = 21,
-): boolean {
-  if (!hasValidBase58Format(address, expectedPrefix)) {
+export function validateBase58Check(address: string, options: Base58CheckOptions): boolean {
+  const { bytesVersion, prefix, length = 21 } = options;
+  if (!hasValidBase58Format(address, prefix)) {
     return false;
   }
 
@@ -62,7 +66,7 @@ export function validateBase58Check(
     const decoded = decodeBase58Check(address);
 
     // Check length (typically 21 bytes: 1 byte version + 20 bytes hash)
-    if (decoded.length !== expectedLength) {
+    if (decoded.length !== length) {
       return false;
     }
 
