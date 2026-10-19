@@ -64,8 +64,12 @@ export async function generateBip44Path(
   if (addressType !== undefined && !Array.isArray(blockchain.curve)) {
     throw new RangeError(`addressType names a scheme, and ${blockchain.name} has one curve`);
   }
-  const scheme = addressType === undefined ? undefined : { scheme: addressType };
-  const generated = getBlockchainPath(blockchain, account, change, addressIndex, scheme);
+  const generated = getBlockchainPath(blockchain, {
+    account,
+    change,
+    addressIndex,
+    scheme: addressType,
+  });
   return {
     content: content(
       `Chain: ${blockchain.name} (BIP44 coin type: ${blockchain.coinType})\nPath: ${generated}`,

@@ -16,6 +16,7 @@ import { BIP44 } from "../utils/bip44/index.ts";
 import { concatBytes } from "../utils/bytes.ts";
 import { decodeMoneroBase58, encodeMoneroBase58 } from "../utils/monero-base58.ts";
 import { decodeMoneroSeed } from "../utils/monero-seed.ts";
+import { assertSignOptions, assertVerifyOptions } from "../utils/options.ts";
 import { assertNoRecoveryByte } from "../utils/signing.ts";
 import type {
   AddressType,
@@ -23,8 +24,10 @@ import type {
   KeyOptions,
   MoneroSigningKey,
   Options,
-  SigningOptions,
+  SignMessageOptions,
+  VerifyMessageOptions,
   Wallet,
+  WalletOptions,
 } from "../types.ts";
 
 /** Spend keys and signatures multiply here in constant time, which curves won't promise. */
@@ -190,31 +193,46 @@ function indexBytes(value: number, name: string): Uint8Array {
   return bytes;
 }
 
+/** Where a subaddress sits: account 0, index 0 is the wallet's standard address. */
+export interface SubaddressIndex {
+  /** The account, the major index. */
+  readonly account: number;
+  /** The address within the account, the minor index. */
+  readonly index: number;
+}
+
+/** A subaddress and the private view key that finds it. */
+export interface SubaddressOptions extends SubaddressIndex {
+  /** The wallet's private view key, 32 bytes of hex. */
+  readonly viewKey: string;
+}
+
 /**
  * wallet2's `get_subaddress_secret_key`: keccak256 of the tag, the view key and both indices.
  * @param viewKey - The wallet's private view key, 32 little-endian bytes
- * @param account - The account, the major index
- * @param index - The address within the account, the minor index
+ * @param at - The account and the address index
  * @returns {bigint} The scalar `m` the subaddress adds to the spend key
  * @throws {RangeError} When an index falls outside 0 to 2^32 - 1
  */
-function subaddressScalar(viewKey: Uint8Array, account: number, index: number): bigint {
-  const indices = concatBytes(indexBytes(account, "account"), indexBytes(index, "address index"));
+function subaddressScalar(viewKey: Uint8Array, at: SubaddressIndex): bigint {
+  const indices = concatBytes(
+    indexBytes(at.account, "account"),
+    indexBytes(at.index, "address index"),
+  );
   return reduceScalar(keccak256(concatBytes(SUBADDRESS_TAG, viewKey, indices)));
 }
 
 /**
  * The secrets `wallet2::sign` uses: the wallet's own at 0/0, else `b + m` and `a * (b + m)`.
  * @param spend - The wallet's private spend key `b`
- * @param account - The account, the major index
- * @param index - The address within the account, the minor index
+ * @param at - The account and the address index
  * @returns {readonly [bigint, bigint]} The spend secret, then the view secret
  * @throws {RangeError} When an index falls outside 0 to 2^32 - 1
  */
-function addressSecrets(spend: bigint, account: number, index: number): readonly [bigint, bigint] {
+function addressSecrets(spend: bigint, at: SubaddressIndex): readonly [bigint, bigint] {
   const view = viewScalar(spend);
-  const m = subaddressScalar(Point.Fn.toBytes(view), account, index);
-  if (account === 0 && index === 0) return [spend, view];
+  const m = subaddressScalar(Point.Fn.toBytes(view), at);
+  if (at.account === 0 && at.index === 0) return [spend, view];
   const subSpend = Point.Fn.add(spend, m);
   return [subSpend, Point.Fn.mul(view, subSpend)];
 }
@@ -266,20 +284,24 @@ function varint(value: number): Uint8Array {
   return Uint8Array.from(bytes);
 }
 
+/** The public keys of the address a SigV2 digest binds, and which of them signs. */
+interface SignedAddress {
+  /** The public spend key of the address. */
+  readonly spend: Uint8Array;
+  /** The public view key of the address. */
+  readonly view: Uint8Array;
+  /** 0 when the spend key signs, 1 when the view key does. */
+  readonly mode: number;
+}
+
 /**
  * The SigV2 digest of `get_message_hash`: the tag, both public keys, the mode and the message.
  * @param message - The message bytes
- * @param spend - The public spend key of the address
- * @param view - The public view key of the address
- * @param mode - 0 when the spend key signs, 1 when the view key does
+ * @param address - Both public keys and the mode
  * @returns {Uint8Array} 32 bytes of keccak256
  */
-function messageHash(
-  message: Uint8Array,
-  spend: Uint8Array,
-  view: Uint8Array,
-  mode: number,
-): Uint8Array {
+function messageHash(message: Uint8Array, address: SignedAddress): Uint8Array {
+  const { spend, view, mode } = address;
   return keccak256(
     concatBytes(MESSAGE_TAG, spend, view, Uint8Array.of(mode), varint(message.length), message),
   );
@@ -288,25 +310,30 @@ function messageHash(
 /**
  * The challenge of `generate_signature`: keccak256 of digest, key and commitment, mod l.
  * @param hash - The signed digest
- * @param key - The public key that signs
- * @param commitment - The nonce point, as 32 bytes
+ * @param signer - The public key that signs and the nonce point, both as 32 bytes
  * @returns {bigint} The scalar `c`
  */
-function challenge(hash: Uint8Array, key: Uint8Array, commitment: Uint8Array): bigint {
-  return reduceScalar(keccak256(concatBytes(hash, key, commitment)));
+function challenge(
+  hash: Uint8Array,
+  signer: { readonly key: Uint8Array; readonly commitment: Uint8Array },
+): bigint {
+  return reduceScalar(keccak256(concatBytes(hash, signer.key, signer.commitment)));
 }
 
 /**
  * Monero's `generate_signature`: a fresh nonce k, then `c` over kG and `r = k - c * secret`.
  * @param hash - The digest to sign
- * @param key - The public key of `secret`
- * @param secret - The private key
+ * @param signer - The private key and its public key
  * @returns {Uint8Array} 64 bytes, `c` then `r`, both little endian
  */
-function schnorrSign(hash: Uint8Array, key: Uint8Array, secret: bigint): Uint8Array {
+function schnorrSign(
+  hash: Uint8Array,
+  signer: { readonly key: Uint8Array; readonly secret: bigint },
+): Uint8Array {
+  const { key, secret } = signer;
   for (;;) {
     const nonce = randomScalar();
-    const c = challenge(hash, key, Point.BASE.multiply(nonce).toBytes());
+    const c = challenge(hash, { key, commitment: Point.BASE.multiply(nonce).toBytes() });
     const r = Point.Fn.sub(nonce, Point.Fn.mul(c, secret));
     if (c !== 0n && r !== 0n) return concatBytes(Point.Fn.toBytes(c), Point.Fn.toBytes(r));
   }
@@ -315,16 +342,22 @@ function schnorrSign(hash: Uint8Array, key: Uint8Array, secret: bigint): Uint8Ar
 /**
  * Monero's `check_signature`: canonical scalars, a commitment that isn't the identity, same `c`.
  * @param hash - The signed digest
- * @param key - The public key, already checked to be a point
- * @param signature - 64 bytes, `c` then `r`
+ * @param signed - The public key, already checked to be a point, and 64 bytes of `c` then `r`
  * @returns {boolean} Whether `key` signed `hash`
  */
-function schnorrCheck(hash: Uint8Array, key: Uint8Array, signature: Uint8Array): boolean {
+function schnorrCheck(
+  hash: Uint8Array,
+  signed: { readonly key: Uint8Array; readonly signature: Uint8Array },
+): boolean {
+  const { key, signature } = signed;
   const c = bytesToNumberLE(signature.subarray(0, 32));
   const r = bytesToNumberLE(signature.subarray(32));
   if (c === 0n || c >= curve.l || r >= curve.l) return false;
   const commitment = addPoints(multiplyPoint(key.toHex(), c), multiplyGenerator(r));
-  return !isIdentity(commitment) && challenge(hash, key, Uint8Array.fromHex(commitment)) === c;
+  return (
+    !isIdentity(commitment) &&
+    challenge(hash, { key, commitment: Uint8Array.fromHex(commitment) }) === c
+  );
 }
 
 /**
@@ -422,40 +455,35 @@ export class Monero extends AbstractBlockchain {
   /**
    * Writes the wallet with the spend key reduced, the key a Monero wallet would show for it.
    * @param keyPrivate - The private spend key as hex
-   * @param options - Key options
-   * @param addressType - Any type throws, the wallet writes its standard address
+   * @param options - Key options; any address type throws, the wallet writes its standard address
    * @returns {Wallet} The wallet with its standard address
    */
-  override deriveWallet(
-    keyPrivate: string,
-    options?: KeyOptions,
-    addressType?: AddressType,
-  ): Wallet {
+  override deriveWallet(keyPrivate: string, options: WalletOptions = {}): Wallet {
+    const { addressType, ...keyOptions } = options;
     refuseWalletAddressType(addressType);
     const spend = Point.Fn.toBytes(spendScalar(keyPrivate)).toHex();
-    return super.deriveWallet(spend, options);
+    return super.deriveWallet(spend, keyOptions);
   }
 
   /**
    * Draws a new wallet and writes its standard address.
-   * @param options - Key options
-   * @param addressType - Any type throws, the wallet writes its standard address
+   * @param options - Key options; any address type throws, the wallet writes its standard address
    * @returns {Wallet} The new wallet
    */
-  override generateWallet(options?: KeyOptions, addressType?: AddressType): Wallet {
+  override generateWallet(options: WalletOptions = {}): Wallet {
+    const { addressType, ...keyOptions } = options;
     refuseWalletAddressType(addressType);
-    return super.generateWallet(options);
+    return super.generateWallet(keyOptions);
   }
 
   /**
    * Restores a wallet from its seed words, as monero-wallet-cli `--restore-deterministic-wallet`.
    * @param seed - 25 English seed words, or the 24 without the checksum word
-   * @param options - Key options
-   * @param addressType - Any type throws, the wallet writes its standard address
+   * @param options - Key options; any address type throws, the wallet writes its standard address
    * @returns {Wallet} The wallet of the seed, the reduced spend key as its private key
    */
-  override deriveSeedWallet(seed: string, options?: KeyOptions, addressType?: AddressType): Wallet {
-    return this.deriveWallet(decodeMoneroSeed(seed).toHex(), options, addressType);
+  override deriveSeedWallet(seed: string, options?: WalletOptions): Wallet {
+    return this.deriveWallet(decodeMoneroSeed(seed).toHex(), options);
   }
 
   /**
@@ -500,23 +528,18 @@ export class Monero extends AbstractBlockchain {
   /**
    * Both public keys of a subaddress as wallet2 derives them; a view key is the only secret needed.
    * @param keyPublic - The wallet's public spend key then public view key, 64 bytes of hex
-   * @param viewKey - The wallet's private view key, 32 bytes of hex
-   * @param account - The account, the major index
-   * @param index - The address within the account, the minor index
+   * @param options - The wallet's private view key as 32 bytes of hex, the account (the major
+   * index) and the address within it (the minor index)
    * @returns {string} 64 bytes of hex; account 0, index 0 is the wallet's own pair
    * @throws {RangeError} When a key is malformed, the view key is not the wallet's, or an index
    * falls outside 0 to 2^32 - 1
    */
-  getSubaddressKeyPublic(
-    keyPublic: string,
-    viewKey: string,
-    account: number,
-    index: number,
-  ): string {
+  getSubaddressKeyPublic(keyPublic: string, options: SubaddressOptions): string {
+    const { viewKey, ...at } = options;
     const [spend, view] = splitKeyPublic(keyPublic);
     const secret = viewKeyBytes(viewKey, view);
-    const m = subaddressScalar(secret, account, index);
-    if (account === 0 && index === 0) return concatBytes(spend, view).toHex();
+    const m = subaddressScalar(secret, at);
+    if (at.account === 0 && at.index === 0) return concatBytes(spend, view).toHex();
     const subSpend = addPoints(spend.toHex(), multiplyGenerator(m));
     return subSpend + multiplyPoint(subSpend, bytesToNumberLE(secret));
   }
@@ -524,15 +547,15 @@ export class Monero extends AbstractBlockchain {
   /**
    * The address monero-wallet-cli lists at an account and index, the standard one at 0/0.
    * @param keyPublic - The wallet's public spend key then public view key, 64 bytes of hex
-   * @param viewKey - The wallet's private view key, 32 bytes of hex
-   * @param account - The account, the major index
-   * @param index - The address within the account, the minor index
+   * @param options - The wallet's private view key as 32 bytes of hex, the account (the major
+   * index) and the address within it (the minor index)
    * @returns {string} The 95-character address
    * @throws {RangeError} Like `getSubaddressKeyPublic`
    */
-  getSubaddress(keyPublic: string, viewKey: string, account: number, index: number): string {
-    const pair = this.getSubaddressKeyPublic(keyPublic, viewKey, account, index);
-    return this.getAddress(pair, account === 0 && index === 0 ? undefined : "subaddress");
+  getSubaddress(keyPublic: string, options: SubaddressOptions): string {
+    const pair = this.getSubaddressKeyPublic(keyPublic, options);
+    const standard = options.account === 0 && options.index === 0;
+    return this.getAddress(pair, standard ? undefined : "subaddress");
   }
 
   /**
@@ -589,8 +612,8 @@ export class Monero extends AbstractBlockchain {
   /**
    * Signs a message like `monero-wallet-cli sign`: SigV2 for the standard address or a subaddress.
    * @param message - The message, UTF-8 when it is a string
-   * @param keyPrivate - The private spend key as hex; the view key comes from it
-   * @param options - `signingKey: "view"` signs with the view key, as `sign --view` does;
+   * @param options - The private spend key as hex, the view key comes from it;
+   * `signingKey: "view"` signs with the view key, as `sign --view` does;
    * `account` and `addressIndex` sign as that subaddress, like `sign <account>,<index>`
    * @returns {string} `SigV2` and 88 characters of block base58
    * @throws {RangeError} When the key isn't 32 bytes or reduces to zero, `signingKey` names
@@ -598,51 +621,42 @@ export class Monero extends AbstractBlockchain {
    * @throws {SyntaxError} When the key isn't hex
    * @throws {Error} When `recovered` is set, since SigV2 carries no recovery byte
    */
-  override signMessage(
-    message: string | Uint8Array,
-    keyPrivate: string,
-    options?: SigningOptions,
-  ): string {
-    assertNoRecoveryByte(options, "Monero signs SigV2, with no recovery byte");
-    const mode = signingMode(options?.signingKey);
-    const [spend, view] = addressSecrets(
-      spendScalar(keyPrivate),
-      options?.account ?? 0,
-      options?.addressIndex ?? 0,
-    );
+  override signMessage(message: string | Uint8Array, options: SignMessageOptions): string {
+    assertSignOptions(options);
+    const { privateKey, account = 0, addressIndex = 0, ...signingOptions } = options;
+    assertNoRecoveryByte(signingOptions, "Monero signs SigV2, with no recovery byte");
+    const mode = signingMode(signingOptions.signingKey);
+    const [spend, view] = addressSecrets(spendScalar(privateKey), { account, index: addressIndex });
     const spendKey = Point.BASE.multiply(spend).toBytes();
     const viewKey = Point.BASE.multiply(view).toBytes();
-    const hash = messageHash(messageBytes(message), spendKey, viewKey, mode);
+    const hash = messageHash(messageBytes(message), { spend: spendKey, view: viewKey, mode });
     const signature =
       mode === SIGNING_MODES.view
-        ? schnorrSign(hash, viewKey, view)
-        : schnorrSign(hash, spendKey, spend);
+        ? schnorrSign(hash, { key: viewKey, secret: view })
+        : schnorrSign(hash, { key: spendKey, secret: spend });
     return SIGNATURE_V2 + encodeMoneroBase58(signature);
   }
 
   /**
    * Checks a SigV2 or SigV1 signature like `monero-wallet-cli verify`, under either key.
    * @param message - The message, UTF-8 when it is a string
-   * @param signature - The signature as the wallet printed it
-   * @param keyPublic - The public spend key then the public view key of the address, 64 bytes of
-   * hex; a subaddress signature checks against the pair of that subaddress
+   * @param options - The signature as the wallet printed it, and the public spend key then the
+   * public view key of the address, 64 bytes of hex; a subaddress signature checks against the
+   * pair of that subaddress
    * @returns {boolean} Whether the spend or the view key of the address signed the message
    * @throws {RangeError} When the signature or the key cannot be read, so it never reads as invalid
    * @throws {SyntaxError} When the key isn't hex
    */
-  override verifyMessage(
-    message: string | Uint8Array,
-    signature: string,
-    keyPublic: string,
-  ): boolean {
-    const { v2, bytes } = readSignature(signature);
-    const [spend, view] = splitKeyPublic(keyPublic);
+  override verifyMessage(message: string | Uint8Array, options: VerifyMessageOptions): boolean {
+    assertVerifyOptions(options);
+    const { v2, bytes } = readSignature(options.signature);
+    const [spend, view] = splitKeyPublic(options.publicKey);
     const data = messageBytes(message);
     const digest = (mode: number): Uint8Array =>
-      v2 ? messageHash(data, spend, view, mode) : keccak256(data);
+      v2 ? messageHash(data, { spend, view, mode }) : keccak256(data);
     return (
-      schnorrCheck(digest(SIGNING_MODES.spend), spend, bytes) ||
-      schnorrCheck(digest(SIGNING_MODES.view), view, bytes)
+      schnorrCheck(digest(SIGNING_MODES.spend), { key: spend, signature: bytes }) ||
+      schnorrCheck(digest(SIGNING_MODES.view), { key: view, signature: bytes })
     );
   }
 }

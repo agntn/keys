@@ -51,7 +51,7 @@ export function useLandingKey() {
     }
     const index = (hd.value.index + 1) % 10;
     const path = `m/44'/60'/0'/0/${index}`;
-    hd.value = { index, path, address: chains.ethereum.deriveHDWallet(TEST_MNEMONIC, path).address };
+    hd.value = { index, path, address: chains.ethereum.deriveHDWallet(TEST_MNEMONIC, { path }).address };
   }
 
   function applyKey(parsed: ParsedKey) {

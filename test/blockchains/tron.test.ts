@@ -108,7 +108,7 @@ describe("TRON Blockchain", () => {
   describe("HD wallets from mnemonics", () => {
     it("derives the first BIP44 account address", () => {
       expect(
-        blockchain.deriveHDWallet(bip39TestVectors.mnemonic, "m/44'/195'/0'/0/0").address,
+        blockchain.deriveHDWallet(bip39TestVectors.mnemonic, { path: "m/44'/195'/0'/0/0" }).address,
       ).toBe("TUEZSdKsoDHQMeZwihtdoBiN46zxhGWYdH");
     });
   });
@@ -121,39 +121,59 @@ describe("TRON Blockchain", () => {
       (message, digest, signatureWithV) => {
         const signature = signatureWithV.slice(0, 128);
         const publicKey = hex.decode(vector.publicKey);
-        expect(blockchain.signMessage(message, vector.privateKey)).toBe(signature);
-        expect(blockchain.signMessage(new TextEncoder().encode(message), vector.privateKey)).toBe(
-          signature,
-        );
+        expect(blockchain.signMessage(message, { privateKey: vector.privateKey })).toBe(signature);
+        expect(
+          blockchain.signMessage(new TextEncoder().encode(message), {
+            privateKey: vector.privateKey,
+          }),
+        ).toBe(signature);
         expect(
           secp256k1.verify(hex.decode(signature), hex.decode(digest), publicKey, {
             prehash: false,
           }),
         ).toBe(true);
-        expect(blockchain.verifyMessage(message, signature, vector.publicKey)).toBe(true);
-        expect(blockchain.verifyMessage(message + "!", signature, vector.publicKey)).toBe(false);
-        expect(blockchain.verifyMessage(message, "invalid", vector.publicKey)).toBe(false);
+        expect(blockchain.verifyMessage(message, { signature, publicKey: vector.publicKey })).toBe(
+          true,
+        );
+        expect(
+          blockchain.verifyMessage(message + "!", { signature, publicKey: vector.publicKey }),
+        ).toBe(false);
+        expect(
+          blockchain.verifyMessage(message, { signature: "invalid", publicKey: vector.publicKey }),
+        ).toBe(false);
       },
     );
 
     it.each(vector.messages)(
       "matches the whole TronWeb signature %# when asked for the recovery byte",
       (message, _digest, signatureWithV) => {
-        const recovered = blockchain.signMessage(message, vector.privateKey, { recovered: true });
+        const recovered = blockchain.signMessage(message, {
+          privateKey: vector.privateKey,
+          recovered: true,
+        });
         expect(recovered).toBe(signatureWithV);
         expect(hex.decode(recovered).length).toBe(65);
-        expect(blockchain.verifyMessage(message, recovered, vector.publicKey)).toBe(true);
+        expect(
+          blockchain.verifyMessage(message, { signature: recovered, publicKey: vector.publicKey }),
+        ).toBe(true);
       },
     );
 
     it("rejects a signature made under the Ethereum preamble", () => {
       const [message] = vector.messages[1];
       const ethereum = new Ethereum();
-      const signature = blockchain.signMessage(message, vector.privateKey);
-      const ethereumSignature = ethereum.signMessage(message, vector.privateKey);
+      const signature = blockchain.signMessage(message, { privateKey: vector.privateKey });
+      const ethereumSignature = ethereum.signMessage(message, { privateKey: vector.privateKey });
       expect(signature).not.toBe(ethereumSignature);
-      expect(blockchain.verifyMessage(message, ethereumSignature, vector.publicKey)).toBe(false);
-      expect(ethereum.verifyMessage(message, signature, vector.publicKey)).toBe(false);
+      expect(
+        blockchain.verifyMessage(message, {
+          signature: ethereumSignature,
+          publicKey: vector.publicKey,
+        }),
+      ).toBe(false);
+      expect(ethereum.verifyMessage(message, { signature, publicKey: vector.publicKey })).toBe(
+        false,
+      );
     });
 
     it.each(vector.messages)(

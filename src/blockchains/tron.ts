@@ -3,6 +3,7 @@ import { AbstractBlockchain } from "../blockchain.ts";
 import { addSchemeByte } from "../utils/address.ts";
 import { encodeBase58Check, validateBase58Check } from "../utils/encoding.ts";
 import { hashWithPreamble } from "../utils/evm.ts";
+import { assertSignOptions, assertVerifyOptions } from "../utils/options.ts";
 import { decodePublicPoint } from "../utils/secp256k1/decode.ts";
 import { generateKeyPublic } from "../utils/secp256k1/keys.ts";
 import { recoverSecp256k1Signer, signMessage, verifyMessage } from "../utils/signing.ts";
@@ -12,6 +13,8 @@ import type {
   KeyOptions,
   MessageSigner,
   RecoverableSigningOptions,
+  SignMessageOptions,
+  VerifyMessageOptions,
 } from "../types.ts";
 
 const ADDRESS_PREFIX_BYTE = 0x41;
@@ -51,11 +54,12 @@ export class Tron extends AbstractBlockchain {
 
   override signMessage(
     message: string | Uint8Array,
-    keyPrivate: string,
-    options?: RecoverableSigningOptions,
+    options: SignMessageOptions<RecoverableSigningOptions>,
   ): string {
-    return signMessage(hashWithPreamble(message, MESSAGE_PREAMBLE), keyPrivate, {
-      ...options,
+    assertSignOptions(options);
+    const { privateKey, ...signingOptions } = options;
+    return signMessage(hashWithPreamble(message, MESSAGE_PREAMBLE), privateKey, {
+      ...signingOptions,
       curve: "secp256k1",
       hash: false,
     });
@@ -63,12 +67,12 @@ export class Tron extends AbstractBlockchain {
 
   override verifyMessage(
     message: string | Uint8Array,
-    signature: string,
-    keyPublic: string,
-    options?: RecoverableSigningOptions,
+    options: VerifyMessageOptions<RecoverableSigningOptions>,
   ): boolean {
-    return verifyMessage(hashWithPreamble(message, MESSAGE_PREAMBLE), signature, keyPublic, {
-      ...options,
+    assertVerifyOptions(options);
+    const { signature, publicKey, ...signingOptions } = options;
+    return verifyMessage(hashWithPreamble(message, MESSAGE_PREAMBLE), signature, publicKey, {
+      ...signingOptions,
       curve: "secp256k1",
       hash: false,
     });

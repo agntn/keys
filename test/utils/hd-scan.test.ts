@@ -24,7 +24,7 @@ describe("wallet scan schemes", () => {
         expect(
           opening.path.replaceAll(/\{(\w+)\}/gu, (_, name: keyof typeof first) => first[name]),
           chain,
-        ).toBe(blockchain.getDerivationPath(0, 0, 0));
+        ).toBe(blockchain.getDerivationPath({ account: 0, change: 0, addressIndex: 0 }));
       }
     },
   );

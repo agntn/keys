@@ -129,7 +129,7 @@ describe("Common blockchain functionality", () => {
       expect(legacyWallet.address.startsWith("1")).toBe(true);
 
       // P2SH address
-      const p2shWallet = blockchain.generateWallet({}, "p2sh");
+      const p2shWallet = blockchain.generateWallet({ addressType: "p2sh" });
       expect(p2shWallet.address.startsWith("3")).toBe(true);
     });
 
@@ -137,7 +137,7 @@ describe("Common blockchain functionality", () => {
       const blockchain = useBlockchain(new Bitcoin());
       const privateKey = "0000000000000000000000000000000000000000000000000000000000000001";
 
-      expect(blockchain.deriveWallet(privateKey, {}, "segwit")).toEqual({
+      expect(blockchain.deriveWallet(privateKey, { addressType: "segwit" })).toEqual({
         keys: {
           private: privateKey,
           public: "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
@@ -156,19 +156,21 @@ describe("deriveHDWallet", () => {
   it("collapses whitespace before validating the mnemonic", () => {
     const messy = `  ${mnemonic.replaceAll(" ", "\n  ")} `;
 
-    expect(blockchain.deriveHDWallet(messy, "m/84'/0'/0'/0/0")).toEqual(
-      blockchain.deriveHDWallet(mnemonic, "m/84'/0'/0'/0/0"),
+    expect(blockchain.deriveHDWallet(messy, { path: "m/84'/0'/0'/0/0" })).toEqual(
+      blockchain.deriveHDWallet(mnemonic, { path: "m/84'/0'/0'/0/0" }),
     );
   });
 
   it("rejects a mnemonic with a bad checksum", () => {
     expect(() =>
-      blockchain.deriveHDWallet(mnemonic.replace("about", "abandon"), "m/84'/0'/0'/0/0"),
+      blockchain.deriveHDWallet(mnemonic.replace("about", "abandon"), { path: "m/84'/0'/0'/0/0" }),
     ).toThrow("Invalid BIP39 mnemonic");
   });
 
   it("rejects a path that does not start at the master key", () => {
-    expect(() => blockchain.deriveHDWallet(mnemonic, "84'/0'/0'/0/0")).toThrow("Path must start");
+    expect(() => blockchain.deriveHDWallet(mnemonic, { path: "84'/0'/0'/0/0" })).toThrow(
+      "Path must start",
+    );
   });
 });
 
@@ -188,15 +190,16 @@ describe("address type of a wallet", () => {
         "bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr",
       ],
     ] as const) {
-      expect(bitcoin.deriveHDWallet(mnemonic, path)).toMatchObject({ addressType, address });
+      expect(bitcoin.deriveHDWallet(mnemonic, { path })).toMatchObject({ addressType, address });
     }
-    expect(bitcoin.deriveHDWallet(mnemonic, "m/0'/0'/0'")).toEqual(
-      bitcoin.deriveHDWallet(mnemonic, "m/0'/0'/0'", {}, "legacy"),
+    expect(bitcoin.deriveHDWallet(mnemonic, { path: "m/0'/0'/0'" })).toEqual(
+      bitcoin.deriveHDWallet(mnemonic, { path: "m/0'/0'/0'", addressType: "legacy" }),
     );
-    expect(bitcoin.deriveHDWallet(mnemonic, "m/0'/0'/0'").addressType).toBe("legacy");
-    expect(bitcoin.deriveHDWallet(mnemonic, "m/84'/0'/0'/0/0", {}, "p2wsh").addressType).toBe(
-      "p2wsh",
-    );
+    expect(bitcoin.deriveHDWallet(mnemonic, { path: "m/0'/0'/0'" }).addressType).toBe("legacy");
+    expect(
+      bitcoin.deriveHDWallet(mnemonic, { path: "m/84'/0'/0'/0/0", addressType: "p2wsh" })
+        .addressType,
+    ).toBe("p2wsh");
   });
 
   it("names the default when none is given, and nothing on chains with one format", () => {
@@ -213,8 +216,10 @@ describe("address type of a wallet", () => {
     for (const chain of ["ethereum", "base", "tron", "solana", "stellar", "aptos"] as const) {
       const blockchain = await blockchains[chain]()();
       const message = `Address type "p2wpkh" is not supported for ${chain}, which has one address format`;
-      expect(() => blockchain.deriveWallet(privateKey, {}, "p2wpkh"), chain).toThrow(message);
-      expect(() => blockchain.generateWallet({}, "p2wpkh"), chain).toThrow(message);
+      expect(() => blockchain.deriveWallet(privateKey, { addressType: "p2wpkh" }), chain).toThrow(
+        message,
+      );
+      expect(() => blockchain.generateWallet({ addressType: "p2wpkh" }), chain).toThrow(message);
       expect(() => blockchain.getAddress(blockchain.getKeyPublic(privateKey), "legacy")).toThrow(
         RangeError,
       );
@@ -237,10 +242,10 @@ describe("address type of a wallet", () => {
       ],
     ] as const) {
       const blockchain = await blockchains[chain]()();
-      expect(() => blockchain.deriveWallet(privateKey, options, addressType), chain).toThrow(
+      expect(() => blockchain.deriveWallet(privateKey, { ...options, addressType }), chain).toThrow(
         message,
       );
-      expect(() => blockchain.generateWallet(options, addressType), chain).toThrow(message);
+      expect(() => blockchain.generateWallet({ ...options, addressType }), chain).toThrow(message);
     }
   });
 
@@ -248,12 +253,12 @@ describe("address type of a wallet", () => {
     const ethereum = await blockchains.ethereum()();
     expect(ethereum.deriveWallet(privateKey, { compressed: false }).keys.public).toMatch(/^04/u);
     const sui = await blockchains.sui()();
-    expect(sui.deriveWallet(privateKey, { compressed: true }, "secp256k1").addressType).toBe(
-      "secp256k1",
-    );
+    expect(
+      sui.deriveWallet(privateKey, { compressed: true, addressType: "secp256k1" }).addressType,
+    ).toBe("secp256k1");
     const bitcoin = await blockchains.bitcoin()();
-    expect(bitcoin.deriveWallet(privateKey, { compressed: false }, "legacy").address).toBe(
-      "1EHNa6Q4Jz2uvNExL497mE43ikXhwF6kZm",
-    );
+    expect(
+      bitcoin.deriveWallet(privateKey, { compressed: false, addressType: "legacy" }).address,
+    ).toBe("1EHNa6Q4Jz2uvNExL497mE43ikXhwF6kZm");
   });
 });

@@ -10,7 +10,9 @@ describe("Bitcoin Cash", () => {
     expect(chain).toBeInstanceOf(NamedBitcoinCash);
     expect(chain.name).toBe("bitcoincash");
     expect(chain.curve).toBe("secp256k1");
-    expect(getBlockchainPath(chain, 0, 1, 3)).toBe("m/44'/145'/0'/1/3");
+    expect(getBlockchainPath(chain, { account: 0, change: 1, addressIndex: 3 })).toBe(
+      "m/44'/145'/0'/1/3",
+    );
     expect(() => new BitcoinCash({ network: "regtest" })).toThrow("mainnet and testnet only");
   });
 
@@ -75,18 +77,29 @@ describe("Bitcoin Cash", () => {
     const chain = new BitcoinCash();
     const bitcoin = new Bitcoin();
     for (const message of Object.values(testMessages)) {
-      const signature = chain.signMessage(message, vector.keyOne.privateKey);
-      expect(signature).toBe(bitcoin.signMessage(message, vector.keyOne.privateKey));
-      expect(chain.verifyMessage(message, signature, vector.keyOne.publicKey)).toBe(true);
-      expect(chain.verifyMessage(`${message}!`, signature, vector.keyOne.publicKey)).toBe(false);
+      const signature = chain.signMessage(message, { privateKey: vector.keyOne.privateKey });
+      expect(signature).toBe(
+        bitcoin.signMessage(message, { privateKey: vector.keyOne.privateKey }),
+      );
+      expect(chain.verifyMessage(message, { signature, publicKey: vector.keyOne.publicKey })).toBe(
+        true,
+      );
+      expect(
+        chain.verifyMessage(`${message}!`, { signature, publicKey: vector.keyOne.publicKey }),
+      ).toBe(false);
     }
-    const core = chain.signMessage("hello", vector.keyOne.privateKey, { recovered: true });
-    expect(core).toBe(bitcoin.signMessage("hello", vector.keyOne.privateKey, { recovered: true }));
+    const core = chain.signMessage("hello", {
+      privateKey: vector.keyOne.privateKey,
+      recovered: true,
+    });
+    expect(core).toBe(
+      bitcoin.signMessage("hello", { privateKey: vector.keyOne.privateKey, recovered: true }),
+    );
     const signer = chain.recoverMessageSigner("hello", core);
     expect(chain.getAddress(signer.publicKey, signer.addressType)).toBe(vector.keyOne.address);
   });
 
   it.each(vector.hd.addresses)("derives %s to the address Trezor shows", (path, address) => {
-    expect(new BitcoinCash().deriveHDWallet(vector.hd.mnemonic, path).address).toBe(address);
+    expect(new BitcoinCash().deriveHDWallet(vector.hd.mnemonic, { path }).address).toBe(address);
   });
 });

@@ -113,11 +113,10 @@ export async function signMessage(
     pattern: PRIVATE_KEY_HEX,
     shape: "64 hex characters",
   });
-  const options = signingOptions({ recovered, signingKey, subaddress });
-  const signature =
-    options === undefined
-      ? blockchain.signMessage(message, privateKey)
-      : blockchain.signMessage(message, privateKey, options);
+  const signature = blockchain.signMessage(message, {
+    privateKey,
+    ...signingOptions({ recovered, signingKey, subaddress }),
+  });
   return {
     content: content(`Signature: ${signature}`),
     details: { chain: blockchain.name, network: blockchain.network, signature, recovered },
@@ -231,7 +230,7 @@ export async function verifyMessage(
         });
   const publicKey = chainPublicKey(args.publicKey, blockchain.name);
   if (core) assertReadableSignature(blockchain, { message, signature });
-  const valid = blockchain.verifyMessage(message, signature, publicKey);
+  const valid = blockchain.verifyMessage(message, { signature, publicKey });
   return {
     content: content(valid ? "Signature is valid" : "Signature is invalid"),
     details: { chain: blockchain.name, network: blockchain.network, valid },

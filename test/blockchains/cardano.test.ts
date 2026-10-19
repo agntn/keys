@@ -164,7 +164,7 @@ describe("Cardano blockchain", () => {
       });
 
       it("generates a valid wallet with enterprise address", () => {
-        const wallet = blockchain.generateWallet(undefined, "enterprise");
+        const wallet = blockchain.generateWallet({ addressType: "enterprise" });
         expect(wallet.keys.private).toMatch(/^[0-9a-f]{64}$/);
         expect(wallet.keys.public).toMatch(/^[0-9a-f]{64}$/);
         expect(wallet.address).toMatch(/^addr1[a-z0-9]+$/);
@@ -172,7 +172,7 @@ describe("Cardano blockchain", () => {
       });
 
       it("generates a valid wallet with reward address", () => {
-        const wallet = blockchain.generateWallet(undefined, "stake");
+        const wallet = blockchain.generateWallet({ addressType: "stake" });
         expect(wallet.keys.private).toMatch(/^[0-9a-f]{64}$/);
         expect(wallet.keys.public).toMatch(/^[0-9a-f]{64}$/);
         expect(wallet.address).toMatch(/^stake1[a-z0-9]+$/);
@@ -251,7 +251,7 @@ describe("Cardano blockchain", () => {
       });
 
       it("generates a valid testnet wallet with enterprise address", () => {
-        const wallet = testnetBlockchain.generateWallet(undefined, "enterprise");
+        const wallet = testnetBlockchain.generateWallet({ addressType: "enterprise" });
         expect(wallet.keys.private).toMatch(/^[0-9a-f]{64}$/);
         expect(wallet.keys.public).toMatch(/^[0-9a-f]{64}$/);
         expect(wallet.address).toMatch(/^addr_test1[a-z0-9]+$/);
@@ -259,7 +259,7 @@ describe("Cardano blockchain", () => {
       });
 
       it("generates a valid testnet wallet with stake address", () => {
-        const wallet = testnetBlockchain.generateWallet(undefined, "stake");
+        const wallet = testnetBlockchain.generateWallet({ addressType: "stake" });
         expect(wallet.keys.private).toMatch(/^[0-9a-f]{64}$/);
         expect(wallet.keys.public).toMatch(/^[0-9a-f]{64}$/);
         expect(wallet.address).toMatch(/^stake_test1[a-z0-9]+$/);
@@ -273,18 +273,22 @@ describe("Cardano blockchain", () => {
 
     it("generates the CIP-1852 path with the change branch as the role", () => {
       expect(blockchain.getDerivationPath()).toBe("m/1852'/1815'/0'/0/0");
-      expect(blockchain.getDerivationPath(1, 1, 4)).toBe("m/1852'/1815'/1'/1/4");
+      expect(blockchain.getDerivationPath({ account: 1, change: 1, addressIndex: 4 })).toBe(
+        "m/1852'/1815'/1'/1/4",
+      );
     });
 
     it("takes the staking and governance roles CIP-1852 lists and nothing past them", () => {
-      expect(blockchain.getDerivationPath(0, 2)).toBe("m/1852'/1815'/0'/2/0");
-      expect(blockchain.getDerivationPath(0, 5)).toBe("m/1852'/1815'/0'/5/0");
-      expect(() => blockchain.getDerivationPath(0, 6)).toThrow(RangeError);
+      expect(blockchain.getDerivationPath({ account: 0, change: 2 })).toBe("m/1852'/1815'/0'/2/0");
+      expect(blockchain.getDerivationPath({ account: 0, change: 5 })).toBe("m/1852'/1815'/0'/5/0");
+      expect(() => blockchain.getDerivationPath({ account: 0, change: 6 })).toThrow(RangeError);
     });
 
     it("refuses to fake CIP-1852 with the shared SLIP-10 walk", () => {
       expect(() =>
-        blockchain.deriveHDWallet(bip39TestVectors.mnemonic, blockchain.getDerivationPath()),
+        blockchain.deriveHDWallet(bip39TestVectors.mnemonic, {
+          path: blockchain.getDerivationPath(),
+        }),
       ).toThrow("CIP-1852");
     });
   });

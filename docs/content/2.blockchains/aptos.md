@@ -41,7 +41,7 @@ aptosChain.validateAddress("7e08ac7940568c91564ddc6f5f3bf91b15a9334194ab7855daea
 SLIP-10, hardened segments only:
 
 ```js
-aptosChain.deriveHDWallet(mnemonic, "m/44'/637'/0'/0'/0'").address;
+aptosChain.deriveHDWallet(mnemonic, { path: "m/44'/637'/0'/0'/0'" }).address;
 ```
 
 That is the path Petra uses for the first account.

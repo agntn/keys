@@ -68,7 +68,7 @@ const mnemonic =
 const btc = useBlockchain(await blockchains.bitcoin()());
 
 for (const path of ["m/44'/0'/0'/0/0", "m/49'/0'/0'/0/0", "m/84'/0'/0'/0/0", "m/86'/0'/0'/0/0"]) {
-  console.log(path, btc.deriveHDWallet(mnemonic, path).address);
+  console.log(path, btc.deriveHDWallet(mnemonic, { path }).address);
 }
 ```
 
@@ -79,14 +79,14 @@ m/84'/0'/0'/0/0 bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu
 m/86'/0'/0'/0/0 bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr
 ```
 
-Nobody passed an address type. 44 is legacy, 49 is P2SH, 84 is segwit, 86 is taproot. The path already said which one you meant. Disagree with your own path? Pass the type as the fourth argument.
+Nobody passed an address type. 44 is legacy, 49 is P2SH, 84 is segwit, 86 is taproot. The path already said which one you meant. Disagree with your own path? Put `addressType` right next to it.
 
 Only have the public half? The account's extended public key walks the normal levels under it:
 
 ```ts
 const zpub =
   "zpub6rFR7y4Q2AijBEqTUquhVz398htDFrtymD9xYYfG1m4wAcvPhXNfE3EfH1r1ADqtfSdVCToUG868RvUUkgDKf31mGDtKsAYz2oz2AGutZYs";
-console.log(btc.deriveXpubWallet(zpub, "m/0/0"));
+console.log(btc.deriveXpubWallet(zpub, { path: "m/0/0" }));
 ```
 
 ```
@@ -100,7 +100,7 @@ console.log(btc.deriveXpubWallet(zpub, "m/0/0"));
 }
 ```
 
-Same address as `m/84'/0'/0'/0/0` above, and the `z` picked segwit. Don't lean on that too hard. Plenty of wallets export a BIP84 account as a plain `xpub`, so pass `"segwit"` as the third argument. Hardened levels and `xprv` get refused.
+Same address as `m/84'/0'/0'/0/0` above, and the `z` picked segwit. Don't lean on that too hard. Plenty of wallets export a BIP84 account as a plain `xpub`, so pass `addressType: "segwit"` with the path. Hardened levels and `xprv` get refused.
 
 ## 🧠 Library
 
@@ -110,9 +110,9 @@ import { convertPublicKey } from "@agntn/keys/secp256k1";
 import { encode } from "@agntn/keys/wif";
 
 const sol = useBlockchain(await blockchains.solana()());
-const wallet = sol.deriveHDWallet(mnemonic, "m/44'/501'/0'/0'", { passphrase: "TREZOR" });
-const signature = sol.signMessage("hello", wallet.keys.private);
-sol.verifyMessage("hello", signature, wallet.keys.public); // true
+const wallet = sol.deriveHDWallet(mnemonic, { path: "m/44'/501'/0'/0'", passphrase: "TREZOR" });
+const signature = sol.signMessage("hello", { privateKey: wallet.keys.private });
+sol.verifyMessage("hello", { signature, publicKey: wallet.keys.public }); // true
 sol.validateAddress(wallet.address); // true
 
 const btc = useBlockchain(await blockchains.bitcoin()());
@@ -134,7 +134,7 @@ const puzzle =
   "path mad alien apology escape spare miss goddess leopard crime visit clock start first blade guard close barrel term screen matrix toy ghost shine";
 
 console.log(inspect(puzzle));
-const wallet = btc.deriveHDWallet(puzzle, "m/84'/0'/0'/0/0", { allowInvalidChecksum: true });
+const wallet = btc.deriveHDWallet(puzzle, { path: "m/84'/0'/0'/0/0", allowInvalidChecksum: true });
 console.log(wallet.address);
 console.log(wallet.warnings);
 console.log(getMnemonicWordCandidates(puzzle.replace(/shine$/, "?")));

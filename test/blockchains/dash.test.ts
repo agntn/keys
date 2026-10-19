@@ -24,7 +24,9 @@ describe("Dash", () => {
     expect(chain).toBeInstanceOf(NamedDash);
     expect(chain.name).toBe("dash");
     expect(chain.curve).toBe("secp256k1");
-    expect(getBlockchainPath(chain, 0, 1, 3)).toBe("m/44'/5'/0'/1/3");
+    expect(getBlockchainPath(chain, { account: 0, change: 1, addressIndex: 3 })).toBe(
+      "m/44'/5'/0'/1/3",
+    );
     expect(() => new Dash({ network: "regtest" })).toThrow("mainnet and testnet only");
   });
 
@@ -72,12 +74,12 @@ describe("Dash", () => {
     const { privateKey, message, address, signature } = vector.signed;
     const publicKey = chain.getKeyPublic(privateKey);
     expect(chain.getAddress(publicKey)).toBe(address);
-    const signed = chain.signMessage(message, privateKey);
+    const signed = chain.signMessage(message, { privateKey });
     expect(signed).toBe(compactToRS(signature));
-    expect(chain.verifyMessage(message, signed, publicKey)).toBe(true);
-    expect(chain.verifyMessage(`${message}!`, signed, publicKey)).toBe(false);
-    expect(chain.signMessage(message, privateKey, { recovered: true })).toBe(signature);
-    expect(chain.verifyMessage(message, signature, publicKey)).toBe(true);
+    expect(chain.verifyMessage(message, { signature: signed, publicKey })).toBe(true);
+    expect(chain.verifyMessage(`${message}!`, { signature: signed, publicKey })).toBe(false);
+    expect(chain.signMessage(message, { privateKey, recovered: true })).toBe(signature);
+    expect(chain.verifyMessage(message, { signature, publicKey })).toBe(true);
     expect(chain.recoverMessageSigner(message, signature)).toEqual({
       publicKey,
       addressType: "legacy",
@@ -89,18 +91,22 @@ describe("Dash", () => {
     const bitcoin = new Bitcoin();
     const { privateKey, publicKeyCompressed } = secp256k1TestVectors;
     for (const message of Object.values(testMessages)) {
-      const signature = bitcoin.signMessage(message, privateKey);
-      expect(chain.signMessage(message, privateKey)).not.toBe(signature);
-      expect(chain.verifyMessage(message, signature, publicKeyCompressed)).toBe(false);
+      const signature = bitcoin.signMessage(message, { privateKey });
+      expect(chain.signMessage(message, { privateKey })).not.toBe(signature);
+      expect(chain.verifyMessage(message, { signature, publicKey: publicKeyCompressed })).toBe(
+        false,
+      );
     }
-    const core = new Bitcoin().signMessage("hello", privateKey, { recovered: true });
-    expect(chain.verifyMessage("hello", core, publicKeyCompressed)).toBe(false);
+    const core = new Bitcoin().signMessage("hello", { privateKey, recovered: true });
+    expect(chain.verifyMessage("hello", { signature: core, publicKey: publicKeyCompressed })).toBe(
+      false,
+    );
   });
 
   it("derives the receive address Ledger Live gives for the public test mnemonic", () => {
     const chain = new Dash();
-    expect(chain.getDerivationPath(0)).toBe(vector.hd.path);
-    expect(chain.deriveHDWallet(bip39TestVectors.mnemonic, vector.hd.path).address).toBe(
+    expect(chain.getDerivationPath({ account: 0 })).toBe(vector.hd.path);
+    expect(chain.deriveHDWallet(bip39TestVectors.mnemonic, { path: vector.hd.path }).address).toBe(
       vector.hd.address,
     );
   });
@@ -109,12 +115,12 @@ describe("Dash", () => {
     "derives %s to a P2PKH address whatever the purpose",
     (path) => {
       const chain = new Dash();
-      const wallet = chain.deriveHDWallet(bip39TestVectors.mnemonic, path);
+      const wallet = chain.deriveHDWallet(bip39TestVectors.mnemonic, { path });
       expect(wallet.address).toBe(chain.getAddress(wallet.keys.public));
       expect(wallet.address).toMatch(/^X/u);
-      expect(() => chain.deriveHDWallet(bip39TestVectors.mnemonic, path, {}, "p2sh")).toThrow(
-        "legacy P2PKH only",
-      );
+      expect(() =>
+        chain.deriveHDWallet(bip39TestVectors.mnemonic, { path, addressType: "p2sh" }),
+      ).toThrow("legacy P2PKH only");
     },
   );
 });

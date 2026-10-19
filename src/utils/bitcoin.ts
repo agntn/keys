@@ -13,6 +13,7 @@ import {
 import { decodeCashAddr, encodeCashAddr } from "./cashaddr.ts";
 import { SLIP132_FORMATS, type ExtendedKeyFormats } from "./extended-key.ts";
 import { normalizeHardenedMarkers } from "./hd-index.ts";
+import { assertSignOptions, assertVerifyOptions } from "./options.ts";
 import {
   isCompactSignature,
   recoverCompact,
@@ -35,7 +36,8 @@ import type {
   KeyOptions,
   MessageSigner,
   Options,
-  SigningOptions,
+  SignMessageOptions,
+  VerifyMessageOptions,
   Wallet,
 } from "../types.ts";
 
@@ -63,12 +65,25 @@ interface P2PKHNetworkParams {
   readonly bytesVersionP2SH?: number;
 }
 
+/** A chain that writes P2PKH only: its name and its version bytes on each network. */
+interface P2PKHChainParams {
+  /** Chain name as error messages spell it, such as `Bitcoin SV`. */
+  readonly label: string;
+  readonly networks: Readonly<Record<"mainnet" | "testnet", P2PKHNetworkParams>>;
+}
+
 /** How a CashAddr chain spells its prefixes and which payloads its node pays to. */
 interface CashAddrParams {
   /** Lowercase prefix for each network. */
   readonly prefixes: Readonly<Record<"mainnet" | "testnet", string>>;
   /** Hash lengths the node turns into a destination, indexed by address type. */
   readonly hashLengths: readonly (readonly number[])[];
+}
+
+/** A CashAddr chain: its name, prefixes and payloads. */
+interface CashAddrChainParams extends CashAddrParams {
+  /** Chain name as error messages spell it, such as `Bitcoin Cash`. */
+  readonly label: string;
 }
 
 interface NetworkParams {
@@ -181,42 +196,37 @@ export abstract class AbstractBitcoinMessageBlockchain extends AbstractBlockchai
   /**
    * Sign as 64 bytes of `r||s` hex, or with `recovered` as the base64 Core's `signmessage` prints.
    * @param message - The message to sign
-   * @param keyPrivate - The private key as hex
-   * @param options - `recovered` for Core's base64 form, `compressed` for its header
+   * @param options - The private key as hex; `recovered` for Core's base64 form, `compressed`
+   * for its header
    * @returns {string} The signature
    */
-  override signMessage(
-    message: string | Uint8Array,
-    keyPrivate: string,
-    options?: SigningOptions,
-  ): string {
+  override signMessage(message: string | Uint8Array, options: SignMessageOptions): string {
+    assertSignOptions(options);
+    const { privateKey, ...signingOptions } = options;
     const hash = this.hashWithMessagePreamble(message);
-    if (readRecoveredFlag(options)) {
-      return signCompact(hash, keyPrivate, options?.compressed !== false);
+    if (readRecoveredFlag(signingOptions)) {
+      return signCompact(hash, privateKey, signingOptions.compressed !== false);
     }
-    return genericSignMessage(hash, keyPrivate, {
-      ...options,
+    return genericSignMessage(hash, privateKey, {
+      ...signingOptions,
       curve: "secp256k1",
       hash: false,
     });
   }
 
-  override verifyMessage(
-    message: string | Uint8Array,
-    signature: string,
-    keyPublic: string,
-    options?: SigningOptions,
-  ): boolean {
+  override verifyMessage(message: string | Uint8Array, options: VerifyMessageOptions): boolean {
+    assertVerifyOptions(options);
+    const { signature, publicKey, ...signingOptions } = options;
     if (hasRecoveryByte(signature)) {
       return false;
     }
     const hash = this.hashWithMessagePreamble(message);
     if (isCompactSignature(signature)) {
-      return verifyCompact(hash, signature, keyPublic);
+      return verifyCompact(hash, signature, publicKey);
     }
     try {
-      return genericVerifyMessage(hash, signature, keyPublic, {
-        ...options,
+      return genericVerifyMessage(hash, signature, publicKey, {
+        ...signingOptions,
         curve: "secp256k1",
         hash: false,
       });
@@ -271,20 +281,17 @@ export abstract class AbstractBitcoinBlockchain extends AbstractBitcoinMessageBl
   /**
    * Path purpose selects the address format unless a type is provided.
    * @param mnemonic - English BIP39 mnemonic
-   * @param path - Derivation path such as `m/84'/0'/0'/0/0`
-   * @param options - Key options plus an optional BIP39 passphrase
-   * @param addressType - Explicit address type that wins over the purpose
+   * @param options - Derivation path such as `m/84'/0'/0'/0/0`, key options, an optional BIP39
+   * passphrase and an explicit address type that wins over the purpose
    * @returns {Wallet} The wallet at the path
    */
-  override deriveHDWallet(
-    mnemonic: string,
-    path: string,
-    options?: HDWalletOptions,
-    addressType?: AddressType,
-  ): Wallet {
-    const purpose = /^[mM]'?\/(\d+)'/u.exec(normalizeHardenedMarkers(path))?.[1];
+  override deriveHDWallet(mnemonic: string, options: HDWalletOptions): Wallet {
+    const purpose = /^[mM]'?\/(\d+)'/u.exec(normalizeHardenedMarkers(options.path))?.[1];
     const inferredType = purpose === undefined ? undefined : PURPOSE_ADDRESS_TYPES[Number(purpose)];
-    return super.deriveHDWallet(mnemonic, path, options, addressType ?? inferredType);
+    return super.deriveHDWallet(mnemonic, {
+      ...options,
+      addressType: options.addressType ?? inferredType,
+    });
   }
 
   /**
@@ -333,15 +340,11 @@ export abstract class AbstractBitcoinP2PKHBlockchain extends AbstractBitcoinMess
 
   /**
    * @param options - Chain options; the network must be `mainnet` or `testnet`
-   * @param label - Chain name as error messages spell it, such as `Bitcoin SV`
-   * @param networks - Version bytes for each network
+   * @param chain - Chain name as error messages spell it and version bytes for each network
    */
-  constructor(
-    options: Options | undefined,
-    label: string,
-    networks: Readonly<Record<"mainnet" | "testnet", P2PKHNetworkParams>>,
-  ) {
+  constructor(options: Options | undefined, chain: P2PKHChainParams) {
     super(options);
+    const { label, networks } = chain;
     if (this.network !== "mainnet" && this.network !== "testnet") {
       throw new RangeError(`${label} supports mainnet and testnet only`);
     }
@@ -388,11 +391,12 @@ export abstract class AbstractCashAddrBlockchain extends AbstractBitcoinMessageB
 
   /**
    * @param options - Chain options; the network must be `mainnet` or `testnet`
-   * @param label - Chain name as error messages spell it, such as `Bitcoin Cash`
-   * @param params - Prefixes for each network and the payloads the node pays to
+   * @param params - Chain name as error messages spell it, prefixes for each network and the
+   * payloads the node pays to
    */
-  constructor(options: Options | undefined, label: string, params: CashAddrParams) {
+  constructor(options: Options | undefined, params: CashAddrChainParams) {
     super(options);
+    const { label } = params;
     if (this.network !== "mainnet" && this.network !== "testnet") {
       throw new RangeError(`${label} supports mainnet and testnet only`);
     }

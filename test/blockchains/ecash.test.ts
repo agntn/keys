@@ -37,7 +37,9 @@ describe("eCash", () => {
     expect(chain).toBeInstanceOf(NamedECash);
     expect(chain.name).toBe("ecash");
     expect(chain.curve).toBe("secp256k1");
-    expect(getBlockchainPath(chain, 0, 1, 3)).toBe("m/44'/899'/0'/1/3");
+    expect(getBlockchainPath(chain, { account: 0, change: 1, addressIndex: 3 })).toBe(
+      "m/44'/899'/0'/1/3",
+    );
     expect(() => new ECash({ network: "regtest" })).toThrow(
       "eCash supports mainnet and testnet only",
     );
@@ -120,9 +122,9 @@ describe("eCash", () => {
     expect(hex.encode(bitcoinAbcDigest(message))).toBe(digest);
     const rs = hex.encode(base64.decode(signature).slice(1));
     const publicKey = chain.getKeyPublic(privateKey);
-    expect(chain.verifyMessage(message, rs, publicKey)).toBe(true);
-    expect(chain.verifyMessage(`${message}!`, rs, publicKey)).toBe(false);
-    expect(chain.verifyMessage(message, signature, publicKey)).toBe(true);
+    expect(chain.verifyMessage(message, { signature: rs, publicKey })).toBe(true);
+    expect(chain.verifyMessage(`${message}!`, { signature: rs, publicKey })).toBe(false);
+    expect(chain.verifyMessage(message, { signature, publicKey })).toBe(true);
     expect(chain.recoverMessageSigner(message, signature)).toEqual({
       publicKey,
       addressType: "legacy",
@@ -132,12 +134,17 @@ describe("eCash", () => {
   it("signs the digest Bitcoin ABC signs and round trips", () => {
     const chain = new ECash();
     const { privateKey, publicKeyCompressed } = secp256k1TestVectors;
-    const signed = chain.signMessage(testMessages.simple, privateKey);
+    const signed = chain.signMessage(testMessages.simple, { privateKey });
     const expected = secp256k1.sign(bitcoinAbcDigest(testMessages.simple), hex.decode(privateKey), {
       prehash: false,
     });
     expect(signed).toBe(hex.encode(expected));
-    expect(chain.verifyMessage(testMessages.simple, signed, publicKeyCompressed)).toBe(true);
+    expect(
+      chain.verifyMessage(testMessages.simple, {
+        signature: signed,
+        publicKey: publicKeyCompressed,
+      }),
+    ).toBe(true);
   });
 
   it("uses its own preamble, so a Bitcoin Cash signature does not carry over", () => {
@@ -145,23 +152,28 @@ describe("eCash", () => {
     const bitcoinCash = new BitcoinCash();
     const { privateKey, publicKeyCompressed } = secp256k1TestVectors;
     for (const message of Object.values(testMessages)) {
-      const signature = bitcoinCash.signMessage(message, privateKey);
-      expect(chain.signMessage(message, privateKey)).not.toBe(signature);
-      expect(chain.verifyMessage(message, signature, publicKeyCompressed)).toBe(false);
+      const signature = bitcoinCash.signMessage(message, { privateKey });
+      expect(chain.signMessage(message, { privateKey })).not.toBe(signature);
+      expect(chain.verifyMessage(message, { signature, publicKey: publicKeyCompressed })).toBe(
+        false,
+      );
     }
-    const core = bitcoinCash.signMessage("hello", privateKey, { recovered: true });
-    expect(chain.verifyMessage("hello", core, publicKeyCompressed)).toBe(false);
+    const core = bitcoinCash.signMessage("hello", { privateKey, recovered: true });
+    expect(chain.verifyMessage("hello", { signature: core, publicKey: publicKeyCompressed })).toBe(
+      false,
+    );
   });
 
   it("derives bip_utils' first receive address on each network", () => {
     const [mainnetPath, mainnetAddress] = vector.hd.mainnet;
     const [testnetPath, testnetAddress] = vector.hd.testnet;
-    expect(new ECash().deriveHDWallet(bip39TestVectors.mnemonic, mainnetPath).address).toBe(
-      mainnetAddress,
-    );
     expect(
-      new ECash({ network: "testnet" }).deriveHDWallet(bip39TestVectors.mnemonic, testnetPath)
-        .address,
+      new ECash().deriveHDWallet(bip39TestVectors.mnemonic, { path: mainnetPath }).address,
+    ).toBe(mainnetAddress);
+    expect(
+      new ECash({ network: "testnet" }).deriveHDWallet(bip39TestVectors.mnemonic, {
+        path: testnetPath,
+      }).address,
     ).toBe(testnetAddress);
   });
 
@@ -173,12 +185,12 @@ describe("eCash", () => {
     "derives %s to a P2PKH address whatever the path",
     (path) => {
       const chain = new ECash();
-      const wallet = chain.deriveHDWallet(bip39TestVectors.mnemonic, path);
+      const wallet = chain.deriveHDWallet(bip39TestVectors.mnemonic, { path });
       expect(wallet.address).toBe(chain.getAddress(wallet.keys.public));
       expect(wallet.address).toMatch(/^ecash:q/u);
-      expect(() => chain.deriveHDWallet(bip39TestVectors.mnemonic, path, {}, "p2sh")).toThrow(
-        "legacy P2PKH only",
-      );
+      expect(() =>
+        chain.deriveHDWallet(bip39TestVectors.mnemonic, { path, addressType: "p2sh" }),
+      ).toThrow("legacy P2PKH only");
     },
   );
 });

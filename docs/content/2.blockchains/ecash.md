@@ -59,9 +59,9 @@ BIP32 on `m/44'/899'/account'/change/index`, the coin type SLIP-0044 gives XEC a
 const mnemonic =
   "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
-xecChain.deriveHDWallet(mnemonic, "m/44'/899'/0'/0/0").address;
+xecChain.deriveHDWallet(mnemonic, { path: "m/44'/899'/0'/0/0" }).address;
 // ecash:qpluxjhhlxfjwsymf9nmctvsdrwzwygadsh2pq0ang
-xecChain.deriveHDWallet(mnemonic, "m/44'/145'/0'/0/0").address;
+xecChain.deriveHDWallet(mnemonic, { path: "m/44'/145'/0'/0/0" }).address;
 // ecash:qqyx49mu0kkn9ftfj6hje6g2wfer34yfnqdxfumtxd, what bip_utils gives on that path
 ```
 

@@ -142,23 +142,33 @@ describe("Monero", () => {
     it.each(vector.subaddresses)(
       "lists account $account, index $index like monero-wallet-cli",
       ({ account, index, address }) => {
-        expect(blockchain.getSubaddress(first.publicKey, first.viewKey, account, index)).toBe(
-          address,
-        );
+        expect(
+          blockchain.getSubaddress(first.publicKey, { viewKey: first.viewKey, account, index }),
+        ).toBe(address);
         expect(blockchain.validateAddress(address)).toBe(true);
       },
     );
 
     it("gives the standard address and the wallet's own keys at account 0, index 0", () => {
-      expect(blockchain.getSubaddress(first.publicKey, first.viewKey, 0, 0)).toBe(first.address);
-      expect(blockchain.getSubaddressKeyPublic(first.publicKey, first.viewKey, 0, 0)).toBe(
-        first.publicKey,
-      );
+      expect(
+        blockchain.getSubaddress(first.publicKey, { viewKey: first.viewKey, account: 0, index: 0 }),
+      ).toBe(first.address);
+      expect(
+        blockchain.getSubaddressKeyPublic(first.publicKey, {
+          viewKey: first.viewKey,
+          account: 0,
+          index: 0,
+        }),
+      ).toBe(first.publicKey);
     });
 
     it("writes a subaddress from its own key pair", () => {
       const [subaddress] = vector.subaddresses;
-      const pair = blockchain.getSubaddressKeyPublic(first.publicKey, first.viewKey, 0, 1);
+      const pair = blockchain.getSubaddressKeyPublic(first.publicKey, {
+        viewKey: first.viewKey,
+        account: 0,
+        index: 1,
+      });
       expect(blockchain.getAddress(pair, "subaddress")).toBe(subaddress.address);
     });
 
@@ -176,7 +186,13 @@ describe("Monero", () => {
       "writes both kinds on $network",
       ({ network, subaddress, integrated }) => {
         const chain = new Monero({ network });
-        expect(chain.getSubaddress(reduced.publicKey, reduced.viewKey, 0, 1)).toBe(subaddress);
+        expect(
+          chain.getSubaddress(reduced.publicKey, {
+            viewKey: reduced.viewKey,
+            account: 0,
+            index: 1,
+          }),
+        ).toBe(subaddress);
         expect(chain.getIntegratedAddress(reduced.publicKey, vector.integrated.paymentId)).toBe(
           integrated,
         );
@@ -189,33 +205,48 @@ describe("Monero", () => {
 
     it("refuses a view key from another wallet, or one wallets would not keep", () => {
       const [, second] = vector.wallets;
-      expect(() => blockchain.getSubaddress(first.publicKey, second.viewKey, 0, 1)).toThrow(
-        "does not belong",
-      );
-      expect(() => blockchain.getSubaddress(first.publicKey, "ff".repeat(32), 0, 1)).toThrow(
-        "below l",
-      );
-      expect(() => blockchain.getSubaddress(first.publicKey, "00".repeat(31), 0, 1)).toThrow(
-        "32 bytes",
-      );
+      expect(() =>
+        blockchain.getSubaddress(first.publicKey, {
+          viewKey: second.viewKey,
+          account: 0,
+          index: 1,
+        }),
+      ).toThrow("does not belong");
+      expect(() =>
+        blockchain.getSubaddress(first.publicKey, {
+          viewKey: "ff".repeat(32),
+          account: 0,
+          index: 1,
+        }),
+      ).toThrow("below l");
+      expect(() =>
+        blockchain.getSubaddress(first.publicKey, {
+          viewKey: "00".repeat(31),
+          account: 0,
+          index: 1,
+        }),
+      ).toThrow("32 bytes");
     });
 
     it.each([-1, 1.5, 2 ** 32])("refuses index %d outside uint32", (index) => {
-      expect(() => blockchain.getSubaddress(first.publicKey, first.viewKey, 0, index)).toThrow(
-        "address index must be an integer from 0 to 4294967295",
-      );
-      expect(() => blockchain.getSubaddress(first.publicKey, first.viewKey, index, 0)).toThrow(
-        "account must be",
-      );
+      expect(() =>
+        blockchain.getSubaddress(first.publicKey, { viewKey: first.viewKey, account: 0, index }),
+      ).toThrow("address index must be an integer from 0 to 4294967295");
+      expect(() =>
+        blockchain.getSubaddress(first.publicKey, {
+          viewKey: first.viewKey,
+          account: index,
+          index: 0,
+        }),
+      ).toThrow("account must be");
     });
 
     it("takes the largest index wallet2 keeps", () => {
-      const address = blockchain.getSubaddress(
-        first.publicKey,
-        first.viewKey,
-        2 ** 32 - 1,
-        2 ** 32 - 1,
-      );
+      const address = blockchain.getSubaddress(first.publicKey, {
+        viewKey: first.viewKey,
+        account: 2 ** 32 - 1,
+        index: 2 ** 32 - 1,
+      });
       expect(blockchain.validateAddress(address)).toBe(true);
     });
 
@@ -228,11 +259,13 @@ describe("Monero", () => {
     });
 
     it("keeps wallets on their standard address", () => {
-      expect(() => blockchain.deriveWallet(first.spendKey, {}, "subaddress")).toThrow(
+      expect(() => blockchain.deriveWallet(first.spendKey, { addressType: "subaddress" })).toThrow(
         "account and index",
       );
-      expect(() => blockchain.generateWallet({}, "subaddress")).toThrow("account and index");
-      expect(() => blockchain.deriveSeedWallet(first.seed, {}, "integrated")).toThrow(
+      expect(() => blockchain.generateWallet({ addressType: "subaddress" })).toThrow(
+        "account and index",
+      );
+      expect(() => blockchain.deriveSeedWallet(first.seed, { addressType: "integrated" })).toThrow(
         "standard address",
       );
       expect(() => blockchain.getAddress(first.publicKey, "integrated")).toThrow(
@@ -255,7 +288,11 @@ describe("Monero", () => {
   });
 
   describe("Message signatures", () => {
-    const subaddress = blockchain.getSubaddressKeyPublic(first.publicKey, first.viewKey, 0, 1);
+    const subaddress = blockchain.getSubaddressKeyPublic(first.publicKey, {
+      viewKey: first.viewKey,
+      account: 0,
+      index: 1,
+    });
 
     /* Swaps r for r + l: the same point, but a scalar wallet2 refuses. */
     function withUnreducedR(signature: string): string {
@@ -266,32 +303,75 @@ describe("Monero", () => {
     }
 
     it.each(vector.signatures)("checks what monero-wallet-rpc signed for $message", (entry) => {
-      expect(blockchain.verifyMessage(entry.message, entry.spend, first.publicKey)).toBe(true);
-      expect(blockchain.verifyMessage(entry.message, entry.view, first.publicKey)).toBe(true);
-      expect(blockchain.verifyMessage(`${entry.message}!`, entry.spend, first.publicKey)).toBe(
-        false,
-      );
-      expect(blockchain.verifyMessage(entry.message, entry.view, reduced.publicKey)).toBe(false);
+      expect(
+        blockchain.verifyMessage(entry.message, {
+          signature: entry.spend,
+          publicKey: first.publicKey,
+        }),
+      ).toBe(true);
+      expect(
+        blockchain.verifyMessage(entry.message, {
+          signature: entry.view,
+          publicKey: first.publicKey,
+        }),
+      ).toBe(true);
+      expect(
+        blockchain.verifyMessage(`${entry.message}!`, {
+          signature: entry.spend,
+          publicKey: first.publicKey,
+        }),
+      ).toBe(false);
+      expect(
+        blockchain.verifyMessage(entry.message, {
+          signature: entry.view,
+          publicKey: reduced.publicKey,
+        }),
+      ).toBe(false);
     });
 
     it("hashes a length past 127 as a two-byte varint", () => {
       const message = "monero".repeat(30);
-      expect(blockchain.verifyMessage(message, vector.longSignature, first.publicKey)).toBe(true);
+      expect(
+        blockchain.verifyMessage(message, {
+          signature: vector.longSignature,
+          publicKey: first.publicKey,
+        }),
+      ).toBe(true);
     });
 
     it("checks a subaddress signature against the pair of that subaddress", () => {
-      expect(blockchain.verifyMessage("foo", vector.subaddressSignature, subaddress)).toBe(true);
-      expect(blockchain.verifyMessage("foo", vector.subaddressSignature, first.publicKey)).toBe(
-        false,
-      );
+      expect(
+        blockchain.verifyMessage("foo", {
+          signature: vector.subaddressSignature,
+          publicKey: subaddress,
+        }),
+      ).toBe(true);
+      expect(
+        blockchain.verifyMessage("foo", {
+          signature: vector.subaddressSignature,
+          publicKey: first.publicKey,
+        }),
+      ).toBe(false);
     });
 
     it("checks a view key signature from another account", () => {
-      const pair = blockchain.getSubaddressKeyPublic(first.publicKey, first.viewKey, 1, 2);
-      expect(blockchain.verifyMessage("foo", vector.subaddressViewSignature, pair)).toBe(true);
-      expect(blockchain.verifyMessage("foo", vector.subaddressViewSignature, subaddress)).toBe(
-        false,
-      );
+      const pair = blockchain.getSubaddressKeyPublic(first.publicKey, {
+        viewKey: first.viewKey,
+        account: 1,
+        index: 2,
+      });
+      expect(
+        blockchain.verifyMessage("foo", {
+          signature: vector.subaddressViewSignature,
+          publicKey: pair,
+        }),
+      ).toBe(true);
+      expect(
+        blockchain.verifyMessage("foo", {
+          signature: vector.subaddressViewSignature,
+          publicKey: subaddress,
+        }),
+      ).toBe(false);
     });
 
     it.each([
@@ -300,93 +380,128 @@ describe("Monero", () => {
     ] as const)(
       "signs as subaddress %i/%i with the %s key",
       (account, addressIndex, signingKey) => {
-        const pair = blockchain.getSubaddressKeyPublic(
-          first.publicKey,
-          first.viewKey,
+        const pair = blockchain.getSubaddressKeyPublic(first.publicKey, {
+          viewKey: first.viewKey,
           account,
-          addressIndex,
-        );
-        const signature = blockchain.signMessage("foo", first.spendKey, {
+          index: addressIndex,
+        });
+        const signature = blockchain.signMessage("foo", {
+          privateKey: first.spendKey,
           signingKey,
           account,
           addressIndex,
         });
-        expect(blockchain.verifyMessage("foo", signature, pair)).toBe(true);
-        expect(blockchain.verifyMessage("foo", signature, first.publicKey)).toBe(false);
+        expect(blockchain.verifyMessage("foo", { signature, publicKey: pair })).toBe(true);
+        expect(blockchain.verifyMessage("foo", { signature, publicKey: first.publicKey })).toBe(
+          false,
+        );
       },
     );
 
     it("signs as the standard address at 0/0", () => {
-      const signature = blockchain.signMessage("foo", first.spendKey, {
+      const signature = blockchain.signMessage("foo", {
+        privateKey: first.spendKey,
         account: 0,
         addressIndex: 0,
       });
-      expect(blockchain.verifyMessage("foo", signature, first.publicKey)).toBe(true);
+      expect(blockchain.verifyMessage("foo", { signature, publicKey: first.publicKey })).toBe(true);
     });
 
     it("refuses a subaddress index past uint32", () => {
       expect(() =>
-        blockchain.signMessage("foo", first.spendKey, { addressIndex: 2 ** 32 }),
+        blockchain.signMessage("foo", { privateKey: first.spendKey, addressIndex: 2 ** 32 }),
       ).toThrow("address index must be an integer");
-      expect(() => blockchain.signMessage("foo", first.spendKey, { account: -1 })).toThrow(
-        "account must be an integer",
-      );
+      expect(() =>
+        blockchain.signMessage("foo", { privateKey: first.spendKey, account: -1 }),
+      ).toThrow("account must be an integer");
     });
 
     it("reads SigV1 over the bare message under either key", () => {
       const { spend, view } = vector.v1Signatures;
-      expect(blockchain.verifyMessage("foo", spend, first.publicKey)).toBe(true);
-      expect(blockchain.verifyMessage("foo", view, first.publicKey)).toBe(true);
       expect(
-        blockchain.verifyMessage("foo", spend.replace("SigV1", "SigV2"), first.publicKey),
+        blockchain.verifyMessage("foo", { signature: spend, publicKey: first.publicKey }),
+      ).toBe(true);
+      expect(blockchain.verifyMessage("foo", { signature: view, publicKey: first.publicKey })).toBe(
+        true,
+      );
+      expect(
+        blockchain.verifyMessage("foo", {
+          signature: spend.replace("SigV1", "SigV2"),
+          publicKey: first.publicKey,
+        }),
       ).toBe(false);
     });
 
     it("signs SigV2 with the spend key, or the view key when asked", () => {
-      const spend = blockchain.signMessage("foo", first.spendKey);
-      const view = blockchain.signMessage("foo", first.spendKey, { signingKey: "view" });
+      const spend = blockchain.signMessage("foo", { privateKey: first.spendKey });
+      const view = blockchain.signMessage("foo", {
+        privateKey: first.spendKey,
+        signingKey: "view",
+      });
       expect(spend).toMatch(/^SigV2[1-9A-HJ-NP-Za-km-z]{88}$/u);
-      expect(blockchain.verifyMessage("foo", spend, first.publicKey)).toBe(true);
-      expect(blockchain.verifyMessage("foo", view, first.publicKey)).toBe(true);
-      expect(blockchain.verifyMessage("bar", view, first.publicKey)).toBe(false);
+      expect(
+        blockchain.verifyMessage("foo", { signature: spend, publicKey: first.publicKey }),
+      ).toBe(true);
+      expect(blockchain.verifyMessage("foo", { signature: view, publicKey: first.publicKey })).toBe(
+        true,
+      );
+      expect(blockchain.verifyMessage("bar", { signature: view, publicKey: first.publicKey })).toBe(
+        false,
+      );
     });
 
     it("signs bytes like the same text", () => {
-      const signature = blockchain.signMessage(new TextEncoder().encode("foo"), first.spendKey);
-      expect(blockchain.verifyMessage("foo", signature, first.publicKey)).toBe(true);
+      const signature = blockchain.signMessage(new TextEncoder().encode("foo"), {
+        privateKey: first.spendKey,
+      });
+      expect(blockchain.verifyMessage("foo", { signature, publicKey: first.publicKey })).toBe(true);
     });
 
     it("refuses a response that is not reduced, as check_signature does", () => {
       const [entry] = vector.signatures;
       expect(
-        blockchain.verifyMessage(entry.message, withUnreducedR(entry.spend), first.publicKey),
+        blockchain.verifyMessage(entry.message, {
+          signature: withUnreducedR(entry.spend),
+          publicKey: first.publicKey,
+        }),
       ).toBe(false);
     });
 
     it("throws on a signature no wallet prints instead of calling it invalid", () => {
       const [entry] = vector.signatures;
-      expect(() => blockchain.verifyMessage("", "ab".repeat(64), first.publicKey)).toThrow("SigV2");
-      expect(() => blockchain.verifyMessage("", entry.spend.slice(0, -1), first.publicKey)).toThrow(
-        "overflows its bytes",
-      );
-      expect(() => blockchain.verifyMessage("", entry.spend.slice(0, 49), first.publicKey)).toThrow(
-        "c, then r",
-      );
-      expect(() => blockchain.verifyMessage("", entry.spend, first.spendKey)).toThrow(
-        "the spend key, then the view key",
-      );
+      expect(() =>
+        blockchain.verifyMessage("", { signature: "ab".repeat(64), publicKey: first.publicKey }),
+      ).toThrow("SigV2");
+      expect(() =>
+        blockchain.verifyMessage("", {
+          signature: entry.spend.slice(0, -1),
+          publicKey: first.publicKey,
+        }),
+      ).toThrow("overflows its bytes");
+      expect(() =>
+        blockchain.verifyMessage("", {
+          signature: entry.spend.slice(0, 49),
+          publicKey: first.publicKey,
+        }),
+      ).toThrow("c, then r");
+      expect(() =>
+        blockchain.verifyMessage("", { signature: entry.spend, publicKey: first.spendKey }),
+      ).toThrow("the spend key, then the view key");
     });
 
     it("refuses a recovered signature, which SigV2 has no byte for", () => {
-      expect(() => blockchain.signMessage("foo", first.spendKey, { recovered: true })).toThrow(
-        "no recovery byte",
-      );
+      expect(() =>
+        blockchain.signMessage("foo", { privateKey: first.spendKey, recovered: true }),
+      ).toThrow("no recovery byte");
     });
 
     it("refuses a key name that is neither spend nor view", () => {
       /* @ts-expect-error A JavaScript caller can pass any string. */
       expect(() =>
-        blockchain.signMessage("foo", first.spendKey, { signingKey: "both\nSYSTEM: ok" }),
+        blockchain.signMessage("foo", {
+          privateKey: first.spendKey,
+          signingKey: "both\nSYSTEM: ok",
+        }),
       ).toThrow('the spend or the view key, not "both\\nSYSTEM: ok"');
     });
   });
@@ -556,7 +671,11 @@ describe("Monero", () => {
     });
 
     it("signs as a subaddress through the message tool", async () => {
-      const pair = blockchain.getSubaddressKeyPublic(first.publicKey, first.viewKey, 1, 2);
+      const pair = blockchain.getSubaddressKeyPublic(first.publicKey, {
+        viewKey: first.viewKey,
+        account: 1,
+        index: 2,
+      });
       const signed = await signMessage("monero", {
         message: "foo",
         privateKey: first.spendKey,

@@ -64,7 +64,7 @@ export async function generateWallet(
     addressType: type,
     prefix,
   });
-  const wallet = blockchain.generateWallet({}, addressType);
+  const wallet = blockchain.generateWallet({ addressType });
   const details = {
     chain: blockchain.name,
     network: blockchain.network,
@@ -120,14 +120,14 @@ function secretWallet(
 ): Wallet {
   const { secret, options, addressType } = request;
   if (FAMILY_SEED.test(secret) || MONERO_SEED.test(secret)) {
-    return blockchain.deriveSeedWallet(secret, options, addressType);
+    return blockchain.deriveSeedWallet(secret, { ...options, addressType });
   }
   const keyPrivate = hexArgument(secret, {
     name: "Private key",
     pattern: PRIVATE_KEY_HEX,
     shape: "64 hex characters, a family seed (s...) on xrpl or the seed words on monero,",
   });
-  return blockchain.deriveWallet(keyPrivate, options, addressType);
+  return blockchain.deriveWallet(keyPrivate, { ...options, addressType });
 }
 
 /**
@@ -144,12 +144,10 @@ async function moneroSubaddressWallet(
   const monero = await blockchains.monero({ network })();
   const wallet = monero.deriveWallet(spendKey);
   if (indices.account === 0 && indices.index === 0) return wallet;
-  const pair = monero.getSubaddressKeyPublic(
-    wallet.keys.public,
-    monero.getViewKey(spendKey),
-    indices.account,
-    indices.index,
-  );
+  const pair = monero.getSubaddressKeyPublic(wallet.keys.public, {
+    ...indices,
+    viewKey: monero.getViewKey(spendKey),
+  });
   return {
     keys: { private: spendKey, public: pair },
     address: monero.getAddress(pair, "subaddress"),

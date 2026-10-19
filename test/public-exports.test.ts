@@ -316,11 +316,10 @@ describe("Public derivation exports", () => {
     if (!child.privateKey) throw new Error("Missing private key");
     const bitcoin = await blockchains.bitcoin()();
     expect(
-      bitcoin.deriveWallet(
-        Buffer.from(child.privateKey).toString("hex"),
-        { compressed: true },
-        "segwit",
-      ).address,
+      bitcoin.deriveWallet(Buffer.from(child.privateKey).toString("hex"), {
+        compressed: true,
+        addressType: "segwit",
+      }).address,
     ).toBe(vector.address);
   });
 
@@ -345,10 +344,10 @@ describe("Public derivation exports", () => {
       wordlistValid: true,
       checksumValid: false,
     });
-    const options: HDWalletOptions = { allowInvalidChecksum: true };
+    const options: HDWalletOptions = { path, allowInvalidChecksum: true };
     const chain = await blockchains.bitcoin()();
-    expect(() => chain.deriveHDWallet(mnemonic, path)).toThrow("Invalid BIP39 mnemonic");
-    const wallet = chain.deriveHDWallet(mnemonic, path, options);
+    expect(() => chain.deriveHDWallet(mnemonic, { path })).toThrow("Invalid BIP39 mnemonic");
+    const wallet = chain.deriveHDWallet(mnemonic, options);
     expect(wallet.address).toBe(address);
     expect(wallet.warnings).toEqual([expect.stringContaining("checksum is invalid")]);
   });

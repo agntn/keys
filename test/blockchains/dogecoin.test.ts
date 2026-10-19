@@ -24,7 +24,9 @@ describe("Dogecoin", () => {
     expect(chain).toBeInstanceOf(NamedDogecoin);
     expect(chain.name).toBe("dogecoin");
     expect(chain.curve).toBe("secp256k1");
-    expect(getBlockchainPath(chain, 0, 1, 3)).toBe("m/44'/3'/0'/1/3");
+    expect(getBlockchainPath(chain, { account: 0, change: 1, addressIndex: 3 })).toBe(
+      "m/44'/3'/0'/1/3",
+    );
     expect(() => new Dogecoin({ network: "regtest" })).toThrow("mainnet and testnet only");
   });
 
@@ -72,17 +74,17 @@ describe("Dogecoin", () => {
     const { privateKey, message, address, signatures } = vector.signed;
     const publicKey = chain.getKeyPublic(privateKey);
     expect(chain.getAddress(publicKey)).toBe(address);
-    const signed = chain.signMessage(message, privateKey);
+    const signed = chain.signMessage(message, { privateKey });
     for (const signature of signatures) {
       expect(signed).toBe(compactToRS(signature));
     }
-    expect(chain.verifyMessage(message, signed, publicKey)).toBe(true);
-    expect(chain.verifyMessage(`${message}!`, signed, publicKey)).toBe(false);
+    expect(chain.verifyMessage(message, { signature: signed, publicKey })).toBe(true);
+    expect(chain.verifyMessage(`${message}!`, { signature: signed, publicKey })).toBe(false);
     const [uncompressed, compressed] = signatures;
-    expect(chain.signMessage(message, privateKey, { recovered: true, compressed: false })).toBe(
+    expect(chain.signMessage(message, { privateKey, recovered: true, compressed: false })).toBe(
       uncompressed,
     );
-    expect(chain.signMessage(message, privateKey, { recovered: true })).toBe(compressed);
+    expect(chain.signMessage(message, { privateKey, recovered: true })).toBe(compressed);
     expect(chain.recoverMessageSigner(message, compressed)).toEqual({
       publicKey,
       addressType: "legacy",
@@ -96,18 +98,22 @@ describe("Dogecoin", () => {
     const bitcoin = new Bitcoin();
     const { privateKey, publicKeyCompressed } = secp256k1TestVectors;
     for (const message of Object.values(testMessages)) {
-      const signature = bitcoin.signMessage(message, privateKey);
-      expect(chain.signMessage(message, privateKey)).not.toBe(signature);
-      expect(chain.verifyMessage(message, signature, publicKeyCompressed)).toBe(false);
+      const signature = bitcoin.signMessage(message, { privateKey });
+      expect(chain.signMessage(message, { privateKey })).not.toBe(signature);
+      expect(chain.verifyMessage(message, { signature, publicKey: publicKeyCompressed })).toBe(
+        false,
+      );
     }
-    const core = new Bitcoin().signMessage("hello", privateKey, { recovered: true });
-    expect(chain.verifyMessage("hello", core, publicKeyCompressed)).toBe(false);
+    const core = new Bitcoin().signMessage("hello", { privateKey, recovered: true });
+    expect(chain.verifyMessage("hello", { signature: core, publicKey: publicKeyCompressed })).toBe(
+      false,
+    );
   });
 
   it("derives the receive address Ledger Live gives for the public test mnemonic", () => {
     const chain = new Dogecoin();
-    expect(chain.getDerivationPath(0)).toBe(vector.hd.path);
-    expect(chain.deriveHDWallet(bip39TestVectors.mnemonic, vector.hd.path).address).toBe(
+    expect(chain.getDerivationPath({ account: 0 })).toBe(vector.hd.path);
+    expect(chain.deriveHDWallet(bip39TestVectors.mnemonic, { path: vector.hd.path }).address).toBe(
       vector.hd.address,
     );
   });
@@ -116,12 +122,12 @@ describe("Dogecoin", () => {
     "derives %s to a P2PKH address whatever the purpose",
     (path) => {
       const chain = new Dogecoin();
-      const wallet = chain.deriveHDWallet(bip39TestVectors.mnemonic, path);
+      const wallet = chain.deriveHDWallet(bip39TestVectors.mnemonic, { path });
       expect(wallet.address).toBe(chain.getAddress(wallet.keys.public));
       expect(wallet.address).toMatch(/^D/u);
-      expect(() => chain.deriveHDWallet(bip39TestVectors.mnemonic, path, {}, "p2sh")).toThrow(
-        "legacy P2PKH only",
-      );
+      expect(() =>
+        chain.deriveHDWallet(bip39TestVectors.mnemonic, { path, addressType: "p2sh" }),
+      ).toThrow("legacy P2PKH only");
     },
   );
 });

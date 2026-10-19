@@ -95,9 +95,19 @@ export interface KeyOptions {
 }
 
 /**
+ * Options of a wallet written from a key or a seed.
+ */
+export interface WalletOptions extends KeyOptions {
+  /** Address type to write, on chains with more than one. Default: the chain's own */
+  readonly addressType?: AddressType;
+}
+
+/**
  * Options for deriving a wallet from a BIP39 mnemonic.
  */
-export interface HDWalletOptions extends KeyOptions {
+export interface HDWalletOptions extends WalletOptions {
+  /** Derivation path, such as `m/44'/0'/0'/0/0`. */
+  readonly path: string;
   readonly passphrase?: string;
   /** Skip only the checksum. Words from the list and a BIP39 length stay required. Default: false. */
   readonly allowInvalidChecksum?: boolean;
@@ -105,6 +115,30 @@ export interface HDWalletOptions extends KeyOptions {
   readonly wordlist?: readonly string[];
   /** Ian Coleman's lengths too, warned when not BIP39's own; Polkadot refuses. Default: false */
   readonly coleman?: boolean;
+}
+
+/** Options for deriving a wallet from an Electrum seed. */
+export interface ElectrumWalletOptions extends WalletOptions {
+  /** Derivation path, `m/0/0` for standard seeds and `m/0'/0/0` for SegWit ones. */
+  readonly path: string;
+}
+
+/** Options for deriving a watch-only wallet from an extended public key. */
+export interface XpubWalletOptions {
+  /** Normal levels below the key, such as `m/0/5`. */
+  readonly path: string;
+  /** Address type that wins over the one the prefix stands for. */
+  readonly addressType?: AddressType;
+}
+
+/** The account, branch and address a derivation path points at, each from 0. */
+export interface DerivationPathOptions extends KeyOptions {
+  /** Account index. Default: 0 */
+  readonly account?: number;
+  /** 0 for the external branch, 1 for the internal one. Default: 0 */
+  readonly change?: number;
+  /** Address index. Default: 0 */
+  readonly addressIndex?: number;
 }
 
 /** Standard or SegWit Electrum seed, as `deriveSeed` in `@agntn/keys/electrum` returns it. */
@@ -142,6 +176,20 @@ export interface SigningOptions extends RecoverableSigningOptions {
   /** Monero only: address within that account; 0/0 is the standard one. Default: 0. */
   readonly addressIndex?: number;
 }
+
+/** Options for signing a message: the key, then how the chain signs with it. */
+export type SignMessageOptions<T extends KeyOptions = SigningOptions> = T & {
+  /** The private key as hex. */
+  readonly privateKey: string;
+};
+
+/** Options for verifying a message: the signature, the key that should have made it, and how. */
+export type VerifyMessageOptions<T extends KeyOptions = SigningOptions> = T & {
+  /** The signature as the chain writes it. */
+  readonly signature: string;
+  /** The public key as hex. */
+  readonly publicKey: string;
+};
 
 /** The two Monero keys a SigV2 signature can come from. */
 export type MoneroSigningKey = "spend" | "view";
@@ -211,30 +259,18 @@ export interface BlockchainImplementation {
   /**
    * Signs a message using a private key
    * @param message - The message to sign (string or Uint8Array)
-   * @param keyPrivate - The private key as a hex string
-   * @param options - Optional parameters for signing
+   * @param options - The private key as a hex string, then how to sign
    * @returns The signature as a hex string
    */
-  signMessage: (
-    message: string | Uint8Array,
-    keyPrivate: string,
-    options?: SigningOptions,
-  ) => string;
+  signMessage: (message: string | Uint8Array, options: SignMessageOptions) => string;
 
   /**
    * Verifies a message signature
    * @param message - The original message (string or Uint8Array)
-   * @param signature - The signature as a hex string
-   * @param keyPublic - The public key as a hex string
-   * @param options - Optional parameters for verification
+   * @param options - The signature and the public key as hex, then how they were made
    * @returns Whether the signature is valid
    */
-  verifyMessage: (
-    message: string | Uint8Array,
-    signature: string,
-    keyPublic: string,
-    options?: SigningOptions,
-  ) => boolean;
+  verifyMessage: (message: string | Uint8Array, options: VerifyMessageOptions) => boolean;
 
   /**
    * Recovers the signer of a message signature: Core's base64 on the Bitcoin family and Decred,
@@ -273,49 +309,34 @@ export interface Blockchain extends BlockchainImplementation {
   /**
    * Derives a complete wallet from an existing private key.
    */
-  deriveWallet?: (keyPrivate: string, options?: KeyOptions, addressType?: string) => Wallet;
+  deriveWallet?: (keyPrivate: string, options?: WalletOptions) => Wallet;
 
   /**
    * Builds the derivation path the chain's wallets use for an account.
    */
-  getDerivationPath?: (
-    account?: number,
-    change?: number,
-    addressIndex?: number,
-    options?: KeyOptions,
-  ) => string;
+  getDerivationPath?: (options?: DerivationPathOptions) => string;
 
   /**
    * Derives a complete wallet from a BIP39 mnemonic and derivation path.
    */
-  deriveHDWallet?: (
-    mnemonic: string,
-    path: string,
-    options?: HDWalletOptions,
-    addressType?: string,
-  ) => Wallet;
+  deriveHDWallet?: (mnemonic: string, options: HDWalletOptions) => Wallet;
 
   /** Derives a complete wallet from an Electrum seed and derivation path. */
-  deriveElectrumWallet?: (
-    seed: ElectrumSeed,
-    path: string,
-    options?: KeyOptions,
-    addressType?: string,
-  ) => Wallet;
+  deriveElectrumWallet?: (seed: ElectrumSeed, options: ElectrumWalletOptions) => Wallet;
 
   /**
    * Derives a watch-only wallet from an extended public key and normal levels below it.
    */
-  deriveXpubWallet?: (extendedKey: string, path: string, addressType?: string) => XpubWallet;
+  deriveXpubWallet?: (extendedKey: string, options: XpubWalletOptions) => XpubWallet;
 
   /**
    * Derives a wallet from a chain's own seed string, such as an XRPL family seed (`s...`).
    */
-  deriveSeedWallet?: (seed: string, options?: KeyOptions, addressType?: string) => Wallet;
+  deriveSeedWallet?: (seed: string, options?: WalletOptions) => Wallet;
 
   /**
    * Generates a complete wallet (private key, public key, and address)
    * This is a convenience function that combines generateKeys and getAddress
    */
-  generateWallet: (options?: KeyOptions, addressType?: string) => Wallet;
+  generateWallet: (options?: WalletOptions) => Wallet;
 }

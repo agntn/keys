@@ -20,7 +20,7 @@ export class Dogecoin extends AbstractBitcoinP2PKHBlockchain {
   protected override readonly messagePreamble = "\u0019Dogecoin Signed Message:\n";
 
   constructor(options?: Options) {
-    super(options, "Dogecoin", NETWORK_PARAMS);
+    super(options, { label: "Dogecoin", networks: NETWORK_PARAMS });
   }
 }
 

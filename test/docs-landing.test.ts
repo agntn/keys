@@ -21,7 +21,7 @@ describe("landing fixtures", () => {
       landingStaticRows,
     );
     expect(toPipeline(derivation)).toEqual(landingStaticPipeline);
-    expect(chains.ethereum.deriveHDWallet(TEST_MNEMONIC, HD_STATIC.path).address).toBe(
+    expect(chains.ethereum.deriveHDWallet(TEST_MNEMONIC, { path: HD_STATIC.path }).address).toBe(
       HD_STATIC.address,
     );
   });

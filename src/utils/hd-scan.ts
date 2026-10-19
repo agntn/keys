@@ -328,7 +328,7 @@ export function hdAddress(
   return (path) => {
     const privateKey = nodeAt(path).privateKey;
     if (!privateKey) throw new Error(`No private key at ${path}`);
-    const wallet = blockchain.deriveWallet(privateKey.toHex(), undefined, scheme.addressType);
+    const wallet = blockchain.deriveWallet(privateKey.toHex(), { addressType: scheme.addressType });
     return {
       publicKey: wallet.keys.public,
       address: wallet.address,

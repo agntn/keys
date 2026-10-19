@@ -5,6 +5,7 @@ import { createBase58check } from "@agntn/encodings/base58";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { encodeCompactSize } from "../utils/bitcoin.ts";
+import { assertSignOptions, assertVerifyOptions } from "../utils/options.ts";
 import {
   isCompactSignature,
   recoverCompact,
@@ -19,7 +20,8 @@ import type {
   KeyOptions,
   MessageSigner,
   Options,
-  SigningOptions,
+  SignMessageOptions,
+  VerifyMessageOptions,
   Wallet,
   XpubWallet,
 } from "../types.ts";
@@ -112,28 +114,24 @@ export class Decred extends AbstractBlockchain {
   /**
    * Sign as 64 bytes of `r||s` hex, or with `recovered` as the base64 dcrd's `signmessage` prints.
    * @param message - The message to sign
-   * @param keyPrivate - The private key as hex
-   * @param options - `recovered` for dcrd's base64 form, `compressed` for its header
+   * @param options - The private key as hex; `recovered` for dcrd's base64 form, `compressed`
+   * for its header
    * @returns {string} The signature
    */
-  override signMessage(
-    message: string | Uint8Array,
-    keyPrivate: string,
-    options?: SigningOptions,
-  ): string {
-    if (readRecoveredFlag(options)) {
-      return signCompact(hashMessage(message), keyPrivate, options?.compressed !== false);
+  override signMessage(message: string | Uint8Array, options: SignMessageOptions): string {
+    assertSignOptions(options);
+    const { privateKey, ...signingOptions } = options;
+    if (readRecoveredFlag(signingOptions)) {
+      return signCompact(hashMessage(message), privateKey, signingOptions.compressed !== false);
     }
     return secp256k1
-      .sign(hashMessage(message), decodeKeyPrivate(keyPrivate), { prehash: false })
+      .sign(hashMessage(message), decodeKeyPrivate(privateKey), { prehash: false })
       .toHex();
   }
 
-  override verifyMessage(
-    message: string | Uint8Array,
-    signature: string,
-    keyPublic: string,
-  ): boolean {
+  override verifyMessage(message: string | Uint8Array, options: VerifyMessageOptions): boolean {
+    assertVerifyOptions(options);
+    const { signature, publicKey: keyPublic } = options;
     if (hasRecoveryByte(signature)) {
       return false;
     }

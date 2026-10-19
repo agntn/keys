@@ -7,19 +7,25 @@ import {
   type ExtendedKeyFormats,
 } from "./utils/extended-key.ts";
 import { deriveElectrumKey, deriveMnemonicKey } from "./utils/hd.ts";
+import { readPathOptions } from "./utils/options.ts";
 import type {
   AddressType,
   Blockchain,
   Curve,
+  DerivationPathOptions,
   ElectrumSeed,
+  ElectrumWalletOptions,
   HDWalletOptions,
   KeyOptions,
   Keys,
   MessageSigner,
   Options,
-  SigningOptions,
+  SignMessageOptions,
+  VerifyMessageOptions,
   Wallet,
+  WalletOptions,
   XpubWallet,
+  XpubWalletOptions,
 } from "./types.ts";
 
 /**
@@ -47,17 +53,8 @@ export abstract class AbstractBlockchain implements Blockchain {
   abstract getKeyPublic(keyPrivate: string, options?: KeyOptions): string;
   abstract getAddress(keyPublic: string, type?: string): string;
   abstract validateAddress(address: string): boolean;
-  abstract signMessage(
-    message: string | Uint8Array,
-    keyPrivate: string,
-    options?: SigningOptions,
-  ): string;
-  abstract verifyMessage(
-    message: string | Uint8Array,
-    signature: string,
-    keyPublic: string,
-    options?: SigningOptions,
-  ): boolean;
+  abstract signMessage(message: string | Uint8Array, options: SignMessageOptions): string;
+  abstract verifyMessage(message: string | Uint8Array, options: VerifyMessageOptions): boolean;
 
   generateKeyPrivate(): string {
     const curve = this.curve.includes("secp256k1") ? secp256k1 : ed25519;
@@ -125,9 +122,10 @@ export abstract class AbstractBlockchain implements Blockchain {
     );
   }
 
-  deriveWallet(keyPrivate: string, options?: KeyOptions, addressType?: AddressType): Wallet {
-    this.checkCompressed(options);
-    const keyPublic = this.getKeyPublic(keyPrivate, options);
+  deriveWallet(keyPrivate: string, options: WalletOptions = {}): Wallet {
+    const { addressType, ...keyOptions } = options;
+    this.checkCompressed(keyOptions);
+    const keyPublic = this.getKeyPublic(keyPrivate, keyOptions);
     const type = addressType ?? this.defaultAddressType;
 
     return {
@@ -140,9 +138,10 @@ export abstract class AbstractBlockchain implements Blockchain {
     };
   }
 
-  generateWallet(options?: KeyOptions, addressType?: AddressType): Wallet {
-    this.checkCompressed(options);
-    const keys = this.generateKeys(options);
+  generateWallet(options: WalletOptions = {}): Wallet {
+    const { addressType, ...keyOptions } = options;
+    this.checkCompressed(keyOptions);
+    const keys = this.generateKeys(keyOptions);
     const type = addressType ?? this.defaultAddressType;
 
     return {
@@ -182,39 +181,32 @@ export abstract class AbstractBlockchain implements Blockchain {
   /**
    * Builds the derivation path the chain's wallets use for an account. BIP44 by default,
    * `m/44'/coin'/account'/change/index`; chains whose wallets walk another shape override it.
-   * @param account - Account index
-   * @param change - 0 for the external branch, 1 for the internal one
-   * @param addressIndex - Address index
-   * @param _options - Key options, read by chains whose path depends on the scheme
+   * The scheme in the options is read by chains whose path depends on it.
+   * @param options - Account, branch and address index, each 0 by default
    * @returns {string} The derivation path
    */
-  getDerivationPath(
-    account = 0,
-    change: number = BIP44Change.EXTERNAL,
-    addressIndex = 0,
-    _options?: KeyOptions,
-  ): string {
+  getDerivationPath(options?: DerivationPathOptions): string {
+    const {
+      account = 0,
+      change = BIP44Change.EXTERNAL,
+      addressIndex = 0,
+    } = readPathOptions(options);
     return getPath(this.coinType, account, change, addressIndex);
   }
 
-  deriveHDWallet(
-    mnemonic: string,
-    path: string,
-    options?: HDWalletOptions,
-    addressType?: AddressType,
-  ): Wallet {
-    const { passphrase, allowInvalidChecksum, wordlist, coleman, ...keyOptions } = options ?? {};
+  deriveHDWallet(mnemonic: string, options: HDWalletOptions): Wallet {
+    const { path, passphrase, allowInvalidChecksum, wordlist, coleman, ...walletOptions } = options;
     const { privateKey, checksumValid, standardLength } = deriveMnemonicKey(
       mnemonic,
       path,
-      this.resolveCurve(keyOptions),
+      this.resolveCurve(walletOptions),
       passphrase,
       allowInvalidChecksum,
       wordlist,
       coleman,
     );
 
-    const wallet = this.deriveWallet(privateKey, keyOptions, addressType);
+    const wallet = this.deriveWallet(privateKey, walletOptions);
     const warnings = [
       ...(checksumValid
         ? []
@@ -244,40 +236,33 @@ export abstract class AbstractBlockchain implements Blockchain {
   /**
    * Derives a wallet from the seed `deriveSeed` returns, so no chain loads Electrum's word list.
    * @param seed - Standard or SegWit seed from `deriveSeed`
-   * @param path - Derivation path, `m/0/0` for standard seeds and `m/0'/0/0` for SegWit ones
-   * @param options - Key options of the wallet
-   * @param addressType - Address type that wins over the one the seed version picks
+   * @param options - The path, `m/0/0` for standard seeds and `m/0'/0/0` for SegWit ones, and key
+   * options; an address type wins over the one the seed version picks
    * @returns {Wallet} The wallet at the path
    */
-  deriveElectrumWallet(
-    seed: ElectrumSeed,
-    path: string,
-    options?: KeyOptions,
-    addressType?: AddressType,
-  ): Wallet {
-    const curve = this.resolveCurve(options);
+  deriveElectrumWallet(seed: ElectrumSeed, options: ElectrumWalletOptions): Wallet {
+    const { path, addressType, ...keyOptions } = options;
+    const curve = this.resolveCurve(keyOptions);
     if (curve !== "secp256k1") {
       throw new Error(
         `${this.name} ${curve} keys do not derive from Electrum seeds, which walk BIP32 on secp256k1`,
       );
     }
     const privateKey = deriveElectrumKey(seed, path);
-    return this.deriveWallet(
-      privateKey,
-      options,
-      addressType ?? this.electrumAddressType(seed.seedType),
-    );
+    return this.deriveWallet(privateKey, {
+      ...keyOptions,
+      addressType: addressType ?? this.electrumAddressType(seed.seedType),
+    });
   }
 
   /**
    * Derives a wallet from the chain's own seed string, which only the XRP Ledger and Monero have:
    * a family seed (`s...`) and 25 seed words. Every other chain takes a private key or BIP39 words.
    * @param _seed - The seed string
-   * @param _options - Key options of the wallet
-   * @param _addressType - Address type to write
+   * @param _options - Key options of the wallet and the address type to write
    * @returns {Wallet} The wallet behind the seed
    */
-  deriveSeedWallet(_seed: string, _options?: KeyOptions, _addressType?: AddressType): Wallet {
+  deriveSeedWallet(_seed: string, _options?: WalletOptions): Wallet {
     throw new Error(
       `${this.name} has no seed string of its own; pass a private key, or BIP39 words to deriveHDWallet`,
     );
@@ -298,11 +283,12 @@ export abstract class AbstractBlockchain implements Blockchain {
    * Derives a watch-only wallet from an extended public key, such as an account `xpub`.
    * Only normal levels can be walked without the private key.
    * @param extendedKey - Base58Check extended public key
-   * @param path - Normal levels below the key, such as `m/0/5`
-   * @param addressType - Explicit address type that wins over the one the prefix stands for
+   * @param options - Normal levels below the key, such as `m/0/5`, and an address type that wins
+   * over the one the prefix stands for
    * @returns {XpubWallet} The public key and address at the path
    */
-  deriveXpubWallet(extendedKey: string, path: string, addressType?: AddressType): XpubWallet {
+  deriveXpubWallet(extendedKey: string, options: XpubWalletOptions): XpubWallet {
+    const { path, addressType } = options;
     if (this.curve !== "secp256k1") {
       throw new Error(`${this.name} does not derive from extended public keys`);
     }
@@ -359,12 +345,7 @@ export function useBlockchain<T extends AbstractBlockchain>(blockchain: T): T {
 /** The part of a blockchain that decides its derivation paths. */
 export interface PathSource {
   readonly bip44: number;
-  readonly getDerivationPath?: (
-    account?: number,
-    change?: number,
-    addressIndex?: number,
-    options?: KeyOptions,
-  ) => string;
+  readonly getDerivationPath?: (options?: DerivationPathOptions) => string;
 }
 
 /**
@@ -372,21 +353,15 @@ export interface PathSource {
  * it declares one, BIP44 from its coin type otherwise.
  *
  * @param blockchain - The blockchain implementation interface
- * @param account - Account index (defaults to 0)
- * @param change - 0 for external chain (receive addresses), 1 for internal chain (change addresses)
- * @param addressIndex - Address index (defaults to 0)
- * @param options - Key options, the scheme on chains with two curves
+ * @param options - Account, branch (0 for receive addresses, 1 for change) and address index,
+ * each 0 by default, and the scheme on chains with two curves
  * @returns {string} Derivation path string
  */
-export function getBlockchainPath(
-  blockchain: PathSource,
-  account = 0,
-  change: number = BIP44Change.EXTERNAL,
-  addressIndex = 0,
-  options?: KeyOptions,
-): string {
+export function getBlockchainPath(blockchain: PathSource, options?: DerivationPathOptions): string {
+  const levels = readPathOptions(options);
   if (blockchain.getDerivationPath === undefined) {
+    const { account = 0, change = BIP44Change.EXTERNAL, addressIndex = 0 } = levels;
     return getPath(blockchain.bip44, account, change, addressIndex);
   }
-  return blockchain.getDerivationPath(account, change, addressIndex, options);
+  return blockchain.getDerivationPath(levels);
 }

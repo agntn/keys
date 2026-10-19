@@ -20,7 +20,7 @@ const lines = computed(() => [
   "",
   `const chain = useBlockchain(await blockchains.${chain.value.driver}()());`,
   "const wallet = chain.generateWallet();",
-  'const signature = chain.signMessage("hello", wallet.private);',
+  'const signature = chain.signMessage("hello", { privateKey: wallet.keys.private });',
   "",
   `// key ${shortDecimal(props.decimal, 6)} on ${chain.value.label}: ${address.value}`,
 ]);

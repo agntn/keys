@@ -334,7 +334,7 @@ describe("bip322 verify", () => {
     const key = secp256k1TestVectors.privateKey;
     const legacy = bitcoin.getAddress(bitcoin.getKeyPublic(key), "legacy");
     const segwit = bitcoin.getAddress(bitcoin.getKeyPublic(key), "segwit");
-    const signature = bitcoin.signMessage("core", key, { recovered: true });
+    const signature = bitcoin.signMessage("core", { privateKey: key, recovered: true });
     expect(verify(legacy, "core", signature)).toMatchObject({ state: "valid", format: "legacy" });
     expect(verify(legacy, "other", signature).state).toBe("invalid");
     expect(verify(segwit, "core", signature)).toMatchObject({ state: "invalid", format: "simple" });

@@ -35,7 +35,9 @@ describe("Zcash", () => {
     expect(chain).toBeInstanceOf(NamedZcash);
     expect(chain.name).toBe("zcash");
     expect(chain.curve).toBe("secp256k1");
-    expect(getBlockchainPath(chain, 0, 1, 3)).toBe("m/44'/133'/0'/1/3");
+    expect(getBlockchainPath(chain, { account: 0, change: 1, addressIndex: 3 })).toBe(
+      "m/44'/133'/0'/1/3",
+    );
     expect(() => new Zcash({ network: "regtest" })).toThrow("mainnet and testnet only");
   });
 
@@ -123,9 +125,9 @@ describe("Zcash", () => {
     );
     expect(chain.getAddress(publicKey)).toBe(address);
     const rs = hex.encode(compact.slice(1));
-    expect(chain.verifyMessage(message, rs, publicKey)).toBe(true);
-    expect(chain.verifyMessage(`${message}!`, rs, publicKey)).toBe(false);
-    expect(chain.verifyMessage(message, signature, publicKey)).toBe(true);
+    expect(chain.verifyMessage(message, { signature: rs, publicKey })).toBe(true);
+    expect(chain.verifyMessage(`${message}!`, { signature: rs, publicKey })).toBe(false);
+    expect(chain.verifyMessage(message, { signature, publicKey })).toBe(true);
     expect(chain.recoverMessageSigner(message, signature)).toEqual({
       publicKey,
       addressType: "legacy",
@@ -135,12 +137,17 @@ describe("Zcash", () => {
   it("signs the digest zcashd signs and round trips", () => {
     const chain = new Zcash();
     const { privateKey, publicKeyCompressed } = secp256k1TestVectors;
-    const signed = chain.signMessage(testMessages.simple, privateKey);
+    const signed = chain.signMessage(testMessages.simple, { privateKey });
     const expected = secp256k1.sign(zcashdDigest(testMessages.simple), hex.decode(privateKey), {
       prehash: false,
     });
     expect(signed).toBe(hex.encode(expected));
-    expect(chain.verifyMessage(testMessages.simple, signed, publicKeyCompressed)).toBe(true);
+    expect(
+      chain.verifyMessage(testMessages.simple, {
+        signature: signed,
+        publicKey: publicKeyCompressed,
+      }),
+    ).toBe(true);
   });
 
   it("uses its own preamble, so a Bitcoin signature does not carry over", () => {
@@ -148,18 +155,22 @@ describe("Zcash", () => {
     const bitcoin = new Bitcoin();
     const { privateKey, publicKeyCompressed } = secp256k1TestVectors;
     for (const message of Object.values(testMessages)) {
-      const signature = bitcoin.signMessage(message, privateKey);
-      expect(chain.signMessage(message, privateKey)).not.toBe(signature);
-      expect(chain.verifyMessage(message, signature, publicKeyCompressed)).toBe(false);
+      const signature = bitcoin.signMessage(message, { privateKey });
+      expect(chain.signMessage(message, { privateKey })).not.toBe(signature);
+      expect(chain.verifyMessage(message, { signature, publicKey: publicKeyCompressed })).toBe(
+        false,
+      );
     }
-    const core = bitcoin.signMessage("hello", privateKey, { recovered: true });
-    expect(chain.verifyMessage("hello", core, publicKeyCompressed)).toBe(false);
+    const core = bitcoin.signMessage("hello", { privateKey, recovered: true });
+    expect(chain.verifyMessage("hello", { signature: core, publicKey: publicKeyCompressed })).toBe(
+      false,
+    );
   });
 
   it("derives the receive address Ledger Live gives for the public test mnemonic", () => {
     const chain = new Zcash();
-    expect(chain.getDerivationPath(0)).toBe(vector.hd.path);
-    expect(chain.deriveHDWallet(bip39TestVectors.mnemonic, vector.hd.path).address).toBe(
+    expect(chain.getDerivationPath({ account: 0 })).toBe(vector.hd.path);
+    expect(chain.deriveHDWallet(bip39TestVectors.mnemonic, { path: vector.hd.path }).address).toBe(
       vector.hd.address,
     );
   });
@@ -168,12 +179,12 @@ describe("Zcash", () => {
     "derives %s to a P2PKH address whatever the purpose",
     (path) => {
       const chain = new Zcash();
-      const wallet = chain.deriveHDWallet(bip39TestVectors.mnemonic, path);
+      const wallet = chain.deriveHDWallet(bip39TestVectors.mnemonic, { path });
       expect(wallet.address).toBe(chain.getAddress(wallet.keys.public));
       expect(wallet.address).toMatch(/^t1/u);
-      expect(() => chain.deriveHDWallet(bip39TestVectors.mnemonic, path, {}, "p2sh")).toThrow(
-        "transparent P2PKH only",
-      );
+      expect(() =>
+        chain.deriveHDWallet(bip39TestVectors.mnemonic, { path, addressType: "p2sh" }),
+      ).toThrow("transparent P2PKH only");
     },
   );
 });

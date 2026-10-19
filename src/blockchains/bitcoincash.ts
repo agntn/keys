@@ -23,7 +23,7 @@ export class BitcoinCash extends AbstractCashAddrBlockchain {
   protected override readonly messagePreamble = "\u0018Bitcoin Signed Message:\n";
 
   constructor(options?: Options) {
-    super(options, "Bitcoin Cash", CASHADDR_PARAMS);
+    super(options, { ...CASHADDR_PARAMS, label: "Bitcoin Cash" });
   }
 }
 

@@ -18,7 +18,7 @@ describe("XRPL", () => {
     });
 
     it("writes an ed25519 key in XRPL's ED form", () => {
-      const wallet = blockchain.deriveWallet(vector.ed25519.privateKey, {}, "ed25519");
+      const wallet = blockchain.deriveWallet(vector.ed25519.privateKey, { addressType: "ed25519" });
       expect(wallet.keys.public).toBe(vector.ed25519.publicKey);
       expect(wallet.address).toBe(vector.ed25519.address);
       expect(wallet.addressType).toBe("ed25519");
@@ -56,7 +56,7 @@ describe("XRPL", () => {
     });
 
     it.each(["secp256k1", "ed25519"])("generates a %s wallet whose address validates", (type) => {
-      const wallet = blockchain.generateWallet({}, type);
+      const wallet = blockchain.generateWallet({ addressType: type });
       expect(wallet.addressType).toBe(type);
       expect(blockchain.validateAddress(wallet.address)).toBe(true);
       expect(blockchain.getAddress(wallet.keys.public, type)).toBe(wallet.address);
@@ -81,7 +81,7 @@ describe("XRPL", () => {
 
     it("lets the address type override the scheme the seed names", () => {
       const { secp256k1AsEd25519, ed25519AsSecp256k1 } = vector.crossed;
-      const ed = blockchain.deriveSeedWallet(secp256k1AsEd25519.seed, {}, "ed25519");
+      const ed = blockchain.deriveSeedWallet(secp256k1AsEd25519.seed, { addressType: "ed25519" });
       expect(ed.address).toBe(secp256k1AsEd25519.address);
       expect(ed.addressType).toBe("ed25519");
       const secp = blockchain.deriveSeedWallet(ed25519AsSecp256k1.seed, { scheme: "secp256k1" });
@@ -110,24 +110,26 @@ describe("XRPL", () => {
 
   describe("HD wallets from mnemonics", () => {
     it.each(vector.hd)("derives %s like Wallet.fromMnemonic", (path, publicKey, address) => {
-      const wallet = blockchain.deriveHDWallet(bip39TestVectors.mnemonic, path);
+      const wallet = blockchain.deriveHDWallet(bip39TestVectors.mnemonic, { path });
       expect(wallet.keys.public).toBe(publicKey);
       expect(wallet.address).toBe(address);
     });
 
     it("writes the BIP44 path", () => {
       expect(blockchain.getDerivationPath()).toBe("m/44'/144'/0'/0/0");
-      expect(blockchain.getDerivationPath(1, 0, 4)).toBe("m/44'/144'/1'/0/4");
+      expect(blockchain.getDerivationPath({ account: 1, change: 0, addressIndex: 4 })).toBe(
+        "m/44'/144'/1'/0/4",
+      );
     });
 
     it("refuses ed25519, which no XRPL wallet derives from BIP39 words", () => {
       const [[path]] = vector.hd;
       expect(() =>
-        blockchain.deriveHDWallet(bip39TestVectors.mnemonic, path, {}, "ed25519"),
+        blockchain.deriveHDWallet(bip39TestVectors.mnemonic, { path, addressType: "ed25519" }),
       ).toThrow("secp256k1 only");
-      expect(() => blockchain.getDerivationPath(0, 0, 0, { scheme: "ed25519" })).toThrow(
-        "secp256k1 only",
-      );
+      expect(() =>
+        blockchain.getDerivationPath({ account: 0, change: 0, addressIndex: 0, scheme: "ed25519" }),
+      ).toThrow("secp256k1 only");
     });
   });
 
@@ -155,42 +157,68 @@ describe("XRPL", () => {
     const { message, signatures } = vector;
 
     it("signs secp256k1 as DER over SHA-512Half, byte for byte like ripple-keypairs", () => {
-      expect(blockchain.signMessage(message, vector.secp256k1.privateKey)).toBe(
+      expect(blockchain.signMessage(message, { privateKey: vector.secp256k1.privateKey })).toBe(
         signatures.secp256k1,
       );
     });
 
     it("signs ed25519 over the raw message, like ripple-keypairs", () => {
       expect(
-        blockchain.signMessage(message, vector.ed25519.privateKey, { scheme: "ed25519" }),
+        blockchain.signMessage(message, {
+          privateKey: vector.ed25519.privateKey,
+          scheme: "ed25519",
+        }),
       ).toBe(signatures.ed25519);
     });
 
     it("verifies both, reading the curve from the key", () => {
       expect(
-        blockchain.verifyMessage(message, signatures.secp256k1, vector.secp256k1.publicKey),
+        blockchain.verifyMessage(message, {
+          signature: signatures.secp256k1,
+          publicKey: vector.secp256k1.publicKey,
+        }),
       ).toBe(true);
-      expect(blockchain.verifyMessage(message, signatures.ed25519, vector.ed25519.publicKey)).toBe(
-        true,
-      );
       expect(
-        blockchain.verifyMessage(message, signatures.ed25519, vector.ed25519.publicKey.slice(2)),
+        blockchain.verifyMessage(message, {
+          signature: signatures.ed25519,
+          publicKey: vector.ed25519.publicKey,
+        }),
+      ).toBe(true);
+      expect(
+        blockchain.verifyMessage(message, {
+          signature: signatures.ed25519,
+          publicKey: vector.ed25519.publicKey.slice(2),
+        }),
       ).toBe(true);
     });
 
     it("rejects another message, the other key and a signature that is not hex", () => {
       expect(
-        blockchain.verifyMessage(`${message}!`, signatures.secp256k1, vector.secp256k1.publicKey),
+        blockchain.verifyMessage(`${message}!`, {
+          signature: signatures.secp256k1,
+          publicKey: vector.secp256k1.publicKey,
+        }),
       ).toBe(false);
       expect(
-        blockchain.verifyMessage(message, signatures.ed25519, vector.secp256k1.publicKey),
+        blockchain.verifyMessage(message, {
+          signature: signatures.ed25519,
+          publicKey: vector.secp256k1.publicKey,
+        }),
       ).toBe(false);
-      expect(blockchain.verifyMessage(message, "zz", vector.secp256k1.publicKey)).toBe(false);
+      expect(
+        blockchain.verifyMessage(message, {
+          signature: "zz",
+          publicKey: vector.secp256k1.publicKey,
+        }),
+      ).toBe(false);
     });
 
     it("refuses the recovery byte, which an XRPL signature never carries", () => {
       expect(() =>
-        blockchain.signMessage(message, vector.secp256k1.privateKey, { recovered: true }),
+        blockchain.signMessage(message, {
+          privateKey: vector.secp256k1.privateKey,
+          recovered: true,
+        }),
       ).toThrow("no recovery byte");
     });
   });

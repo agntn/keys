@@ -55,7 +55,7 @@ BIP32 on `m/44'/5'/account'/change/index`, coin type 5 from SLIP-0044.
 const mnemonic =
   "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
-dashChain.deriveHDWallet(mnemonic, "m/44'/5'/0'/0/0").address;
+dashChain.deriveHDWallet(mnemonic, { path: "m/44'/5'/0'/0/0" }).address;
 // XoJA8qE3N2Y3jMLEtZ3vcN42qseZ8LvFf5, the same address Ledger Live derives
 ```
 

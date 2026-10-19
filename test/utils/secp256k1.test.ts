@@ -57,7 +57,9 @@ describe("secp256k1 key errors on every chain", () => {
       if (chain.curve !== "secp256k1") return;
       for (const keyPrivate of ["00".repeat(32), curveOrder, "abcdef"]) {
         expect(() => chain.getKeyPublic(keyPrivate)).toThrow(privateKeyError);
-        expect(() => chain.signMessage("hello", keyPrivate)).toThrow(privateKeyError);
+        expect(() => chain.signMessage("hello", { privateKey: keyPrivate })).toThrow(
+          privateKeyError,
+        );
       }
       for (const keyPublic of [`02${"00".repeat(32)}`, `04${"00".repeat(64)}`, "zz"]) {
         expect(() => chain.getAddress(keyPublic)).toThrow(publicKeyError);
@@ -68,8 +70,8 @@ describe("secp256k1 key errors on every chain", () => {
   it("names the key on Sui's secp256k1 scheme", async () => {
     const chain = await blockchains.sui()();
     expect(() => chain.getKeyPublic(curveOrder, { scheme: "secp256k1" })).toThrow(privateKeyError);
-    expect(() => chain.signMessage("hello", curveOrder, { scheme: "secp256k1" })).toThrow(
-      privateKeyError,
-    );
+    expect(() =>
+      chain.signMessage("hello", { privateKey: curveOrder, scheme: "secp256k1" }),
+    ).toThrow(privateKeyError);
   });
 });

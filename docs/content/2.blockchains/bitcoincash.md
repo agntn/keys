@@ -58,7 +58,7 @@ BIP32 on `m/44'/145'/account'/change/index`. The purpose level doesn't pick a fo
 ```js
 const mnemonic = "all all all all all all all all all all all all";
 
-bchChain.deriveHDWallet(mnemonic, "m/44'/145'/0'/0/0").address;
+bchChain.deriveHDWallet(mnemonic, { path: "m/44'/145'/0'/0/0" }).address;
 // bitcoincash:qr08q88p9etk89wgv05nwlrkm4l0urz4cyl36hh9sv, what a Trezor shows for that seed
 ```
 

@@ -65,9 +65,9 @@ BIP32 on coin type 156 from SLIP-0044, the one Trezor uses too. The purpose leve
 const mnemonic =
   "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
-btgChain.deriveHDWallet(mnemonic, "m/44'/156'/0'/0/0").address; // GeTZ7bjfXtGsyEcerSSFJNUSZwLfjtCJX9
-btgChain.deriveHDWallet(mnemonic, "m/49'/156'/0'/0/0").address; // AL8uaqKrP4n61pb2BrQXpMC3VcUdjmpAwn
-btgChain.deriveHDWallet(mnemonic, "m/84'/156'/0'/0/0").address; // btg1qkwnu2phwvard2spr2n0a9d84x590ahywl3yacu
+btgChain.deriveHDWallet(mnemonic, { path: "m/44'/156'/0'/0/0" }).address; // GeTZ7bjfXtGsyEcerSSFJNUSZwLfjtCJX9
+btgChain.deriveHDWallet(mnemonic, { path: "m/49'/156'/0'/0/0" }).address; // AL8uaqKrP4n61pb2BrQXpMC3VcUdjmpAwn
+btgChain.deriveHDWallet(mnemonic, { path: "m/84'/156'/0'/0/0" }).address; // btg1qkwnu2phwvard2spr2n0a9d84x590ahywl3yacu
 ```
 
 WIF is Bitcoin's, prefix `0x80` on mainnet and `0xef` on testnet. `encode(privateKey, { chain: "bitcoin" })` from `@agntn/keys/wif` gives a string a Bitcoin Gold wallet imports.

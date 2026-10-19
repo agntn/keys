@@ -196,7 +196,11 @@ describe("Blockchain Path Integration", () => {
 
   test("should respect custom account parameters", () => {
     const chain = useBlockchain(new Bitcoin());
-    const path = getBlockchainPath(chain, 2, BIP44Change.INTERNAL, 5);
+    const path = getBlockchainPath(chain, {
+      account: 2,
+      change: BIP44Change.INTERNAL,
+      addressIndex: 5,
+    });
     expect(path).toBe("m/44'/0'/2'/1/5");
   });
 
@@ -214,7 +218,9 @@ describe("Blockchain Path Integration", () => {
   ] as const)("should give a %s testnet wallet coin type 1", async (name) => {
     const testnet = await blockchains[name]({ network: "testnet" })();
     expect(testnet.coinType).toBe(BIP44.TESTNET);
-    expect(getBlockchainPath(testnet, 0, 1, 3)).toBe("m/44'/1'/0'/1/3");
+    expect(getBlockchainPath(testnet, { account: 0, change: 1, addressIndex: 3 })).toBe(
+      "m/44'/1'/0'/1/3",
+    );
     const mainnet = await blockchains[name]()();
     expect(mainnet.coinType).toBe(mainnet.bip44);
   });
@@ -241,7 +247,9 @@ describe("Blockchain Path Integration", () => {
 
   test("should hand the scheme to a chain with two curves", () => {
     const chain = useBlockchain(new Sui());
-    expect(getBlockchainPath(chain, 0, 0, 0, { scheme: "secp256k1" })).toBe("m/54'/784'/0'/0/0");
+    expect(
+      getBlockchainPath(chain, { account: 0, change: 0, addressIndex: 0, scheme: "secp256k1" }),
+    ).toBe("m/54'/784'/0'/0/0");
   });
 
   test.each(slip10WalletVectors)(
@@ -249,7 +257,7 @@ describe("Blockchain Path Integration", () => {
     async ({ chain, address }) => {
       const blockchain = await blockchains[chain]()();
       const path = getBlockchainPath(blockchain);
-      expect(blockchain.deriveHDWallet(bip39TestVectors.mnemonic, path).address).toBe(address);
+      expect(blockchain.deriveHDWallet(bip39TestVectors.mnemonic, { path }).address).toBe(address);
     },
   );
 
@@ -257,8 +265,8 @@ describe("Blockchain Path Integration", () => {
     const blockchain = useBlockchain(new Stellar());
     const { mnemonic, accounts } = stellarTestVectors.hd;
     for (const [index, [, , address]] of accounts.entries()) {
-      const path = getBlockchainPath(blockchain, index);
-      expect(blockchain.deriveHDWallet(mnemonic, path).address).toBe(address);
+      const path = getBlockchainPath(blockchain, { account: index });
+      expect(blockchain.deriveHDWallet(mnemonic, { path }).address).toBe(address);
     }
   });
 });

@@ -70,14 +70,14 @@ const mnemonic =
   "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
 nearChain.getDerivationPath(); // "m/44'/397'/0'"
-nearChain.deriveHDWallet(mnemonic, "m/44'/397'/0'").address;
+nearChain.deriveHDWallet(mnemonic, { path: "m/44'/397'/0'" }).address;
 // 5510e2b44cae6eb807e3e0e45d579dda058c274abcba15e5cb84636f5d1ee412
 ```
 
 Ledger went its own way, of course. Its NEAR app defaults to `m/44'/397'/0'/0'/1'`, five levels deep. Pass that path to `deriveHDWallet` as it is.
 
 ```js
-nearChain.deriveHDWallet(mnemonic, "m/44'/397'/0'/0'/1'").address;
+nearChain.deriveHDWallet(mnemonic, { path: "m/44'/397'/0'/0'/1'" }).address;
 // c571e33e2e36c2c728d617ea77a88e2320c8697eac8b463adfc0128b96825cbf
 ```
 
@@ -88,8 +88,8 @@ Not sure which wallet made the phrase? `keys_hd_wallet_scan` walks both, `bip44`
 `signMessage` signs the raw message bytes with ed25519, like Solana and Aptos.
 
 ```js
-const signature = nearChain.signMessage("Hello, NEAR!", privateKey);
-nearChain.verifyMessage("Hello, NEAR!", signature, publicKey); // true
+const signature = nearChain.signMessage("Hello, NEAR!", { privateKey });
+nearChain.verifyMessage("Hello, NEAR!", { signature, publicKey }); // true
 ```
 
 Wallets that sign under NEP-413 won't match this. They wrap a nonce and a recipient around the message first and sign the hash of that. Different bytes, different signature.

@@ -26,7 +26,9 @@ describe("Bitcoin Gold", () => {
     expect(chain).toBeInstanceOf(NamedBitcoinGold);
     expect(chain.name).toBe("bitcoingold");
     expect(chain.curve).toBe("secp256k1");
-    expect(getBlockchainPath(chain, 0, 1, 3)).toBe("m/44'/156'/0'/1/3");
+    expect(getBlockchainPath(chain, { account: 0, change: 1, addressIndex: 3 })).toBe(
+      "m/44'/156'/0'/1/3",
+    );
     expect(() => new BitcoinGold({ network: "regtest" })).toThrow("mainnet and testnet only");
   });
 
@@ -49,9 +51,9 @@ describe("Bitcoin Gold", () => {
     expect(() => chain.getAddress(secp256k1TestVectors.publicKeyCompressed, "taproot")).toThrow(
       "never activated Taproot",
     );
-    expect(() => chain.deriveHDWallet(bip39TestVectors.mnemonic, "m/86'/156'/0'/0/0")).toThrow(
-      "never activated Taproot",
-    );
+    expect(() =>
+      chain.deriveHDWallet(bip39TestVectors.mnemonic, { path: "m/86'/156'/0'/0/0" }),
+    ).toThrow("never activated Taproot");
   });
 
   it("refuses an address type it does not write instead of falling back to legacy", () => {
@@ -91,11 +93,18 @@ describe("Bitcoin Gold", () => {
   it("signs the node's signmessagewithprivkey vector byte for byte", () => {
     const chain = new BitcoinGold({ network: "testnet" });
     const { message, signature } = vector.signed;
-    const signed = chain.signMessage(message, signedKey);
+    const signed = chain.signMessage(message, { privateKey: signedKey });
     expect(signed).toBe(compactToRS(signature));
-    expect(chain.verifyMessage(message, signed, chain.getKeyPublic(signedKey))).toBe(true);
-    expect(chain.verifyMessage(`${message}!`, signed, chain.getKeyPublic(signedKey))).toBe(false);
-    expect(chain.signMessage(message, signedKey, { recovered: true })).toBe(signature);
+    expect(
+      chain.verifyMessage(message, { signature: signed, publicKey: chain.getKeyPublic(signedKey) }),
+    ).toBe(true);
+    expect(
+      chain.verifyMessage(`${message}!`, {
+        signature: signed,
+        publicKey: chain.getKeyPublic(signedKey),
+      }),
+    ).toBe(false);
+    expect(chain.signMessage(message, { privateKey: signedKey, recovered: true })).toBe(signature);
     const signer = chain.recoverMessageSigner(message, signature);
     expect(chain.getAddress(signer.publicKey, signer.addressType)).toBe(vector.signed.address);
   });
@@ -105,12 +114,16 @@ describe("Bitcoin Gold", () => {
     const bitcoin = new Bitcoin();
     const { privateKey, publicKeyCompressed } = secp256k1TestVectors;
     for (const message of Object.values(testMessages)) {
-      const signature = bitcoin.signMessage(message, privateKey);
-      expect(chain.signMessage(message, privateKey)).not.toBe(signature);
-      expect(chain.verifyMessage(message, signature, publicKeyCompressed)).toBe(false);
+      const signature = bitcoin.signMessage(message, { privateKey });
+      expect(chain.signMessage(message, { privateKey })).not.toBe(signature);
+      expect(chain.verifyMessage(message, { signature, publicKey: publicKeyCompressed })).toBe(
+        false,
+      );
     }
-    const core = bitcoin.signMessage("hello", privateKey, { recovered: true });
-    expect(chain.verifyMessage("hello", core, publicKeyCompressed)).toBe(false);
+    const core = bitcoin.signMessage("hello", { privateKey, recovered: true });
+    expect(chain.verifyMessage("hello", { signature: core, publicKey: publicKeyCompressed })).toBe(
+      false,
+    );
   });
 
   it.each([
@@ -118,7 +131,7 @@ describe("Bitcoin Gold", () => {
     ["m/49'/156'/0'/0/0", /^A/u],
     ["m/84'/156'/0'/0/0", /^btg1q/u],
   ])("reads the purpose of %s for the address type", (path, pattern) => {
-    const wallet = new BitcoinGold().deriveHDWallet(bip39TestVectors.mnemonic, path);
+    const wallet = new BitcoinGold().deriveHDWallet(bip39TestVectors.mnemonic, { path });
     expect(wallet.address).toMatch(pattern);
   });
 });

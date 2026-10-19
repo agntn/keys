@@ -24,7 +24,7 @@ const mnemonic = `${words[0]} ${words[1]} … ${words.at(-1)}`;
     <header class="console-bar">
       <span class="console-title path-title"
         ><span class="console-tag">Call</span>ethereum.<span class="tok-fn">deriveHDWallet</span
-        >(mnemonic, <span class="tok-str">"{{ hd.path }}"</span>)</span
+        >(mnemonic, { path: <span class="tok-str">"{{ hd.path }}"</span> })</span
       >
       <span class="console-mark" aria-hidden="true" />
     </header>

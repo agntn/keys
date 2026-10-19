@@ -47,7 +47,9 @@ describe("Solana Blockchain", () => {
       const keyPrivate = "0000000000000000000000000000000000000000000000000000000000000001";
       const keyPublic = blockchain.getKeyPublic(keyPrivate);
 
-      expect(blockchain.verifyMessage("message", "not-a-signature", keyPublic)).toBe(false);
+      expect(
+        blockchain.verifyMessage("message", { signature: "not-a-signature", publicKey: keyPublic }),
+      ).toBe(false);
     });
   });
 
@@ -98,28 +100,31 @@ describe("Solana Blockchain", () => {
     it("derives the Phantom style m/44'/501'/0'/0' address over SLIP-10", () => {
       const path = blockchain.getDerivationPath();
       expect(path).toBe(vector.path);
-      expect(blockchain.deriveHDWallet(bip39TestVectors.mnemonic, path).address).toBe(
+      expect(blockchain.deriveHDWallet(bip39TestVectors.mnemonic, { path }).address).toBe(
         vector.address,
       );
     });
 
     it("reads the h hardened marker of BIP380 descriptors over SLIP-10", () => {
       expect(
-        blockchain.deriveHDWallet(bip39TestVectors.mnemonic, vector.path.replaceAll("'", "h"))
-          .address,
+        blockchain.deriveHDWallet(bip39TestVectors.mnemonic, {
+          path: vector.path.replaceAll("'", "h"),
+        }).address,
       ).toBe(vector.address);
     });
 
     it("hardens the account and the change branch and has no address index", () => {
-      expect(blockchain.getDerivationPath(3, 1)).toBe("m/44'/501'/3'/1'");
-      expect(() => blockchain.getDerivationPath(0, 2)).toThrow(RangeError);
-      expect(() => blockchain.getDerivationPath(0, 0, 1)).toThrow(RangeError);
+      expect(blockchain.getDerivationPath({ account: 3, change: 1 })).toBe("m/44'/501'/3'/1'");
+      expect(() => blockchain.getDerivationPath({ account: 0, change: 2 })).toThrow(RangeError);
+      expect(() =>
+        blockchain.getDerivationPath({ account: 0, change: 0, addressIndex: 1 }),
+      ).toThrow(RangeError);
     });
 
     it("rejects non-hardened segments on ed25519", () => {
-      expect(() => blockchain.deriveHDWallet(bip39TestVectors.mnemonic, "m/44'/501'/0'/0")).toThrow(
-        "Non-hardened",
-      );
+      expect(() =>
+        blockchain.deriveHDWallet(bip39TestVectors.mnemonic, { path: "m/44'/501'/0'/0" }),
+      ).toThrow("Non-hardened");
     });
   });
 
@@ -133,13 +138,21 @@ describe("Solana Blockchain", () => {
     });
 
     it.each(vector.messages)("signs tweetnacl detached vector %# as is", (message, signature) => {
-      expect(blockchain.signMessage(message, vector.privateKey)).toBe(signature);
-      expect(blockchain.signMessage(new TextEncoder().encode(message), vector.privateKey)).toBe(
-        signature,
+      expect(blockchain.signMessage(message, { privateKey: vector.privateKey })).toBe(signature);
+      expect(
+        blockchain.signMessage(new TextEncoder().encode(message), {
+          privateKey: vector.privateKey,
+        }),
+      ).toBe(signature);
+      expect(blockchain.verifyMessage(message, { signature, publicKey: vector.publicKey })).toBe(
+        true,
       );
-      expect(blockchain.verifyMessage(message, signature, vector.publicKey)).toBe(true);
-      expect(blockchain.verifyMessage(message + "!", signature, vector.publicKey)).toBe(false);
-      expect(blockchain.verifyMessage(message, "invalid", vector.publicKey)).toBe(false);
+      expect(
+        blockchain.verifyMessage(message + "!", { signature, publicKey: vector.publicKey }),
+      ).toBe(false);
+      expect(
+        blockchain.verifyMessage(message, { signature: "invalid", publicKey: vector.publicKey }),
+      ).toBe(false);
     });
   });
 });

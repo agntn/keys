@@ -64,9 +64,9 @@ const mnemonic =
   "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
 cosmosChain.getDerivationPath(); // "m/44'/118'/0'/0/0"
-cosmosChain.deriveHDWallet(mnemonic, "m/44'/118'/0'/0/0").address;
+cosmosChain.deriveHDWallet(mnemonic, { path: "m/44'/118'/0'/0/0" }).address;
 // cosmos19rl4cm2hmr8afy4kldpxz3fka4jguq0auqdal4
-osmosis.deriveHDWallet(mnemonic, "m/44'/118'/0'/0/0").address;
+osmosis.deriveHDWallet(mnemonic, { path: "m/44'/118'/0'/0/0" }).address;
 // osmo19rl4cm2hmr8afy4kldpxz3fka4jguq0a5m7df8
 ```
 
@@ -80,7 +80,7 @@ Because Terra never used 118. It walks `m/44'/330'`, Secret walks 529, Kava 459.
 const terra = useBlockchain(await blockchains.cosmos({ prefix: "terra" })());
 
 terra.getDerivationPath(); // "m/44'/330'/0'/0/0"
-terra.deriveHDWallet(mnemonic, terra.getDerivationPath()).address;
+terra.deriveHDWallet(mnemonic, { path: terra.getDerivationPath() }).address;
 // terra1amdttz2937a3dytmxmkany53pp6ma6dy4vsllv
 ```
 
@@ -89,7 +89,7 @@ Wallet went its own way, or the table missed your chain? `coinType` wins over th
 ```js
 const hubPath = useBlockchain(await blockchains.cosmos({ prefix: "terra", coinType: 118 })());
 
-hubPath.deriveHDWallet(mnemonic, hubPath.getDerivationPath()).address;
+hubPath.deriveHDWallet(mnemonic, { path: hubPath.getDerivationPath() }).address;
 // terra19rl4cm2hmr8afy4kldpxz3fka4jguq0a6yhaa4
 ```
 
@@ -102,9 +102,9 @@ Don't know which account the phrase used? `keys_hd_wallet_scan` walks accounts a
 `signMessage` signs like Keplr's `signArbitrary`, ADR-036. The message goes into a sign doc as base64, next to the signer's address. Fee and sequence stay zero. The SHA-256 of that JSON is what gets signed. You get 64 bytes of `r||s` in hex, no recovery byte. Keplr hands over the same bytes in base64.
 
 ```js
-const signature = cosmosChain.signMessage("Hello, Cosmos!", privateKey);
-cosmosChain.verifyMessage("Hello, Cosmos!", signature, publicKey); // true
-osmosis.verifyMessage("Hello, Cosmos!", signature, publicKey); // false
+const signature = cosmosChain.signMessage("Hello, Cosmos!", { privateKey });
+cosmosChain.verifyMessage("Hello, Cosmos!", { signature, publicKey }); // true
+osmosis.verifyMessage("Hello, Cosmos!", { signature, publicKey }); // false
 ```
 
 That last `false` is correct. The signer's address sits inside the signed bytes, prefix included, so a signature for `cosmos1...` says nothing about `osmo1...`.

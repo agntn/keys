@@ -3,7 +3,13 @@ import { BIP44 } from "../utils/bip44/index.ts";
 import { getHardenedPath } from "../utils/bip44/paths.ts";
 import { decodeKeyPublic } from "../utils/ed25519.ts";
 import { AbstractEd25519Blockchain } from "../utils/ed25519-chains.ts";
-import type { AddressType, KeyOptions } from "../types.ts";
+import { assertVerifyOptions, readPathOptions } from "../utils/options.ts";
+import type {
+  AddressType,
+  DerivationPathOptions,
+  KeyOptions,
+  VerifyMessageOptions,
+} from "../types.ts";
 
 /** Prefix NEAR writes in front of a base58 ed25519 key, as in `ed25519:6j4b6z...`. */
 const KEY_PREFIX = "ed25519:";
@@ -34,12 +40,11 @@ export class Near extends AbstractEd25519Blockchain {
 
   /**
    * near-seed-phrase stops at `m/44'/397'/0'`, so account `a` is `m/44'/397'/a'`, no deeper.
-   * @param account - Account index
-   * @param change - Must stay 0
-   * @param addressIndex - Must stay 0
+   * @param options - Account; `change` and `addressIndex` must stay 0
    * @returns {string} The SLIP-10 path
    */
-  override getDerivationPath(account = 0, change = 0, addressIndex = 0): string {
+  override getDerivationPath(options?: DerivationPathOptions): string {
+    const { account = 0, change = 0, addressIndex = 0 } = readPathOptions(options);
     if (change !== 0 || addressIndex !== 0) {
       throw new RangeError("NEAR paths end at the account, so change and addressIndex must be 0");
     }
@@ -69,19 +74,19 @@ export class Near extends AbstractEd25519Blockchain {
   /**
    * Checks a raw ed25519 signature over the message bytes.
    * @param message - The signed message
-   * @param signature - The signature as hex
-   * @param keyPublic - The public key as hex, or as `ed25519:` and base58
-   * @param options - Key options
+   * @param options - The signature as hex, and the public key as hex or as `ed25519:` and base58
    * @returns {boolean} Whether the signature is valid, false for a malformed key too
    */
   override verifyMessage(
     message: string | Uint8Array,
-    signature: string,
-    keyPublic: string,
-    options?: KeyOptions,
+    options: VerifyMessageOptions<KeyOptions>,
   ): boolean {
+    assertVerifyOptions(options);
     try {
-      return super.verifyMessage(message, signature, readKeyPublic(keyPublic).toHex(), options);
+      return super.verifyMessage(message, {
+        ...options,
+        publicKey: readKeyPublic(options.publicKey).toHex(),
+      });
     } catch {
       return false;
     }

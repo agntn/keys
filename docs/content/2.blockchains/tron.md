@@ -48,14 +48,14 @@ Base58check decode, version byte `0x41`, 21 bytes total. The checksum catches ty
 `signMessage` frames the message the TIP-191 way, `"\x19TRON Signed Message:\n" + length + message`, hashes it with Keccak-256 and signs with secp256k1. That's the digest TronWeb's `signMessageV2` and TronLink sign, so the same key gives the same `r` and `s` here and there. Default output is those 64 bytes in hex.
 
 ```js
-const signature = tronChain.signMessage("hello", privateKey);
-tronChain.verifyMessage("hello", signature, publicKey); // true
+const signature = tronChain.signMessage("hello", { privateKey });
+tronChain.verifyMessage("hello", { signature, publicKey }); // true
 ```
 
 `verifyMessageV2` recovers the address from the signature, so it needs the `v`:
 
 ```js
-tronChain.signMessage("hello", privateKey, { recovered: true });
+tronChain.signMessage("hello", { privateKey, recovered: true });
 // 65 bytes, r||s||v, what TronWeb signMessageV2 returns for the same key
 ```
 
@@ -64,7 +64,7 @@ Ethereum uses the same framing under its own preamble, which is why a TRON signa
 Want the signer instead? `recoverMessageSigner` reads the key out of those 65 bytes:
 
 ```js
-const recoverable = tronChain.signMessage("hello", privateKey, { recovered: true });
+const recoverable = tronChain.signMessage("hello", { privateKey, recovered: true });
 const signer = tronChain.recoverMessageSigner("hello", recoverable);
 tronChain.getAddress(signer.publicKey); // TJCnKsPa7y5okkXvQAidZBzqx3QyQ6sxMW, same as above
 ```

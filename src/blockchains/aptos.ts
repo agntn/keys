@@ -3,7 +3,8 @@ import { addSchemeByte, createPrefixedAddress, validateAddressHex } from "../uti
 import { BIP44Change, getHardenedPath } from "../utils/bip44/paths.ts";
 import { decodeKeyPublic } from "../utils/ed25519.ts";
 import { AbstractEd25519Blockchain } from "../utils/ed25519-chains.ts";
-import type { AddressType } from "../types.ts";
+import { readPathOptions } from "../utils/options.ts";
+import type { AddressType, DerivationPathOptions } from "../types.ts";
 
 /** Aptos blockchain implementation. */
 export class Aptos extends AbstractEd25519Blockchain {
@@ -13,16 +14,15 @@ export class Aptos extends AbstractEd25519Blockchain {
   /**
    * Petra and the Aptos SDK derive at `m/44'/637'/account'/change'/addressIndex'`, all five levels
    * hardened, which is what the SDK's `isValidHardenedPath` accepts.
-   * @param account - Account index
-   * @param change - Change branch
-   * @param addressIndex - Address index
+   * @param options - Account, change branch and address index
    * @returns {string} The SLIP-10 path
    */
-  override getDerivationPath(
-    account = 0,
-    change: number = BIP44Change.EXTERNAL,
-    addressIndex = 0,
-  ): string {
+  override getDerivationPath(options?: DerivationPathOptions): string {
+    const {
+      account = 0,
+      change = BIP44Change.EXTERNAL,
+      addressIndex = 0,
+    } = readPathOptions(options);
     return getHardenedPath(this.bip44, [account, change, addressIndex]);
   }
 

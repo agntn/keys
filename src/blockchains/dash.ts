@@ -20,7 +20,7 @@ export class Dash extends AbstractBitcoinP2PKHBlockchain {
   protected override readonly messagePreamble = "\u0019DarkCoin Signed Message:\n";
 
   constructor(options?: Options) {
-    super(options, "Dash", NETWORK_PARAMS);
+    super(options, { label: "Dash", networks: NETWORK_PARAMS });
   }
 }
 
