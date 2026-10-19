@@ -2968,3 +2968,20 @@ export const moneroTestVectors = {
     view: "SigV1VnKqbtVFYW24r2ueSwQaNLVVR15Qmyc4iLSKgLCfe1WkBevpKsPrY2x4tNbrr7mWDf9V2eErf4md4ZbfKT7MzmR3",
   },
 } as const;
+
+/**
+ * Owners as arweave.net GraphQL serves them, `owner { key address }` of each transaction.
+ * Both wallets come from agntn/keys#137 and were swept long ago. Public halves only.
+ */
+export const arweaveVectors = [
+  {
+    transaction: "-znsFI31cjd4kYHwoBcvzXh7434d4xWuu8XF12Ofiy8",
+    n: "1hygsGbdpG91R5-8_tMsfh9I_JWeLpfMIJFcjSU_MjIabxIQJP0UyHEhUCGn2MbMZA8SYMsRAKdoGyZuy04D5nrO61NRYNP8d0BY0QiUdjLqHA8IzUVqy4GQSO1PFhUVP4Jl3EIAafw-qeVqoP0V7fRxs_UW8D_vE4wTWSfJGCrKQCkTNyWoS_8Pb8ml6gcTfLoX5ahJakwRhsTa8Ne2aGJU5ANY1JcmEumD2XDyooiCaRPbZuiWHUNHyJQosvQGmWQsovxRjIL3drddZqn4LN0ic9HbeFHJ-S-HSKJ5XgSkatw5Id-GBUk_tcAET_4YHiF_eSNtmkFTDdUtKzrsESk9ivD0kl89KAwGpZnob86fccgQ0b837i63whxBMKopMhNySDIgojORzl-88MXQmLD74yuo2RbKPJJ2bFaiLeUXQOlHNNaZ6nDUZlSDC8f4V9D5RC8BBI3Pv9yYmGOBHI9bjCdw7HhfJyaiXOof7DTBrkoAx8PKoE5wUXpAQv5OnuKMJhu0ZBWS7yQnjA5iKXWYe40T0Krsgo-f2zb3x0KuwzmjRBsu-44RL1kbVY6BtI8okd-TyuoJFPnk25ZFnH9fW2wcZIjU-Ky7H25QGB2M-MQa2FXwRXOY8qNBsB_RBdBj1tCV9chDny4FBExEnHOT72ajsVN7BHOB0dMLvFc",
+    address: "PbdTDYikdddWfNFlDt2aZokALXKe1mJVSC9TALUBNv8",
+  },
+  {
+    transaction: "B1DKP6EzPW2WeDo-bhhNMbXqAEieo-4eaH47P5O2sVQ",
+    n: "s8Vqn1wMqJNrRsU3vxe7pAjJyhH-ziofaTTbi_4GxY9aXhQS1HTSNyHi5KN076b_gWjA6xKTTHH--NbDRL3yemSJO3PEli-EYzkfnZ6Q_DBJlYQGq2A77nTQItnTgK-1jdlLw9-q_beVignkwbYgsOCcfGx6lAC5fs0pnJ3cz4XZ2IyD-RPhduZEXjWJeh8ca8mamH4LX2AKUdhVQo69WTOXLwGoLnhctRJCEsVLaByLsHiq4WFoB26EYYYjdOEG85v9ypRyaHM2EXt5cDnq04p4IwnGM0dWQtmLDtCSK9W5XCnddNLlX5WgbSHpNlSZT4Q4XB-HKHVzUHYHUrRJQbtvnzPmp7LiTDvpnfIjQaHYOU1XrwE-hAUH-pkeLRIEF3bJU6_wNPJ8vQcPZlJ6MsDE5YU96II8oFqSsP17UJao8Q74kVo3vSplUzjYBQNz540irQFizyYEacvTZ9kn607We-P22ooIrYyeBlnkpULtn5uEozotoHo8Agr_TR4TfeqHLbNTnGv3bcyox572Ar7agPi9RRIhsme_RUsvVSOXoEHKoSOlzJM5kUIUkIKkKfbT8rOGukYREAPkl3cX27DnBdErR0Qy3hYz59zmwqHphOqCa9v_32jvWq45RQ5ca0fUQOmjYbQc6VrPgPHw04W4ghBJJvZLPn9KD0MgqB8",
+    address: "2pwE_LEzD0z6m_ENCDIta9YTBKXW9FFCURrx1yJoO7w",
+  },
+] as const;

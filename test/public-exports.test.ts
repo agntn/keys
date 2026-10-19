@@ -18,6 +18,7 @@ import {
   brainwalletInput,
   brainwalletVectors,
   storeVectors,
+  arweaveVectors,
   electrumVectors,
   wifTestVectors,
   localizedMnemonicVectors,
@@ -37,6 +38,7 @@ import { blockchains as sourceChains } from "../src/_blockchains.ts";
 import { ELECTRUM_LEGACY_WORDS } from "../src/utils/electrum/legacy.ts";
 
 const EXPORTS = [
+  ["@agntn/keys/arweave", "/dist/utils/arweave/index.mjs"],
   ["@agntn/keys/bip32", "/dist/utils/bip32/index.mjs"],
   ["@agntn/keys/bip322", "/dist/utils/bip322/index.mjs"],
   ["@agntn/keys/bip38", "/dist/utils/bip38/index.mjs"],
@@ -290,6 +292,16 @@ describe("Public keystore exports", () => {
   });
 });
 
+describe("Public Arweave exports", () => {
+  it("derives and checks an Arweave address from the built package, and nothing else", async () => {
+    const arweave = await import("@agntn/keys/arweave");
+    const { n, address } = arweaveVectors[1];
+    expect(arweave.getAddress({ kty: "RSA", n })).toBe(address);
+    expect(arweave.validateAddress(address)).toBe(true);
+    expect(new Set(Object.keys(arweave))).toEqual(new Set(["getAddress", "validateAddress"]));
+  });
+});
+
 describe("Public derivation exports", () => {
   it("exports explicit Electrum derivation from the built package", async () => {
     const { deriveSeed, inspect } = await import("@agntn/keys/electrum");
@@ -465,6 +477,7 @@ describe("Consumer bundles", () => {
     ["defineCurve", "@agntn/keys/curve"],
     ["derive", "@agntn/keys/brainwallet"],
     ["decrypt", "@agntn/keys/store"],
+    ["getAddress", "@agntn/keys/arweave"],
     ["decrypt", "@agntn/keys/bip38"],
     ["verify", "@agntn/keys/bip322"],
     ["extractSignatures", "@agntn/keys/transaction"],

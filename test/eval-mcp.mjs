@@ -17,6 +17,7 @@ import {
   brainwalletInput,
   brainwalletVectors,
   storeVectors,
+  arweaveVectors,
   evmRecoverTestVectors,
   bip39WordOrderVector,
   bip39WordRepairVectors,
@@ -138,6 +139,12 @@ try {
     "keys_bip38_decrypt",
     { encryptedKey: bip38Vectors[3].encrypted, passphrase: bip38Vectors[3].passphrase },
     new RegExp(`Passphrase: correct\nPublic key: \\w+\nAddress: ${bip38Vectors[3].address}$`),
+  );
+
+  await call(
+    "keys_arweave_address_get",
+    { key: arweaveVectors[0].n, target: arweaveVectors[0].address },
+    new RegExp(`^Address: ${arweaveVectors[0].address}\nTarget: match$`),
   );
 
   await call(

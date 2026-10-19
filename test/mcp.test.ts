@@ -47,6 +47,7 @@ import {
   plainBrainwalletVectors,
   warpWalletVectors,
   storeVectors,
+  arweaveVectors,
   bip322Vectors,
   reusedNonceVector,
   transactionVectors,
@@ -499,6 +500,38 @@ describe("keys MCP server", () => {
       const failed = await client.callTool({ name: "keys_bip38_inspect", arguments: args });
       expect(failed.isError).toBe(true);
       expect(text(failed.content)).toContain(message);
+    }
+  });
+
+  it("derives an Arweave address through MCP from a keyfile or its modulus", async () => {
+    const client = await connectTestClient();
+    const [{ n, address }, other] = arweaveVectors;
+    const keyfile = JSON.stringify({ kty: "RSA", n, e: "AQAB", d: "private-exponent" });
+
+    const fromFile = await client.callTool({
+      name: "keys_arweave_address_get",
+      arguments: { key: keyfile, target: address },
+    });
+    expect(fromFile.isError).not.toBe(true);
+    expect(text(fromFile.content)).toBe(`Address: ${address}\nTarget: match`);
+
+    const fromModulus = await client.callTool({
+      name: "keys_arweave_address_get",
+      arguments: { key: n, target: other.address },
+    });
+    expect(text(fromModulus.content)).toBe(`Address: ${address}\nTarget: no match`);
+
+    for (const [args, message] of [
+      [{ key: '{"kty":"RSA","d":"private-exponent"' }, "Arweave keyfile must be valid JSON"],
+      [{ key: JSON.stringify({ kty: "EC", d: "private-exponent" }) }, "must be an RSA JWK"],
+      [{ key: `${n}=` }, "Arweave modulus must be unpadded base64url"],
+      [{ key: n, target: `${address}:AAAAAA` }, "Invalid arguments at /target"],
+      [{ key: "" }, "Invalid arguments at /key"],
+    ] as const) {
+      const failed = await client.callTool({ name: "keys_arweave_address_get", arguments: args });
+      expect(failed.isError).toBe(true);
+      expect(text(failed.content)).toContain(message);
+      expect(text(failed.content)).not.toContain("private-exponent");
     }
   });
 

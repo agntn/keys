@@ -17,6 +17,7 @@ export default defineBuildConfig({
         "./src/mcp.ts",
         "./src/tool-operations/index.ts",
         "./src/tools.ts",
+        "./src/utils/arweave/index.ts",
         "./src/utils/bip32/index.ts",
         "./src/utils/bip322/index.ts",
         "./src/utils/bip38/index.ts",

@@ -15,6 +15,7 @@ export const TOOL_NAMES = [
   "keys_bip38_inspect",
   "keys_bip38_decrypt",
   "keys_store_decrypt",
+  "keys_arweave_address_get",
   "keys_wallet_generate",
   "keys_wallet_derive",
   "keys_hd_wallet_derive",
@@ -71,6 +72,9 @@ export const MAX_KEYSTORE_LENGTH = 16_384;
 
 /** Maximum keystore password length, in characters. */
 export const MAX_KEYSTORE_PASSWORD_LENGTH = 4096;
+
+/** Longest Arweave key the tool reads: a whole 4096-bit keyfile is about 3.3k characters. */
+export const MAX_ARWEAVE_KEY_LENGTH = 8192;
 
 /** Maximum address length the BIP38 tool hashes against a key. */
 export const MAX_BIP38_ADDRESS_LENGTH = 128;
