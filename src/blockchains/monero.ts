@@ -1,3 +1,13 @@
+import {
+  addPoints,
+  ed25519 as curve,
+  isIdentity,
+  isTorsionFree,
+  isValidPoint,
+  multiplyGenerator,
+  multiplyPoint,
+  reduceScalar as reduceHex,
+} from "@agntn/curves/ed25519";
 import { keccak256 } from "@agntn/hashes";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { bytesToNumberLE, equalBytes } from "@noble/curves/utils.js";
@@ -17,6 +27,7 @@ import type {
   Wallet,
 } from "../types.ts";
 
+/** Spend keys and signatures multiply here in constant time, which curves won't promise. */
 const { Point } = ed25519;
 
 /** Network bytes of the three address kinds, one set per network Monero runs. */
@@ -33,7 +44,7 @@ const ADDRESS_PREFIXES: Readonly<Record<string, AddressPrefixes>> = {
 };
 
 /** The largest multiple of l that fits in 32 bytes; draws at or above it would bias the key. */
-const DRAW_LIMIT = 15n * Point.Fn.ORDER;
+const DRAW_LIMIT = 15n * curve.l;
 
 /** Bytes of the keccak256 checksum at the end of an address. */
 const CHECKSUM_BYTES = 4;
@@ -74,7 +85,7 @@ const SIGNATURE_BYTES = 64;
  * @returns {bigint} The scalar
  */
 function reduceScalar(bytes: Uint8Array): bigint {
-  return Point.Fn.create(bytesToNumberLE(bytes));
+  return reduceHex(bytes.toHex());
 }
 
 /**
@@ -118,12 +129,8 @@ function viewScalar(spend: bigint): bigint {
  * @returns {boolean} Whether a Monero wallet would pay to it
  */
 function isAddressKey(key: Uint8Array): boolean {
-  try {
-    const point = Point.fromBytes(key);
-    return !point.is0() && point.isTorsionFree();
-  } catch {
-    return false;
-  }
+  const point = key.toHex();
+  return isValidPoint(point) && !isIdentity(point) && isTorsionFree(point);
 }
 
 /**
@@ -158,10 +165,10 @@ function viewKeyBytes(viewKey: string, publicView: ArrayLike<number>): Uint8Arra
   const bytes = Uint8Array.fromHex(viewKey);
   if (bytes.length !== 32) throw new RangeError("Monero view key must be 32 bytes");
   const scalar = bytesToNumberLE(bytes);
-  if (scalar === 0n || scalar >= Point.Fn.ORDER) {
+  if (scalar === 0n || scalar >= curve.l) {
     throw new RangeError("Monero view key must be a nonzero scalar below l, as wallets keep it");
   }
-  if (!equalBytes(Point.BASE.multiply(scalar).toBytes(), Uint8Array.from(publicView))) {
+  if (multiplyGenerator(scalar) !== Uint8Array.from(publicView).toHex()) {
     throw new RangeError("Monero view key does not belong to the public view key it came with");
   }
   return bytes;
@@ -315,9 +322,9 @@ function schnorrSign(hash: Uint8Array, key: Uint8Array, secret: bigint): Uint8Ar
 function schnorrCheck(hash: Uint8Array, key: Uint8Array, signature: Uint8Array): boolean {
   const c = bytesToNumberLE(signature.subarray(0, 32));
   const r = bytesToNumberLE(signature.subarray(32));
-  if (c === 0n || c >= Point.Fn.ORDER || r >= Point.Fn.ORDER) return false;
-  const commitment = Point.fromBytes(key).multiplyUnsafe(c).add(Point.BASE.multiplyUnsafe(r));
-  return !commitment.is0() && challenge(hash, key, commitment.toBytes()) === c;
+  if (c === 0n || c >= curve.l || r >= curve.l) return false;
+  const commitment = addPoints(multiplyPoint(key.toHex(), c), multiplyGenerator(r));
+  return !isIdentity(commitment) && challenge(hash, key, Uint8Array.fromHex(commitment)) === c;
 }
 
 /**
@@ -510,9 +517,8 @@ export class Monero extends AbstractBlockchain {
     const secret = viewKeyBytes(viewKey, view);
     const m = subaddressScalar(secret, account, index);
     if (account === 0 && index === 0) return concatBytes(spend, view).toHex();
-    const subSpend = Point.fromBytes(spend).add(Point.BASE.multiply(m));
-    const subView = subSpend.multiply(bytesToNumberLE(secret));
-    return concatBytes(subSpend.toBytes(), subView.toBytes()).toHex();
+    const subSpend = addPoints(spend.toHex(), multiplyGenerator(m));
+    return subSpend + multiplyPoint(subSpend, bytesToNumberLE(secret));
   }
 
   /**

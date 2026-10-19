@@ -157,4 +157,4 @@ On `chain: "monero"` the `privateKey` of `keys_wallet_derive` takes the seed wor
 
 ## Where it lives
 
-`src/blockchains/monero.ts`, with the seed words in `src/utils/monero-seed.ts` and block base58 in `src/utils/monero-base58.ts`. ed25519 comes from `@noble/curves`, keccak256 and CRC-32 from `@agntn/hashes`, base58 from `@agntn/encodings`.
+`src/blockchains/monero.ts`, with the seed words in `src/utils/monero-seed.ts` and block base58 in `src/utils/monero-base58.ts`. Point math comes from `@agntn/curves`: `check_address`, subaddresses, the view key check and every verify. The spend key gets multiplied on `@noble/curves` instead, and so does every signature, because noble does that in constant time and curves openly doesn't. keccak256 and CRC-32 come from `@agntn/hashes`, base58 from `@agntn/encodings`.

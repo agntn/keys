@@ -12,8 +12,8 @@ importers:
         specifier: 0.5.2
         version: 0.5.2(ai@7.0.87(zod@4.6.5))
       '@agntn/curves':
-        specifier: 0.1.1
-        version: 0.1.1(ai@7.0.87(zod@4.6.5))
+        specifier: 0.2.1
+        version: 0.2.1(ai@7.0.87(zod@4.6.5))(zod@4.6.5)
       '@agntn/encodings':
         specifier: 0.1.0
         version: 0.1.0(ai@7.0.87(zod@4.6.5))
@@ -77,13 +77,13 @@ packages:
     engines: {node: '>=26'}
     hasBin: true
 
-  '@agntn/curves@0.1.1':
-    resolution: {integrity: sha512-KjSeXg1USIy0u4mlos0bvD6GmSJfuuPv9MraVB6R4iUnEicetmI73q5DIaxO/VIJZQZ+rHzxKWVWprZ3BG2vuA==}
+  '@agntn/curves@0.2.1':
+    resolution: {integrity: sha512-0F+fAkHyxwMYg2bi19V8zOAWICkhv0yicp/99Y8RT314hPGopxRr7r6Ni1J2YJ38sqjDmzqjFZ2F8NmoPkF22w==}
     engines: {node: '>=26'}
     hasBin: true
     peerDependencies:
-      '@earendil-works/pi-coding-agent': '>=0.84.2 <2'
-      '@oh-my-pi/pi-coding-agent': '>=18.0.0 <19'
+      '@earendil-works/pi-coding-agent': '>=0.87.1 <2'
+      '@oh-my-pi/pi-coding-agent': '>=18.4.2 <19'
       ai: '>=7.0.0'
     peerDependenciesMeta:
       '@earendil-works/pi-coding-agent':
@@ -147,6 +147,22 @@ packages:
     hasBin: true
     peerDependencies:
       '@earendil-works/pi-coding-agent': '>=0.87.1 <1'
+      '@oh-my-pi/pi-coding-agent': '>=18.4.2 <19'
+      ai: '>=7.0.0'
+    peerDependenciesMeta:
+      '@earendil-works/pi-coding-agent':
+        optional: true
+      '@oh-my-pi/pi-coding-agent':
+        optional: true
+      ai:
+        optional: true
+
+  '@agntn/hashes@0.6.7':
+    resolution: {integrity: sha512-dzMenq6k5KdhQXUOLREXzD2/K58EotQadV8IJIXCEqbRKmVJgpuZIQERDM1fKPD6NUOojCBTt4+DACrstRqT9g==}
+    engines: {node: '>=26'}
+    hasBin: true
+    peerDependencies:
+      '@earendil-works/pi-coding-agent': '>=0.87.1 <2'
       '@oh-my-pi/pi-coding-agent': '>=18.4.2 <19'
       ai: '>=7.0.0'
     peerDependenciesMeta:
@@ -7748,17 +7764,16 @@ snapshots:
       - '@oh-my-pi/pi-coding-agent'
       - ai
 
-  '@agntn/curves@0.1.1(ai@7.0.87(zod@4.6.5))':
+  '@agntn/curves@0.2.1(ai@7.0.87(zod@4.6.5))(zod@4.6.5)':
     dependencies:
-      '@agntn/tools': 0.2.0(@modelcontextprotocol/server@2.2.0)(ai@7.0.87(zod@4.6.5))
+      '@agntn/hashes': 0.6.7(ai@7.0.87(zod@4.6.5))
+      '@agntn/tools': 0.2.3(@modelcontextprotocol/server@2.2.0)(ai@7.0.87(zod@4.6.5))(zod@4.6.5)
       '@modelcontextprotocol/server': 2.2.0
-      citty: 0.2.2
-      consola: 3.4.2
-      scule: 1.3.0
     optionalDependencies:
       ai: 7.0.87(zod@4.6.5)
     transitivePeerDependencies:
       - h3-mcp
+      - zod
 
   '@agntn/encodings@0.1.0(ai@7.0.87(zod@4.6.5))':
     dependencies:
@@ -7794,6 +7809,16 @@ snapshots:
     optionalDependencies:
       ai: 7.0.87(zod@4.6.5)
 
+  '@agntn/hashes@0.6.7(ai@7.0.87(zod@4.6.5))':
+    dependencies:
+      '@agntn/tools': 0.2.0(@modelcontextprotocol/server@2.2.0)(ai@7.0.87(zod@4.6.5))
+      '@modelcontextprotocol/server': 2.2.0
+      citty: 0.2.2
+    optionalDependencies:
+      ai: 7.0.87(zod@4.6.5)
+    transitivePeerDependencies:
+      - h3-mcp
+
   '@agntn/tools@0.0.0(@modelcontextprotocol/server@2.2.0)(ai@7.0.87(zod@4.6.5))':
     optionalDependencies:
       '@modelcontextprotocol/server': 2.2.0
@@ -7807,6 +7832,12 @@ snapshots:
   '@agntn/tools@0.2.3(@modelcontextprotocol/server@2.0.0)(ai@7.0.87(zod@4.6.5))(zod@4.6.5)':
     optionalDependencies:
       '@modelcontextprotocol/server': 2.0.0
+      ai: 7.0.87(zod@4.6.5)
+      zod: 4.6.5
+
+  '@agntn/tools@0.2.3(@modelcontextprotocol/server@2.2.0)(ai@7.0.87(zod@4.6.5))(zod@4.6.5)':
+    optionalDependencies:
+      '@modelcontextprotocol/server': 2.2.0
       ai: 7.0.87(zod@4.6.5)
       zod: 4.6.5
 
