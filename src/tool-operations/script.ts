@@ -106,7 +106,7 @@ function multisigArgument(options: ScriptAddressArguments): [readonly string[], 
   if (sorted !== undefined && typeof sorted !== "boolean") {
     throw new TypeError("sorted must be a boolean");
   }
-  return [keys, multisig(threshold, keys, { sorted: sorted === true })];
+  return [keys, multisig(keys, { threshold, sorted: sorted === true })];
 }
 
 /**
@@ -123,7 +123,7 @@ function wrapperAddresses(
   const refused: Partial<Record<ScriptAddressType, string>> = {};
   const lines = SCRIPT_ADDRESS_TYPES.map((type) => {
     try {
-      addresses[type] = scriptAddress(script, type, { network });
+      addresses[type] = scriptAddress(script, { addressType: type, network });
       return `${SCRIPT_ADDRESS_LABELS[type]}: ${addresses[type]}`;
     } catch (error) {
       if (!(error instanceof RangeError)) throw error;

@@ -130,7 +130,7 @@ export class Sui extends AbstractDualCurveBlockchain {
         : decodeKeyPublic(keyPublic, "Sui");
     const flagByte =
       scheme === "secp256k1" ? SIGNATURE_SCHEME_FLAGS.SECP256K1 : SIGNATURE_SCHEME_FLAGS.ED25519;
-    const input = addSchemeByte(keyPublicBytes, flagByte, true);
+    const input = addSchemeByte(keyPublicBytes, { schemeByte: flagByte });
     return createPrefixedAddress(blake2b(input, 32));
   }
 

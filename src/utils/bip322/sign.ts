@@ -2,6 +2,7 @@ import { schnorr, secp256k1 } from "@noble/curves/secp256k1.js";
 import { Bitcoin } from "../../blockchains/bitcoin.ts";
 import { hash160, taggedHash } from "../address.ts";
 import { concatBytes } from "../bytes.ts";
+import { assertOptions } from "../options.ts";
 import { decodeKeyPrivate } from "../secp256k1/decode.ts";
 import { challengeOf, p2pkhScript, toSign, toSpend, type ChallengeNetwork } from "./challenge.ts";
 import { push } from "./script.ts";
@@ -17,12 +18,23 @@ import { encodeWitness, serializeTransaction } from "../transaction/transaction.
 /** Address types `sign` writes a signature for. */
 export type BIP322SigningType = "legacy" | "p2sh" | "segwit" | "taproot";
 
-/** Network and key form of the signing address. */
+/** The key that signs, the address type it signs for, its network and key form. */
 export interface BIP322SignOptions {
+  /** 32-byte private key as hex. */
+  readonly privateKey: string;
+  /** legacy, p2sh, segwit or taproot. */
+  readonly addressType: BIP322SigningType;
   /** Default: mainnet. */
   readonly network?: ChallengeNetwork;
   /** Legacy only: sign for the address of the compressed key. Default: true. */
   readonly compressed?: boolean;
+}
+
+/** `to_spend` of the message, the public key and the script of its address. */
+interface SigningContext {
+  readonly spend: ReturnType<typeof toSpend>;
+  readonly publicKey: Uint8Array;
+  readonly script: Uint8Array;
 }
 
 const SIGNING_TYPES: readonly string[] = ["legacy", "p2sh", "segwit", "taproot"];
@@ -64,28 +76,26 @@ function isSigningType(type: unknown): type is BIP322SigningType {
 /**
  * Writes the full `to_sign` of a scriptSig spend: P2PKH, or P2SH-P2WPKH with its witness.
  * @param key - Private key bytes
- * @param type - legacy or p2sh
- * @param context - `to_spend` and the public key
+ * @param context - legacy or p2sh, `to_spend` and the public key
  * @returns {Uint8Array} The signed `to_sign`
  */
 function signFull(
   key: Uint8Array,
-  type: "legacy" | "p2sh",
-  context: Readonly<{
-    spend: ReturnType<typeof toSpend>;
-    publicKey: Uint8Array;
-    script: Uint8Array;
-  }>,
+  context: SigningContext & { readonly type: "legacy" | "p2sh" },
 ): Uint8Array {
   const keyHash = hash160(context.publicKey);
-  if (type === "legacy") {
-    const digest = legacySighash(toSign(context.spend), 0, context.script);
+  if (context.type === "legacy") {
+    const digest = legacySighash(toSign(context.spend), { index: 0, scriptCode: context.script });
     const scriptSig = concatBytes(push(ecdsaSignature(digest, key)), push(context.publicKey));
     return serializeTransaction(toSign(context.spend, { scriptSig }), true);
   }
   const scriptSig = push(Uint8Array.of(0, 20, ...keyHash));
   const unsigned = toSign(context.spend, { scriptSig });
-  const digest = segwitSighash(unsigned, 0, p2pkhScript(keyHash), 0n);
+  const digest = segwitSighash(unsigned, {
+    index: 0,
+    scriptCode: p2pkhScript(keyHash),
+    amount: 0n,
+  });
   const witness = [ecdsaSignature(digest, key), context.publicKey];
   return serializeTransaction(toSign(context.spend, { scriptSig, witness }), true);
 }
@@ -93,26 +103,24 @@ function signFull(
 /**
  * Writes the witness of a native SegWit spend: P2WPKH, or a Taproot key path.
  * @param key - Private key bytes
- * @param type - segwit or taproot
- * @param context - `to_spend` and the public key
+ * @param context - segwit or taproot, `to_spend` and the public key
  * @returns {Uint8Array} The serialized witness stack
  */
 function signSimple(
   key: Uint8Array,
-  type: "segwit" | "taproot",
-  context: Readonly<{
-    spend: ReturnType<typeof toSpend>;
-    publicKey: Uint8Array;
-    script: Uint8Array;
-  }>,
+  context: SigningContext & { readonly type: "segwit" | "taproot" },
 ): Uint8Array {
   const unsigned = toSign(context.spend);
-  if (type === "taproot") {
+  if (context.type === "taproot") {
     const spent = [{ value: 0n, script: context.script }];
-    const digest = taprootSighash(unsigned, 0, spent, SIGHASH_DEFAULT);
+    const digest = taprootSighash(unsigned, { index: 0, spent, hashType: SIGHASH_DEFAULT });
     return encodeWitness([schnorr.sign(digest, tweakKey(key))]);
   }
-  const digest = segwitSighash(unsigned, 0, p2pkhScript(hash160(context.publicKey)), 0n);
+  const digest = segwitSighash(unsigned, {
+    index: 0,
+    scriptCode: p2pkhScript(hash160(context.publicKey)),
+    amount: 0n,
+  });
   return encodeWitness([ecdsaSignature(digest, key), context.publicKey]);
 }
 
@@ -120,18 +128,14 @@ function signSimple(
  * Signs a message by BIP322 for the address of a key: simple (`smp`) for P2WPKH and a Taproot key
  * path, full (`ful`) for P2SH-P2WPKH and P2PKH, the formats BIP322 lets each of them take.
  * @param message - Message as text, read as UTF-8, or bytes
- * @param privateKey - 32-byte private key as hex
- * @param addressType - legacy, p2sh, segwit or taproot
- * @param options - Network, and for legacy whether the key is compressed
+ * @param options - Private key, address type, network, and for legacy whether the key is compressed
  * @returns {string} The signature, prefixed by its format
+ * @throws {TypeError} When the options are not an object
  * @throws {RangeError} When the address type is not one of those four or the key is out of range
  */
-export function sign(
-  message: string | Uint8Array,
-  privateKey: string,
-  addressType: BIP322SigningType,
-  options: Readonly<BIP322SignOptions> = {},
-): string {
+export function sign(message: string | Uint8Array, options: Readonly<BIP322SignOptions>): string {
+  assertOptions(options, "sign(message, { privateKey, addressType, network, compressed })");
+  const { privateKey, addressType } = options;
   if (!isSigningType(addressType)) {
     throw new RangeError(`BIP322 signing takes address type ${SIGNING_TYPES.join(", ")}`);
   }
@@ -143,7 +147,7 @@ export function sign(
   const challenge = challengeOf(address, network);
   const context = { spend: toSpend(message, challenge), publicKey, script: challenge.script };
   if (addressType === "legacy" || addressType === "p2sh") {
-    return `ful${signFull(key, addressType, context).toBase64()}`;
+    return `ful${signFull(key, { ...context, type: addressType }).toBase64()}`;
   }
-  return `smp${signSimple(key, addressType, context).toBase64()}`;
+  return `smp${signSimple(key, { ...context, type: addressType }).toBase64()}`;
 }

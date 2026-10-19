@@ -10,7 +10,7 @@ describe("CashAddr", () => {
     "encodes and decodes type %i as %s",
     (type, address, hash) => {
       const prefix = address.slice(0, address.indexOf(":"));
-      expect(encodeCashAddr(prefix, type, hex.decode(hash))).toBe(address);
+      expect(encodeCashAddr(hex.decode(hash), { prefix, type })).toBe(address);
       const content = decodeCashAddr(address, prefix);
       expect(content?.type).toBe(type);
       expect(hex.encode(content?.hash ?? new Uint8Array())).toBe(hash);
@@ -52,7 +52,11 @@ describe("CashAddr", () => {
   });
 
   it("refuses to encode a hash length the version byte cannot express", () => {
-    expect(() => encodeCashAddr("bitcoincash", 0, new Uint8Array(21))).toThrow(RangeError);
-    expect(() => encodeCashAddr("bitcoincash", 16, new Uint8Array(20))).toThrow(RangeError);
+    expect(() => encodeCashAddr(new Uint8Array(21), { prefix: "bitcoincash", type: 0 })).toThrow(
+      RangeError,
+    );
+    expect(() => encodeCashAddr(new Uint8Array(20), { prefix: "bitcoincash", type: 16 })).toThrow(
+      RangeError,
+    );
   });
 });

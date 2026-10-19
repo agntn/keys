@@ -9,6 +9,12 @@ import type { ScriptNetwork } from "../script/script.ts";
 /** Where a key lands: any script, segwit v0 with compressed keys only, or Taproot. */
 export type KeyContext = "legacy" | "segwit" | "taproot";
 
+/** Where a key lands and the network a WIF or extended key must be for. */
+export interface KeyScope {
+  readonly context: KeyContext;
+  readonly network: ScriptNetwork;
+}
+
 /** A key expression, read once and derived per index. */
 export interface DescriptorKey {
   /** Whether the key ends in a `/*` step. */
@@ -104,11 +110,11 @@ function hexKey(text: string, context: KeyContext): Uint8Array {
 /**
  * Reads a WIF private key into its public key.
  * @param text - The WIF
- * @param context - Where the key lands
- * @param network - Network the WIF must be for
+ * @param scope - Where the key lands and the network the WIF must be for
  * @returns {Uint8Array} The key as the script holds it
  */
-function wifKey(text: string, context: KeyContext, network: ScriptNetwork): Uint8Array {
+function wifKey(text: string, scope: KeyScope): Uint8Array {
+  const { context, network } = scope;
   let decoded;
   try {
     decoded = decodeWIF(text, { chain: "bitcoin", network });
@@ -156,11 +162,11 @@ function isPrivateKey(encoded: string, network: ScriptNetwork): boolean {
 /**
  * Reads an extended key and its steps, deriving the fixed part once.
  * @param text - The key and its steps
- * @param context - Where the key lands
- * @param network - Network the extended key must be for
+ * @param scope - Where the key lands and the network the extended key must be for
  * @returns {DescriptorKey} The key, ranged when the last step is `*`
  */
-function extendedKey(text: string, context: KeyContext, network: ScriptNetwork): DescriptorKey {
+function extendedKey(text: string, scope: KeyScope): DescriptorKey {
+  const { context, network } = scope;
   const [encoded = "", ...rest] = text.split("/");
   const isPrivate = isPrivateKey(encoded, network);
   const { steps, wildcard } = readPath(rest);
@@ -185,18 +191,13 @@ function extendedKey(text: string, context: KeyContext, network: ScriptNetwork):
 /**
  * Reads a BIP380 key expression: an origin, then hex, a WIF, or an extended key with steps.
  * @param expression - Key expression
- * @param context - Where the key lands
- * @param network - Network a WIF or extended key must be for
+ * @param scope - Where the key lands and the network a WIF or extended key must be for
  * @returns {DescriptorKey} The key
  */
-export function parseKey(
-  expression: string,
-  context: KeyContext,
-  network: ScriptNetwork,
-): DescriptorKey {
+export function parseKey(expression: string, scope: KeyScope): DescriptorKey {
   const text = withoutOrigin(expression);
-  if (/^[xt](?:pub|prv)/u.test(text)) return extendedKey(text, context, network);
+  if (/^[xt](?:pub|prv)/u.test(text)) return extendedKey(text, scope);
   if (text.includes("/")) throw new TypeError("Only extended keys take derivation steps");
-  const key = HEX.test(text) ? hexKey(text, context) : wifKey(text, context, network);
+  const key = HEX.test(text) ? hexKey(text, scope.context) : wifKey(text, scope);
   return { ranged: false, at: () => key };
 }

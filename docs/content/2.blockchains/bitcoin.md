@@ -105,10 +105,13 @@ Got a signature and an address, but no key? That's what `recoverMessageSigner` i
 ```js
 import { sign, verify } from "@agntn/keys/bip322";
 
-verify("bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l", "Hello World", "smpAkcwRAIg...");
+verify("bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l", {
+  message: "Hello World",
+  signature: "smpAkcwRAIg...",
+});
 // { state: "valid", format: "simple", addressType: "segwit", publicKey: "02c7f1...", lockTime: 0, sequence: 0 }
 
-sign("Hello World", privateKey, "taproot"); // "smp..."
+sign("Hello World", { privateKey, addressType: "taproot" }); // "smp..."
 ```
 
 Three answers, not two. `valid`, `invalid`, or `inconclusive` when only a script interpreter could tell. P2WPKH, Taproot key path, P2SH-P2WPKH and P2PKH get the full check. Multisig, P2WSH and Taproot script paths get their hashes checked. A script that doesn't match the address is `invalid`. One that matches still needs running, so `inconclusive`, reason included. Same for proof of funds. Never `valid` on a guess.
@@ -127,8 +130,8 @@ import { extractSignatures } from "@agntn/keys/transaction";
 
 const p2pkh = "76a91470792fb74a5df745bac07df6fe020f871cbb293b88ac";
 const spent = [{ script: p2pkh, value: 130000 }, { script: p2pkh, value: 20000 }];
-const [first] = extractSignatures(rawTx, 0, spent);
-const [second] = extractSignatures(rawTx, 1, spent);
+const [first] = extractSignatures(rawTx, { index: 0, spent });
+const [second] = extractSignatures(rawTx, { index: 1, spent });
 // both: { type: "ecdsa", r: "d47ce4c0...", s, z, hashType: 1, publicKey: "04dbd0c6..." }
 
 recoverReusedNonce(first, second); // { privateKey, nonce, publicKey: "03dbd0c6..." }
@@ -148,13 +151,13 @@ import { address, multisig } from "@agntn/keys/script";
 const one = "0279be66...f81798"; // the public key of 1, the generator
 const two = "02c6047f...709ee5"; // the public key of 2
 
-const script = multisig(2, [one, two]); // OP_2 <one> <two> OP_2 OP_CHECKMULTISIG
-address(script, "p2wsh"); // "bc1qnwvyc7aw8m7acw3lpgs0lqdlaz0drls8luf72cs5nmn9f0kcghdse7d78q"
-address(script, "p2sh"); // "33RQmypKhD6f4tMquiR5a3C6dRT7eBpaiG"
-address(script, "p2sh-p2wsh"); // "3FN44kGaMLLdhxsFgedfBBzjwUtZNEA22T"
+const script = multisig([one, two], { threshold: 2 }); // OP_2 <one> <two> OP_2 OP_CHECKMULTISIG
+address(script, { addressType: "p2wsh" }); // "bc1qnwvyc7aw8m7acw3lpgs0lqdlaz0drls8luf72cs5nmn9f0kcghdse7d78q"
+address(script, { addressType: "p2sh" }); // "33RQmypKhD6f4tMquiR5a3C6dRT7eBpaiG"
+address(script, { addressType: "p2sh-p2wsh" }); // "3FN44kGaMLLdhxsFgedfBBzjwUtZNEA22T"
 ```
 
-Order matters. Same keys, other order, other address. Pass `{ sorted: true }` and the keys line up by their bytes, as BIP67 and `sortedmulti` want. Any other script goes in as bytes. P2SH stops at 520 bytes, the witness types at 10,000. A bigger script throws. No address nobody can spend.
+Order matters. Same keys, other order, other address. Add `sorted: true` next to the threshold and the keys line up by their bytes, as BIP67 and `sortedmulti` want. Any other script goes in as bytes. P2SH stops at 520 bytes, the witness types at 10,000. A bigger script throws. No address nobody can spend.
 
 ### Descriptors
 

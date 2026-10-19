@@ -47,12 +47,16 @@ function versionByte(type: number, length: number): number {
 
 /**
  * Encodes a hash as CashAddr with its prefix written out.
- * @param prefix - Lowercase network prefix, such as `bitcoincash` or `bchtest`
- * @param type - Address type, 0 for pay-to-pubkey-hash
  * @param hash - The hash the address pays to
+ * @param options - Lowercase network prefix, such as `bitcoincash` or `bchtest`, and the address
+ *   type, 0 for pay-to-pubkey-hash
  * @returns {string} The address, such as `bitcoincash:qz3yjg59ypg6jqpwhaxgvjj44jm4hdx0w5wsxw2qez`
  */
-export function encodeCashAddr(prefix: string, type: number, hash: Uint8Array): string {
+export function encodeCashAddr(
+  hash: Uint8Array,
+  options: { readonly prefix: string; readonly type: number },
+): string {
+  const { prefix, type } = options;
   const payload = toWords(Uint8Array.of(versionByte(type, hash.length), ...hash));
   const checksum = polymod(prefix, [...payload, 0, 0, 0, 0, 0, 0, 0, 0]);
   const checksumDigits = Array.from({ length: 8 }, (_, index) =>

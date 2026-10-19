@@ -57,7 +57,7 @@ describe("eCash", () => {
     );
     expect(chain.deriveWallet(privateKey).address).toBe(chain.getAddress(publicKeyCompressed));
     for (const { hash: hashHex, p2pkh } of vector.encoded) {
-      expect(encodeCashAddr("ecash", 0, hex.decode(hashHex))).toBe(p2pkh);
+      expect(encodeCashAddr(hex.decode(hashHex), { prefix: "ecash", type: 0 })).toBe(p2pkh);
     }
   });
 
@@ -97,7 +97,7 @@ describe("eCash", () => {
     (address) => {
       const content = decodeCashAddr(address, "bitcoincash");
       if (content === undefined) throw new Error(`${address} does not decode`);
-      const moved = encodeCashAddr("ecash", content.type, content.hash);
+      const moved = encodeCashAddr(content.hash, { prefix: "ecash", type: content.type });
       const paid = content.type < 2 && content.hash.length === 20;
       expect(new ECash().validateAddress(moved)).toBe(paid);
       expect(new ECash().validateAddress(address)).toBe(false);
@@ -111,8 +111,12 @@ describe("eCash", () => {
       chain.validateAddress(new Bitcoin().getAddress(secp256k1TestVectors.publicKeyCompressed)),
     ).toBe(false);
     expect(chain.validateAddress(`${p2pkh.slice(0, -1)}3`)).toBe(false);
-    expect(chain.validateAddress(encodeCashAddr("ecash", 0, new Uint8Array(24)))).toBe(false);
-    expect(chain.validateAddress(encodeCashAddr("ecash", 1, new Uint8Array(32)))).toBe(false);
+    expect(
+      chain.validateAddress(encodeCashAddr(new Uint8Array(24), { prefix: "ecash", type: 0 })),
+    ).toBe(false);
+    expect(
+      chain.validateAddress(encodeCashAddr(new Uint8Array(32), { prefix: "ecash", type: 1 })),
+    ).toBe(false);
     expect(chain.validateAddress("")).toBe(false);
   });
 

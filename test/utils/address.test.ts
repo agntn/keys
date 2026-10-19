@@ -99,7 +99,7 @@ describe("Address utilities", () => {
       expect(() => generateAddressLegacy(keyPublic, { bytesVersion: 0x00 })).toThrow();
       expect(() => generateAddressP2SH(keyPublic, { bytesVersion: 0x05 })).toThrow();
       expect(() => generateAddressSegWit(keyPublic, segwit)).toThrow();
-      expect(() => generateAddressSegWit(keyPublic, segwit, "p2wsh")).toThrow();
+      expect(() => generateAddressSegWit(keyPublic, { ...segwit, type: "p2wsh" })).toThrow();
     });
 
     it("takes an uncompressed key for legacy and taproot, not for SegWit v0", () => {
@@ -113,7 +113,9 @@ describe("Address utilities", () => {
         "compressed",
       );
       expect(() => generateAddressSegWit(uncompressedKey, segwit)).toThrow("compressed");
-      expect(() => generateAddressSegWit(uncompressedKey, segwit, "p2wsh")).toThrow("compressed");
+      expect(() => generateAddressSegWit(uncompressedKey, { ...segwit, type: "p2wsh" })).toThrow(
+        "compressed",
+      );
     });
   });
 });

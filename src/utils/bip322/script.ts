@@ -59,11 +59,14 @@ function isMinimalPush(opcode: number, data: Uint8Array): boolean {
 /**
  * Reads the length a push opcode announces.
  * @param script - Whole script
- * @param offset - Position after the opcode
- * @param opcode - Push opcode
+ * @param push - Push opcode and the position after it
  * @returns {[number, number]} Data length and the offset of the data
  */
-function pushLength(script: Uint8Array, offset: number, opcode: number): [number, number] {
+function pushLength(
+  script: Uint8Array,
+  push: { readonly offset: number; readonly opcode: number },
+): [number, number] {
+  const { offset, opcode } = push;
   if (opcode < OP_PUSHDATA1) return [opcode, offset];
   const width = opcode === OP_PUSHDATA1 ? 1 : opcode === OP_PUSHDATA2 ? 2 : 4;
   if (offset + width > script.length) return [-1, offset];
@@ -93,7 +96,7 @@ export function readPushes(script: Uint8Array): Pushes {
     if (opcode > OP_PUSHDATA4) {
       return { state: "inconclusive", reason: "scriptSig runs opcodes besides data pushes" };
     }
-    const [length, start] = pushLength(script, offset + 1, opcode);
+    const [length, start] = pushLength(script, { offset: offset + 1, opcode });
     if (length < 0 || start + length > script.length) {
       return { state: "invalid", reason: "scriptSig ends inside a push" };
     }
@@ -125,11 +128,14 @@ export function splitEcdsa(signature: Uint8Array): {
 /**
  * Checks a strict DER, low S ECDSA signature, as `STRICTENC`, `LOW_S` and `NULLFAIL` require.
  * @param der - DER signature without the hash type byte
- * @param digest - Sighash the signature commits to
- * @param publicKey - SEC1 public key
+ * @param check - Sighash the signature commits to and the SEC1 public key
  * @returns {boolean} Whether the signature holds; false for any unreadable input
  */
-export function verifyEcdsa(der: Uint8Array, digest: Uint8Array, publicKey: Uint8Array): boolean {
+export function verifyEcdsa(
+  der: Uint8Array,
+  check: { readonly digest: Uint8Array; readonly publicKey: Uint8Array },
+): boolean {
+  const { digest, publicKey } = check;
   try {
     return secp256k1.verify(der, digest, publicKey, { prehash: false, format: "der", lowS: true });
   } catch {

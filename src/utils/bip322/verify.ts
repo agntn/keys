@@ -3,6 +3,7 @@ import { schnorr } from "@noble/curves/secp256k1.js";
 import { equalBytes } from "@noble/curves/utils.js";
 import { Bitcoin } from "../../blockchains/bitcoin.ts";
 import { hash160 } from "../address.ts";
+import { assertOptions } from "../options.ts";
 import {
   TO_SIGN_OUTPUT,
   challengeOf,
@@ -54,8 +55,12 @@ export interface BIP322Verification {
   readonly sequence?: number;
 }
 
-/** Network the address belongs to. */
+/** The message that was signed, its signature and the network the address belongs to. */
 export interface BIP322Options {
+  /** Message as text, read as UTF-8, or bytes. */
+  readonly message: string | Uint8Array;
+  /** Signature text, prefixed `smp`, `ful` or `pof`, or Core's base64. */
+  readonly signature: string;
   /** Default: mainnet. */
   readonly network?: ChallengeNetwork;
 }
@@ -124,17 +129,14 @@ function decodeSignature(signature: string, legacyAddress: boolean): Decoded {
 /**
  * Checks Core's `signmessage` signature, which BIP322 keeps for P2PKH only.
  * @param address - P2PKH address
- * @param message - Signed message
- * @param signature - Base64 of a header byte, then `r` and `s`
- * @param network - Network of the address
+ * @param signed - Signed message, base64 of a header byte then `r` and `s`, and the network
  * @returns {Outcome} The key that signed, or why it does not hold the address
  */
 function checkLegacy(
   address: string,
-  message: string | Uint8Array,
-  signature: string,
-  network: ChallengeNetwork,
+  signed: BIP322Options & { readonly network: ChallengeNetwork },
 ): Outcome {
+  const { message, signature, network } = signed;
   const bitcoin = new Bitcoin({ network });
   let signer: ReturnType<Bitcoin["recoverMessageSigner"]>;
   try {
@@ -182,14 +184,17 @@ function undecodable(part: string, error: unknown): Outcome {
 /**
  * Checks an ECDSA signature from a script: `SIGHASH_ALL`, strict DER, low S and the sighash.
  * @param signature - DER signature, then its hash type byte
- * @param publicKey - SEC1 key the script pairs it with
- * @param digest - Sighash of the input
+ * @param check - SEC1 key the script pairs it with and the sighash of the input
  * @returns {Outcome} The key, or the rule the signature breaks
  */
-function checkEcdsa(signature: Uint8Array, publicKey: Uint8Array, digest: Uint8Array): Outcome {
+function checkEcdsa(
+  signature: Uint8Array,
+  check: { readonly publicKey: Uint8Array; readonly digest: Uint8Array },
+): Outcome {
+  const { publicKey, digest } = check;
   const { der, hashType } = splitEcdsa(signature);
   if (hashType !== SIGHASH_ALL) return invalid("Signature must use SIGHASH_ALL");
-  if (!verifyEcdsa(der, digest, publicKey)) return invalid("ECDSA signature does not verify");
+  if (!verifyEcdsa(der, { digest, publicKey })) return invalid("ECDSA signature does not verify");
   return { state: "valid", publicKey: publicKey.toHex() };
 }
 
@@ -220,7 +225,12 @@ function checkWitnessKeyHash(transaction: Readonly<Transaction>, keyHash: Uint8A
   if (!equalBytes(hash160(publicKey), keyHash)) {
     return invalid("Witness key does not hash to the address");
   }
-  return checkEcdsa(signature, publicKey, segwitSighash(transaction, 0, p2pkhScript(keyHash), 0n));
+  const digest = segwitSighash(transaction, {
+    index: 0,
+    scriptCode: p2pkhScript(keyHash),
+    amount: 0n,
+  });
+  return checkEcdsa(signature, { publicKey, digest });
 }
 
 /**
@@ -359,7 +369,8 @@ function checkKeyHash(transaction: Readonly<Transaction>, challenge: Readonly<Ch
   if (!isStrictPublicKey(publicKey, false) || !equalBytes(hash160(publicKey), challenge.program)) {
     return invalid("scriptSig key does not hash to the address");
   }
-  return checkEcdsa(signature, publicKey, legacySighash(transaction, 0, challenge.script));
+  const digest = legacySighash(transaction, { index: 0, scriptCode: challenge.script });
+  return checkEcdsa(signature, { publicKey, digest });
 }
 
 /**
@@ -409,7 +420,7 @@ function checkTaproot(transaction: Readonly<Transaction>, challenge: Readonly<Ch
   const hashType = taprootHashType(signature);
   if (hashType === undefined) return invalid("Signature must use SIGHASH_DEFAULT or SIGHASH_ALL");
   const spent = [{ value: 0n, script: challenge.script }];
-  const digest = taprootSighash(transaction, 0, spent, hashType);
+  const digest = taprootSighash(transaction, { index: 0, spent, hashType });
   if (!schnorr.verify(signature.subarray(0, 64), digest, challenge.program)) {
     return invalid("Schnorr signature does not verify");
   }
@@ -442,15 +453,14 @@ function checkInput(transaction: Readonly<Transaction>, challenge: Readonly<Chal
  * Builds `to_sign` from a simple signature. An unprefixed one for P2SH-P2WPKH gets the scriptSig
  * its witness key implies, as signers wrote it before the BIP was final.
  * @param spend - `to_spend`
- * @param challenge - The address
- * @param bytes - Serialized witness stack
+ * @param signed - The address and the serialized witness stack
  * @returns {Transaction | Outcome} `to_sign`, or why the signature cannot make one
  */
 function simpleToSign(
   spend: Readonly<Transaction>,
-  challenge: Readonly<Challenge>,
-  bytes: Uint8Array,
+  signed: { readonly challenge: Readonly<Challenge>; readonly bytes: Uint8Array },
 ): Transaction | Outcome {
+  const { challenge, bytes } = signed;
   if (challenge.type === "legacy") {
     return invalid("A P2PKH address has no witness; it takes a full or legacy signature");
   }
@@ -547,15 +557,17 @@ function fullToSign(spend: Readonly<Transaction>, bytes: Uint8Array): Transactio
 /**
  * Builds `to_sign` for the decoded format.
  * @param spend - `to_spend`
- * @param challenge - The address
- * @param decoded - Format and bytes of the signature
+ * @param signed - The address, and the format and bytes of the signature
  * @returns {Transaction | Outcome} `to_sign`, or why the signature cannot make one
  */
 function signingTransaction(
   spend: Readonly<Transaction>,
-  challenge: Readonly<Challenge>,
-  decoded: Readonly<{ format: BIP322Format; bytes: Uint8Array; prefixed: boolean }>,
+  signed: {
+    readonly challenge: Readonly<Challenge>;
+    readonly decoded: Readonly<{ format: BIP322Format; bytes: Uint8Array; prefixed: boolean }>;
+  },
 ): Transaction | Outcome {
+  const { challenge, decoded } = signed;
   if (decoded.format === "proof-of-funds") {
     return inconclusive("Proof of funds PSBTs are not read");
   }
@@ -564,7 +576,7 @@ function signingTransaction(
   }
   return decoded.format === "full"
     ? fullToSign(spend, decoded.bytes)
-    : simpleToSign(spend, challenge, decoded.bytes);
+    : simpleToSign(spend, { challenge, bytes: decoded.bytes });
 }
 
 /**
@@ -594,18 +606,14 @@ function checkTransaction(
  * Verifies a BIP322 signature by a Bitcoin address. P2WPKH, P2TR key path, P2SH-P2WPKH and P2PKH
  * get the full check; scripts that need an interpreter and proof of funds come back inconclusive.
  * @param address - Bitcoin address that signed
- * @param message - Message as text, read as UTF-8, or bytes
- * @param signature - Signature text, prefixed `smp`, `ful` or `pof`, or Core's base64
- * @param options - Network of the address
+ * @param options - Message that was signed, its signature and the network of the address
  * @returns {BIP322Verification} Valid, invalid or inconclusive, with the reason when not valid
- * @throws {TypeError} When the address is not a valid Bitcoin address on the network
+ * @throws {TypeError} When the options are not an object, or the address is not a valid Bitcoin
+ *   address on the network
  */
-export function verify(
-  address: string,
-  message: string | Uint8Array,
-  signature: string,
-  options: Readonly<BIP322Options> = {},
-): BIP322Verification {
+export function verify(address: string, options: Readonly<BIP322Options>): BIP322Verification {
+  assertOptions(options, "verify(address, { message, signature, network })");
+  const { message, signature } = options;
   const network = readNetwork(options.network);
   if (typeof signature !== "string") throw new TypeError("Signature must be a string");
   if (typeof message !== "string" && !(message instanceof Uint8Array)) {
@@ -616,10 +624,10 @@ export function verify(
   const base = { format: decoded.format, addressType: challenge.type };
   if ("reason" in decoded) return { ...base, state: "invalid", reason: decoded.reason };
   if (decoded.format === "legacy") {
-    return { ...base, ...checkLegacy(address, message, signature, network) };
+    return { ...base, ...checkLegacy(address, { message, signature, network }) };
   }
   const spend = toSpend(message, challenge);
-  const transaction = signingTransaction(spend, challenge, decoded);
+  const transaction = signingTransaction(spend, { challenge, decoded });
   if ("state" in transaction) return { ...base, ...transaction };
   return { ...base, ...checkTransaction(transaction, challenge) };
 }

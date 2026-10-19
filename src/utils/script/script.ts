@@ -3,6 +3,7 @@ import { segwit } from "@agntn/encodings/bech32";
 import { hash160 } from "../address.ts";
 import { concatBytes } from "../bytes.ts";
 import { encodeBase58Check } from "../encoding.ts";
+import { assertOptions } from "../options.ts";
 import { decodePublicPoint } from "../secp256k1/decode.ts";
 import { pushOf } from "../transaction/script.ts";
 import { MAX_MULTISIG_KEYS, MAX_P2SH_SCRIPT_SIZE, MAX_P2WSH_SCRIPT_SIZE } from "./limits.ts";
@@ -13,13 +14,16 @@ export type ScriptNetwork = "mainnet" | "testnet";
 /** How a script is paid to: hashed into P2SH, into P2WSH, or into P2WSH nested in P2SH. */
 export type ScriptAddressType = "p2sh" | "p2wsh" | "p2sh-p2wsh";
 
-/** Network of the address. */
+/** How the script is paid to and the network of the address. */
 export interface ScriptAddressOptions {
+  readonly addressType: ScriptAddressType;
   readonly network?: ScriptNetwork;
 }
 
-/** Key order of a multisig script. */
+/** Signatures a multisig script needs and the order of its keys. */
 export interface MultisigOptions {
+  /** Signatures it needs, from 1 to the number of keys. */
+  readonly threshold: number;
   /** Sort the keys by their bytes, as BIP67 and `sortedmulti` do. */
   readonly sorted?: boolean;
 }
@@ -92,16 +96,14 @@ export function multisigScript(threshold: number, keys: readonly Uint8Array[]): 
 
 /**
  * Builds an m-of-n `OP_CHECKMULTISIG`, the script a multisig address hashes.
- * @param threshold - Signatures it needs, from 1 to the number of keys
  * @param publicKeys - Compressed or uncompressed SEC1 keys as hex, 1 to 20 of them
- * @param options - Whether to sort the keys
+ * @param options - Signatures it needs and whether to sort the keys
  * @returns {Uint8Array} The script
+ * @throws {TypeError} When the options are not an object
  */
-export function multisig(
-  threshold: number,
-  publicKeys: readonly string[],
-  options: MultisigOptions = {},
-): Uint8Array {
+export function multisig(publicKeys: readonly string[], options: MultisigOptions): Uint8Array {
+  assertOptions(options, "multisig(publicKeys, { threshold, sorted })");
+  const { threshold } = options;
   const keys = publicKeys.map((key) => {
     decodePublicPoint(key);
     return Uint8Array.fromHex(key);
@@ -123,16 +125,15 @@ export function p2shAddress(script: Uint8Array, network: ScriptNetwork): string 
 
 /**
  * Writes a witness program as a bech32 or bech32m address.
- * @param version - Witness version, 0 or 1
  * @param program - Witness program
- * @param network - Network of the address
+ * @param options - Witness version, 0 or 1, and network of the address
  * @returns {string} The address
  */
 export function segwitAddress(
-  version: number,
   program: Uint8Array,
-  network: ScriptNetwork,
+  options: { readonly version: number; readonly network: ScriptNetwork },
 ): string {
+  const { version, network } = options;
   return segwit.encode(SCRIPT_NETWORKS[network].hrp, version, program);
 }
 
@@ -172,20 +173,18 @@ function assertScriptSize(script: Uint8Array, type: ScriptAddressType): void {
 /**
  * Writes the address that pays to a script: P2SH, P2WSH, or P2WSH nested in P2SH.
  * @param script - Redeem or witness script: 520 bytes at most for P2SH, 10,000 for the others
- * @param type - How the script is paid to
- * @param options - Network of the address
+ * @param options - How the script is paid to and the network of the address
  * @returns {string} The address
+ * @throws {TypeError} When the options are not an object
  */
-export function address(
-  script: Uint8Array,
-  type: ScriptAddressType,
-  options: ScriptAddressOptions = {},
-): string {
+export function address(script: Uint8Array, options: ScriptAddressOptions): string {
+  assertOptions(options, "address(script, { addressType, network })");
+  const { addressType: type } = options;
   const network = readNetwork(options.network);
   if (script.length === 0) throw new RangeError("Script must not be empty");
   assertScriptSize(script, type);
   if (type === "p2sh") return p2shAddress(script, network);
-  if (type === "p2wsh") return segwitAddress(0, sha256(script), network);
+  if (type === "p2wsh") return segwitAddress(sha256(script), { version: 0, network });
   if (type === "p2sh-p2wsh") return p2shAddress(p2wshProgram(script), network);
   throw new RangeError("Address type must be p2sh, p2wsh or p2sh-p2wsh");
 }

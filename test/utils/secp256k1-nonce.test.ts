@@ -63,7 +63,7 @@ describe("recoverReusedNonce", () => {
 
   it("recovers the key of the 2012 transaction from extractSignatures as it is", () => {
     const { transaction, spent, publicKey } = transactionVectors.reusedNonce2012;
-    const [a, b] = [0, 1].flatMap((index) => extractSignatures(transaction, index, spent));
+    const [a, b] = [0, 1].flatMap((index) => extractSignatures(transaction, { index, spent }));
     if (a === undefined || b === undefined) throw new Error("missing signature");
     const recovered = recoverReusedNonce(a, b);
     const derived = secp256k1.getPublicKey(hex.decode(recovered.privateKey), false);
