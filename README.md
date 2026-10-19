@@ -244,7 +244,7 @@ omp install @agntn/keys
 }
 ```
 
-All 37 tools run on every one of these. The Pi and OMP extensions in [`extensions`](./extensions) call the same executors as the server. Ask for a mnemonic and this is the whole answer:
+Every tool runs on every one of these. The Pi and OMP extensions in [`extensions`](./extensions) call the same executors as the server. Ask for a mnemonic and this is the whole answer:
 
 ```
 Language: english
