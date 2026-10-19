@@ -127,26 +127,28 @@ export function normalizedMnemonic(value: unknown): string {
   return mnemonic;
 }
 
+/** Seed tool arguments besides the mnemonic, raw until the executor checks them. */
+export interface Bip39SeedArguments {
+  readonly passphrase?: unknown;
+  readonly language?: unknown;
+  readonly coleman?: unknown;
+  readonly rounds?: unknown;
+}
+
 /**
  * Derive a disposable seed after validating the mnemonic against the selected list.
  * @param mnemonicValue - Public or disposable BIP39 mnemonic.
- * @param passphraseValue - BIP39 passphrase, defaulting to empty.
- * @param languageValue - Optional official BIP39 language key.
- * @param colemanValue - Take Ian Coleman's lengths too, default false.
- * @param roundsValue - PBKDF2 rounds, default 2048.
+ * @param options - Passphrase, language, `coleman` and PBKDF2 `rounds`, each optional.
  * @returns {Promise<ToolResult<DerivedBIP39SeedDetails>>} Seed hex and transcript warning.
  */
 export async function deriveBip39Seed(
   mnemonicValue: unknown,
-  passphraseValue?: unknown,
-  languageValue?: unknown,
-  colemanValue?: unknown,
-  roundsValue?: unknown,
+  options: Bip39SeedArguments,
 ): Promise<ToolResult<DerivedBIP39SeedDetails>> {
-  const coleman = colemanFlag(colemanValue);
-  const rounds = roundsValue === undefined ? 2048 : costArgument(roundsValue, "rounds");
+  const coleman = colemanFlag(options.coleman);
+  const rounds = options.rounds === undefined ? 2048 : costArgument(options.rounds, "rounds");
   const input = requiredString(mnemonicValue, "BIP39 mnemonic");
-  const passphrase = optionalString(passphraseValue, "BIP39 passphrase") ?? "";
+  const passphrase = optionalString(options.passphrase, "BIP39 passphrase") ?? "";
   if (Array.from(input).length > MAX_MNEMONIC_LENGTH) {
     throw new RangeError(`BIP39 mnemonic must not exceed ${MAX_MNEMONIC_LENGTH} characters`);
   }
@@ -156,7 +158,7 @@ export async function deriveBip39Seed(
     );
   }
   const mnemonic = normalizedMnemonic(input);
-  const language = parseBIP39Language(languageValue);
+  const language = parseBIP39Language(options.language);
   const wordlist = await loadBIP39Wordlist(language);
   const inspection = inspectBIP39Mnemonic(mnemonic, wordlist, { coleman });
   if (!inspection.valid) {
