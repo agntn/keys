@@ -67,10 +67,15 @@ describe("Electrum seed derivation", () => {
 
   it("does not confuse BIP39 checksum bypass with Electrum derivation", async () => {
     const vector = electrumVectors[0];
-    expect(() => deriveMnemonicKey(vector.mnemonic, vector.path, "secp256k1")).toThrow(
-      "Invalid BIP39 mnemonic",
-    );
-    const bip39 = deriveMnemonicKey(vector.mnemonic, vector.path, "secp256k1", "", true);
+    expect(() =>
+      deriveMnemonicKey(vector.mnemonic, { path: vector.path, curve: "secp256k1" }),
+    ).toThrow("Invalid BIP39 mnemonic");
+    const bip39 = deriveMnemonicKey(vector.mnemonic, {
+      path: vector.path,
+      curve: "secp256k1",
+      passphrase: "",
+      allowInvalidChecksum: true,
+    });
     const { blockchains } = await import("../../src/index.ts");
     const bitcoin = await blockchains.bitcoin()();
     expect(
@@ -105,9 +110,11 @@ describe("Old Electrum seeds", () => {
       const masterPublicKey = deriveOldMasterPublicKey(vector.mnemonic);
       expect(hex.encode(masterPublicKey)).toBe(vector.masterPublicKey);
       for (const child of vector.children) {
-        expect(hex.encode(deriveOldPublicKey(masterPublicKey, child.change, child.index))).toBe(
-          child.publicKey,
-        );
+        expect(
+          hex.encode(
+            deriveOldPublicKey(masterPublicKey, { change: child.change, index: child.index }),
+          ),
+        ).toBe(child.publicKey);
         const wallet = await deriveElectrumWallet(vector.mnemonic, {
           change: child.change,
           index: child.index,
@@ -162,10 +169,18 @@ describe("Old Electrum seeds", () => {
     expect(() =>
       deriveOldMasterPublicKey("00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff"),
     ).toThrow("Electrum cannot open spaced hex seeds");
-    expect(() => deriveOldPublicKey(masterPublicKey.subarray(1), 0, 0)).toThrow("64 bytes");
-    expect(() => deriveOldPublicKey(masterPublicKey, 2, 0)).toThrow("Change must be 0 or 1");
-    expect(() => deriveOldPublicKey(masterPublicKey, 0, -1)).toThrow("non-negative integer");
-    expect(() => deriveOldPublicKey(masterPublicKey, 0, 1.5)).toThrow("non-negative integer");
+    expect(() => deriveOldPublicKey(masterPublicKey.subarray(1), { change: 0, index: 0 })).toThrow(
+      "64 bytes",
+    );
+    expect(() => deriveOldPublicKey(masterPublicKey, { change: 2, index: 0 })).toThrow(
+      "Change must be 0 or 1",
+    );
+    expect(() => deriveOldPublicKey(masterPublicKey, { change: 0, index: -1 })).toThrow(
+      "non-negative integer",
+    );
+    expect(() => deriveOldPublicKey(masterPublicKey, { change: 0, index: 1.5 })).toThrow(
+      "non-negative integer",
+    );
   });
 
   it("keeps paths, passphrases, change and index to the seeds that use them", async () => {

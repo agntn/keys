@@ -65,15 +65,14 @@ export function oldMasterPublicKey(hexSeed: string): Uint8Array {
 /**
  * Adds `SHA256d("index:change:" || MPK)·G` to the master key, as `get_pubkey_from_mpk` does.
  * @param masterPublicKey - 64 byte master public key
- * @param change - 0 for receiving, 1 for change
- * @param index - Address index on that chain
+ * @param address - Change chain, 0 for receiving and 1 for change, and the address index on it
  * @returns {Uint8Array} Uncompressed SEC1 public key, 65 bytes
  */
 export function oldChildPublicKey(
   masterPublicKey: Uint8Array,
-  change: 0 | 1,
-  index: number,
+  address: { readonly change: 0 | 1; readonly index: number },
 ): Uint8Array {
+  const { change, index } = address;
   const label = new TextEncoder().encode(`${index}:${change}:`);
   const sequence = BigInt(`0x${sha256(sha256(concatBytes(label, masterPublicKey))).toHex()}`);
   const { Point } = secp256k1;

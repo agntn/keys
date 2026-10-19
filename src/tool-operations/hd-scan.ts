@@ -140,16 +140,16 @@ function bip39ScanSource(
   },
 ): ScanRead {
   const words = normalizeMnemonic(mnemonic);
-  const inspection = inspectBIP39Mnemonic(words, wordlist, { coleman });
+  const inspection = inspectBIP39Mnemonic(words, { wordlist, coleman });
   if (inspection.checksumValid === null) {
-    return { reason: describeInvalidMnemonic(words, inspection, wordlist, language) };
+    return { reason: describeInvalidMnemonic(words, { inspection, wordlist, listName: language }) };
   }
   if (!inspection.valid && !allowInvalidChecksum) {
     return {
       reason: "Invalid BIP39 mnemonic: the checksum does not match. allowInvalidChecksum scans it",
     };
   }
-  const seed = mnemonicToSeed(words, passphrase, { coleman });
+  const seed = mnemonicToSeed(words, { passphrase, coleman });
   const walkers = {
     secp256k1: nodeWalker(getMasterKeyFromSeed(seed)),
     ed25519: nodeWalker(getSLIP10MasterKey(seed)),
@@ -163,7 +163,7 @@ function bip39ScanSource(
   return {
     source: {
       schemes,
-      addressAt: (scheme) => hdAddress(blockchain, scheme, walkers[curveOf(scheme)]),
+      addressAt: (scheme) => hdAddress(blockchain, { scheme, nodeAt: walkers[curveOf(scheme)] }),
     },
     warnings: [
       ...(inspection.valid
@@ -197,7 +197,7 @@ function electrumScanSource(
     return {
       source: {
         schemes: [ELECTRUM_SCHEMES[seedType]],
-        addressAt: (scheme) => hdAddress(blockchain, scheme, nodeAt),
+        addressAt: (scheme) => hdAddress(blockchain, { scheme, nodeAt }),
       },
     };
   }
@@ -209,7 +209,7 @@ function electrumScanSource(
         schemes: [{ name: "electrum-old", path: "{change}/{index}", addressType: "legacy" }],
         addressAt: () => (path) => {
           const [change = 0, index = 0] = path.split("/").map(Number);
-          const publicKey = deriveOldPublicKey(masterPublicKey, change, index).toHex();
+          const publicKey = deriveOldPublicKey(masterPublicKey, { change, index }).toHex();
           return { publicKey, address: blockchain.getAddress(publicKey, "legacy") };
         },
       },
@@ -331,9 +331,11 @@ function walkSources(
   const tried: ScanTried[] = [];
   for (const source of sources) {
     for (const scheme of source.schemes) {
-      const walk = walkScheme(scheme, args.ranges, source.addressAt(scheme), (written) =>
-        sameAddress(written, args.address),
-      );
+      const walk = walkScheme(scheme, {
+        ranges: args.ranges,
+        addressAt: source.addressAt(scheme),
+        matches: (written) => sameAddress(written, args.address),
+      });
       tried.push(walk.tried);
       if (walk.match) return { tried, match: walk.match };
     }
@@ -431,7 +433,10 @@ export async function scanHdWallet(
     prefix: options.prefix,
     coinType: options.coinType,
   });
-  const schemes = scanSchemes(blockchain.name, blockchain.network, blockchain.coinType);
+  const schemes = scanSchemes(blockchain.name, {
+    network: blockchain.network,
+    coinType: blockchain.coinType,
+  });
   if (schemes === undefined) {
     throw new RangeError(scanRefusal(blockchain.name));
   }

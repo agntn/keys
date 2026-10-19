@@ -53,51 +53,52 @@ interface EditTable {
   readonly width: number;
 }
 
+/** The written word, the list word and the edits so far between their prefixes. */
+interface Alignment {
+  readonly typed: readonly string[];
+  readonly word: readonly string[];
+  readonly table: EditTable;
+}
+
 /**
  * Reads one cell of the edit table.
  * @param table - Edits for every pair of prefixes
- * @param i - Typed prefix length
- * @param j - Word prefix length
+ * @param at - Typed and word prefix lengths
  * @returns {number} Edits between the two prefixes
  */
-function cell(table: EditTable, i: number, j: number): number {
+function cell(table: EditTable, at: readonly [number, number]): number {
+  const [i, j] = at;
   return table.cells[i * table.width + j] ?? 0;
 }
 
 /**
  * Tells whether the two letters before i in the written word are the two before j, swapped.
- * @param typed - Letters of the written word
- * @param word - Letters of the list word
- * @param i - Typed prefix length
- * @param j - Word prefix length
+ * @param alignment - Letters of the written word and of the list word
+ * @param at - Typed and word prefix lengths
  * @returns {boolean} True for a swap of neighbours
  */
-function isSwap(typed: readonly string[], word: readonly string[], i: number, j: number): boolean {
+function isSwap(alignment: Alignment, at: readonly [number, number]): boolean {
+  const { typed, word } = alignment;
+  const [i, j] = at;
   if (i < 2 || j < 2) return false;
   return typed[i - 1] === word[j - 2] && typed[i - 2] === word[j - 1];
 }
 
 /**
  * Finds the cheapest OCR group that ends both prefixes.
- * @param typed - Letters of the written word
- * @param word - Letters of the list word
- * @param table - Edits for the shorter prefixes
+ * @param alignment - Letters of both words and the edits for the shorter prefixes
  * @param at - Typed and word prefix lengths
  * @returns {number} Edits through the group, or Infinity when none ends there
  */
-function confusionCost(
-  typed: readonly string[],
-  word: readonly string[],
-  table: EditTable,
-  at: readonly [number, number],
-): number {
+function confusionCost(alignment: Alignment, at: readonly [number, number]): number {
+  const { typed, word, table } = alignment;
   const [i, j] = at;
   let best = Number.POSITIVE_INFINITY;
   for (const [from, to] of OCR_CONFUSIONS) {
     if (i < from.length || j < to.length) continue;
     if (typed.slice(i - from.length, i).join("") !== from) continue;
     if (word.slice(j - to.length, j).join("") !== to) continue;
-    best = Math.min(best, cell(table, i - from.length, j - to.length) + 1);
+    best = Math.min(best, cell(table, [i - from.length, j - to.length]) + 1);
   }
   return best;
 }
@@ -114,34 +115,34 @@ function editDistance(typed: readonly string[], word: readonly string[]): number
     index < width ? index : Math.floor(index / width),
   );
   const table = { cells, width };
+  const alignment = { typed, word, table };
   for (let i = 1; i <= typed.length; i++) {
     for (let j = 1; j <= word.length; j++) {
-      const kept = cell(table, i - 1, j - 1) + (typed[i - 1] === word[j - 1] ? 0 : 1);
-      const swapped = isSwap(typed, word, i, j) ? cell(table, i - 2, j - 2) + 1 : kept;
+      const kept = cell(table, [i - 1, j - 1]) + (typed[i - 1] === word[j - 1] ? 0 : 1);
+      const swapped = isSwap(alignment, [i, j]) ? cell(table, [i - 2, j - 2]) + 1 : kept;
       cells[i * width + j] = Math.min(
-        cell(table, i - 1, j) + 1,
-        cell(table, i, j - 1) + 1,
+        cell(table, [i - 1, j]) + 1,
+        cell(table, [i, j - 1]) + 1,
         kept,
         swapped,
-        confusionCost(typed, word, table, [i, j]),
+        confusionCost(alignment, [i, j]),
       );
     }
   }
-  return cell(table, typed.length, word.length);
+  return cell(table, [typed.length, word.length]);
 }
 
 /**
  * Lists the words of the list within reach of one written word, closest first, then in list order.
  * @param written - The word as written, normalized
- * @param wordlist - BIP39 word list
- * @param maxDistance - Most edits allowed
+ * @param reach - BIP39 word list and the most edits allowed
  * @returns {ReadonlyArray<WordSuggestion>} The words in reach
  */
 function nearestWords(
   written: string,
-  wordlist: readonly string[],
-  maxDistance: number,
+  reach: { readonly wordlist: readonly string[]; readonly maxDistance: number },
 ): readonly WordSuggestion[] {
+  const { wordlist, maxDistance } = reach;
   const typed = Array.from(written);
   return wordlist
     .flatMap((word, zeroBasedIndex) => {
@@ -175,7 +176,7 @@ function prepareRepair(mnemonic: string, options: WordRepairOptions): RepairSear
   const positions = words.flatMap((word, index) =>
     wordlist.includes(word)
       ? []
-      : [{ position: index + 1, suggestions: nearestWords(word, wordlist, maxDistance) }],
+      : [{ position: index + 1, suggestions: nearestWords(word, { wordlist, maxDistance }) }],
   );
   return { wordlist, words, positions };
 }

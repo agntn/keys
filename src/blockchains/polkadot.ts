@@ -101,11 +101,10 @@ export class Polkadot extends AbstractEd25519Blockchain {
       );
     }
     const junctions = parseHardJunctions(path);
-    const { entropy, checksumValid } = deriveMnemonicEntropy(
-      mnemonic,
+    const { entropy, checksumValid } = deriveMnemonicEntropy(mnemonic, {
       allowInvalidChecksum,
       wordlist,
-    );
+    });
     const seed = deriveEd25519Hard(miniSecret(entropy, passphrase), junctions);
     const wallet = this.deriveWallet(seed.toHex(), keyOptions);
     if (checksumValid) return wallet;

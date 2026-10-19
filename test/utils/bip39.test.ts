@@ -139,7 +139,9 @@ describe("BIP39 Utils", () => {
       { index: 1619, word: "skill" },
       { index: 2047, word: "zoo" },
     ]);
-    await expect(lookupIndices([1, 1179, 2048], "italian", 1)).resolves.toEqual([
+    await expect(
+      lookupIndices([1, 1179, 2048], { language: "italian", indexBase: 1 }),
+    ).resolves.toEqual([
       { index: 1, word: "abaco" },
       { index: 1179, word: "orologio" },
       { index: 2048, word: "zuppa" },
@@ -148,9 +150,9 @@ describe("BIP39 Utils", () => {
       { index: -1, word: null },
       { index: 2048, word: null },
     ]);
-    await expect(Reflect.apply(lookupIndices, undefined, [[1], "english", 2])).rejects.toThrow(
-      "BIP39 index base must be 0 or 1",
-    );
+    await expect(
+      Reflect.apply(lookupIndices, undefined, [[1], { language: "english", indexBase: 2 }]),
+    ).rejects.toThrow("BIP39 index base must be 0 or 1");
   });
 
   it("validates mnemonics correctly", () => {
@@ -209,12 +211,12 @@ describe("BIP39 Utils", () => {
       const missing = words.at(-1);
       const template = [...words.slice(0, -1), "?"].join(" ");
 
-      const candidates = getMnemonicWordCandidates(template, wordlist);
+      const candidates = getMnemonicWordCandidates(template, { wordlist });
 
       expect(candidates).toHaveLength(128);
       expect(candidates).toContain(missing);
       for (const candidate of candidates) {
-        expect(inspect(template.replace("?", candidate), wordlist).valid).toBe(true);
+        expect(inspect(template.replace("?", candidate), { wordlist }).valid).toBe(true);
       }
     },
   );
@@ -230,10 +232,10 @@ describe("BIP39 Utils", () => {
     expect(() => getMnemonicWordCandidates(template.replace("zoo", "zo"))).toThrow(
       "Mnemonic template words 2, 9 are not in the English list",
     );
-    expect(() => getMnemonicWordCandidates(template, italian, "italian")).toThrow(
-      "None of the mnemonic template words is in the italian list",
-    );
-    expect(() => getMnemonicWordCandidates(template, italian.slice(1))).toThrow(
+    expect(() =>
+      getMnemonicWordCandidates(template, { wordlist: italian, listName: "italian" }),
+    ).toThrow("None of the mnemonic template words is in the italian list");
+    expect(() => getMnemonicWordCandidates(template, { wordlist: italian.slice(1) })).toThrow(
       "BIP39 word list of 2048 words",
     );
   });
@@ -285,7 +287,7 @@ describe("BIP39 Utils", () => {
     "inspects $language with the explicitly selected word list",
     async ({ language, mnemonic }) => {
       const wordlist = await loadWordlist(language);
-      expect(inspect(mnemonic.normalize("NFC"), wordlist)).toEqual({
+      expect(inspect(mnemonic.normalize("NFC"), { wordlist })).toEqual({
         valid: true,
         words: 12,
         wordCountValid: true,
@@ -298,7 +300,7 @@ describe("BIP39 Utils", () => {
   it("distinguishes a localized checksum failure from the wrong dictionary", async () => {
     const wordlist = await loadWordlist("spanish");
     const mnemonic = Array.from({ length: 12 }, () => "ábaco").join(" ");
-    expect(inspect(mnemonic, wordlist)).toMatchObject({
+    expect(inspect(mnemonic, { wordlist })).toMatchObject({
       valid: false,
       wordCountValid: true,
       wordlistValid: true,
@@ -323,7 +325,7 @@ describe("BIP39 Utils", () => {
     const mnemonic =
       "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
     const seedNoPass = mnemonicToSeed(mnemonic);
-    const seedWithPass = mnemonicToSeed(mnemonic, "TREZOR");
+    const seedWithPass = mnemonicToSeed(mnemonic, { passphrase: "TREZOR" });
 
     // Should be different with passphrase
     expect(Buffer.from(seedNoPass).toString("hex")).not.toBe(
@@ -352,10 +354,10 @@ describe("BIP39 Utils", () => {
     async ({ language, entropy, mnemonic }) => {
       const wordlist = await loadWordlist(language);
 
-      expect(entropyToMnemonic(hex.decode(entropy), wordlist)).toBe(mnemonic);
-      expect(hex.encode(mnemonicToEntropy(mnemonic, wordlist))).toBe(entropy);
-      expect(validateMnemonic(mnemonic, wordlist)).toBe(true);
-      expect(validateMnemonic(generateMnemonic(256, wordlist), wordlist)).toBe(true);
+      expect(entropyToMnemonic(hex.decode(entropy), { wordlist })).toBe(mnemonic);
+      expect(hex.encode(mnemonicToEntropy(mnemonic, { wordlist }))).toBe(entropy);
+      expect(validateMnemonic(mnemonic, { wordlist })).toBe(true);
+      expect(validateMnemonic(generateMnemonic(256, wordlist), { wordlist })).toBe(true);
     },
   );
 
@@ -363,7 +365,7 @@ describe("BIP39 Utils", () => {
     const french = await loadWordlist("french");
     const entropy = hex.decode(frenchMuralMnemonic.entropy);
 
-    expect(entropyToMnemonic(entropy, french)).toBe(frenchMuralMnemonic.french);
+    expect(entropyToMnemonic(entropy, { wordlist: french })).toBe(frenchMuralMnemonic.french);
     expect(entropyToMnemonic(entropy)).toBe(frenchMuralMnemonic.english);
     expect(validateMnemonic(frenchMuralMnemonic.french)).toBe(false);
     expect(() => mnemonicToEntropy(frenchMuralMnemonic.french)).toThrow();
@@ -375,11 +377,11 @@ describe("BIP39 Utils", () => {
     it.each(colemanMnemonicVectors)(
       "reads $entropy the way Coleman's codec does",
       ({ entropy, mnemonic, passphrase, seed }) => {
-        expect(entropyToMnemonic(hex.decode(entropy), undefined, coleman)).toBe(mnemonic);
-        expect(hex.encode(mnemonicToEntropy(mnemonic, undefined, coleman))).toBe(entropy);
-        expect(hex.encode(mnemonicToSeed(mnemonic, passphrase, coleman))).toBe(seed);
-        expect(validateMnemonic(mnemonic, undefined, coleman)).toBe(true);
-        expect(inspect(mnemonic, undefined, coleman)).toEqual({
+        expect(entropyToMnemonic(hex.decode(entropy), { ...coleman })).toBe(mnemonic);
+        expect(hex.encode(mnemonicToEntropy(mnemonic, { ...coleman }))).toBe(entropy);
+        expect(hex.encode(mnemonicToSeed(mnemonic, { passphrase, ...coleman }))).toBe(seed);
+        expect(validateMnemonic(mnemonic, { ...coleman })).toBe(true);
+        expect(inspect(mnemonic, { ...coleman })).toEqual({
           valid: true,
           words: mnemonic.split(" ").length,
           wordCountValid: true,
@@ -406,56 +408,60 @@ describe("BIP39 Utils", () => {
     });
 
     it("checks the checksum instead of the length alone", () => {
-      expect(inspect(colemanBadChecksum, undefined, coleman)).toMatchObject({
+      expect(inspect(colemanBadChecksum, { ...coleman })).toMatchObject({
         valid: false,
         wordCountValid: true,
         checksumValid: false,
       });
-      expect(() => mnemonicToEntropy(colemanBadChecksum, undefined, coleman)).toThrow(
+      expect(() => mnemonicToEntropy(colemanBadChecksum, { ...coleman })).toThrow(
         "Invalid mnemonic",
       );
     });
 
     it("gives the standard lengths the same answer as BIP39", async () => {
       const { mnemonic, passphrase, seedWithPassphrase } = bip39TestVectors;
-      expect(inspect(mnemonic, undefined, coleman)).toMatchObject({
+      expect(inspect(mnemonic, { ...coleman })).toMatchObject({
         valid: true,
         standardLength: true,
       });
-      expect(hex.encode(mnemonicToSeed(mnemonic, passphrase, coleman))).toBe(seedWithPassphrase);
+      expect(hex.encode(mnemonicToSeed(mnemonic, { passphrase, ...coleman }))).toBe(
+        seedWithPassphrase,
+      );
       const japanese = await loadWordlist("japanese");
       const entropy = new Uint8Array(16).fill(7);
-      expect(entropyToMnemonic(entropy, japanese, coleman)).toBe(
-        entropyToMnemonic(entropy, japanese),
+      expect(entropyToMnemonic(entropy, { wordlist: japanese, ...coleman })).toBe(
+        entropyToMnemonic(entropy, { wordlist: japanese }),
       );
     });
 
     it("refuses a word list short of 2048 words, as strict BIP39 does", async () => {
       const short = (await loadWordlist()).slice(0, 10);
       const { mnemonic } = colemanMnemonicVectors[0];
-      expect(() => entropyToMnemonic(new Uint8Array(4), short, coleman)).toThrow("2048 words");
-      expect(inspect(mnemonic, short, coleman)).toMatchObject({
+      expect(() => entropyToMnemonic(new Uint8Array(4), { wordlist: short, ...coleman })).toThrow(
+        "2048 words",
+      );
+      expect(inspect(mnemonic, { wordlist: short, ...coleman })).toMatchObject({
         valid: false,
         checksumValid: false,
       });
-      expect(() => mnemonicToEntropy(mnemonic, short, coleman)).toThrow("Invalid mnemonic");
+      expect(() => mnemonicToEntropy(mnemonic, { wordlist: short, ...coleman })).toThrow(
+        "Invalid mnemonic",
+      );
     });
 
     it("refuses lengths Coleman's codec has no checksum for", () => {
-      expect(inspect("abandon abandon", undefined, coleman).wordCountValid).toBe(false);
+      expect(inspect("abandon abandon", { ...coleman }).wordCountValid).toBe(false);
       expect(
-        inspect(Array.from({ length: 771 }, () => "abandon").join(" "), undefined, coleman)
+        inspect(Array.from({ length: 771 }, () => "abandon").join(" "), { ...coleman })
           .wordCountValid,
       ).toBe(false);
-      expect(() => mnemonicToSeed("abandon abandon", "", coleman)).toThrow("multiple of 3");
-      for (const bytes of [0, 6, 1028]) {
-        expect(() => entropyToMnemonic(new Uint8Array(bytes), undefined, coleman)).toThrow(
-          RangeError,
-        );
-      }
-      expect(entropyToMnemonic(new Uint8Array(1024), undefined, coleman).split(" ")).toHaveLength(
-        768,
+      expect(() => mnemonicToSeed("abandon abandon", { passphrase: "", ...coleman })).toThrow(
+        "multiple of 3",
       );
+      for (const bytes of [0, 6, 1028]) {
+        expect(() => entropyToMnemonic(new Uint8Array(bytes), { ...coleman })).toThrow(RangeError);
+      }
+      expect(entropyToMnemonic(new Uint8Array(1024), { ...coleman }).split(" ")).toHaveLength(768);
     });
   });
 
@@ -465,38 +471,40 @@ describe("BIP39 Utils", () => {
       getMasterKeyFromSeed(seed).fingerprint.toString(16).padStart(8, "0");
 
     it.each(fingerprints)("finds the Genesis master key at $rounds rounds", (vector) => {
-      const seed = mnemonicToSeed(mnemonic, passphrase, { rounds: vector.rounds });
+      const seed = mnemonicToSeed(mnemonic, { passphrase, rounds: vector.rounds });
       expect(fingerprint(seed)).toBe(vector.fingerprint);
     });
 
     it("misses both keys at BIP39's own 2048", () => {
-      const seed = mnemonicToSeed(mnemonic, passphrase);
+      const seed = mnemonicToSeed(mnemonic, { passphrase });
       expect(fingerprints.map((vector) => vector.fingerprint)).not.toContain(fingerprint(seed));
-      expect(mnemonicToSeed(mnemonic, passphrase, { rounds: 2048 })).toEqual(seed);
+      expect(mnemonicToSeed(mnemonic, { passphrase, rounds: 2048 })).toEqual(seed);
     });
 
     it("runs 2048 rounds the way BIP39 does, Coleman lengths included", () => {
       const { mnemonic: tiny, seed } = colemanMnemonicVectors[0];
       const { mnemonic: standard, passphrase: trezor, seedWithPassphrase } = bip39TestVectors;
-      expect(hex.encode(mnemonicToSeed(tiny, "", { coleman: true, rounds: 2048 }))).toBe(seed);
-      expect(hex.encode(mnemonicToSeed(standard, trezor, { coleman: true, rounds: 2048 }))).toBe(
-        seedWithPassphrase,
-      );
+      expect(
+        hex.encode(mnemonicToSeed(tiny, { passphrase: "", coleman: true, rounds: 2048 })),
+      ).toBe(seed);
+      expect(
+        hex.encode(mnemonicToSeed(standard, { passphrase: trezor, coleman: true, rounds: 2048 })),
+      ).toBe(seedWithPassphrase);
     });
 
     it("keeps the length check when it leaves BIP39's PBKDF2 behind", () => {
       const { mnemonic: tiny } = colemanMnemonicVectors[0];
-      expect(() => mnemonicToSeed(tiny, "", { rounds: 1 })).toThrow("Invalid mnemonic");
-      expect(() => mnemonicToSeed("abandon abandon", "", { coleman: true, rounds: 1 })).toThrow(
-        "multiple of 3",
-      );
-      expect(mnemonicToSeed(tiny, "", { coleman: true, rounds: 1 })).toHaveLength(64);
+      expect(() => mnemonicToSeed(tiny, { passphrase: "", rounds: 1 })).toThrow("Invalid mnemonic");
+      expect(() =>
+        mnemonicToSeed("abandon abandon", { passphrase: "", coleman: true, rounds: 1 }),
+      ).toThrow("multiple of 3");
+      expect(mnemonicToSeed(tiny, { passphrase: "", coleman: true, rounds: 1 })).toHaveLength(64);
     });
 
     it.each([0, -1, 1.5, Number.NaN, Number.MAX_SAFE_INTEGER + 1])(
       "refuses %s rounds",
       (rounds) => {
-        expect(() => mnemonicToSeed(mnemonic, passphrase, { rounds })).toThrow(RangeError);
+        expect(() => mnemonicToSeed(mnemonic, { passphrase, rounds })).toThrow(RangeError);
       },
     );
   });

@@ -31,20 +31,24 @@ function describeWordCount(inspection: BIP39MnemonicInspection): string {
   return `${inspection.words} words, expected ${expected}`;
 }
 
+/** A BIP39 verdict on a phrase and the list it was checked against. */
+export interface MnemonicVerdict {
+  /** Verdict of `inspectBIP39Mnemonic` for the phrase and word list. */
+  readonly inspection: BIP39MnemonicInspection;
+  /** Word list the phrase was checked against. Default: English. */
+  readonly wordlist?: readonly string[];
+  /** Word list name for the message. Default: `English`. */
+  readonly listName?: string;
+}
+
 /**
  * Names the BIP39 check a phrase fails, by word position and never by the word itself.
  * @param mnemonic - Phrase with words separated by single spaces
- * @param inspection - Verdict of `inspectBIP39Mnemonic` for the same phrase and word list
- * @param wordlist - Word list the phrase was checked against
- * @param listName - Word list name for the message
+ * @param verdict - Its inspection, the list it was checked against and that list's name
  * @returns {string} Error message for a phrase the inspection rejected
  */
-export function describeInvalidMnemonic(
-  mnemonic: string,
-  inspection: BIP39MnemonicInspection,
-  wordlist: readonly string[] = englishWordlist,
-  listName = "English",
-): string {
+export function describeInvalidMnemonic(mnemonic: string, verdict: MnemonicVerdict): string {
+  const { inspection, wordlist = englishWordlist, listName = "English" } = verdict;
   const reasons: string[] = [];
   if (!inspection.wordCountValid) reasons.push(describeWordCount(inspection));
   if (!inspection.wordlistValid && inspection.words > 0) {
@@ -69,37 +73,34 @@ export function describeInvalidMnemonic(
 /**
  * Adds the override hint to a phrase that only fails the checksum.
  * @param mnemonic - Normalized phrase
- * @param inspection - Its BIP39 verdict
- * @param wordlist - Word list the phrase was checked against
+ * @param verdict - Its BIP39 verdict and the word list it was checked against
  * @returns {string} Error message for `deriveMnemonicKey`
  */
-function describeRejectedMnemonic(
-  mnemonic: string,
-  inspection: BIP39MnemonicInspection,
-  wordlist: readonly string[],
-): string {
-  const message = describeInvalidMnemonic(
-    mnemonic,
+function describeRejectedMnemonic(mnemonic: string, verdict: MnemonicVerdict): string {
+  const { inspection, wordlist = englishWordlist } = verdict;
+  const message = describeInvalidMnemonic(mnemonic, {
     inspection,
     wordlist,
-    wordlist === englishWordlist ? "English" : "selected",
-  );
+    listName: wordlist === englishWordlist ? "English" : "selected",
+  });
   return inspection.checksumValid === false
     ? `${message}. allowInvalidChecksum derives from it anyway`
     : message;
 }
 
+/** Derivation options as an untyped caller may pass them. */
+interface DerivationInput {
+  readonly allowInvalidChecksum: unknown;
+  readonly wordlist: unknown;
+  readonly coleman?: unknown;
+}
+
 /**
  * Refuses a non-boolean override and a list that the checksum check would read as a bad checksum.
- * @param allowInvalidChecksum - Override as the caller passed it
- * @param wordlist - Candidate BIP39 word list
- * @param coleman - Length mode as the caller passed it
+ * @param input - Override, candidate BIP39 word list and length mode as the caller passed them
  */
-function assertDerivationInput(
-  allowInvalidChecksum: unknown,
-  wordlist: unknown,
-  coleman: unknown = false,
-): void {
+function assertDerivationInput(input: DerivationInput): void {
+  const { allowInvalidChecksum, wordlist, coleman = false } = input;
   if (typeof allowInvalidChecksum !== "boolean") {
     throw new TypeError("allowInvalidChecksum must be a boolean");
   }
@@ -128,59 +129,82 @@ function wordsToEntropy(words: readonly string[], wordlist: readonly string[]): 
 /**
  * Reads the entropy behind a BIP39 mnemonic, which Substrate derives from instead of the seed.
  * @param mnemonic - BIP39 words from `wordlist`, never repaired to satisfy a checksum
- * @param allowInvalidChecksum - Accept only checksum failures when explicitly true
- * @param wordlist - BIP39 word list the words come from, English by default
+ * @param options - `allowInvalidChecksum` accepts only checksum failures when explicitly true,
+ * `wordlist` is the list the words come from, English by default
  * @returns {{ entropy: Uint8Array; checksumValid: boolean }} Entropy bytes and actual checksum verdict
  */
 export function deriveMnemonicEntropy(
   mnemonic: string,
-  allowInvalidChecksum = false,
-  wordlist: readonly string[] = englishWordlist,
+  options: MnemonicEntropyOptions = {},
 ): { readonly entropy: Uint8Array; readonly checksumValid: boolean } {
-  assertDerivationInput(allowInvalidChecksum, wordlist);
+  const { allowInvalidChecksum = false, wordlist = englishWordlist } = options;
+  assertDerivationInput({ allowInvalidChecksum, wordlist });
   const normalizedMnemonic = normalizeMnemonic(mnemonic);
-  const inspection = inspectBIP39Mnemonic(normalizedMnemonic, wordlist);
+  const inspection = inspectBIP39Mnemonic(normalizedMnemonic, { wordlist });
   if (inspection.checksumValid === null || (!inspection.valid && !allowInvalidChecksum)) {
-    throw new Error(describeRejectedMnemonic(normalizedMnemonic, inspection, wordlist));
+    throw new Error(describeRejectedMnemonic(normalizedMnemonic, { inspection, wordlist }));
   }
   const words = normalizedMnemonic.normalize("NFKD").split(" ");
   return { entropy: wordsToEntropy(words, wordlist), checksumValid: inspection.valid };
 }
 
+/** How `deriveMnemonicEntropy` reads a phrase. */
+export interface MnemonicEntropyOptions {
+  /** Accept only checksum failures. Default: false. */
+  readonly allowInvalidChecksum?: boolean;
+  /** BIP39 word list the words come from. Default: English. */
+  readonly wordlist?: readonly string[];
+}
+
+/** Where `deriveMnemonicKey` walks a phrase and how it reads it. */
+export interface MnemonicKeyOptions extends MnemonicEntropyOptions, SeedPath {
+  /** BIP39 passphrase. Default: empty. */
+  readonly passphrase?: string;
+  /** Take Ian Coleman's lengths too, any 3 words per 32 bits. Default: false. */
+  readonly coleman?: boolean;
+}
+
+/** A derivation path and the curve that picks BIP32 or SLIP-10 for it. */
+interface SeedPath {
+  /** Derivation path such as `m/84'/0'/0'/0/0`, or `m/84h/0h/0h/0/0` as descriptors write it. */
+  readonly path: string;
+  /** Curve of the key the chain expects. */
+  readonly curve: Curve;
+}
+
 /**
  * Walks a BIP39 mnemonic down a path: BIP32 for secp256k1, SLIP-10 for ed25519.
  * @param mnemonic - BIP39 words from `wordlist`, never repaired to satisfy a checksum
- * @param path - Derivation path such as `m/84'/0'/0'/0/0`, or `m/84h/0h/0h/0/0` as descriptors write it
- * @param curve - Curve of the key the chain expects
- * @param passphrase - BIP39 passphrase, empty by default
- * @param allowInvalidChecksum - Accept only checksum failures when explicitly true
- * @param wordlist - BIP39 word list the words come from, English by default
- * @param coleman - Take Ian Coleman's lengths too, any 3 words per 32 bits
+ * @param options - Path and curve, then the passphrase, the checksum override, the word list and
+ * Coleman's lengths
  * @returns {{ privateKey: string; checksumValid: boolean; standardLength: boolean }} Key, verdicts
  */
 export function deriveMnemonicKey(
   mnemonic: string,
-  path: string,
-  curve: Curve,
-  passphrase = "",
-  allowInvalidChecksum = false,
-  wordlist: readonly string[] = englishWordlist,
-  coleman = false,
+  options: MnemonicKeyOptions,
 ): {
   readonly privateKey: string;
   readonly checksumValid: boolean;
   readonly standardLength: boolean;
 } {
-  assertDerivationInput(allowInvalidChecksum, wordlist, coleman);
+  const {
+    path,
+    curve,
+    passphrase = "",
+    allowInvalidChecksum = false,
+    wordlist = englishWordlist,
+    coleman = false,
+  } = options;
+  assertDerivationInput({ allowInvalidChecksum, wordlist, coleman });
   const normalizedMnemonic = normalizeMnemonic(mnemonic);
-  const inspection = inspectBIP39Mnemonic(normalizedMnemonic, wordlist, { coleman });
+  const inspection = inspectBIP39Mnemonic(normalizedMnemonic, { wordlist, coleman });
   if (inspection.checksumValid === null || (!inspection.valid && !allowInvalidChecksum)) {
-    throw new Error(describeRejectedMnemonic(normalizedMnemonic, inspection, wordlist));
+    throw new Error(describeRejectedMnemonic(normalizedMnemonic, { inspection, wordlist }));
   }
 
-  const seed = mnemonicToSeed(normalizedMnemonic, passphrase, { coleman });
+  const seed = mnemonicToSeed(normalizedMnemonic, { passphrase, coleman });
   return {
-    privateKey: deriveSeedKey(seed, path, curve),
+    privateKey: deriveSeedKey(seed, { path, curve }),
     checksumValid: inspection.valid,
     standardLength: inspection.standardLength ?? true,
   };
@@ -189,11 +213,11 @@ export function deriveMnemonicKey(
 /**
  * Walks a seed down a path: BIP32 for secp256k1, SLIP-10 for ed25519.
  * @param seed - BIP39 or Electrum seed bytes
- * @param path - Derivation path, `h` taken for `'`
- * @param curve - Curve of the key the chain expects
+ * @param target - Derivation path, `h` taken for `'`, and the curve of the key the chain expects
  * @returns {string} The private key at the path, as hex
  */
-function deriveSeedKey(seed: Uint8Array, path: string, curve: Curve): string {
+function deriveSeedKey(seed: Uint8Array, target: SeedPath): string {
+  const { path, curve } = target;
   const hdPath = normalizeHardenedMarkers(path);
   const privateKey =
     curve === "ed25519"
@@ -217,7 +241,7 @@ export function deriveElectrumKey(seed: ElectrumSeed, path: string): string {
       "Pass the seed that deriveSeed from @agntn/keys/electrum returns, not the phrase",
     );
   }
-  return deriveSeedKey(seed.seed, path, "secp256k1");
+  return deriveSeedKey(seed.seed, { path, curve: "secp256k1" });
 }
 
 /** Seed versions `deriveSeed` hands out; old and 2FA seeds never get that far. */

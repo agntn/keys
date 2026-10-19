@@ -84,7 +84,12 @@ export class Sui extends AbstractDualCurveBlockchain {
       addressIndex = 0,
     } = readPathOptions(options);
     if (this.resolveCurve(options) === "secp256k1") {
-      return getBIP32Path(SECP256K1_PURPOSE, this.bip44, account, change, addressIndex);
+      return getBIP32Path(SECP256K1_PURPOSE, {
+        coinType: this.bip44,
+        account,
+        change,
+        addressIndex,
+      });
     }
     return getHardenedPath(this.bip44, [account, change, addressIndex]);
   }

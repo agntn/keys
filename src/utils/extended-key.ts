@@ -95,20 +95,27 @@ function decodeExtendedPublicKey(extendedKey: string): Uint8Array {
   return bytes;
 }
 
+/** Where an extended public key is walked and what the chain accepts. */
+export interface ExtendedPublicWalk {
+  /** Normal levels below the key, such as `m/0/5`. */
+  readonly path: string;
+  /** Prefixes the chain accepts on its network. */
+  readonly formats: ExtendedKeyFormats;
+  /** Chain and network for error messages. */
+  readonly label: string;
+}
+
 /**
  * Walks an extended public key down normal levels, so this path stays watch-only.
  * @param extendedKey - Base58Check extended public key, such as an account `xpub`
- * @param path - Normal levels below the key, such as `m/0/5`
- * @param formats - Prefixes the chain accepts on its network
- * @param label - Chain and network for error messages
+ * @param walk - Normal levels below the key, the prefixes the chain accepts and its label
  * @returns {ExtendedPublicChild} The child public key and what the prefix says about it
  */
 export function deriveExtendedPublicChild(
   extendedKey: string,
-  path: string,
-  formats: ExtendedKeyFormats,
-  label: string,
+  walk: ExtendedPublicWalk,
 ): ExtendedPublicChild {
+  const { path, formats, label } = walk;
   assertNormalPath(path);
   const bytes = decodeExtendedPublicKey(extendedKey);
   const version = extendedKeyVersion(bytes);

@@ -1,3 +1,5 @@
+import type { PathLevels } from "./utils/bip44/paths.ts";
+
 /**
  * Cryptographic curve type
  */
@@ -132,14 +134,7 @@ export interface XpubWalletOptions {
 }
 
 /** The account, branch and address a derivation path points at, each from 0. */
-export interface DerivationPathOptions extends KeyOptions {
-  /** Account index. Default: 0 */
-  readonly account?: number;
-  /** 0 for the external branch, 1 for the internal one. Default: 0 */
-  readonly change?: number;
-  /** Address index. Default: 0 */
-  readonly addressIndex?: number;
-}
+export interface DerivationPathOptions extends KeyOptions, PathLevels {}
 
 /** Standard or SegWit Electrum seed, as `deriveSeed` in `@agntn/keys/electrum` returns it. */
 export interface ElectrumSeed {

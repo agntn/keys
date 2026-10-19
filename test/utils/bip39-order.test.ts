@@ -102,7 +102,7 @@ describe("BIP39 word orders", () => {
       const found = [...orderWords(words.slice(-4).reverse(), { template, wordlist })];
 
       expect(found.map((order) => order.join(" "))).toContain(words.join(" "));
-      for (const order of found) expect(inspect(order.join(" "), wordlist).valid).toBe(true);
+      for (const order of found) expect(inspect(order.join(" "), { wordlist }).valid).toBe(true);
     },
   );
 

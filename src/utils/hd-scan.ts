@@ -153,18 +153,22 @@ export const ELECTRUM_SCHEMES: Readonly<Record<"standard" | "segwit", ScanScheme
   segwit: { name: "electrum-segwit", path: "m/0'/{change}/{index}", addressType: "segwit" },
 };
 
+/** The network of a scanned chain and, for Cosmos, the coin type it was loaded with. */
+export interface SchemeTarget {
+  /** Network name. */
+  readonly network: string;
+  /** Coin type of the loaded chain, which the Cosmos path follows from Hub to Terra. */
+  readonly coinType?: number;
+}
+
 /**
  * Lists the BIP39 wallet paths of a chain; a UTXO testnet walks coin type 1 as `-testnet` first.
  * @param chain - Tool chain name
- * @param network - Network name
- * @param coinType - Coin type of the loaded chain, which the Cosmos path follows from Hub to Terra
+ * @param target - Network name and the coin type of the loaded chain
  * @returns {ScanScheme[] | undefined} Schemes, or undefined for a chain without BIP39 derivation
  */
-export function scanSchemes(
-  chain: string,
-  network: string,
-  coinType?: number,
-): ScanScheme[] | undefined {
+export function scanSchemes(chain: string, target: SchemeTarget): ScanScheme[] | undefined {
+  const { network, coinType } = target;
   if (chain === "cosmos" && coinType !== undefined) return cosmos(coinType);
   const schemes = CHAIN_SCHEMES[chain];
   if (schemes === undefined) return undefined;
@@ -266,20 +270,24 @@ export interface SchemeWalk {
   readonly match?: ScanMatch;
 }
 
+/** How far a scheme is walked and what each step is checked against. */
+export interface SchemeWalkOptions {
+  /** Accounts and indices. */
+  readonly ranges: ScanRanges;
+  /** Address one concrete path reaches. */
+  readonly addressAt: (path: string) => ScanAddress;
+  /** Whether an address is the target. */
+  readonly matches: (address: string) => boolean;
+}
+
 /**
  * Walks one scheme until the target turns up or the ranges run out.
  * @param scheme - Scheme to walk
- * @param ranges - Accounts and indices
- * @param addressAt - Address one concrete path reaches
- * @param matches - Whether an address is the target
+ * @param options - Accounts and indices, the address reader and the target test
  * @returns {SchemeWalk} The walk, with the match when there is one
  */
-export function walkScheme(
-  scheme: ScanScheme,
-  ranges: ScanRanges,
-  addressAt: (path: string) => ScanAddress,
-  matches: (address: string) => boolean,
-): SchemeWalk {
+export function walkScheme(scheme: ScanScheme, options: SchemeWalkOptions): SchemeWalk {
+  const { ranges, addressAt, matches } = options;
   const placeholders = {
     account: range(ranges.accounts),
     change: [0, 1],
@@ -313,18 +321,25 @@ function typeOf(scheme: ScanScheme): { addressType?: string } {
   return scheme.addressType === undefined ? {} : { addressType: scheme.addressType };
 }
 
+/** The scheme an address reader writes for and the nodes it reads keys from. */
+export interface AddressSource {
+  /** Scheme whose address type applies. */
+  readonly scheme: ScanScheme;
+  /** Node walker over the right master key. */
+  readonly nodeAt: (path: string) => ScanNode;
+}
+
 /**
  * Builds the address reader for a BIP39 or Electrum seed on one chain.
  * @param blockchain - Chain that writes the address
- * @param scheme - Scheme whose address type applies
- * @param nodeAt - Node walker over the right master key
+ * @param source - Scheme whose address type applies and the node walker over the right master key
  * @returns {(path: string) => ScanAddress} Address one path reaches
  */
 export function hdAddress(
   blockchain: Readonly<AbstractBlockchain>,
-  scheme: ScanScheme,
-  nodeAt: (path: string) => ScanNode,
+  source: AddressSource,
 ): (path: string) => ScanAddress {
+  const { scheme, nodeAt } = source;
   return (path) => {
     const privateKey = nodeAt(path).privateKey;
     if (!privateKey) throw new Error(`No private key at ${path}`);

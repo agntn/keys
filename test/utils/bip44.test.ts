@@ -26,22 +26,30 @@ describe("BIP44 Path Generation", () => {
   });
 
   test("should generate correct BIP44 path with custom account", () => {
-    const path = getPath(BIP44.BITCOIN, 5);
+    const path = getPath(BIP44.BITCOIN, { account: 5 });
     expect(path).toBe("m/44'/0'/5'/0/0");
   });
 
   test("should generate correct BIP44 path with internal chain", () => {
-    const path = getPath(BIP44.ETHEREUM, 0, BIP44Change.INTERNAL);
+    const path = getPath(BIP44.ETHEREUM, { account: 0, change: BIP44Change.INTERNAL });
     expect(path).toBe("m/44'/60'/0'/1/0");
   });
 
   test("should generate correct BIP44 path with custom address index", () => {
-    const path = getPath(BIP44.SOLANA, 0, BIP44Change.EXTERNAL, 42);
+    const path = getPath(BIP44.SOLANA, {
+      account: 0,
+      change: BIP44Change.EXTERNAL,
+      addressIndex: 42,
+    });
     expect(path).toBe("m/44'/501'/0'/0/42");
   });
 
   test("should generate a path with the largest BIP32 level indices", () => {
-    const path = getPath(2_147_483_647, 2_147_483_647, BIP44Change.INTERNAL, 2_147_483_647);
+    const path = getPath(2_147_483_647, {
+      account: 2_147_483_647,
+      change: BIP44Change.INTERNAL,
+      addressIndex: 2_147_483_647,
+    });
 
     expect(path).toBe("m/44'/2147483647'/2147483647'/1/2147483647");
   });
@@ -49,10 +57,16 @@ describe("BIP44 Path Generation", () => {
   test.each([
     ["a negative coin type", () => getPath(-1)],
     ["a coin type above the BIP32 range", () => getPath(2_147_483_648)],
-    ["a negative account", () => getPath(BIP44.BITCOIN, -1)],
-    ["a change level other than 0 or 1", () => getPath(BIP44.BITCOIN, 0, 2)],
-    ["a negative address index", () => getPath(BIP44.BITCOIN, 0, 0, -1)],
-    ["a fractional address index", () => getPath(BIP44.BITCOIN, 0, 0, 1.5)],
+    ["a negative account", () => getPath(BIP44.BITCOIN, { account: -1 })],
+    ["a change level other than 0 or 1", () => getPath(BIP44.BITCOIN, { account: 0, change: 2 })],
+    [
+      "a negative address index",
+      () => getPath(BIP44.BITCOIN, { account: 0, change: 0, addressIndex: -1 }),
+    ],
+    [
+      "a fractional address index",
+      () => getPath(BIP44.BITCOIN, { account: 0, change: 0, addressIndex: 1.5 }),
+    ],
   ])("should reject %s", (_description, generate) => {
     expect(generate).toThrow(RangeError);
   });
@@ -60,25 +74,56 @@ describe("BIP44 Path Generation", () => {
 
 describe("Purpose and hardened paths", () => {
   test("should build the five level layout under any purpose", () => {
-    expect(getBIP32Path(84, BIP44.BITCOIN)).toBe("m/84'/0'/0'/0/0");
-    expect(getBIP32Path(1852, BIP44.CARDANO, 2, BIP44Change.INTERNAL, 7)).toBe(
-      "m/1852'/1815'/2'/1/7",
-    );
+    expect(getBIP32Path(84, { coinType: BIP44.BITCOIN })).toBe("m/84'/0'/0'/0/0");
+    expect(
+      getBIP32Path(1852, {
+        coinType: BIP44.CARDANO,
+        account: 2,
+        change: BIP44Change.INTERNAL,
+        addressIndex: 7,
+      }),
+    ).toBe("m/1852'/1815'/2'/1/7");
   });
 
   test("should pin change to 0 and 1 unless the purpose allows more", () => {
-    expect(() => getBIP32Path(1852, BIP44.CARDANO, 0, 2)).toThrow(RangeError);
-    expect(getBIP32Path(1852, BIP44.CARDANO, 0, 2, 0, 5)).toBe("m/1852'/1815'/0'/2/0");
-    expect(() => getBIP32Path(1852, BIP44.CARDANO, 0, 6, 0, 5)).toThrow(RangeError);
+    expect(() => getBIP32Path(1852, { coinType: BIP44.CARDANO, account: 0, change: 2 })).toThrow(
+      RangeError,
+    );
+    expect(
+      getBIP32Path(1852, {
+        coinType: BIP44.CARDANO,
+        account: 0,
+        change: 2,
+        addressIndex: 0,
+        maxChange: 5,
+      }),
+    ).toBe("m/1852'/1815'/0'/2/0");
+    expect(() =>
+      getBIP32Path(1852, {
+        coinType: BIP44.CARDANO,
+        account: 0,
+        change: 6,
+        addressIndex: 0,
+        maxChange: 5,
+      }),
+    ).toThrow(RangeError);
   });
 
   test.each([Number.NaN, -1, 2_147_483_648])("should reject %s as the change ceiling", (max) => {
-    expect(() => getBIP32Path(1852, BIP44.CARDANO, 0, 0, 0, max)).toThrow(RangeError);
+    expect(() =>
+      getBIP32Path(1852, {
+        coinType: BIP44.CARDANO,
+        account: 0,
+        change: 0,
+        addressIndex: 0,
+        maxChange: max,
+      }),
+    ).toThrow(RangeError);
   });
 
   test("should reject a purpose outside the BIP32 range", () => {
-    expect(() => getBIP32Path(-1, BIP44.BITCOIN)).toThrow(RangeError);
-    expect(() => getBIP32Path(2_147_483_648, BIP44.BITCOIN)).toThrow(RangeError);
+    expect(() => getBIP32Path(-1, { coinType: BIP44.BITCOIN })).toThrow(RangeError);
+    expect(() => getBIP32Path(2_147_483_648, { coinType: BIP44.BITCOIN })).toThrow(RangeError);
   });
 
   test("should harden every level and stop at the depth given", () => {

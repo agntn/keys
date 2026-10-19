@@ -36,7 +36,7 @@ describe("SLIP-0010 Utils", () => {
     const masterKey = getMasterKeyFromSeed(testSeed);
 
     // Test vector from SLIP-0010
-    const child1 = deriveHDKey(masterKey, "m/0'");
+    const child1 = deriveHDKey(masterKey, { path: "m/0'" });
     expect(Buffer.from(child1.privateKey).toString("hex")).toBe(
       "68e0fe46dfb67e368c75379acec591dad19df3cde26e63b93a8e704f1dade7a3",
     );
@@ -44,10 +44,10 @@ describe("SLIP-0010 Utils", () => {
       "008c8a13df77a28f3445213a0f432fde644acaa215fc72dcdf300d5efaa85d350c",
     );
 
-    expect(deriveHDKey(masterKey, "m/0h").privateKey).toEqual(child1.privateKey);
+    expect(deriveHDKey(masterKey, { path: "m/0h" }).privateKey).toEqual(child1.privateKey);
 
     // Test vector from SLIP-0010
-    const child2 = deriveHDKey(masterKey, "m/0'/1'");
+    const child2 = deriveHDKey(masterKey, { path: "m/0'/1'" });
     expect(Buffer.from(child2.privateKey).toString("hex")).toBe(
       "b1d0bad404bf35da785a64ca1ac54b2617211d2777696fbffaf208f746ae84f2",
     );
@@ -94,10 +94,10 @@ describe("SLIP-0010 Utils", () => {
     const masterKey = getMasterKeyFromSeed(testSeed);
 
     // SLIP-0010 doesn't allow non-hardened derivation for ed25519
-    expect(() => deriveHDKey(masterKey, "m/0", false)).toThrow();
+    expect(() => deriveHDKey(masterKey, { path: "m/0", forceHardened: false })).toThrow();
 
     // But with forceHardened it should work by treating all indices as hardened
-    const childForced = deriveHDKey(masterKey, "m/0", true);
+    const childForced = deriveHDKey(masterKey, { path: "m/0", forceHardened: true });
     expect(Buffer.from(childForced.privateKey).toString("hex")).toBe(
       "68e0fe46dfb67e368c75379acec591dad19df3cde26e63b93a8e704f1dade7a3",
     );

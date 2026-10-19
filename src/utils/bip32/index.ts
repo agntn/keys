@@ -43,4 +43,9 @@ export function deriveHDChild(parent: HDKey, index: number): HDKey {
   return parent.deriveChild(index);
 }
 
-export { BIP32ChildMismatchError, recoverParent, type RecoveredParent } from "./parent.ts";
+export {
+  BIP32ChildMismatchError,
+  recoverParent,
+  type ParentRecoveryOptions,
+  type RecoveredParent,
+} from "./parent.ts";

@@ -138,7 +138,7 @@ async function deriveOldElectrumWallet(
   if (passphrase !== "") throw new TypeError("Old Electrum seeds take no passphrase");
   const { blockchain } = await getBlockchain("bitcoin", { network });
   const masterPublicKey = deriveOldMasterPublicKey(mnemonic);
-  const publicKey = deriveOldPublicKey(masterPublicKey, change, index).toHex();
+  const publicKey = deriveOldPublicKey(masterPublicKey, { change, index }).toHex();
   const details: DerivedOldElectrumWalletDetails = {
     chain: "bitcoin",
     network: blockchain.network,

@@ -80,7 +80,7 @@ function mnemonicOrEntropy(source: MnemonicSource, spelling: EntropySpelling): s
     if (mnemonicValue === undefined) throw new TypeError("Pass a BIP39 mnemonic or its entropy");
     return requiredString(mnemonicValue, "BIP39 mnemonic");
   }
-  return entropyToMnemonic(parseBip39Entropy(entropyValue, coleman), wordlist, { coleman });
+  return entropyToMnemonic(parseBip39Entropy(entropyValue, coleman), { wordlist, coleman });
 }
 
 /** HD wallet tool arguments besides the chain, raw until the executor checks them. */
@@ -121,9 +121,11 @@ export async function deriveHdWallet(
   const wordlist = await loadBIP39Wordlist(language);
   const mnemonic = mnemonicOrEntropy(options, { wordlist, coleman });
   const words = normalizeMnemonic(mnemonic);
-  const inspection = inspectBIP39Mnemonic(words, wordlist, { coleman });
+  const inspection = inspectBIP39Mnemonic(words, { wordlist, coleman });
   if (inspection.checksumValid === null) {
-    throw new TypeError(describeInvalidMnemonic(words, inspection, wordlist, language));
+    throw new TypeError(
+      describeInvalidMnemonic(words, { inspection, wordlist, listName: language }),
+    );
   }
   const wallet = blockchain.deriveHDWallet(mnemonic, {
     path,
@@ -314,7 +316,7 @@ export function recoverBip32Parent(
   const prefix = extendedKey.slice(0, 4);
   let recovered: RecoveredParent;
   try {
-    recovered = recoverParent(extendedKey, child, requested);
+    recovered = recoverParent(extendedKey, { child, index: requested });
   } catch (error) {
     if (!(error instanceof BIP32ChildMismatchError)) throw error;
     return {

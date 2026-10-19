@@ -13,10 +13,38 @@ export const BIP44Change = {
 } as const;
 export type BIP44Change = (typeof BIP44Change)[keyof typeof BIP44Change];
 
+/** The account, branch and address a path points at, each from 0. */
+export interface PathLevels {
+  /** Account index. Default: 0 */
+  readonly account?: number;
+  /** 0 for the external branch, 1 for the internal one. Default: 0 */
+  readonly change?: number;
+  /** Address index. Default: 0 */
+  readonly addressIndex?: number;
+}
+
+/** The coin type and the levels under it, where BIP44, BIP49, BIP84 and CIP-1852 paths agree. */
+export interface BIP32PathLevels extends PathLevels {
+  /** Coin type (from SLIP-0044). */
+  readonly coinType: number;
+  /** Highest change value the purpose allows, 1 for BIP44 and 5 for CIP-1852 roles. Default: 1 */
+  readonly maxChange?: number;
+}
+
 /** Names of the levels below the coin type, in path order. */
 const LEVEL_NAMES = ["account", "change", "addressIndex"] as const;
 
-function assertLevelIndex(name: string, value: number, maximum = MAX_LEVEL_INDEX): void {
+/**
+ * Refuses a level that is not an integer from 0 up to its ceiling.
+ * @param value - The level
+ * @param level - Its name for the error and its ceiling, the hardened offset minus one by default
+ * @throws {RangeError} When the level is out of range
+ */
+function assertLevelIndex(
+  value: number,
+  level: { readonly name: string; readonly maximum?: number },
+): void {
+  const { name, maximum = MAX_LEVEL_INDEX } = level;
   if (!Number.isInteger(value) || value < 0 || value > maximum) {
     throw new RangeError(`${name} must be an integer between 0 and ${maximum}`);
   }
@@ -27,27 +55,24 @@ function assertLevelIndex(name: string, value: number, maximum = MAX_LEVEL_INDEX
  * and account hardened, change and index plain.
  *
  * @param purpose - Purpose level, 44 for BIP44
- * @param coinType - Coin type (from SLIP-0044)
- * @param account - Account index (defaults to 0)
- * @param change - Change branch, or the role on CIP-1852
- * @param addressIndex - Address index (defaults to 0)
- * @param maxChange - Highest change value the purpose allows, 1 for BIP44 and 5 for CIP-1852 roles
+ * @param levels - Coin type, then account, change branch (the role on CIP-1852) and address index,
+ * each 0 by default, and the highest change the purpose allows
  * @returns {string} Derivation path string
  */
-export function getBIP32Path(
-  purpose: number,
-  coinType: number,
-  account = 0,
-  change = 0,
-  addressIndex = 0,
-  maxChange: number = BIP44Change.INTERNAL,
-): string {
-  assertLevelIndex("purpose", purpose);
-  assertLevelIndex("coinType", coinType);
-  assertLevelIndex("account", account);
-  assertLevelIndex("maxChange", maxChange);
-  assertLevelIndex("change", change, maxChange);
-  assertLevelIndex("addressIndex", addressIndex);
+export function getBIP32Path(purpose: number, levels: BIP32PathLevels): string {
+  const {
+    coinType,
+    account = 0,
+    change = 0,
+    addressIndex = 0,
+    maxChange = BIP44Change.INTERNAL,
+  } = levels;
+  assertLevelIndex(purpose, { name: "purpose" });
+  assertLevelIndex(coinType, { name: "coinType" });
+  assertLevelIndex(account, { name: "account" });
+  assertLevelIndex(maxChange, { name: "maxChange" });
+  assertLevelIndex(change, { name: "change", maximum: maxChange });
+  assertLevelIndex(addressIndex, { name: "addressIndex" });
 
   const purposeStr = formatIndex(HARDENED_OFFSET + purpose);
   const coinTypeStr = formatIndex(HARDENED_OFFSET + coinType);
@@ -65,13 +90,13 @@ export function getBIP32Path(
  * @returns {string} Derivation path with every level hardened
  */
 export function getHardenedPath(coinType: number, levels: readonly number[]): string {
-  assertLevelIndex("coinType", coinType);
+  assertLevelIndex(coinType, { name: "coinType" });
   if (levels.length === 0 || levels.length > LEVEL_NAMES.length) {
     throw new RangeError(`levels must carry 1 to ${LEVEL_NAMES.length} entries`);
   }
   const hardened = levels.map((level, position) => {
     const maximum = position === 1 ? BIP44Change.INTERNAL : MAX_LEVEL_INDEX;
-    assertLevelIndex(LEVEL_NAMES[position] ?? "level", level, maximum);
+    assertLevelIndex(level, { name: LEVEL_NAMES[position] ?? "level", maximum });
     return formatIndex(HARDENED_OFFSET + level);
   });
 

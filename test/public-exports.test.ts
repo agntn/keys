@@ -86,7 +86,11 @@ describe("Public WIF exports", () => {
 describe("Public BIP44 exports", () => {
   it("builds and parses a path from the built package", async () => {
     const { BIP44, BIP44Change, getPath, parse } = await import("@agntn/keys/bip44");
-    const path = getPath(BIP44.LITECOIN, 1, BIP44Change.INTERNAL, 4);
+    const path = getPath(BIP44.LITECOIN, {
+      account: 1,
+      change: BIP44Change.INTERNAL,
+      addressIndex: 4,
+    });
     expect(path).toBe("m/44'/2'/1'/1/4");
     expect(parse(path)).toEqual({
       purpose: 44,
@@ -267,8 +271,8 @@ describe("Public BIP32 exports", () => {
   it("recovers a parent from the built package, outside the root", async () => {
     const { recoverParent, BIP32ChildMismatchError } = await import("@agntn/keys/bip32");
     const { xpub, xprv, child } = bip32ParentVector;
-    expect(recoverParent(xpub, child.xprv).parent.privateExtendedKey).toBe(xprv);
-    expect(() => recoverParent(xpub, hex.decode(child.privateKey), 1)).toThrow(
+    expect(recoverParent(xpub, { child: child.xprv }).parent.privateExtendedKey).toBe(xprv);
+    expect(() => recoverParent(xpub, { child: hex.decode(child.privateKey), index: 1 })).toThrow(
       BIP32ChildMismatchError,
     );
     expect(await import("@agntn/keys")).not.toHaveProperty("recoverParent");

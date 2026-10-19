@@ -26,7 +26,7 @@ console.log(`Seed: ${Buffer.from(seed).toString("hex")}`);
 
 // 4. Convert mnemonic to seed (with password)
 console.log("\n4. Converting mnemonic to seed with password:");
-const seedWithPassword = mnemonicToSeed(mnemonic, "my secure passphrase");
+const seedWithPassword = mnemonicToSeed(mnemonic, { passphrase: "my secure passphrase" });
 console.log(`Seed with password: ${Buffer.from(seedWithPassword).toString("hex")}`);
 
 // 5. Create BIP32 master key from seed
@@ -46,7 +46,7 @@ console.log(`SLIP-10 master private key: ${Buffer.from(slip10Master.privateKey).
 
 // 8. Derive SLIP-10 keys for Solana
 console.log("\n8. Deriving Solana wallet:");
-const solanaKey = slip10Derive(slip10Master, "m/44'/501'/0'/0'");
+const solanaKey = slip10Derive(slip10Master, { path: "m/44'/501'/0'/0'" });
 console.log(`Solana private key: ${Buffer.from(solanaKey.privateKey).toString("hex")}`);
 
 // 9. Complete wallet generation workflow example
@@ -75,7 +75,7 @@ for (const chain of chains) {
   const key =
     chain.method === "bip32"
       ? bip32Derive(bipMasterKey, chain.path)
-      : slip10Derive(slipMasterKey, chain.path);
+      : slip10Derive(slipMasterKey, { path: chain.path });
 
   const privateKey = Buffer.from(
     chain.method === "bip32" ? key.privateKey! : key.privateKey,
