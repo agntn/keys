@@ -48,24 +48,28 @@ export interface DecryptedBip38Details {
   wif?: string;
 }
 
+/** Passphrase and WIF request of the BIP38 decrypt tool, as the host passed them. */
+export interface Bip38DecryptArguments {
+  readonly passphrase?: unknown;
+  readonly revealKey?: unknown;
+}
+
 /**
  * Checks the BIP38 decrypt arguments for hosts that skip the schema, never echoing a value.
  * @param encryptedValue - Raw key argument
- * @param passphraseValue - Raw passphrase argument
- * @param revealKeyValue - Raw revealKey argument
+ * @param options - Raw passphrase and revealKey arguments
  * @returns {{ encrypted: string; passphrase: string; revealKey: boolean }} The checked arguments
  */
 function bip38Arguments(
   encryptedValue: unknown,
-  passphraseValue: unknown,
-  revealKeyValue: unknown,
+  options: Bip38DecryptArguments,
 ): { encrypted: string; passphrase: string; revealKey: boolean } {
   const encrypted = requiredString(encryptedValue, "BIP38 key");
-  const passphrase = requiredString(passphraseValue, "Passphrase");
+  const passphrase = requiredString(options.passphrase, "Passphrase");
   if (Array.from(passphrase).length > MAX_BIP38_PASSPHRASE_LENGTH) {
     throw new RangeError(`Passphrase must not exceed ${MAX_BIP38_PASSPHRASE_LENGTH} characters`);
   }
-  const revealKey = revealKeyValue ?? false;
+  const revealKey = options.revealKey ?? false;
   if (typeof revealKey !== "boolean") throw new TypeError("revealKey must be a boolean");
   return { encrypted, passphrase, revealKey };
 }
@@ -91,20 +95,14 @@ function bip38Summary(encrypted: string): {
  * Opens a BIP38 key with its passphrase and gives its Bitcoin wallet, with the WIF only on request.
  * A wrong passphrase is a result, not an error.
  * @param encryptedValue - BIP38 key starting with `6P`
- * @param passphraseValue - Passphrase
- * @param revealKeyValue - Whether to return the WIF, false by default
+ * @param options - Passphrase, and `revealKey` to return the WIF, false by default
  * @returns {Promise<ToolResult<DecryptedBip38Details>>} Mode, verdict, public key, address, WIF
  */
 export async function decryptBip38(
   encryptedValue: unknown,
-  passphraseValue: unknown,
-  revealKeyValue?: unknown,
+  options: Bip38DecryptArguments,
 ): Promise<ToolResult<DecryptedBip38Details>> {
-  const { encrypted, passphrase, revealKey } = bip38Arguments(
-    encryptedValue,
-    passphraseValue,
-    revealKeyValue,
-  );
+  const { encrypted, passphrase, revealKey } = bip38Arguments(encryptedValue, options);
   const { header, base } = bip38Summary(encrypted);
   const { compressed } = base;
   let decrypted: DecryptedBIP38;

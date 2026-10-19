@@ -51,16 +51,20 @@ function brainwalletKDF(
   );
   if (foreign.length > 0) throw new RangeError(`${kdf} does not take ${foreign.join(", ")}`);
   if (kdf === "pbkdf2") {
-    const iterations = costArgument(args["iterations"], "iterations");
-    return { kdf, iterations, digest: oneOf(args["digest"], "digest", ["sha256", "sha512"]) };
+    const iterations = costArgument(args["iterations"], { name: "iterations" });
+    return {
+      kdf,
+      iterations,
+      digest: oneOf(args["digest"], { name: "digest", allowed: ["sha256", "sha512"] }),
+    };
   }
-  const N = costArgument(args["N"], "N", 2);
+  const N = costArgument(args["N"], { name: "N", minimum: 2 });
   if ((N & (N - 1)) !== 0) throw new RangeError("N must be a power of 2");
-  const r = costArgument(args["r"], "r");
+  const r = costArgument(args["r"], { name: "r" });
   if (N * r > MAX_SCRYPT_BLOCKS) {
     throw new RangeError(`N * r must not exceed ${MAX_SCRYPT_BLOCKS}`);
   }
-  return { kdf, N, r, p: costArgument(args["p"], "p") };
+  return { kdf, N, r, p: costArgument(args["p"], { name: "p" }) };
 }
 
 /**
@@ -104,7 +108,7 @@ function plainBrainwalletRecipe(
   );
   if (foreign.length > 0) throw new RangeError(`${kdf} does not take ${foreign.join(", ")}`);
   if (isUnsetCost(args["iterations"])) return { kdf };
-  return { kdf, iterations: costArgument(args["iterations"], "iterations") };
+  return { kdf, iterations: costArgument(args["iterations"], { name: "iterations" }) };
 }
 
 /**
@@ -119,7 +123,10 @@ function brainwalletSalt(
 ): Uint8Array | string {
   if (args["salt"] === undefined) throw new TypeError(`${kdf} needs a salt, empty for none`);
   const saltText = brainwalletText(args["salt"], "Salt");
-  const saltEncoding = oneOf(args["saltEncoding"], "saltEncoding", ["utf8", "hex"]);
+  const saltEncoding = oneOf(args["saltEncoding"], {
+    name: "saltEncoding",
+    allowed: ["utf8", "hex"],
+  });
   if (saltEncoding === "hex" && !EVEN_HEX.test(saltText)) {
     throw new TypeError("Salt must be hex digit pairs without 0x when saltEncoding is hex");
   }
@@ -150,19 +157,22 @@ function brainwalletRecipe(args: Readonly<Record<string, unknown>>): {
   options: BrainwalletRecipe;
 } {
   const passphrase = brainwalletText(args["passphrase"], "Passphrase");
-  const kdf = oneOf(args["kdf"], "kdf", ["scrypt", "pbkdf2", "sha256", "keccak256", "warpwallet"]);
+  const kdf = oneOf(args["kdf"], {
+    name: "kdf",
+    allowed: ["scrypt", "pbkdf2", "sha256", "keccak256", "warpwallet"],
+  });
   if (kdf === "sha256" || kdf === "keccak256") {
     return { passphrase, options: plainBrainwalletRecipe(kdf, args) };
   }
   if (kdf === "warpwallet") return { passphrase, options: warpWalletRecipe(args) };
   const salt = brainwalletSalt(kdf, args);
   const stretch = brainwalletKDF(kdf, args);
-  const hashed = oneOf(args["hashed"], "hashed", ["bytes", "hex"]);
+  const hashed = oneOf(args["hashed"], { name: "hashed", allowed: ["bytes", "hex"] });
   const options = { ...stretch, salt, hashed };
   if (isUnsetCost(args["keyLength"])) return { passphrase, options };
   return {
     passphrase,
-    options: { ...options, keyLength: costArgument(args["keyLength"], "keyLength") },
+    options: { ...options, keyLength: costArgument(args["keyLength"], { name: "keyLength" }) },
   };
 }
 
@@ -197,7 +207,7 @@ function brainwalletAddressing(args: Readonly<Record<string, unknown>>): {
 } {
   const chain = isUnset(args["chain"])
     ? "bitcoin"
-    : oneOf(args["chain"], "chain", ["bitcoin", "ethereum"]);
+    : oneOf(args["chain"], { name: "chain", allowed: ["bitcoin", "ethereum"] });
   const target = optionalName(args["target"], "Target");
   if (target !== undefined && Array.from(target).length > MAX_ADDRESS_LENGTH) {
     throw new RangeError(`Target must not exceed ${MAX_ADDRESS_LENGTH} characters`);
@@ -233,7 +243,7 @@ export async function deriveBrainwallet(
 ): Promise<ToolResult<DerivedBrainwalletDetails>> {
   const { passphrase, options } = brainwalletRecipe(args);
   const { chain, compressed, target } = brainwalletAddressing(args);
-  const { blockchain } = await getBlockchain(chain, args["network"]);
+  const { blockchain } = await getBlockchain(chain, { network: args["network"] });
   const privateKey = deriveBrainwalletKey(passphrase, options).toHex();
   const wallet =
     compressed === undefined

@@ -393,45 +393,49 @@ describe("Monero", () => {
 
   describe("Tools", () => {
     it("derives a wallet from seed words or the spend key", async () => {
-      const fromSeed = await deriveWallet("monero", first.seed);
+      const fromSeed = await deriveWallet("monero", { privateKey: first.seed });
       expect(fromSeed.details).toEqual({
         chain: "monero",
         network: "mainnet",
         publicKey: first.publicKey,
         address: first.address,
       });
-      const fromKey = await deriveWallet("monero", vector.unreducedKey, undefined, "testnet");
+      const fromKey = await deriveWallet("monero", {
+        privateKey: vector.unreducedKey,
+        network: "testnet",
+      });
       expect(fromKey.details.address).toBe(vector.testnet);
-      await expect(deriveWallet("xrpl", first.seed)).rejects.toThrow("keys_hd_wallet_derive");
-      await expect(deriveWallet("monero", `${first.seed} ${"a".repeat(1024)}`)).rejects.toThrow(
-        "1024 characters",
+      await expect(deriveWallet("xrpl", { privateKey: first.seed })).rejects.toThrow(
+        "keys_hd_wallet_derive",
       );
+      await expect(
+        deriveWallet("monero", { privateKey: `${first.seed} ${"a".repeat(1024)}` }),
+      ).rejects.toThrow("1024 characters");
     });
 
     it("writes and checks addresses from the 64-byte key", async () => {
-      expect((await getAddress("monero", first.publicKey)).details.address).toBe(first.address);
-      await expect(getAddress("monero", ed25519TestVectors.publicKey)).rejects.toThrow(
-        "64 bytes of hex",
+      expect((await getAddress("monero", { publicKey: first.publicKey })).details.address).toBe(
+        first.address,
       );
-      await expect(getAddress("solana", first.publicKey)).rejects.toThrow("Monero's spend");
-      const checked = await validateAddress("monero", vector.testnet);
+      await expect(
+        getAddress("monero", { publicKey: ed25519TestVectors.publicKey }),
+      ).rejects.toThrow("64 bytes of hex");
+      await expect(getAddress("solana", { publicKey: first.publicKey })).rejects.toThrow(
+        "Monero's spend",
+      );
+      const checked = await validateAddress("monero", { address: vector.testnet });
       expect(checked.content[0]?.text).toContain("valid on testnet");
-      const staged = await validateAddress("monero", vector.stagenet);
+      const staged = await validateAddress("monero", { address: vector.stagenet });
       expect(staged.content[0]?.text).toContain("valid on stagenet");
     });
 
     it("derives a subaddress from the seed, and its pair writes the same address", async () => {
       const last = vector.subaddresses.at(-1);
-      const derived = await deriveWallet(
-        "monero",
-        first.seed,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        last?.account,
-        last?.index,
-      );
+      const derived = await deriveWallet("monero", {
+        privateKey: first.seed,
+        account: last?.account,
+        addressIndex: last?.index,
+      });
       expect(derived.details).toMatchObject({
         addressType: "subaddress",
         address: last?.address,
@@ -439,33 +443,21 @@ describe("Monero", () => {
         addressIndex: 1,
       });
       expect(derived.content[0]?.text).toContain("Address type: subaddress");
-      const written = await getAddress("monero", derived.details.publicKey, "subaddress");
+      const written = await getAddress("monero", {
+        publicKey: derived.details.publicKey,
+        addressType: "subaddress",
+      });
       expect(written.details.address).toBe(last?.address);
-      expect((await validateAddress("monero", last?.address)).details.valid).toBe(true);
+      expect((await validateAddress("monero", { address: last?.address })).details.valid).toBe(
+        true,
+      );
     });
 
     it("reads a lone account or index with the other at 0", async () => {
       const [, , , accountOnly] = vector.subaddresses;
-      const fromAccount = await deriveWallet(
-        "monero",
-        first.spendKey,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        1,
-      );
+      const fromAccount = await deriveWallet("monero", { privateKey: first.spendKey, account: 1 });
       expect(fromAccount.details.address).toBe(accountOnly.address);
-      const main = await deriveWallet(
-        "monero",
-        first.seed,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        0,
-      );
+      const main = await deriveWallet("monero", { privateKey: first.seed, addressIndex: 0 });
       expect(main.details).toMatchObject({ address: first.address, account: 0, addressIndex: 0 });
       expect(main.details.addressType).toBeUndefined();
       expect(main.details.publicKey).toBe(first.publicKey);
@@ -473,43 +465,22 @@ describe("Monero", () => {
 
     it("refuses subaddress indices off monero, outside uint32, or an address type instead", async () => {
       await expect(
-        deriveWallet(
-          "solana",
-          ed25519TestVectors.privateKey,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          1,
-        ),
+        deriveWallet("solana", { privateKey: ed25519TestVectors.privateKey, account: 1 }),
       ).rejects.toThrow("solana takes neither");
       await expect(
-        deriveWallet(
-          "monero",
-          first.seed,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          2 ** 32,
-        ),
+        deriveWallet("monero", { privateKey: first.seed, addressIndex: 2 ** 32 }),
       ).rejects.toThrow("addressIndex must be an integer between 0 and 4294967295");
-      await expect(deriveWallet("monero", first.seed, "subaddress")).rejects.toThrow(
-        "account and index",
-      );
+      await expect(
+        deriveWallet("monero", { privateKey: first.seed, addressType: "subaddress" }),
+      ).rejects.toThrow("account and index");
     });
 
     it("writes an integrated address from the key and a payment ID", async () => {
       const { paymentId, address } = vector.integrated;
-      const written = await getAddress(
-        "monero",
-        first.publicKey,
-        undefined,
-        undefined,
-        undefined,
-        paymentId.toUpperCase(),
-      );
+      const written = await getAddress("monero", {
+        publicKey: first.publicKey,
+        paymentId: paymentId.toUpperCase(),
+      });
       expect(written.details).toEqual({
         chain: "monero",
         network: "mainnet",
@@ -519,119 +490,130 @@ describe("Monero", () => {
       });
       expect(written.content[0]?.text).toContain(`Payment ID: ${paymentId}`);
       await expect(
-        getAddress("monero", first.publicKey, "subaddress", undefined, undefined, paymentId),
+        getAddress("monero", { publicKey: first.publicKey, addressType: "subaddress", paymentId }),
       ).rejects.toThrow("leave addressType out");
       await expect(
-        getAddress("monero", first.publicKey, undefined, undefined, undefined, "1234"),
+        getAddress("monero", { publicKey: first.publicKey, paymentId: "1234" }),
       ).rejects.toThrow("paymentId must be 16 hex characters");
       await expect(
-        getAddress(
-          "solana",
-          ed25519TestVectors.publicKey,
-          undefined,
-          undefined,
-          undefined,
-          paymentId,
-        ),
+        getAddress("solana", { publicKey: ed25519TestVectors.publicKey, paymentId }),
       ).rejects.toThrow("solana has none");
     });
 
     it("takes stagenet on monero and nowhere else", async () => {
-      const wallet = await deriveWallet("monero", reduced.seed, undefined, "stagenet");
+      const wallet = await deriveWallet("monero", {
+        privateKey: reduced.seed,
+        network: "stagenet",
+      });
       expect(wallet.details.address).toBe(vector.stagenet);
       await expect(
-        getAddress("solana", ed25519TestVectors.publicKey, undefined, "stagenet"),
+        getAddress("solana", { publicKey: ed25519TestVectors.publicKey, network: "stagenet" }),
       ).rejects.toThrow("Unsupported network");
     });
 
     it("points BIP39 words, paths and signatures elsewhere", async () => {
       await expect(
-        deriveHdWallet("monero", bip39TestVectors.mnemonic, "m/44'/128'/0'/0/0"),
+        deriveHdWallet("monero", {
+          mnemonic: bip39TestVectors.mnemonic,
+          path: "m/44'/128'/0'/0/0",
+        }),
       ).rejects.toThrow("25-word seed");
       await expect(
-        scanHdWallet("monero", bip39TestVectors.mnemonic, first.address),
+        scanHdWallet("monero", { mnemonic: bip39TestVectors.mnemonic, address: first.address }),
       ).rejects.toThrow("pass them to keys_wallet_derive");
       await expect(generateBip44Path("monero")).rejects.toThrow("25-word seed");
     });
 
     it("signs and checks SigV2 through the message tools", async () => {
       const [entry] = vector.signatures;
-      const view = await signMessage(
-        "monero",
-        "foo",
-        first.spendKey,
-        undefined,
-        undefined,
-        undefined,
-        "view",
-      );
+      const view = await signMessage("monero", {
+        message: "foo",
+        privateKey: first.spendKey,
+        signingKey: "view",
+      });
       expect(view.details.signature).toMatch(/^SigV2/u);
       await expect(
-        verifyMessage("monero", "foo", view.details.signature, first.publicKey),
+        verifyMessage("monero", {
+          message: "foo",
+          signature: view.details.signature,
+          publicKey: first.publicKey,
+        }),
       ).resolves.toMatchObject({ details: { valid: true } });
       await expect(
-        verifyMessage("monero", entry.message, entry.view, first.publicKey),
+        verifyMessage("monero", {
+          message: entry.message,
+          signature: entry.view,
+          publicKey: first.publicKey,
+        }),
       ).resolves.toMatchObject({ details: { valid: true } });
       await expect(
-        verifyMessage("monero", "foo", vector.v1Signatures.spend, first.publicKey),
+        verifyMessage("monero", {
+          message: "foo",
+          signature: vector.v1Signatures.spend,
+          publicKey: first.publicKey,
+        }),
       ).resolves.toMatchObject({ details: { valid: true } });
     });
 
     it("signs as a subaddress through the message tool", async () => {
       const pair = blockchain.getSubaddressKeyPublic(first.publicKey, first.viewKey, 1, 2);
-      const signed = await signMessage(
-        "monero",
-        "foo",
-        first.spendKey,
-        undefined,
-        undefined,
-        undefined,
-        "view",
-        1,
-        2,
-      );
+      const signed = await signMessage("monero", {
+        message: "foo",
+        privateKey: first.spendKey,
+        signingKey: "view",
+        account: 1,
+        addressIndex: 2,
+      });
       await expect(
-        verifyMessage("monero", "foo", signed.details.signature, pair),
+        verifyMessage("monero", {
+          message: "foo",
+          signature: signed.details.signature,
+          publicKey: pair,
+        }),
       ).resolves.toMatchObject({ details: { valid: true } });
       await expect(
-        signMessage(
-          "solana",
-          "foo",
-          ed25519TestVectors.privateKey,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          0,
-          1,
-        ),
+        signMessage("solana", {
+          message: "foo",
+          privateKey: ed25519TestVectors.privateKey,
+          account: 0,
+          addressIndex: 1,
+        }),
       ).rejects.toThrow("account and addressIndex pick a Monero subaddress");
     });
 
     it("keeps signingKey and SigV2 on monero", async () => {
       const [entry] = vector.signatures;
       await expect(
-        signMessage(
-          "solana",
-          "foo",
-          ed25519TestVectors.privateKey,
-          undefined,
-          undefined,
-          undefined,
-          "view",
-        ),
+        signMessage("solana", {
+          message: "foo",
+          privateKey: ed25519TestVectors.privateKey,
+          signingKey: "view",
+        }),
       ).rejects.toThrow("signingKey picks a Monero key");
       await expect(
-        signMessage("monero", "foo", first.spendKey, undefined, undefined, undefined, "both"),
+        signMessage("monero", { message: "foo", privateKey: first.spendKey, signingKey: "both" }),
       ).rejects.toThrow("spend or view");
       await expect(
-        signMessage("monero", "foo", first.spendKey, undefined, true, undefined, "view"),
+        signMessage("monero", {
+          message: "foo",
+          privateKey: first.spendKey,
+          recovered: true,
+          signingKey: "view",
+        }),
       ).rejects.toThrow("no recovery byte");
       await expect(
-        verifyMessage("solana", "foo", entry.spend, ed25519TestVectors.publicKey),
+        verifyMessage("solana", {
+          message: "foo",
+          signature: entry.spend,
+          publicKey: ed25519TestVectors.publicKey,
+        }),
       ).rejects.toThrow("Monero signatures");
       await expect(
-        verifyMessage("monero", "foo", "ab".repeat(64), first.publicKey),
+        verifyMessage("monero", {
+          message: "foo",
+          signature: "ab".repeat(64),
+          publicKey: first.publicKey,
+        }),
       ).rejects.toThrow("SigV2 or SigV1");
     });
   });

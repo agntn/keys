@@ -7,7 +7,7 @@ import {
   TOOL_NETWORKS,
 } from "../tool-parameters.ts";
 import { hexArgument, chainPublicKey, requiredString } from "./arguments.ts";
-import { addressTypeLines, getBlockchain } from "./blockchain.ts";
+import { type ChainArguments, addressTypeLines, getBlockchain } from "./blockchain.ts";
 import { type ToolResult, content, sanitizeToolText } from "./results.ts";
 
 /** Address derived from a public key. */
@@ -27,21 +27,26 @@ export interface AddressValidationDetails extends AddressDetails {
 
 const MONERO_PAYMENT_ID = new RegExp(MONERO_PAYMENT_ID_SCHEMA_PATTERN, "u");
 
+/** Key pair, raw payment ID, and the address type the caller asked for, which must stay unset. */
+interface IntegratedAddressRequest {
+  /** The public spend key then the public view key, as hex. */
+  readonly publicKey: string;
+  readonly paymentId: unknown;
+  readonly addressType: string | undefined;
+}
+
 /**
  * Writes the Monero integrated address of a key pair and a payment ID.
  * @param blockchain - The chain the caller named
- * @param publicKey - The public spend key then the public view key, as hex
- * @param paymentIdValue - Raw payment ID argument
- * @param addressType - The address type the caller asked for, which must be left out
+ * @param request - Key pair, raw payment ID and the address type the caller asked for
  * @returns {Promise<ToolResult<AddressDetails>>} The integrated address
  * @throws {RangeError} When the chain is not monero, a type is given or the ID is not 8 bytes
  */
 async function integratedAddress(
   blockchain: Readonly<AbstractBlockchain>,
-  publicKey: string,
-  paymentIdValue: unknown,
-  addressType: string | undefined,
+  request: IntegratedAddressRequest,
 ): Promise<ToolResult<AddressDetails>> {
+  const { publicKey, paymentId: paymentIdValue, addressType } = request;
   if (blockchain.name !== "monero") {
     throw new RangeError(
       `paymentId makes a Monero integrated address; ${blockchain.name} has none`,
@@ -50,12 +55,11 @@ async function integratedAddress(
   if (addressType !== undefined) {
     throw new RangeError("An integrated address holds the standard keys, so leave addressType out");
   }
-  const paymentId = hexArgument(
-    paymentIdValue,
-    "paymentId",
-    MONERO_PAYMENT_ID,
-    "16 hex characters",
-  ).toLowerCase();
+  const paymentId = hexArgument(paymentIdValue, {
+    name: "paymentId",
+    pattern: MONERO_PAYMENT_ID,
+    shape: "16 hex characters",
+  }).toLowerCase();
   const monero = await blockchains.monero({ network: blockchain.network })();
   const address = monero.getIntegratedAddress(publicKey, paymentId);
   return {
@@ -74,33 +78,32 @@ async function integratedAddress(
   };
 }
 
+/** Address tool arguments besides the chain, raw until the executor checks them. */
+export interface AddressArguments extends Omit<ChainArguments, "coinType"> {
+  /** Public key as hexadecimal text. */
+  readonly publicKey?: unknown;
+  /** Payment ID of a Monero integrated address. */
+  readonly paymentId?: unknown;
+}
+
 /**
  * Derive an address from a public key.
  * @param chainValue - Blockchain name.
- * @param publicKeyValue - Public key as hexadecimal text.
- * @param addressTypeValue - Optional chain-specific address type.
- * @param networkValue - Optional network name.
- * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot.
- * @param paymentIdValue - Optional payment ID of a Monero integrated address.
+ * @param options - Public key, address type, network, prefix and a Monero payment ID.
  * @returns {Promise<ToolResult<AddressDetails>>} Derived address.
  */
 export async function getAddress(
   chainValue: unknown,
-  publicKeyValue: unknown,
-  addressTypeValue?: unknown,
-  networkValue?: unknown,
-  prefixValue?: unknown,
-  paymentIdValue?: unknown,
+  options: AddressArguments,
 ): Promise<ToolResult<AddressDetails>> {
-  const { blockchain, addressType } = await getBlockchain(
-    chainValue,
-    networkValue,
-    addressTypeValue,
-    prefixValue,
-  );
-  const publicKey = chainPublicKey(publicKeyValue, blockchain.name);
-  if (paymentIdValue !== undefined) {
-    return integratedAddress(blockchain, publicKey, paymentIdValue, addressType);
+  const { blockchain, addressType } = await getBlockchain(chainValue, {
+    network: options.network,
+    addressType: options.addressType,
+    prefix: options.prefix,
+  });
+  const publicKey = chainPublicKey(options.publicKey, blockchain.name);
+  if (options.paymentId !== undefined) {
+    return integratedAddress(blockchain, { publicKey, paymentId: options.paymentId, addressType });
   }
   const type = addressType ?? blockchain.defaultAddressType;
   const address = blockchain.getAddress(publicKey, type);
@@ -115,30 +118,33 @@ export async function getAddress(
   };
 }
 
+/** Validation tool arguments besides the chain, raw until the executor checks them. */
+export interface AddressValidationArguments {
+  readonly address?: unknown;
+  readonly network?: unknown;
+  /** Bech32 prefix on cosmos, SS58 number on polkadot. */
+  readonly prefix?: unknown;
+}
+
 /**
  * Check whether an address matches one chain's format.
  * @param chainValue - Blockchain name.
- * @param addressValue - Address to validate.
- * @param networkValue - Optional network name.
- * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot.
+ * @param options - Address to validate, with an optional network and prefix.
  * @returns {Promise<ToolResult<AddressValidationDetails>>} Address format verdict.
  */
 export async function validateAddress(
   chainValue: unknown,
-  addressValue: unknown,
-  networkValue?: unknown,
-  prefixValue?: unknown,
+  options: AddressValidationArguments,
 ): Promise<ToolResult<AddressValidationDetails>> {
-  const { blockchain } = await getBlockchain(chainValue, networkValue, undefined, prefixValue);
-  const address = requiredString(addressValue, "Address");
+  const { prefix } = options;
+  const { blockchain } = await getBlockchain(chainValue, { network: options.network, prefix });
+  const address = requiredString(options.address, "Address");
   if (Array.from(address).length > MAX_ADDRESS_LENGTH) {
     throw new RangeError(`Address must not exceed ${MAX_ADDRESS_LENGTH} characters`);
   }
   const valid = blockchain.validateAddress(address);
   const renderedAddress = sanitizeToolText(address);
-  const otherNetwork = valid
-    ? undefined
-    : await otherNetworkOf(blockchain.name, blockchain.network, address, prefixValue);
+  const otherNetwork = valid ? undefined : await otherNetworkOf(blockchain, { address, prefix });
   return {
     content: content(
       valid
@@ -154,21 +160,19 @@ export async function validateAddress(
 /**
  * Finds another network an address is valid on, so a testnet address checked against
  * mainnet is not reported as simply broken.
- * @param chain - Blockchain name, already accepted by `getBlockchain`.
- * @param network - Network the address failed on.
- * @param address - Address that failed.
- * @param prefixValue - Prefix the first check used, cosmos and polkadot only.
+ * @param failed - Chain and network the address failed on.
+ * @param check - Address that failed and the prefix the first check used, cosmos and polkadot only.
  * @returns {Promise<string | undefined>} The other network, when the address passes there.
  */
 async function otherNetworkOf(
-  chain: string,
-  network: string,
-  address: string,
-  prefixValue: unknown,
+  failed: Readonly<Pick<AbstractBlockchain, "name" | "network">>,
+  check: { readonly address: string; readonly prefix: unknown },
 ): Promise<string | undefined> {
+  const { address, prefix } = check;
+  const { name: chain, network } = failed;
   const networks = chain === "monero" ? CHAIN_NETWORKS : TOOL_NETWORKS;
   for (const other of networks.filter((candidate) => candidate !== network)) {
-    const { blockchain } = await getBlockchain(chain, other, undefined, prefixValue);
+    const { blockchain } = await getBlockchain(chain, { network: other, prefix });
     if (blockchain.validateAddress(address)) return other;
   }
   return undefined;

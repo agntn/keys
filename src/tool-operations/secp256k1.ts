@@ -59,32 +59,45 @@ const NONCE_SCALAR = new RegExp(NONCE_SCALAR_SCHEMA_PATTERN, "u");
  * @returns {{ r: string; s: string; z: string }} Its hex parts
  */
 function nonceSignature(value: unknown, position: number): { r: string; s: string; z: string } {
-  const item = closedObject(value, `signatures[${position}]`, ["r", "s", "z"]);
+  const item = closedObject(value, { name: `signatures[${position}]`, keys: ["r", "s", "z"] });
   const [r, s, z] = ["r", "s", "z"].map((key) =>
-    hexArgument(item[key], `signatures[${position}].${key}`, NONCE_SCALAR, "1 to 64 hex digits"),
+    hexArgument(item[key], {
+      name: `signatures[${position}].${key}`,
+      pattern: NONCE_SCALAR,
+      shape: "1 to 64 hex digits",
+    }),
   );
   return { r: r ?? "", s: s ?? "", z: z ?? "" };
 }
 
+/** Options of the nonce tool, as the host passed them. */
+export interface NonceArguments {
+  readonly type?: unknown;
+  readonly publicKey?: unknown;
+}
+
 /**
  * Recover the key behind two signatures that share a nonce and answer with its public key only.
- * @param typeValue - ecdsa or schnorr, ecdsa when blank.
  * @param signaturesValue - Two signatures with r, s and z.
- * @param publicKeyValue - Optional key the result must match.
+ * @param options - `type`, ecdsa when blank, and the `publicKey` the result must match.
  * @returns {ToolResult<RecoveredNonceDetails>} The public key both signatures verify under.
  */
 export function recoverSecp256k1Nonce(
-  typeValue: unknown,
   signaturesValue: unknown,
-  publicKeyValue?: unknown,
+  options: NonceArguments,
 ): ToolResult<RecoveredNonceDetails> {
-  const type = isUnset(typeValue) ? "ecdsa" : oneOf(typeValue, "type", NONCE_SIGNATURE_TYPES);
-  const [first, second] = boundedArray(signaturesValue, "signatures", 2, 2).map((item, position) =>
-    nonceSignature(item, position),
-  );
-  const publicKey = isUnset(publicKeyValue)
+  const type = isUnset(options.type)
+    ? "ecdsa"
+    : oneOf(options.type, { name: "type", allowed: NONCE_SIGNATURE_TYPES });
+  const signatures = boundedArray(signaturesValue, { name: "signatures", minimum: 2, maximum: 2 });
+  const [first, second] = signatures.map((item, position) => nonceSignature(item, position));
+  const publicKey = isUnset(options.publicKey)
     ? undefined
-    : hexArgument(publicKeyValue, "Public key", PUBLIC_KEY_HEX, "SEC1 or x-only hex");
+    : hexArgument(options.publicKey, {
+        name: "Public key",
+        pattern: PUBLIC_KEY_HEX,
+        shape: "SEC1 or x-only hex",
+      });
   const recovered = recoverReusedNonce(
     { type, ...(first ?? { r: "", s: "", z: "" }) },
     { type, ...(second ?? { r: "", s: "", z: "" }) },

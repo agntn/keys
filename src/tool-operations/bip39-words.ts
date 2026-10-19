@@ -96,23 +96,28 @@ function assertIndexRange(indices: readonly number[], indexBase: 0 | 1): void {
 
 const BIP39_WORD_PATTERN = /^[\p{L}\p{M}]+$/u;
 
+/** Index lookup arguments besides the indices, raw until the executor checks them. */
+export interface Bip39IndexLookupArguments {
+  readonly language?: unknown;
+  /** Zero-based or one-based convention. */
+  readonly indexBase?: unknown;
+}
+
 /**
  * Read words at numeric positions in an official BIP39 list.
  * @param indicesValue - Numeric positions to read.
- * @param languageValue - Optional official language key.
- * @param indexBaseValue - Zero-based or one-based convention.
+ * @param options - Official language key and index base, both optional.
  * @returns {Promise<ToolResult<BIP39IndexLookupDetails>>} Ordered word lookups.
  */
 export async function lookupBip39Indices(
   indicesValue: unknown,
-  languageValue?: unknown,
-  indexBaseValue?: unknown,
+  options: Bip39IndexLookupArguments = {},
 ): Promise<ToolResult<BIP39IndexLookupDetails>> {
   const indices = integerArray(indicesValue, "BIP39 indices");
   assertLookupSize(indices.length, "indices");
-  const indexBase = parseIndexBase(indexBaseValue);
+  const indexBase = parseIndexBase(options.indexBase);
   assertIndexRange(indices, indexBase);
-  const language = parseBIP39Language(languageValue);
+  const language = parseBIP39Language(options.language);
   const lookups = await lookupBIP39Indices(indices, language, indexBase);
   return {
     content: content(
@@ -218,29 +223,34 @@ function phraseLimit(value: unknown): number {
   return limit;
 }
 
+/** Word order arguments besides the words, raw until the executor checks them. */
+export interface Bip39WordOrderArguments {
+  /** Phrase with known words and one ? per loose word. */
+  readonly template?: unknown;
+  readonly language?: unknown;
+  /** How many valid orders to list. */
+  readonly limit?: unknown;
+}
+
 /**
  * Put scattered words in every order the open positions allow and keep the checksum passes.
  * @param wordsValue - Words without a known position.
- * @param templateValue - Optional phrase with known words and one ? per loose word.
- * @param languageValue - Optional official BIP39 language key.
- * @param limitValue - Optional count of valid orders to list.
+ * @param options - Template, official BIP39 language key and limit, each optional.
  * @returns {Promise<ToolResult<BIP39WordOrderDetails>>} Orders checked, passed and listed.
  */
 export async function orderBip39Words(
   wordsValue: unknown,
-  templateValue?: unknown,
-  languageValue?: unknown,
-  limitValue?: unknown,
+  options: Bip39WordOrderArguments = {},
 ): Promise<ToolResult<BIP39WordOrderDetails>> {
   const words = orderWordsArgument(wordsValue);
-  const template = optionalName(templateValue, "Template");
+  const template = optionalName(options.template, "Template");
   if (template !== undefined && template.length > MAX_BIP39_PHRASE_LENGTH) {
     throw new RangeError(`Template must be at most ${MAX_BIP39_PHRASE_LENGTH} characters`);
   }
-  const language = parseBIP39Language(languageValue);
-  const limit = phraseLimit(limitValue);
-  const options = { template, wordlist: await loadBIP39Wordlist(language), listName: language };
-  const total = countWordOrders(words, options);
+  const language = parseBIP39Language(options.language);
+  const limit = phraseLimit(options.limit);
+  const search = { template, wordlist: await loadBIP39Wordlist(language), listName: language };
+  const total = countWordOrders(words, search);
   if (total > BigInt(MAX_BIP39_CHECKSUM_SEARCH)) {
     throw new RangeError(
       `These words have ${total} orders, over the ${MAX_BIP39_CHECKSUM_SEARCH} one call checks. Fix more positions in template, or search with orderWords from @agntn/keys/bip39`,
@@ -248,7 +258,7 @@ export async function orderBip39Words(
   }
   const orders: string[] = [];
   let valid = 0;
-  for (const order of orderWords(words, options)) {
+  for (const order of orderWords(words, search)) {
     valid++;
     if (orders.length < limit) orders.push(order.join(" "));
   }
@@ -337,31 +347,36 @@ function suggestionLine(entry: WordSuggestions, maxDistance: number): string {
   return `Word ${position}, ${suggestions.length} within ${edits(maxDistance)}: ${shown.join(", ")}${more > 0 ? `, ${more} more` : ""}`;
 }
 
+/** Word repair arguments besides the phrase, raw until the executor checks them. */
+export interface Bip39WordRepairArguments {
+  readonly language?: unknown;
+  /** Most edits per word. */
+  readonly maxDistance?: unknown;
+  /** How many repaired phrases to list. */
+  readonly limit?: unknown;
+}
+
 /**
  * Suggest list words for the words of a phrase outside the list and keep the checksum passes.
  * @param mnemonicValue - Phrase with mistyped words.
- * @param languageValue - Optional official BIP39 language key.
- * @param maxDistanceValue - Optional most edits per word.
- * @param limitValue - Optional count of repaired phrases to list.
+ * @param options - Official BIP39 language key, edit distance and limit, each optional.
  * @returns {Promise<ToolResult<BIP39WordRepairDetails>>} Suggestions, combinations and repairs.
  */
 export async function repairBip39Words(
   mnemonicValue: unknown,
-  languageValue?: unknown,
-  maxDistanceValue?: unknown,
-  limitValue?: unknown,
+  options: Bip39WordRepairArguments = {},
 ): Promise<ToolResult<BIP39WordRepairDetails>> {
   const mnemonic = normalizedMnemonic(mnemonicValue);
   if (mnemonic.length > MAX_BIP39_PHRASE_LENGTH) {
     throw new RangeError(`BIP39 mnemonic must be at most ${MAX_BIP39_PHRASE_LENGTH} characters`);
   }
-  const language = parseBIP39Language(languageValue);
-  const maxDistance = repairDistance(maxDistanceValue);
-  const limit = phraseLimit(limitValue);
-  const options = { wordlist: await loadBIP39Wordlist(language), maxDistance };
-  const positions = suggestWords(mnemonic, options);
+  const language = parseBIP39Language(options.language);
+  const maxDistance = repairDistance(options.maxDistance);
+  const limit = phraseLimit(options.limit);
+  const search = { wordlist: await loadBIP39Wordlist(language), maxDistance };
+  const positions = suggestWords(mnemonic, search);
   const checked = repairCombinations(positions, language);
-  const repairs = repairWords(mnemonic, options).map(({ words, distance }) => ({
+  const repairs = repairWords(mnemonic, search).map(({ words, distance }) => ({
     mnemonic: words.join(" "),
     distance,
   }));

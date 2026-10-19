@@ -153,42 +153,44 @@ describe("Polkadot", () => {
 
   describe("Tool executors", () => {
     it("read prefix as the SS58 network number", async () => {
-      const result = await getAddress("polkadot", rootPublic, undefined, undefined, "2");
+      const result = await getAddress("polkadot", { publicKey: rootPublic, prefix: "2" });
       expect(result.details.address).toBe(rootKusama);
-      expect((await validateAddress("polkadot", rootKusama, undefined, "2")).details.valid).toBe(
-        true,
-      );
+      expect(
+        (await validateAddress("polkadot", { address: rootKusama, prefix: "2" })).details.valid,
+      ).toBe(true);
     });
 
     it("find an address on the generic prefix as testnet", async () => {
       const [, , , , genericAddress] = vector.wallets[0];
-      const result = await validateAddress("polkadot", genericAddress);
+      const result = await validateAddress("polkadot", { address: genericAddress });
       expect(result.content[0]?.text).toContain("valid on testnet");
     });
 
     it.each([["kusama"], ["02"], ["-1"], ["2.5"]])("refuse the prefix %j", async (prefix) => {
-      await expect(
-        getAddress("polkadot", rootPublic, undefined, undefined, prefix),
-      ).rejects.toThrow("SS58 network number");
+      await expect(getAddress("polkadot", { publicKey: rootPublic, prefix })).rejects.toThrow(
+        "SS58 network number",
+      );
     });
 
     it("refuse a prefix past the SS58 range", async () => {
       await expect(
-        getAddress("polkadot", rootPublic, undefined, undefined, "16384"),
+        getAddress("polkadot", { publicKey: rootPublic, prefix: "16384" }),
       ).rejects.toThrow(RangeError);
     });
 
     it("derive Substrate junctions, and only those", async () => {
       const [, , , [path, , address]] = vector.wallets;
-      const result = await deriveHdWallet("polkadot", mnemonic, path);
+      const result = await deriveHdWallet("polkadot", { mnemonic, path });
       expect(result.details.address).toBe(address);
-      await expect(deriveHdWallet("polkadot", mnemonic, "m/0")).rejects.toThrow("hard junctions");
-      await expect(deriveHdWallet("bitcoin", mnemonic, "//0")).rejects.toThrow("m/84'");
+      await expect(deriveHdWallet("polkadot", { mnemonic, path: "m/0" })).rejects.toThrow(
+        "hard junctions",
+      );
+      await expect(deriveHdWallet("bitcoin", { mnemonic, path: "//0" })).rejects.toThrow("m/84'");
     });
 
     it("say why there is no path to generate or scan", async () => {
       await expect(generateBip44Path("polkadot")).rejects.toThrow("Substrate junctions");
-      await expect(scanHdWallet("polkadot", mnemonic, rootAddress)).rejects.toThrow(
+      await expect(scanHdWallet("polkadot", { mnemonic, address: rootAddress })).rejects.toThrow(
         "wallets name their own junctions",
       );
     });

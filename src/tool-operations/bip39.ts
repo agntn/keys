@@ -133,11 +133,15 @@ export function normalizedMnemonic(value: unknown): string {
   return mnemonic;
 }
 
-/** Seed tool arguments besides the mnemonic, raw until the executor checks them. */
-export interface Bip39SeedArguments {
-  readonly passphrase?: unknown;
+/** The word list a BIP39 tool reads, raw until the executor checks it. */
+export interface Bip39ListArguments {
   readonly language?: unknown;
   readonly coleman?: unknown;
+}
+
+/** Seed tool arguments besides the mnemonic, raw until the executor checks them. */
+export interface Bip39SeedArguments extends Bip39ListArguments {
+  readonly passphrase?: unknown;
   readonly rounds?: unknown;
 }
 
@@ -152,7 +156,9 @@ export async function deriveBip39Seed(
   options: Bip39SeedArguments,
 ): Promise<ToolResult<DerivedBIP39SeedDetails>> {
   const coleman = colemanFlag(options.coleman);
-  const rounds = isUnsetCost(options.rounds) ? 2048 : costArgument(options.rounds, "rounds");
+  const rounds = isUnsetCost(options.rounds)
+    ? 2048
+    : costArgument(options.rounds, { name: "rounds" });
   const input = requiredString(mnemonicValue, "BIP39 mnemonic");
   const passphrase = optionalString(options.passphrase, "BIP39 passphrase") ?? "";
   if (Array.from(input).length > MAX_MNEMONIC_LENGTH) {
@@ -243,9 +249,9 @@ function describeEntropyPattern(pattern: EntropyPattern, length: number): string
   }
 }
 
-function describeEntropyPreimage(preimage: EntropyPreimage, length: number, cut: boolean): string {
+function describeEntropyPreimage(preimage: EntropyPreimage, length: number): string {
   const { algorithm, text, source } = preimage;
-  const prefix = cut ? `, first ${length} bytes` : "";
+  const prefix = ENTROPY_DIGEST_BYTES[algorithm] > length ? `, first ${length} bytes` : "";
   return `${algorithm} of ${quoteEntropyText(text)} (${source}${prefix})`;
 }
 
@@ -267,9 +273,7 @@ function inspectedEntropy(
   if (entropy === undefined) return { details: {}, lines: [] };
   const { length } = entropy;
   const profile = profileEntropy(entropy, preimages);
-  const matches = profile.preimages.map((preimage) =>
-    describeEntropyPreimage(preimage, length, ENTROPY_DIGEST_BYTES[preimage.algorithm] > length),
-  );
+  const matches = profile.preimages.map((preimage) => describeEntropyPreimage(preimage, length));
   const checked = `${BUILT_IN_PREIMAGES.length} built-in, ${preimages.length} given; ${entropyHashAlgorithms(length).join(", ")}`;
   const patterns = profile.patterns.map((pattern) => describeEntropyPattern(pattern, length));
   return {
@@ -318,24 +322,26 @@ function inspectionLines(inspection: BIP39MnemonicInspection, coleman: boolean):
   ];
 }
 
+/** Inspection tool arguments besides the mnemonic, raw until the executor checks them. */
+export interface MnemonicInspectionArguments extends Bip39ListArguments {
+  /** Caller texts hashed against the entropy after the built-in list. */
+  readonly preimages?: unknown;
+}
+
 /**
  * Validate a BIP39 mnemonic against the selected list and recover its entropy when valid.
  * @param mnemonicValue - BIP39 mnemonic candidate.
- * @param languageValue - Optional official BIP39 language key.
- * @param preimagesValue - Optional caller texts hashed against the entropy after the built-in list.
- * @param colemanValue - Take Ian Coleman's lengths too, default false.
+ * @param options - Language, preimages and `coleman` for Ian Coleman's lengths, each optional.
  * @returns {Promise<ToolResult<MnemonicInspectionDetails>>} Validity, entropy and its profile.
  */
 export async function inspectMnemonic(
   mnemonicValue: unknown,
-  languageValue?: unknown,
-  preimagesValue?: unknown,
-  colemanValue?: unknown,
+  options: MnemonicInspectionArguments = {},
 ): Promise<ToolResult<MnemonicInspectionDetails>> {
-  const coleman = colemanFlag(colemanValue);
+  const coleman = colemanFlag(options.coleman);
   const mnemonic = normalizedMnemonic(mnemonicValue);
-  const language = parseBIP39Language(languageValue);
-  const preimages = entropyPreimageTexts(preimagesValue);
+  const language = parseBIP39Language(options.language);
+  const preimages = entropyPreimageTexts(options.preimages);
   const wordlist = await loadBIP39Wordlist(language);
   const inspection = inspectBIP39Mnemonic(mnemonic, wordlist, { coleman });
   const entropy = inspectedEntropy(
@@ -355,18 +361,16 @@ export async function inspectMnemonic(
 /**
  * Encode a supported BIP39 entropy length using the selected word list.
  * @param entropyValue - BIP39 entropy as hexadecimal text.
- * @param languageValue - Optional official BIP39 language key.
- * @param colemanValue - Take Ian Coleman's lengths too, default false.
+ * @param options - Official BIP39 language key and `coleman` for Ian Coleman's lengths.
  * @returns {Promise<ToolResult<EncodedEntropyDetails>>} Canonical mnemonic and language.
  */
 export async function encodeBip39Entropy(
   entropyValue: unknown,
-  languageValue?: unknown,
-  colemanValue?: unknown,
+  options: Bip39ListArguments = {},
 ): Promise<ToolResult<EncodedEntropyDetails>> {
-  const coleman = colemanFlag(colemanValue);
+  const coleman = colemanFlag(options.coleman);
   const entropy = parseBip39Entropy(entropyValue, coleman);
-  const language = parseBIP39Language(languageValue);
+  const language = parseBIP39Language(options.language);
   const wordlist = await loadBIP39Wordlist(language);
   const mnemonic = entropyToMnemonic(entropy, wordlist, { coleman });
   const words = mnemonic.split(/\s+/u).length;

@@ -177,57 +177,47 @@ describe("Cosmos", () => {
 
   describe("Tool executors", () => {
     it("read a blank prefix as left out", async () => {
-      const result = await getAddress("cosmos", publicKey, undefined, undefined, " ");
+      const result = await getAddress("cosmos", { publicKey, prefix: " " });
       expect(result.details.address).toBe(address);
     });
 
     it("take the longest address the SDK takes", async () => {
       const longest = bech32.encode("cosmos", new Uint8Array(255), 1023);
-      expect((await validateAddress("cosmos", longest)).details.valid).toBe(true);
+      expect((await validateAddress("cosmos", { address: longest })).details.valid).toBe(true);
     });
 
     it("keep the prefix when they look for the address on the other network", async () => {
-      const result = await validateAddress("cosmos", address, undefined, "osmo");
+      const result = await validateAddress("cosmos", { address, prefix: "osmo" });
       expect(result.content[0]?.text).toBe(`${address} is not a valid cosmos address`);
     });
 
     it("find an uppercase address under a prefix with a digit", async () => {
       const c4e = new Cosmos({ prefix: "c4e" }).getAddress(publicKey).toUpperCase();
-      const result = await scanHdWallet(
-        "cosmos",
-        bip39TestVectors.mnemonic,
-        c4e,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        1,
-        1,
-        "c4e",
-      );
+      const result = await scanHdWallet("cosmos", {
+        mnemonic: bip39TestVectors.mnemonic,
+        address: c4e,
+        accounts: 1,
+        indices: 1,
+        prefix: "c4e",
+      });
       expect(result.details.found).toBe(true);
     });
 
     it("scan Terra's path when the prefix is terra", async () => {
       const terra = new Cosmos({ prefix: "terra" });
-      const result = await scanHdWallet(
-        "cosmos",
-        terraTestVectors.mnemonic,
-        terra.getAddress(terraTestVectors.publicKey),
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        1,
-        1,
-        "terra",
-      );
+      const result = await scanHdWallet("cosmos", {
+        mnemonic: terraTestVectors.mnemonic,
+        address: terra.getAddress(terraTestVectors.publicKey),
+        accounts: 1,
+        indices: 1,
+        prefix: "terra",
+      });
       expect(result.details.match?.path).toBe("m/44'/330'/0'/0/0");
     });
 
     it("generate the path of the prefix, or of coinType when it comes along", async () => {
       const path = (prefix?: string, coinType?: number) =>
-        generateBip44Path("cosmos", 0, 0, 0, undefined, undefined, prefix, coinType);
+        generateBip44Path("cosmos", { account: 0, change: 0, addressIndex: 0, prefix, coinType });
       expect((await path("terra")).details.path).toBe("m/44'/330'/0'/0/0");
       expect((await path("kava")).details.coinType).toBe(459);
       expect((await path("fren", 7)).details.path).toBe("m/44'/7'/0'/0/0");
@@ -235,15 +225,15 @@ describe("Cosmos", () => {
 
     it("refuse coinType off cosmos", async () => {
       await expect(
-        generateBip44Path("bitcoin", 0, 0, 0, undefined, undefined, undefined, 330),
+        generateBip44Path("bitcoin", { account: 0, change: 0, addressIndex: 0, coinType: 330 }),
       ).rejects.toThrow("bitcoin has its own, so leave it out");
     });
 
     it("say what a bad prefix looks like", async () => {
-      await expect(getAddress("cosmos", publicKey, undefined, undefined, "Osmo")).rejects.toThrow(
+      await expect(getAddress("cosmos", { publicKey, prefix: "Osmo" })).rejects.toThrow(
         /printable ASCII/,
       );
-      await expect(getAddress("ethereum", publicKey, undefined, undefined, "osmo")).rejects.toThrow(
+      await expect(getAddress("ethereum", { publicKey, prefix: "osmo" })).rejects.toThrow(
         "Leave it out on ethereum",
       );
     });

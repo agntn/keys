@@ -1,7 +1,7 @@
 import { getBlockchainPath } from "../blockchain.ts";
 import { parse as parseBIP44Path } from "../utils/bip44/index.ts";
 import { requiredString, optionalIndex } from "./arguments.ts";
-import { getBlockchain } from "./blockchain.ts";
+import { type ChainArguments, getBlockchain } from "./blockchain.ts";
 import { type ToolResult, content } from "./results.ts";
 
 /** Parsed or generated BIP44 path. */
@@ -39,43 +39,33 @@ export function parseBip44Path(pathValue: unknown): ToolResult<BIP44PathDetails>
   };
 }
 
+/** Path levels past the chain, plus the network, Sui scheme, prefix and coin type that shape it. */
+export interface Bip44GenerateArguments extends ChainArguments {
+  readonly account?: unknown;
+  /** External or internal branch, or the CIP-1852 role on Cardano. */
+  readonly change?: unknown;
+  readonly addressIndex?: unknown;
+}
+
 /**
  * Generate the path a chain's wallets use, with the change range and Sui scheme the chain sets.
  * @param chainValue - Blockchain name.
- * @param accountValue - Account index.
- * @param changeValue - External or internal branch, or the CIP-1852 role on Cardano.
- * @param addressIndexValue - Address index.
- * @param addressTypeValue - Signature scheme on Sui, ed25519 by default.
- * @param networkValue - Network, which picks the coin type on the UTXO chains.
- * @param prefixValue - Bech32 prefix on cosmos, which picks the coin type there.
- * @param coinTypeValue - Coin type on cosmos, in place of the one prefix stands for.
+ * @param options - Account, change and address index, with the chain's network, scheme and prefix.
  * @returns {Promise<ToolResult<BIP44PathDetails>>} The generated path.
  */
 export async function generateBip44Path(
   chainValue: unknown,
-  accountValue?: unknown,
-  changeValue?: unknown,
-  addressIndexValue?: unknown,
-  addressTypeValue?: unknown,
-  networkValue?: unknown,
-  prefixValue?: unknown,
-  coinTypeValue?: unknown,
+  options: Bip44GenerateArguments = {},
 ): Promise<ToolResult<BIP44PathDetails>> {
-  const account = optionalIndex(accountValue, "Account") ?? 0;
-  const change = optionalIndex(changeValue, "Change") ?? 0;
-  const addressIndex = optionalIndex(addressIndexValue, "Address index") ?? 0;
-  const { blockchain, addressType } = await getBlockchain(
-    chainValue,
-    networkValue,
-    addressTypeValue,
-    prefixValue,
-    coinTypeValue,
-  );
+  const account = optionalIndex(options.account, { name: "Account" }) ?? 0;
+  const change = optionalIndex(options.change, { name: "Change" }) ?? 0;
+  const addressIndex = optionalIndex(options.addressIndex, { name: "Address index" }) ?? 0;
+  const { blockchain, addressType } = await getBlockchain(chainValue, options);
   if (addressType !== undefined && !Array.isArray(blockchain.curve)) {
     throw new RangeError(`addressType names a scheme, and ${blockchain.name} has one curve`);
   }
-  const options = addressType === undefined ? undefined : { scheme: addressType };
-  const generated = getBlockchainPath(blockchain, account, change, addressIndex, options);
+  const scheme = addressType === undefined ? undefined : { scheme: addressType };
+  const generated = getBlockchainPath(blockchain, account, change, addressIndex, scheme);
   return {
     content: content(
       `Chain: ${blockchain.name} (BIP44 coin type: ${blockchain.coinType})\nPath: ${generated}`,

@@ -25,23 +25,28 @@ export interface DerivedOldElectrumWalletDetails {
   address: string;
 }
 
+/** Electrum tool arguments besides the phrase, raw until the executor checks them. */
+export interface ElectrumWalletArguments {
+  /** Exact absolute BIP32 path, for standard and SegWit seeds. */
+  readonly path?: unknown;
+  /** Electrum passphrase; old seeds take none. */
+  readonly passphrase?: unknown;
+  readonly network?: unknown;
+  /** Old seeds only: 0 for receiving, 1 for change. Default 0. */
+  readonly change?: unknown;
+  /** Old seeds only: address index. Default 0. */
+  readonly index?: unknown;
+}
+
 /**
  * Derives public Bitcoin wallet material from a complete Electrum phrase, by path or old index.
  * @param mnemonicValue - Public or disposable Electrum phrase
- * @param pathValue - Exact absolute BIP32 path, for standard and SegWit seeds
- * @param passphraseValue - Electrum passphrase; old seeds take none
- * @param networkValue - Bitcoin network
- * @param changeValue - Old seeds only: 0 for receiving, 1 for change. Default 0
- * @param indexValue - Old seeds only: address index. Default 0
+ * @param options - Path and passphrase, or the change and index of an old seed, and the network
  * @returns {Promise<ToolResult<DerivedWalletDetails | DerivedOldElectrumWalletDetails>>} Public wallet
  */
 export async function deriveElectrumWallet(
   mnemonicValue: unknown,
-  pathValue: unknown,
-  passphraseValue?: unknown,
-  networkValue?: unknown,
-  changeValue?: unknown,
-  indexValue?: unknown,
+  options: ElectrumWalletArguments,
 ): Promise<
   ToolResult<
     | (DerivedWalletDetails & { scheme: "electrum"; seedType: "standard" | "segwit" })
@@ -49,18 +54,21 @@ export async function deriveElectrumWallet(
   >
 > {
   const mnemonic = requiredString(mnemonicValue, "Electrum mnemonic");
-  const passphrase = optionalString(passphraseValue, "Electrum passphrase") ?? "";
-  const change = optionalIndex(changeValue, "Change", 1);
-  const index = optionalIndex(indexValue, "Index");
+  const passphrase = optionalString(options.passphrase, "Electrum passphrase") ?? "";
+  const change = optionalIndex(options.change, { name: "Change", maximum: 1 });
+  const index = optionalIndex(options.index, { name: "Index" });
+  const { network } = options;
   if (inspectElectrumSeed(mnemonic) === "old") {
-    return deriveOldElectrumWallet(mnemonic, pathValue, passphrase, {
+    return deriveOldElectrumWallet(mnemonic, {
+      path: options.path,
+      passphrase,
       change,
       index,
-      networkValue,
+      network,
     });
   }
-  const path = electrumPath(pathValue, change !== undefined || index !== undefined);
-  const { blockchain } = await getBlockchain("bitcoin", networkValue);
+  const path = electrumPath(options.path, change !== undefined || index !== undefined);
+  const { blockchain } = await getBlockchain("bitcoin", { network });
   const seed = deriveElectrumSeed(mnemonic, passphrase);
   const wallet = blockchain.deriveElectrumWallet(seed, path);
   const { scheme, seedType } = seed;
@@ -100,32 +108,35 @@ function electrumPath(pathValue: unknown, oldArguments: boolean): string {
   return path;
 }
 
+/** An old seed's arguments, with the passphrase, change and index already read. */
+interface OldElectrumWalletArguments {
+  /** Raw path argument, which an old seed refuses. */
+  readonly path: unknown;
+  /** Electrum passphrase, which an old seed refuses. */
+  readonly passphrase: string;
+  /** 0 for receiving, 1 for change, 0 when left out. */
+  readonly change?: number;
+  /** Address index, 0 when left out. */
+  readonly index?: number;
+  readonly network: unknown;
+}
+
 /**
  * Derives one P2PKH address of an old seed from its master public key, as Electrum before 2.0 did.
  * @param mnemonic - Old seed words or hex seed
- * @param pathValue - Raw path argument, which an old seed refuses
- * @param passphrase - Electrum passphrase, which an old seed refuses
- * @param options - Change chain and index, 0 when left out, and the Bitcoin network
- * @param options.change - 0 for receiving, 1 for change
- * @param options.index - Address index
- * @param options.networkValue - Bitcoin network
+ * @param options - Path and passphrase it refuses, change chain, index and the Bitcoin network
  * @returns {Promise<ToolResult<DerivedOldElectrumWalletDetails>>} MPK, key and address
  */
 async function deriveOldElectrumWallet(
   mnemonic: string,
-  pathValue: unknown,
-  passphrase: string,
-  {
-    change = 0,
-    index = 0,
-    networkValue,
-  }: { readonly change?: number; readonly index?: number; readonly networkValue: unknown },
+  options: OldElectrumWalletArguments,
 ): Promise<ToolResult<DerivedOldElectrumWalletDetails>> {
-  if (!isUnset(pathValue)) {
+  const { path, passphrase, change = 0, index = 0, network } = options;
+  if (!isUnset(path)) {
     throw new TypeError("Old Electrum seeds have no BIP32 path; pass change and index instead");
   }
   if (passphrase !== "") throw new TypeError("Old Electrum seeds take no passphrase");
-  const { blockchain } = await getBlockchain("bitcoin", networkValue);
+  const { blockchain } = await getBlockchain("bitcoin", { network });
   const masterPublicKey = deriveOldMasterPublicKey(mnemonic);
   const publicKey = deriveOldPublicKey(masterPublicKey, change, index).toHex();
   const details: DerivedOldElectrumWalletDetails = {

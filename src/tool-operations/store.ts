@@ -32,14 +32,14 @@ export interface DecryptedStoreDetails {
  * @param kdf - KDF, costs and derived key length the file names
  */
 function checkStoreCost(kdf: Readonly<KeystoreKDF & { dklen: number }>): void {
-  costArgument(kdf.dklen, "keyLength");
+  costArgument(kdf.dklen, { name: "keyLength" });
   if (kdf.kdf === "pbkdf2") {
-    costArgument(kdf.c, "iterations");
+    costArgument(kdf.c, { name: "iterations" });
     return;
   }
-  costArgument(kdf.n, "N", 2);
-  costArgument(kdf.r, "r");
-  costArgument(kdf.p, "p");
+  costArgument(kdf.n, { name: "N", minimum: 2 });
+  costArgument(kdf.r, { name: "r" });
+  costArgument(kdf.p, { name: "p" });
   if (kdf.n * kdf.r > MAX_SCRYPT_BLOCKS) {
     throw new RangeError(`N * r must not exceed ${MAX_SCRYPT_BLOCKS}`);
   }

@@ -12,7 +12,14 @@ import {
   multisig,
   address as scriptAddress,
 } from "../utils/script/index.ts";
-import { requiredString, HEX_BYTES, stringArray, isUnset, optionalIndex } from "./arguments.ts";
+import {
+  type IndexArgument,
+  requiredString,
+  HEX_BYTES,
+  stringArray,
+  isUnset,
+  optionalIndex,
+} from "./arguments.ts";
 import { parseNetwork } from "./blockchain.ts";
 import { type ToolResult, content } from "./results.ts";
 
@@ -41,11 +48,11 @@ const SEC1_PUBLIC_KEY = new RegExp(SEC1_PUBLIC_KEY_SCHEMA_PATTERN, "u");
 /**
  * Reads an optional count that starts at 1, unlike an index.
  * @param value - Raw argument
- * @param name - Argument name for the error
- * @param maximum - Largest value it takes
+ * @param argument - Name for the error and the largest value it takes
  * @returns {number | undefined} The count, undefined when left out
  */
-function optionalCount(value: unknown, name: string, maximum: number): number | undefined {
+function optionalCount(value: unknown, argument: Required<IndexArgument>): number | undefined {
+  const { name, maximum } = argument;
   if (value === undefined) return undefined;
   if (typeof value !== "number" || !Number.isInteger(value) || value < 1 || value > maximum) {
     throw new RangeError(`${name} must be an integer from 1 to ${maximum}`);
@@ -53,23 +60,29 @@ function optionalCount(value: unknown, name: string, maximum: number): number | 
   return value;
 }
 
+/** Script address arguments besides the script, raw until the executor checks them. */
+export interface ScriptAddressArguments {
+  /** Signatures the multisig needs. */
+  readonly threshold?: unknown;
+  readonly publicKeys?: unknown;
+  /** Whether to sort the keys. */
+  readonly sorted?: unknown;
+  readonly network?: unknown;
+}
+
 /**
  * Reads the script argument, a hex script without the multisig arguments.
  * @param scriptValue - Raw script
- * @param thresholdValue - Raw threshold, which must be absent
- * @param sortedValue - Raw sorted flag, which must be absent
+ * @param options - Raw threshold and sorted flag, which must both be absent
  * @returns {Uint8Array} The script bytes
  */
-function givenScript(
-  scriptValue: unknown,
-  thresholdValue: unknown,
-  sortedValue: unknown,
-): Uint8Array {
+function givenScript(scriptValue: unknown, options: ScriptAddressArguments): Uint8Array {
+  const { threshold, sorted } = options;
   const script = requiredString(scriptValue, "Script");
   if (script.length > MAX_SCRIPT_HEX_LENGTH || !HEX_BYTES.test(script)) {
     throw new TypeError(`Script must be hex without 0x, at most ${MAX_SCRIPT_HEX_LENGTH} digits`);
   }
-  if (thresholdValue !== undefined || sortedValue !== undefined) {
+  if (threshold !== undefined || sorted !== undefined) {
     throw new TypeError("threshold and sorted go with publicKeys, not with script");
   }
   return Uint8Array.fromHex(script);
@@ -77,28 +90,23 @@ function givenScript(
 
 /**
  * Reads the multisig arguments into their keys and script.
- * @param thresholdValue - Raw threshold
- * @param publicKeysValue - Raw keys
- * @param sortedValue - Raw sorted flag
+ * @param options - Raw threshold, keys and sorted flag
  * @returns {[readonly string[], Uint8Array]} The keys and the multisig script
  */
-function multisigArgument(
-  thresholdValue: unknown,
-  publicKeysValue: unknown,
-  sortedValue: unknown,
-): [readonly string[], Uint8Array] {
-  const keys = stringArray(publicKeysValue, "publicKeys");
+function multisigArgument(options: ScriptAddressArguments): [readonly string[], Uint8Array] {
+  const keys = stringArray(options.publicKeys, "publicKeys");
   if (keys.length > MAX_MULTISIG_KEYS || !keys.every((key) => SEC1_PUBLIC_KEY.test(key))) {
     throw new TypeError(
       `publicKeys must be 1 to ${MAX_MULTISIG_KEYS} compressed or uncompressed SEC1 keys as hex without 0x`,
     );
   }
-  const threshold = optionalCount(thresholdValue, "threshold", keys.length);
+  const threshold = optionalCount(options.threshold, { name: "threshold", maximum: keys.length });
   if (threshold === undefined) throw new TypeError("publicKeys need a threshold");
-  if (sortedValue !== undefined && typeof sortedValue !== "boolean") {
+  const { sorted } = options;
+  if (sorted !== undefined && typeof sorted !== "boolean") {
     throw new TypeError("sorted must be a boolean");
   }
-  return [keys, multisig(threshold, keys, { sorted: sortedValue === true })];
+  return [keys, multisig(threshold, keys, { sorted: sorted === true })];
 }
 
 /**
@@ -129,29 +137,22 @@ function wrapperAddresses(
 /**
  * Get the P2SH, P2WSH and P2SH-P2WSH addresses of a script or of an m-of-n multisig.
  * @param scriptValue - Redeem or witness script as hex
- * @param thresholdValue - Signatures the multisig needs
- * @param publicKeysValue - Multisig keys
- * @param sortedValue - Whether to sort the keys
- * @param networkValue - Optional network name
+ * @param options - Multisig threshold, keys and sorted flag, and an optional network name
  * @returns {ToolResult<ScriptAddressDetails>} An address per wrapper, or why it refuses the script
  */
 export function getScriptAddress(
   scriptValue: unknown,
-  thresholdValue: unknown,
-  publicKeysValue: unknown,
-  sortedValue: unknown,
-  networkValue?: unknown,
+  options: ScriptAddressArguments,
 ): ToolResult<ScriptAddressDetails> {
-  const network = parseNetwork(networkValue);
+  const network = parseNetwork(options.network);
   const hasScript = !isUnset(scriptValue);
-  const hasKeys = Array.isArray(publicKeysValue)
-    ? publicKeysValue.length > 0
-    : publicKeysValue !== undefined;
+  const { publicKeys } = options;
+  const hasKeys = Array.isArray(publicKeys) ? publicKeys.length > 0 : publicKeys !== undefined;
   if (hasScript === hasKeys)
     throw new TypeError("Pass either script, or publicKeys with threshold");
   const [keys, script] = hasScript
-    ? [[], givenScript(scriptValue, thresholdValue, sortedValue)]
-    : multisigArgument(thresholdValue, publicKeysValue, sortedValue);
+    ? [[], givenScript(scriptValue, options)]
+    : multisigArgument(options);
   const { lines, ...wrapped } = wrapperAddresses(script, network);
   const warnings = keys.some((key) => key.length === 130)
     ? ["Uncompressed keys make P2WSH and P2SH-P2WSH spends non-standard, so nodes don't relay them"]
@@ -180,16 +181,24 @@ export interface DescriptorDetails {
   outputs: Array<{ index?: number; address: string; script: string }>;
 }
 
+/** Descriptor arguments besides the descriptor, raw until the executor checks them. */
+export interface DescriptorArguments {
+  /** First index of a ranged descriptor. */
+  readonly index?: unknown;
+  /** Addresses of a ranged descriptor to list. */
+  readonly count?: unknown;
+  readonly network?: unknown;
+}
+
 /**
  * Reads where a ranged descriptor starts and how many addresses it lists.
  * @param ranged - Whether the descriptor has a /* step
- * @param indexValue - Raw first index
- * @param countValue - Raw count
+ * @param options - Raw first index and count
  * @returns {number[]} The indices to derive, empty for a descriptor without /*
  */
-function descriptorIndices(ranged: boolean, indexValue: unknown, countValue: unknown): number[] {
-  const start = optionalIndex(indexValue, "index");
-  const count = optionalCount(countValue, "count", MAX_DESCRIPTOR_ADDRESSES);
+function descriptorIndices(ranged: boolean, options: DescriptorArguments): number[] {
+  const start = optionalIndex(options.index, { name: "index" });
+  const count = optionalCount(options.count, { name: "count", maximum: MAX_DESCRIPTOR_ADDRESSES });
   if (!ranged) {
     if (start !== undefined || count !== undefined) {
       throw new TypeError("Descriptor has no /* step; leave index and count out");
@@ -206,24 +215,20 @@ function descriptorIndices(ranged: boolean, indexValue: unknown, countValue: unk
 /**
  * Derive the addresses of a Bitcoin output descriptor and check or compute its checksum.
  * @param descriptorValue - The descriptor, with or without #checksum
- * @param indexValue - First index of a ranged descriptor
- * @param countValue - Addresses of a ranged descriptor to list
- * @param networkValue - Optional network name
+ * @param options - First index and count of a ranged descriptor, and an optional network name
  * @returns {ToolResult<DescriptorDetails>} The checksum and the addresses
  */
 export function deriveDescriptor(
   descriptorValue: unknown,
-  indexValue: unknown,
-  countValue: unknown,
-  networkValue?: unknown,
+  options: DescriptorArguments,
 ): ToolResult<DescriptorDetails> {
   const text = requiredString(descriptorValue, "Descriptor");
   if (text.length === 0 || text.length > MAX_DESCRIPTOR_LENGTH) {
     throw new RangeError(`Descriptor must be 1 to ${MAX_DESCRIPTOR_LENGTH} characters`);
   }
-  const network = parseNetwork(networkValue);
+  const network = parseNetwork(options.network);
   const descriptor = parseDescriptor(text, { network });
-  const indices = descriptorIndices(descriptor.ranged, indexValue, countValue);
+  const indices = descriptorIndices(descriptor.ranged, options);
   const shown = (output: DescriptorOutput, index?: number) => ({
     ...(index === undefined ? {} : { index }),
     address: output.address,

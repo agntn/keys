@@ -19,6 +19,7 @@ import {
   PRIVATE_KEY_HEX,
   optionalName,
   chainPublicKey,
+  type SubaddressArguments,
   type SubaddressIndices,
   subaddressIndices,
 } from "./arguments.ts";
@@ -72,45 +73,47 @@ const RECOVERABLE_SIGNATURE = new RegExp(RECOVERABLE_SIGNATURE_SCHEMA_PATTERN, "
 
 const DIGEST_HEX = new RegExp(DIGEST_SCHEMA_PATTERN, "u");
 
+/** Signing tool arguments besides the chain, raw until the executor checks them. */
+export interface SignMessageArguments extends SubaddressArguments {
+  readonly message?: unknown;
+  /** Private key as hexadecimal text. */
+  readonly privateKey?: unknown;
+  readonly network?: unknown;
+  /** Append the recovery byte as `v`, default false. */
+  readonly recovered?: unknown;
+  readonly prefix?: unknown;
+  /** Monero key that signs, spend or view; spend when left out. */
+  readonly signingKey?: unknown;
+}
+
 /**
  * Sign a message without retaining the private key or message in result details.
  * @param chainValue - Blockchain name.
- * @param messageValue - Message to sign.
- * @param privateKeyValue - Private key as hexadecimal text.
- * @param networkValue - Optional network name.
- * @param recoveredValue - Append the recovery byte as `v`, default false.
- * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot.
- * @param signingKeyValue - Monero key that signs, spend or view; spend when left out.
- * @param accountValue - Account of the Monero subaddress that signs.
- * @param addressIndexValue - Index of that subaddress within its account.
+ * @param args - Message, key, recovery flag and the Monero key or subaddress that signs.
  * @returns {Promise<ToolResult<SignatureDetails>>} Generated signature.
  */
 export async function signMessage(
   chainValue: unknown,
-  messageValue: unknown,
-  privateKeyValue: unknown,
-  networkValue?: unknown,
-  recoveredValue?: unknown,
-  prefixValue?: unknown,
-  signingKeyValue?: unknown,
-  accountValue?: unknown,
-  addressIndexValue?: unknown,
+  args: SignMessageArguments,
 ): Promise<ToolResult<SignatureDetails>> {
+  const recoveredValue = args.recovered;
   if (recoveredValue !== undefined && typeof recoveredValue !== "boolean") {
     throw new TypeError("recovered must be a boolean");
   }
   const recovered = recoveredValue ?? false;
-  const { blockchain } = await getBlockchain(chainValue, networkValue, undefined, prefixValue);
-  const signingKey = moneroSigningKey(signingKeyValue, blockchain.name);
-  const subaddress = subaddressIndices(blockchain.name, accountValue, addressIndexValue);
-  const message = requiredString(messageValue, "Message");
-  const privateKey = hexArgument(
-    privateKeyValue,
-    "Private key",
-    PRIVATE_KEY_HEX,
-    "64 hex characters",
-  );
-  const options = signingOptions(recovered, signingKey, subaddress);
+  const { blockchain } = await getBlockchain(chainValue, {
+    network: args.network,
+    prefix: args.prefix,
+  });
+  const signingKey = moneroSigningKey(args.signingKey, blockchain.name);
+  const subaddress = subaddressIndices(blockchain.name, args);
+  const message = requiredString(args.message, "Message");
+  const privateKey = hexArgument(args.privateKey, {
+    name: "Private key",
+    pattern: PRIVATE_KEY_HEX,
+    shape: "64 hex characters",
+  });
+  const options = signingOptions({ recovered, signingKey, subaddress });
   const signature =
     options === undefined
       ? blockchain.signMessage(message, privateKey)
@@ -123,16 +126,21 @@ export async function signMessage(
 
 /**
  * Only builds options when one is set, so every other chain keeps its current defaults.
- * @param recovered - Whether to append the recovery byte.
- * @param signingKey - Monero key that signs.
- * @param subaddress - Monero subaddress that signs.
+ * @param signing - Recovery byte flag, and the Monero key and subaddress that sign.
+ * @param signing.recovered - Whether to append the recovery byte.
+ * @param signing.signingKey - Monero key that signs.
+ * @param signing.subaddress - Monero subaddress that signs.
  * @returns {SigningOptions | undefined} The options, undefined when none is set.
  */
-function signingOptions(
-  recovered: boolean,
-  signingKey: MoneroSigningKey | undefined,
-  subaddress: SubaddressIndices | undefined,
-): SigningOptions | undefined {
+function signingOptions({
+  recovered,
+  signingKey,
+  subaddress,
+}: {
+  readonly recovered: boolean;
+  readonly signingKey: MoneroSigningKey | undefined;
+  readonly subaddress: SubaddressIndices | undefined;
+}): SigningOptions | undefined {
   if (!recovered && signingKey === undefined && subaddress === undefined) return undefined;
   return { recovered, signingKey, account: subaddress?.account, addressIndex: subaddress?.index };
 }
@@ -160,14 +168,14 @@ function moneroSigningKey(value: unknown, chain: string): MoneroSigningKey | und
  * Refuse a base64 signature the chain never writes or whose header is out of range, so neither
  * reads as invalid. One that recovers no key stays a verdict, as in Core.
  * @param blockchain - Chain the signature is checked on.
- * @param message - Signed message.
- * @param signature - Base64 signature.
+ * @param signed - Signed message and its base64 signature.
+ * @param signed.message - Signed message.
+ * @param signed.signature - Base64 signature.
  * @returns {void} Nothing; it throws on unreadable input.
  */
 function assertReadableSignature(
   blockchain: Readonly<AbstractBlockchain>,
-  message: string,
-  signature: string,
+  { message, signature }: { readonly message: string; readonly signature: string },
 ): void {
   try {
     blockchain.recoverMessageSigner(message, signature);
@@ -176,27 +184,34 @@ function assertReadableSignature(
   }
 }
 
+/** Verification tool arguments besides the chain, raw until the executor checks them. */
+export interface VerifyMessageArguments {
+  /** Original message. */
+  readonly message?: unknown;
+  /** Signature as hexadecimal text. */
+  readonly signature?: unknown;
+  /** Public key as hexadecimal text. */
+  readonly publicKey?: unknown;
+  readonly network?: unknown;
+  readonly prefix?: unknown;
+}
+
 /**
  * Verify a signature against a message and public key.
  * @param chainValue - Blockchain name.
- * @param messageValue - Original message.
- * @param signatureValue - Signature as hexadecimal text.
- * @param publicKeyValue - Public key as hexadecimal text.
- * @param networkValue - Optional network name.
- * @param prefixValue - Optional bech32 prefix on cosmos, SS58 number on polkadot.
+ * @param args - Message, signature and public key, with the chain's network and prefix.
  * @returns {Promise<ToolResult<SignatureVerificationDetails>>} Signature verdict.
  */
 export async function verifyMessage(
   chainValue: unknown,
-  messageValue: unknown,
-  signatureValue: unknown,
-  publicKeyValue: unknown,
-  networkValue?: unknown,
-  prefixValue?: unknown,
+  args: VerifyMessageArguments,
 ): Promise<ToolResult<SignatureVerificationDetails>> {
-  const { blockchain } = await getBlockchain(chainValue, networkValue, undefined, prefixValue);
-  const message = requiredString(messageValue, "Message");
-  const signatureText = requiredString(signatureValue, "Signature");
+  const { blockchain } = await getBlockchain(chainValue, {
+    network: args.network,
+    prefix: args.prefix,
+  });
+  const message = requiredString(args.message, "Message");
+  const signatureText = requiredString(args.signature, "Signature");
   const core = CORE_SIGNATURE.test(signatureText);
   const monero = MONERO_SIGNATURE.test(signatureText);
   if (monero !== (blockchain.name === "monero")) {
@@ -209,14 +224,13 @@ export async function verifyMessage(
   const signature =
     core || monero
       ? signatureText
-      : hexArgument(
-          signatureText,
-          "Signature",
-          DER_SIGNATURE.test(signatureText) ? DER_SIGNATURE : SIGNATURE_HEX,
-          "64 or 65 bytes of hex, or DER on xrpl,",
-        );
-  const publicKey = chainPublicKey(publicKeyValue, blockchain.name);
-  if (core) assertReadableSignature(blockchain, message, signature);
+      : hexArgument(signatureText, {
+          name: "Signature",
+          pattern: DER_SIGNATURE.test(signatureText) ? DER_SIGNATURE : SIGNATURE_HEX,
+          shape: "64 or 65 bytes of hex, or DER on xrpl,",
+        });
+  const publicKey = chainPublicKey(args.publicKey, blockchain.name);
+  if (core) assertReadableSignature(blockchain, { message, signature });
   const valid = blockchain.verifyMessage(message, signature, publicKey);
   return {
     content: content(valid ? "Signature is valid" : "Signature is invalid"),
@@ -251,17 +265,16 @@ function signerAddressTypes(signer: Readonly<MessageSigner>): (string | undefine
 /**
  * Line that reports the comparison, empty when no address was given.
  * @param expected - Address the caller passed.
- * @param matches - Whether it belongs to the recovered key.
- * @param matchedType - Address type it matched, if the chain has types.
+ * @param details - Whether it belongs to the recovered key, and the address type it matched.
  * @returns {string[]} Zero or one line.
  */
 function comparisonLines(
   expected: string | undefined,
-  matches: boolean,
-  matchedType: string | undefined,
+  details: Readonly<MessageSignerDetails>,
 ): string[] {
+  const { matches, matchedType } = details;
   if (expected === undefined) return [];
-  if (!matches) return ["Given address: no match"];
+  if (matches !== true) return ["Given address: no match"];
   return [
     matchedType === undefined ? "Given address: match" : `Given address: match (${matchedType})`,
   ];
@@ -293,16 +306,11 @@ function isTypedData(value: unknown): value is TypedData {
 
 /**
  * Take exactly one of the message, the typed data and the digest.
- * @param messageValue - Message as the caller passed it.
- * @param typedDataValue - EIP-712 JSON as the caller passed it.
- * @param digestValue - Digest hex as the caller passed it.
+ * @param input - Message, EIP-712 JSON and digest hex, each as the caller passed it.
  * @returns {SignedInput} The message, or the digest to recover against.
  */
-function signedInput(
-  messageValue: unknown,
-  typedDataValue: unknown,
-  digestValue: unknown,
-): SignedInput {
+function signedInput(input: RecoverSignerArguments): SignedInput {
+  const { message: messageValue, typedData: typedDataValue, digest: digestValue } = input;
   const given = [messageValue, typedDataValue, digestValue].filter((value) => value !== undefined);
   if (given.length !== 1) {
     throw new TypeError("Pass exactly one of message, typedData and digest");
@@ -311,7 +319,11 @@ function signedInput(
     return { signed: "message", message: requiredString(messageValue, "Message") };
   }
   if (digestValue !== undefined) {
-    const digest = hexArgument(digestValue, "Digest", DIGEST_HEX, "32 bytes of hex");
+    const digest = hexArgument(digestValue, {
+      name: "Digest",
+      pattern: DIGEST_HEX,
+      shape: "32 bytes of hex",
+    });
     return { signed: "digest", digest: Uint8Array.fromHex(digest) };
   }
   const text = requiredString(typedDataValue, "Typed data");
@@ -335,14 +347,14 @@ function signedInput(
 /**
  * Find the address type of the recovered key that the given address names.
  * @param blockchain - Chain the signature was recovered on.
- * @param signer - The recovered key and header type.
- * @param expected - Address the caller passed.
+ * @param comparison - The recovered key and header type, and the address the caller passed.
+ * @param comparison.signer - The recovered key and header type.
+ * @param comparison.expected - Address the caller passed.
  * @returns {{ matches: boolean; matchedType?: string }} The verdict and the matched type.
  */
 function matchSigner(
   blockchain: Readonly<AbstractBlockchain>,
-  signer: Readonly<MessageSigner>,
-  expected: string,
+  { signer, expected }: { readonly signer: Readonly<MessageSigner>; readonly expected: string },
 ): { matches: boolean; matchedType?: string } {
   const types = signerAddressTypes(signer);
   const index = types.findIndex((type) => {
@@ -374,40 +386,45 @@ function signerLines(
     details.addressType === undefined
       ? `Address: ${details.address}`
       : `Address: ${details.address} (${details.addressType})`,
-    ...comparisonLines(expected, details.matches === true, details.matchedType),
+    ...comparisonLines(expected, details),
   ];
+}
+
+/** Recovery tool arguments besides the chain, raw until the executor checks them. */
+export interface RecoverSignerArguments {
+  /** Message that was signed, or undefined beside typed data or a digest. */
+  readonly message?: unknown;
+  /** Base64 of the header byte, then `r` and `s`, or `r||s||v` hex. */
+  readonly signature?: unknown;
+  /** Address to compare with. */
+  readonly address?: unknown;
+  readonly network?: unknown;
+  /** EIP-712 typed data as JSON, in place of the message. */
+  readonly typedData?: unknown;
+  /** 32-byte digest as hex, in place of the message. */
+  readonly digest?: unknown;
 }
 
 /**
  * Recover the signer of a message, EIP-712 typed data or a digest, and say whether it holds a
  * given address. The Bitcoin family and Decred read Core's base64, EVM chains and TRON `r||s||v`.
  * @param chainValue - Blockchain name.
- * @param messageValue - Message that was signed, or undefined beside typed data or a digest.
- * @param signatureValue - Base64 of the header byte, then `r` and `s`, or `r||s||v` hex.
- * @param addressValue - Optional address to compare with.
- * @param networkValue - Optional network name.
- * @param typedDataValue - EIP-712 typed data as JSON, in place of the message.
- * @param digestValue - 32-byte digest as hex, in place of the message.
+ * @param args - What was signed, the signature, an address to compare with and the network.
  * @returns {Promise<ToolResult<MessageSignerDetails>>} The signer and the comparison.
  */
 export async function recoverMessageSigner(
   chainValue: unknown,
-  messageValue: unknown,
-  signatureValue: unknown,
-  addressValue?: unknown,
-  networkValue?: unknown,
-  typedDataValue?: unknown,
-  digestValue?: unknown,
+  args: RecoverSignerArguments,
 ): Promise<ToolResult<MessageSignerDetails>> {
-  const { blockchain } = await getBlockchain(chainValue, networkValue);
-  const input = signedInput(messageValue, typedDataValue, digestValue);
-  const signature = requiredString(signatureValue, "Signature");
+  const { blockchain } = await getBlockchain(chainValue, { network: args.network });
+  const input = signedInput(args);
+  const signature = requiredString(args.signature, "Signature");
   if (!RECOVERABLE_SIGNATURE.test(signature)) {
     throw new TypeError(
       "Signature must be 65 bytes: r||s||v as 130 hex characters without 0x, or signmessage's base64",
     );
   }
-  const expected = expectedAddress(addressValue);
+  const expected = expectedAddress(args.address);
   if (expected !== undefined && !blockchain.validateAddress(expected)) {
     throw new TypeError(`Address is not a valid ${blockchain.name} ${blockchain.network} address`);
   }
@@ -423,7 +440,7 @@ export async function recoverMessageSigner(
     publicKey: signer.publicKey,
     ...(signer.addressType === undefined ? {} : { addressType: signer.addressType }),
     address: blockchain.getAddress(signer.publicKey, signer.addressType),
-    ...(expected === undefined ? {} : matchSigner(blockchain, signer, expected)),
+    ...(expected === undefined ? {} : matchSigner(blockchain, { signer, expected })),
   };
   return { content: content(signerLines(details, expected).join("\n")), details };
 }

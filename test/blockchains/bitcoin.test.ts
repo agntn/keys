@@ -541,9 +541,14 @@ describe("Bitcoin blockchain", () => {
     });
 
     it("refuses an address type in the path tool, since it names a scheme", async () => {
-      await expect(generateBip44Path("bitcoin", 0, 0, 0, "segwit")).rejects.toThrow(
-        "bitcoin has one curve",
-      );
+      await expect(
+        generateBip44Path("bitcoin", {
+          account: 0,
+          change: 0,
+          addressIndex: 0,
+          addressType: "segwit",
+        }),
+      ).rejects.toThrow("bitcoin has one curve");
     });
   });
 
@@ -609,7 +614,9 @@ describe("Bitcoin blockchain", () => {
     });
 
     it("keys_address_get passes the rejection on", async () => {
-      await expect(getAddress("bitcoin", "00".repeat(33), "segwit")).rejects.toThrow();
+      await expect(
+        getAddress("bitcoin", { publicKey: "00".repeat(33), addressType: "segwit" }),
+      ).rejects.toThrow();
     });
   });
 });
