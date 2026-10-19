@@ -149,6 +149,8 @@ const CARDANO_ADDRESS_TYPES = ["payment", "stake", "enterprise"] as const;
 export const SUI_ADDRESS_TYPES = ["ed25519", "secp256k1"] as const;
 /** Signature schemes the XRP Ledger takes as its address type, its default first. */
 const XRPL_ADDRESS_TYPES = ["secp256k1", "ed25519"] as const;
+/** Signature schemes Polkadot takes as its address type, its default first. */
+export const POLKADOT_ADDRESS_TYPES = ["sr25519", "ed25519"] as const;
 /** Monero writes a key pair as a subaddress under this type, the standard address without one. */
 const MONERO_ADDRESS_TYPES = ["subaddress"] as const;
 
@@ -157,6 +159,7 @@ export const TOOL_ADDRESS_TYPES = [
   ...BITCOIN_ADDRESS_TYPES,
   ...CARDANO_ADDRESS_TYPES,
   ...SUI_ADDRESS_TYPES,
+  "sr25519",
   ...MONERO_ADDRESS_TYPES,
 ] as const;
 
@@ -183,7 +186,7 @@ export const TOOL_ADDRESS_TYPES_BY_CHAIN: Readonly<Record<ToolChain, readonly st
   xrpl: XRPL_ADDRESS_TYPES,
   near: [],
   cosmos: [],
-  polkadot: [],
+  polkadot: POLKADOT_ADDRESS_TYPES,
   monero: MONERO_ADDRESS_TYPES,
 };
 
@@ -253,6 +256,9 @@ export const XPUB_PATH_SCHEMA_PATTERN = "^m(/[0-9]+)+$";
 /** JSON Schema pattern for a 32-byte private key, the one size every supported chain signs with. */
 export const PRIVATE_KEY_SCHEMA_PATTERN = "^[0-9A-Fa-f]{64}$";
 
+/** JSON Schema pattern for a signing key: 32 bytes, or 64 for a derived sr25519 account. */
+export const SIGNING_KEY_SCHEMA_PATTERN = "^(?:[0-9A-Fa-f]{64}){1,2}$";
+
 /** JSON Schema pattern for an XRPL family seed: `s...` for secp256k1, `sEd...` for ed25519. */
 export const FAMILY_SEED_SCHEMA_PATTERN = "^s[1-9A-HJ-NP-Za-km-z]{28,30}$";
 
@@ -269,11 +275,11 @@ export const MAX_MONERO_SUBADDRESS_INDEX = 0xffffffff;
 export const MONERO_PAYMENT_ID_SCHEMA_PATTERN = "^[0-9A-Fa-f]{16}$";
 
 /**
- * JSON Schema pattern for the secret a wallet is derived from: a private key, an XRPL family seed,
- * or Monero seed words.
+ * JSON Schema pattern for the secret a wallet is derived from: a private key, a Polkadot sr25519
+ * secret, an XRPL family seed, or Monero seed words.
  */
 export const WALLET_SECRET_SCHEMA_PATTERN =
-  "^(?:[0-9A-Fa-f]{64}|s[1-9A-HJ-NP-Za-km-z]{28,30}|\\s*[A-Za-z]+(?:\\s+[A-Za-z]+){23,24}\\s*)$";
+  "^(?:(?:[0-9A-Fa-f]{64}){1,2}|s[1-9A-HJ-NP-Za-km-z]{28,30}|\\s*[A-Za-z]+(?:\\s+[A-Za-z]+){23,24}\\s*)$";
 
 /**
  * JSON Schema pattern for a 32-byte ed25519 key, XRPL's 33-byte `ED` form of one, or a compressed

@@ -3,7 +3,7 @@ import type { PathLevels } from "./utils/bip44/paths.ts";
 /**
  * Cryptographic curve type
  */
-export type Curve = "ed25519" | "secp256k1";
+export type Curve = "ed25519" | "secp256k1" | "sr25519";
 
 /**
  * Common address formats for various blockchains

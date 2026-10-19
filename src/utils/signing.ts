@@ -5,6 +5,7 @@ import { sha256 } from "@agntn/hashes";
 import { concatBytes } from "./bytes.ts";
 import { assertSignOptions, assertVerifyOptions } from "./options.ts";
 import { decodeKeyPrivate } from "./secp256k1/decode.ts";
+import { signBytes, verifyBytes as verifySr25519 } from "./sr25519.ts";
 import type { SignMessageOptions, SigningOptions, VerifyMessageOptions } from "../types.ts";
 
 export type { SigningOptions } from "../types.ts";
@@ -191,7 +192,7 @@ function secp256k1Digest(message: string | Uint8Array, options: SigningOptions):
 }
 
 /**
- * Sign a message: secp256k1 over its SHA-256 unless `hash` is false, ed25519 over the raw bytes.
+ * Sign a message: secp256k1 over its SHA-256 unless `hash` is false, the others over the raw bytes.
  * @param message - The message to sign as a string or Uint8Array
  * @param options - The private key as hex, then curve, hashing and recovery byte
  * @returns {string} The signature as a hex string
@@ -206,9 +207,12 @@ export function signMessage(message: string | Uint8Array, options: SignMessageOp
     const privateKey = decodeKeyPrivate(options.privateKey);
     return signSecp256k1(secp256k1Digest(message, options), { privateKey, recovered });
   }
-  if (curve === "ed25519") {
+  if (curve === "ed25519" || curve === "sr25519") {
     if (recovered) throw new Error("Recovered signatures are secp256k1 only");
-    return ed25519.sign(messageBytes(message), Uint8Array.fromHex(options.privateKey)).toHex();
+    const bytes = messageBytes(message);
+    return curve === "sr25519"
+      ? signBytes(bytes, options.privateKey)
+      : ed25519.sign(bytes, Uint8Array.fromHex(options.privateKey)).toHex();
   }
   throw new Error(`Unsupported curve: ${curve}`);
 }
@@ -268,6 +272,9 @@ export function verifyMessage(
   }
   if (curve === "ed25519") {
     return verifyEd25519(signature, { message: messageBytes(message), publicKey });
+  }
+  if (curve === "sr25519") {
+    return verifySr25519(signature, { message: messageBytes(message), publicKey });
   }
   throw new Error(`Unsupported curve: ${curve}`);
 }

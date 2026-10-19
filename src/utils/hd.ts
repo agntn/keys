@@ -215,9 +215,13 @@ export function deriveMnemonicKey(
  * @param seed - BIP39 or Electrum seed bytes
  * @param target - Derivation path, `h` taken for `'`, and the curve of the key the chain expects
  * @returns {string} The private key at the path, as hex
+ * @throws {RangeError} For sr25519, whose keys walk Substrate junctions instead
  */
 function deriveSeedKey(seed: Uint8Array, target: SeedPath): string {
   const { path, curve } = target;
+  if (curve === "sr25519") {
+    throw new RangeError("sr25519 keys walk Substrate junctions, not BIP32 or SLIP-10 paths");
+  }
   const hdPath = normalizeHardenedMarkers(path);
   const privateKey =
     curve === "ed25519"

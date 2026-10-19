@@ -18,6 +18,8 @@ import {
   HD_WALLET_PATH_SCHEMA_PATTERN,
   XPUB_PATH_SCHEMA_PATTERN,
   PRIVATE_KEY_SCHEMA_PATTERN,
+  SIGNING_KEY_SCHEMA_PATTERN,
+  POLKADOT_ADDRESS_TYPES,
   WALLET_SECRET_SCHEMA_PATTERN,
   PUBLIC_KEY_SCHEMA_PATTERN,
   CHAIN_PUBLIC_KEY_SCHEMA_PATTERN,
@@ -571,7 +573,7 @@ export const DERIVE_WALLET_PARAMETERS = Type.Object(
       pattern: WALLET_SECRET_SCHEMA_PATTERN,
       maxLength: MAX_WALLET_SECRET_LENGTH,
       description:
-        "Private key as 64 hex characters without 0x. On xrpl also a family seed: s... for secp256k1, sEd... for ed25519. On monero also the 25 seed words",
+        "Private key as 64 hex characters without 0x. On polkadot also the 128-character sr25519 secret of a derived account. On xrpl also a family seed: s... for secp256k1, sEd... for ed25519. On monero also the 25 seed words",
     }),
     addressType: addressTypeArgument,
     network: networkArgument,
@@ -608,7 +610,7 @@ export const DERIVE_HD_WALLET_PARAMETERS = Type.Object(
     language: BIP39_LANGUAGE_PARAMETER,
     path: Type.String({
       description:
-        "Derivation path such as m/84'/0'/0'/0/0; on polkadot hard junctions such as //polkadot//0, or m for the root key",
+        "Derivation path such as m/84'/0'/0'/0/0; on polkadot //hard and /soft junctions such as //polkadot/0, or m for the root key",
       pattern: HD_WALLET_PATH_SCHEMA_PATTERN,
     }),
     passphrase: Type.Optional(
@@ -890,7 +892,7 @@ export const GET_ADDRESS_PARAMETERS = Type.Object(
     publicKey: Type.String({
       pattern: CHAIN_PUBLIC_KEY_SCHEMA_PATTERN,
       description:
-        "Public key as hex without 0x: 32-byte ed25519 (on xrpl also its ED form, on near also ed25519: and base58), compressed or uncompressed SEC1 secp256k1, or on monero the 64-byte public spend and view keys",
+        "Public key as hex without 0x: 32-byte ed25519 or sr25519 (on xrpl also its ED form, on near also ed25519: and base58), compressed or uncompressed SEC1 secp256k1, or on monero the 64-byte public spend and view keys",
     }),
     addressType: addressTypeArgument,
     network: networkArgument,
@@ -925,11 +927,18 @@ export const SIGN_MESSAGE_PARAMETERS = Type.Object(
     chain: chainArgument,
     message: Type.String({ description: "Message to sign" }),
     privateKey: Type.String({
-      pattern: PRIVATE_KEY_SCHEMA_PATTERN,
-      description: "Private key as 64 hex characters without 0x",
+      pattern: SIGNING_KEY_SCHEMA_PATTERN,
+      description:
+        "Private key as 64 hex characters without 0x; on polkadot also the 128-character sr25519 secret of a derived account",
     }),
     network: networkArgument,
     prefix: prefixArgument,
+    addressType: Type.Optional(
+      Type.String({
+        description: "polkadot only: the scheme that signs, sr25519 or ed25519. Default: sr25519",
+        enum: POLKADOT_ADDRESS_TYPES,
+      }),
+    ),
     recovered: Type.Optional(
       Type.Boolean({
         description:
@@ -961,7 +970,7 @@ export const VERIFY_MESSAGE_PARAMETERS = Type.Object(
     publicKey: Type.String({
       pattern: CHAIN_PUBLIC_KEY_SCHEMA_PATTERN,
       description:
-        "Public key as hex without 0x: 32-byte ed25519 (on near also ed25519: and base58), or compressed or uncompressed SEC1 secp256k1. On monero the 64-byte public spend then view key of the address, or of the subaddress that signed",
+        "Public key as hex without 0x: 32-byte ed25519 or sr25519 (on near also ed25519: and base58), or compressed or uncompressed SEC1 secp256k1. On monero the 64-byte public spend then view key of the address, or of the subaddress that signed",
     }),
     network: networkArgument,
     prefix: prefixArgument,

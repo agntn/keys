@@ -208,10 +208,17 @@ The tools that open a secret answer agents with an address, a public key or a fi
 | **XRP Ledger**   | secp256k1, ed25519 | classic `r` address (base58)         | -       |
 | **NEAR**         | ed25519            | implicit account (hex)               | -       |
 | **Cosmos**       | secp256k1          | bech32 under any prefix              | -       |
-| **Polkadot**     | ed25519            | SS58 under any network prefix        | ✅      |
+| **Polkadot**     | sr25519, ed25519   | SS58 under any network prefix        | ✅      |
 | **Monero**       | ed25519            | standard, subaddress, integrated     | ✅      |
 
-Most of them need nothing past the loader. A few have opinions. Cosmos takes a `prefix`, so `blockchains.cosmos({ prefix: "osmo" })()` writes Osmosis addresses. Polkadot takes `ss58Prefix`, 2 for Kusama. Monero and the XRP Ledger restore from their own seeds through `deriveSeedWallet`. Decred and Cardano refuse `deriveHDWallet` on purpose. Testnet is a constructor option, `blockchains.bitcoin({ network: "testnet" })()`, and segwit starts with `tb1q`. Per chain quirks: [Blockchains](https://keys.agntn.dev/blockchains).
+Most of them need nothing past the loader. A few have opinions:
+
+- Cosmos takes a `prefix`, so `blockchains.cosmos({ prefix: "osmo" })()` writes Osmosis addresses.
+- Polkadot takes `ss58Prefix`, 2 for Kusama. It writes sr25519 like the wallets, until `addressType: "ed25519"` says otherwise.
+- Monero and the XRP Ledger restore from their own seeds through `deriveSeedWallet`.
+- Decred and Cardano refuse `deriveHDWallet` on purpose.
+
+Testnet is a constructor option, `blockchains.bitcoin({ network: "testnet" })()`, and segwit starts with `tb1q`. Per chain quirks: [Blockchains](https://keys.agntn.dev/blockchains).
 
 ## 💻 Terminal
 

@@ -16,7 +16,7 @@ import { sameAddress } from "./address.ts";
 import {
   requiredString,
   hexArgument,
-  PRIVATE_KEY_HEX,
+  chainPrivateKey,
   optionalName,
   chainPublicKey,
   type SubaddressArguments,
@@ -84,12 +84,15 @@ export interface SignMessageArguments extends SubaddressArguments {
   readonly prefix?: unknown;
   /** Monero key that signs, spend or view; spend when left out. */
   readonly signingKey?: unknown;
+  /** Polkadot scheme that signs, sr25519 or ed25519; sr25519 when left out. */
+  readonly addressType?: unknown;
 }
 
 /**
  * Sign a message without retaining the private key or message in result details.
  * @param chainValue - Blockchain name.
- * @param args - Message, key, recovery flag and the Monero key or subaddress that signs.
+ * @param args - Message, key, recovery flag, the Monero key or subaddress and the Polkadot scheme
+ * that signs.
  * @returns {Promise<ToolResult<SignatureDetails>>} Generated signature.
  */
 export async function signMessage(
@@ -101,21 +104,19 @@ export async function signMessage(
     throw new TypeError("recovered must be a boolean");
   }
   const recovered = recoveredValue ?? false;
-  const { blockchain } = await getBlockchain(chainValue, {
+  const { blockchain, addressType } = await getBlockchain(chainValue, {
     network: args.network,
     prefix: args.prefix,
+    addressType: args.addressType,
   });
+  const scheme = signingScheme(addressType, blockchain.name);
   const signingKey = moneroSigningKey(args.signingKey, blockchain.name);
   const subaddress = subaddressIndices(blockchain.name, args);
   const message = requiredString(args.message, "Message");
-  const privateKey = hexArgument(args.privateKey, {
-    name: "Private key",
-    pattern: PRIVATE_KEY_HEX,
-    shape: "64 hex characters",
-  });
+  const privateKey = chainPrivateKey(args.privateKey, blockchain.name);
   const signature = blockchain.signMessage(message, {
     privateKey,
-    ...signingOptions({ recovered, signingKey, subaddress }),
+    ...signingOptions({ recovered, signingKey, subaddress, scheme }),
   });
   return {
     content: content(`Signature: ${signature}`),
@@ -129,19 +130,43 @@ export async function signMessage(
  * @param signing.recovered - Whether to append the recovery byte.
  * @param signing.signingKey - Monero key that signs.
  * @param signing.subaddress - Monero subaddress that signs.
+ * @param signing.scheme - Polkadot scheme that signs.
  * @returns {SigningOptions | undefined} The options, undefined when none is set.
  */
 function signingOptions({
   recovered,
   signingKey,
   subaddress,
+  scheme,
 }: {
   readonly recovered: boolean;
   readonly signingKey: MoneroSigningKey | undefined;
   readonly subaddress: SubaddressIndices | undefined;
+  readonly scheme: string | undefined;
 }): SigningOptions | undefined {
-  if (!recovered && signingKey === undefined && subaddress === undefined) return undefined;
-  return { recovered, signingKey, account: subaddress?.account, addressIndex: subaddress?.index };
+  if (!recovered && signingKey === undefined && subaddress === undefined && scheme === undefined) {
+    return undefined;
+  }
+  return {
+    recovered,
+    signingKey,
+    account: subaddress?.account,
+    addressIndex: subaddress?.index,
+    scheme,
+  };
+}
+
+/**
+ * Read the scheme a Polkadot signature comes from, refused on every other chain.
+ * @param addressType - `sr25519` or `ed25519` as the address type checks passed it, or undefined.
+ * @param chain - Chain the message is signed on.
+ * @returns {string | undefined} The scheme, or undefined for the chain's default.
+ */
+function signingScheme(addressType: string | undefined, chain: string): string | undefined {
+  if (addressType === undefined || chain === "polkadot") return addressType;
+  throw new TypeError(
+    `addressType picks the Polkadot scheme that signs; ${chain} signs with its one key, omit it`,
+  );
 }
 
 /**

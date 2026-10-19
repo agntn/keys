@@ -154,9 +154,9 @@ export const landingStaticRows: readonly AddressRow[] = [
   {
     id: "dot",
     chain: "Polkadot",
-    curve: "ed25519",
+    curve: "sr25519",
     format: "ss58",
-    address: "12jacCzszzdckmb7pYNSGxy61nUwP9nrNefP92AFpKP62N46",
+    address: "12KMynug1KE977ArE9vEXrGAf8qsCejt5BvG9HS3yKNq1Lbk",
   },
   {
     id: "xmr",

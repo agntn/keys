@@ -13,7 +13,6 @@ import { generateKeyPublic as getSecp256k1KeyPublic } from "../utils/secp256k1/k
 import { assertNoRecoveryByte } from "../utils/signing.ts";
 import type {
   AddressType,
-  Curve,
   DerivationPathOptions,
   HDWalletOptions,
   KeyOptions,
@@ -26,11 +25,14 @@ import type {
 /** secp256k1 first: rippled's `wallet_propose` default, and the only curve BIP39 words reach. */
 const CURVES = ["secp256k1", "ed25519"] as const;
 
+/** One of the two curves an XRPL key sits on. */
+type XrplCurve = (typeof CURVES)[number];
+
 /** Version byte of a classic address, the one that makes it start with `r`. */
 const ACCOUNT_VERSION = 0x00;
 
 /** Version bytes of a family seed: `s...` for secp256k1, `sEd...` for ed25519. */
-const SEED_VERSIONS: Readonly<Record<Curve, Uint8Array>> = {
+const SEED_VERSIONS: Readonly<Record<XrplCurve, Uint8Array>> = {
   secp256k1: Uint8Array.of(0x21),
   ed25519: Uint8Array.of(0x01, 0xe1, 0x4b),
 };
@@ -97,10 +99,10 @@ function deriveSecp256k1Key(entropy: Uint8Array): string {
 /**
  * Reads a family seed into its entropy and the curve its version names.
  * @param seed - Family seed, `s...` or `sEd...`
- * @returns {{ entropy: Uint8Array; curve: Curve }} The 16 bytes of entropy and the curve
+ * @returns {{ entropy: Uint8Array; curve: XrplCurve }} The 16 bytes of entropy and the curve
  * @throws {RangeError} When the text is not base58, the checksum misses, or the version is unknown
  */
-function decodeSeed(seed: string): { readonly entropy: Uint8Array; readonly curve: Curve } {
+function decodeSeed(seed: string): { readonly entropy: Uint8Array; readonly curve: XrplCurve } {
   let bytes: Uint8Array;
   try {
     bytes = base58.decode(seed, { alphabet: "ripple", check: true });
@@ -136,9 +138,9 @@ function decodeEd25519Key(keyPublic: string): Uint8Array {
  * Tells the curve from the key itself: XRPL marks ed25519 keys with a leading `ED` byte, and no
  * SEC1 key is 32 bytes long.
  * @param keyPublic - Public key as hex
- * @returns {Curve} ed25519 for 32 bytes or 33 starting with `ED`, secp256k1 otherwise
+ * @returns {XrplCurve} ed25519 for 32 bytes or 33 starting with `ED`, secp256k1 otherwise
  */
-function keyCurve(keyPublic: string): Curve {
+function keyCurve(keyPublic: string): XrplCurve {
   return /^(?:ed)?[0-9a-f]{64}$/iu.test(keyPublic) ? "ed25519" : "secp256k1";
 }
 

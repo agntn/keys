@@ -4,6 +4,7 @@ import { FAMILY_SEED_SCHEMA_PATTERN, MAX_WALLET_SECRET_LENGTH } from "../tool-pa
 import type { KeyOptions, Wallet } from "../types.ts";
 import {
   MONERO_SEED,
+  chainPrivateKey,
   hexArgument,
   PRIVATE_KEY_HEX,
   requiredString,
@@ -121,6 +122,12 @@ function secretWallet(
   const { secret, options, addressType } = request;
   if (FAMILY_SEED.test(secret) || MONERO_SEED.test(secret)) {
     return blockchain.deriveSeedWallet(secret, { ...options, addressType });
+  }
+  if (blockchain.name === "polkadot") {
+    return blockchain.deriveWallet(chainPrivateKey(secret, blockchain.name), {
+      ...options,
+      addressType,
+    });
   }
   const keyPrivate = hexArgument(secret, {
     name: "Private key",
