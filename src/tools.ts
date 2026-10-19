@@ -8,6 +8,7 @@ import {
   BIP322_VERIFY_PARAMETERS,
   CONVERT_PUBLIC_KEY_PARAMETERS,
   DECRYPT_STORE_PARAMETERS,
+  GET_ARWEAVE_ADDRESS_PARAMETERS,
   DERIVE_BIP39_SEED_PARAMETERS,
   DERIVE_DESCRIPTOR_PARAMETERS,
   GET_SCRIPT_ADDRESS_PARAMETERS,
@@ -191,6 +192,16 @@ export const storeDecryptTool = defineTool({
   input: DECRYPT_STORE_PARAMETERS,
   execute: async (params) =>
     (await loadOperations()).decryptStore(params.keystore, params.password),
+});
+
+export const arweaveAddressGetTool = defineTool({
+  name: "keys_arweave_address_get",
+  title: "Get Arweave Address",
+  description:
+    "Derive an Arweave address from a keyfile (RSA JWK) or just its modulus n: base64url of SHA-256 over n. Given a target address, reports whether it matches. Only n is read, but a whole keyfile still enters the transcript, so pass n when the key is real.",
+  effect: "read",
+  input: GET_ARWEAVE_ADDRESS_PARAMETERS,
+  execute: async (params) => (await loadOperations()).getArweaveAddress(params.key, params.target),
 });
 
 export const walletGenerateTool = defineTool({
@@ -844,6 +855,7 @@ export const keysTools: readonly ToolDefinition[] = [
   bip38InspectTool,
   bip38DecryptTool,
   storeDecryptTool,
+  arweaveAddressGetTool,
   walletGenerateTool,
   walletDeriveTool,
   hdWalletDeriveTool,

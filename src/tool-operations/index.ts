@@ -68,6 +68,8 @@ export { inspectBip38, decryptBip38 } from "./bip38.ts";
 export type { DecryptedBip38Details } from "./bip38.ts";
 export { decryptStore } from "./store.ts";
 export type { DecryptedStoreDetails } from "./store.ts";
+export { getArweaveAddress } from "./arweave.ts";
+export type { ArweaveAddressDetails } from "./arweave.ts";
 export {
   MAX_BIP39_LOOKUP_ITEMS,
   BIP39_ENTROPY_BYTE_LENGTHS,

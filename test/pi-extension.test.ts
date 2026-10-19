@@ -34,6 +34,7 @@ import {
   brainwalletInput,
   brainwalletVectors,
   storeVectors,
+  arweaveVectors,
   reusedNonceVector,
   transactionVectors,
   descriptorVectors,
@@ -549,6 +550,28 @@ describe("keys Pi extension", () => {
     expect(JSON.stringify(result)).not.toContain(privateKey.slice(4));
     await expect(skipSchema(tool)("store", { ...args, password: 42 })).rejects.toThrow(
       "Password must be a string",
+    );
+  });
+
+  it("derives an Arweave address with the shared executor", async () => {
+    const tool = (await registerTools()).get("keys_arweave_address_get");
+    if (!tool) throw new Error("Missing Arweave tool");
+    const { n, address } = arweaveVectors[1];
+    const args = { key: n, target: address };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    await expect(tool.execute("arweave", args)).resolves.toEqual({
+      content: [{ type: "text", text: `Address: ${address}\nTarget: match` }],
+      details: { chain: "arweave", address, matches: true },
+    });
+    await expect(skipSchema(tool)("arweave", { key: n, target: "" })).resolves.toMatchObject({
+      details: { chain: "arweave", address },
+    });
+    await expect(skipSchema(tool)("arweave", { key: 42 })).rejects.toThrow("Key must be a string");
+    await expect(
+      skipSchema(tool)("arweave", { key: n, target: `${address}:AAAAAA` }),
+    ).rejects.toThrow("Target must be a canonical Arweave address");
+    await expect(skipSchema(tool)("arweave", { key: "A".repeat(8193) })).rejects.toThrow(
+      "Key must not exceed 8192 characters",
     );
   });
 

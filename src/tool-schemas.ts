@@ -37,6 +37,7 @@ import {
   MAX_BIP38_PASSPHRASE_LENGTH,
   MAX_EXTENDED_KEY_LENGTH,
   MAX_KEYSTORE_LENGTH,
+  MAX_ARWEAVE_KEY_LENGTH,
   MAX_KEYSTORE_PASSWORD_LENGTH,
   MAX_ADDRESS_LENGTH,
   SCAN_ACCOUNTS,
@@ -199,6 +200,27 @@ export const DECRYPT_STORE_PARAMETERS = Type.Object(
       maxLength: MAX_KEYSTORE_PASSWORD_LENGTH,
       description: "Public or disposable password, hashed as UTF-8 without normalization",
     }),
+  },
+  { additionalProperties: false },
+);
+
+/** Shared MCP and Pi schema for an Arweave address from a keyfile or its modulus. */
+export const GET_ARWEAVE_ADDRESS_PARAMETERS = Type.Object(
+  {
+    key: Type.String({
+      minLength: 1,
+      maxLength: MAX_ARWEAVE_KEY_LENGTH,
+      description:
+        "Arweave keyfile JSON (an RSA JWK), or just its modulus n as unpadded base64url. Only n is read, so n alone keeps the private members out of the transcript",
+    }),
+    target: Type.Optional(
+      Type.String({
+        minLength: 43,
+        maxLength: 43,
+        pattern: "^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$",
+        description: "Arweave address to compare with the derived one, 43 base64url characters",
+      }),
+    ),
   },
   { additionalProperties: false },
 );
