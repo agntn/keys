@@ -184,6 +184,35 @@ function indexBytes(value: number, name: string): Uint8Array {
 }
 
 /**
+ * wallet2's `get_subaddress_secret_key`: keccak256 of the tag, the view key and both indices.
+ * @param viewKey - The wallet's private view key, 32 little-endian bytes
+ * @param account - The account, the major index
+ * @param index - The address within the account, the minor index
+ * @returns {bigint} The scalar `m` the subaddress adds to the spend key
+ * @throws {RangeError} When an index falls outside 0 to 2^32 - 1
+ */
+function subaddressScalar(viewKey: Uint8Array, account: number, index: number): bigint {
+  const indices = concatBytes(indexBytes(account, "account"), indexBytes(index, "address index"));
+  return reduceScalar(keccak256(concatBytes(SUBADDRESS_TAG, viewKey, indices)));
+}
+
+/**
+ * The secrets `wallet2::sign` uses: the wallet's own at 0/0, else `b + m` and `a * (b + m)`.
+ * @param spend - The wallet's private spend key `b`
+ * @param account - The account, the major index
+ * @param index - The address within the account, the minor index
+ * @returns {readonly [bigint, bigint]} The spend secret, then the view secret
+ * @throws {RangeError} When an index falls outside 0 to 2^32 - 1
+ */
+function addressSecrets(spend: bigint, account: number, index: number): readonly [bigint, bigint] {
+  const view = viewScalar(spend);
+  const m = subaddressScalar(Point.Fn.toBytes(view), account, index);
+  if (account === 0 && index === 0) return [spend, view];
+  const subSpend = Point.Fn.add(spend, m);
+  return [subSpend, Point.Fn.mul(view, subSpend)];
+}
+
+/**
  * Appends four bytes of keccak256 and writes the result in Monero's block base58.
  * @param body - Network byte and everything the address carries before its checksum
  * @returns {string} The address
@@ -479,9 +508,8 @@ export class Monero extends AbstractBlockchain {
   ): string {
     const [spend, view] = splitKeyPublic(keyPublic);
     const secret = viewKeyBytes(viewKey, view);
-    const indices = concatBytes(indexBytes(account, "account"), indexBytes(index, "address index"));
+    const m = subaddressScalar(secret, account, index);
     if (account === 0 && index === 0) return concatBytes(spend, view).toHex();
-    const m = reduceScalar(keccak256(concatBytes(SUBADDRESS_TAG, secret, indices)));
     const subSpend = Point.fromBytes(spend).add(Point.BASE.multiply(m));
     const subView = subSpend.multiply(bytesToNumberLE(secret));
     return concatBytes(subSpend.toBytes(), subView.toBytes()).toHex();
@@ -553,13 +581,14 @@ export class Monero extends AbstractBlockchain {
   }
 
   /**
-   * Signs a message like `monero-wallet-cli sign`: SigV2 for the standard address of the wallet.
+   * Signs a message like `monero-wallet-cli sign`: SigV2 for the standard address or a subaddress.
    * @param message - The message, UTF-8 when it is a string
    * @param keyPrivate - The private spend key as hex; the view key comes from it
-   * @param options - `signingKey: "view"` signs with the view key, as `sign --view` does
+   * @param options - `signingKey: "view"` signs with the view key, as `sign --view` does;
+   * `account` and `addressIndex` sign as that subaddress, like `sign <account>,<index>`
    * @returns {string} `SigV2` and 88 characters of block base58
-   * @throws {RangeError} When the key isn't 32 bytes or reduces to zero, or `signingKey` names
-   * neither key
+   * @throws {RangeError} When the key isn't 32 bytes or reduces to zero, `signingKey` names
+   * neither key, or an index falls outside 0 to 2^32 - 1
    * @throws {SyntaxError} When the key isn't hex
    * @throws {Error} When `recovered` is set, since SigV2 carries no recovery byte
    */
@@ -570,8 +599,11 @@ export class Monero extends AbstractBlockchain {
   ): string {
     assertNoRecoveryByte(options, "Monero signs SigV2, with no recovery byte");
     const mode = signingMode(options?.signingKey);
-    const spend = spendScalar(keyPrivate);
-    const view = viewScalar(spend);
+    const [spend, view] = addressSecrets(
+      spendScalar(keyPrivate),
+      options?.account ?? 0,
+      options?.addressIndex ?? 0,
+    );
     const spendKey = Point.BASE.multiply(spend).toBytes();
     const viewKey = Point.BASE.multiply(view).toBytes();
     const hash = messageHash(messageBytes(message), spendKey, viewKey, mode);

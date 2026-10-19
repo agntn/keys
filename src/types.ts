@@ -137,6 +137,10 @@ export interface SigningOptions extends RecoverableSigningOptions {
   readonly hash?: boolean;
   /** Which Monero key signs, as `monero-wallet-cli sign --spend` or `--view`. Default: `spend`. */
   readonly signingKey?: MoneroSigningKey;
+  /** Monero only: account of the subaddress that signs, as `sign <account>,<index>`. Default: 0. */
+  readonly account?: number;
+  /** Monero only: address within that account; 0/0 is the standard one. Default: 0. */
+  readonly addressIndex?: number;
 }
 
 /** The two Monero keys a SigV2 signature can come from. */

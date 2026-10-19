@@ -286,6 +286,53 @@ describe("Monero", () => {
       );
     });
 
+    it("checks a view key signature from another account", () => {
+      const pair = blockchain.getSubaddressKeyPublic(first.publicKey, first.viewKey, 1, 2);
+      expect(blockchain.verifyMessage("foo", vector.subaddressViewSignature, pair)).toBe(true);
+      expect(blockchain.verifyMessage("foo", vector.subaddressViewSignature, subaddress)).toBe(
+        false,
+      );
+    });
+
+    it.each([
+      [0, 1, "spend"],
+      [1, 2, "view"],
+    ] as const)(
+      "signs as subaddress %i/%i with the %s key",
+      (account, addressIndex, signingKey) => {
+        const pair = blockchain.getSubaddressKeyPublic(
+          first.publicKey,
+          first.viewKey,
+          account,
+          addressIndex,
+        );
+        const signature = blockchain.signMessage("foo", first.spendKey, {
+          signingKey,
+          account,
+          addressIndex,
+        });
+        expect(blockchain.verifyMessage("foo", signature, pair)).toBe(true);
+        expect(blockchain.verifyMessage("foo", signature, first.publicKey)).toBe(false);
+      },
+    );
+
+    it("signs as the standard address at 0/0", () => {
+      const signature = blockchain.signMessage("foo", first.spendKey, {
+        account: 0,
+        addressIndex: 0,
+      });
+      expect(blockchain.verifyMessage("foo", signature, first.publicKey)).toBe(true);
+    });
+
+    it("refuses a subaddress index past uint32", () => {
+      expect(() =>
+        blockchain.signMessage("foo", first.spendKey, { addressIndex: 2 ** 32 }),
+      ).toThrow("address index must be an integer");
+      expect(() => blockchain.signMessage("foo", first.spendKey, { account: -1 })).toThrow(
+        "account must be an integer",
+      );
+    });
+
     it("reads SigV1 over the bare message under either key", () => {
       const { spend, view } = vector.v1Signatures;
       expect(blockchain.verifyMessage("foo", spend, first.publicKey)).toBe(true);
@@ -528,6 +575,37 @@ describe("Monero", () => {
       await expect(
         verifyMessage("monero", "foo", vector.v1Signatures.spend, first.publicKey),
       ).resolves.toMatchObject({ details: { valid: true } });
+    });
+
+    it("signs as a subaddress through the message tool", async () => {
+      const pair = blockchain.getSubaddressKeyPublic(first.publicKey, first.viewKey, 1, 2);
+      const signed = await signMessage(
+        "monero",
+        "foo",
+        first.spendKey,
+        undefined,
+        undefined,
+        undefined,
+        "view",
+        1,
+        2,
+      );
+      await expect(
+        verifyMessage("monero", "foo", signed.details.signature, pair),
+      ).resolves.toMatchObject({ details: { valid: true } });
+      await expect(
+        signMessage(
+          "solana",
+          "foo",
+          ed25519TestVectors.privateKey,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          0,
+          1,
+        ),
+      ).rejects.toThrow("account and addressIndex pick a Monero subaddress");
     });
 
     it("keeps signingKey and SigV2 on monero", async () => {
