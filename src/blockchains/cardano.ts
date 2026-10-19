@@ -65,7 +65,13 @@ export class Cardano extends AbstractEd25519Blockchain {
    */
   override getDerivationPath(options?: DerivationPathOptions): string {
     const { account = 0, change: role = 0, addressIndex = 0 } = readPathOptions(options);
-    return getBIP32Path(CIP1852_PURPOSE, this.bip44, account, role, addressIndex, CIP1852_MAX_ROLE);
+    return getBIP32Path(CIP1852_PURPOSE, {
+      coinType: this.bip44,
+      account,
+      change: role,
+      addressIndex,
+      maxChange: CIP1852_MAX_ROLE,
+    });
   }
 
   /** CIP-1852 roots come from the mnemonic entropy, not the BIP39 seed, so the shared SLIP-10 walk would give a wrong address. */

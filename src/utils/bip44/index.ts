@@ -17,9 +17,11 @@
  */
 
 import { HARDENED_OFFSET } from "../bip32/index.ts";
-import { BIP44_PURPOSE, BIP44Change, MAX_LEVEL_INDEX, getBIP32Path } from "./paths.ts";
+import { readPathOptions } from "../options.ts";
+import { BIP44_PURPOSE, MAX_LEVEL_INDEX, getBIP32Path, type PathLevels } from "./paths.ts";
 
 export { BIP44Change } from "./paths.ts";
+export type { PathLevels } from "./paths.ts";
 
 // SLIP-0044 registered blockchain types
 // https://github.com/satoshilabs/slips/blob/master/slip-0044.md
@@ -52,18 +54,13 @@ export const BIP44 = {
  * Creates a BIP44 derivation path
  *
  * @param coinType - Coin type (from SLIP-0044)
- * @param account - Account index (defaults to 0)
- * @param change - 0 for external chain (receive addresses), 1 for internal chain (change addresses)
- * @param addressIndex - Address index (defaults to 0)
+ * @param options - Account, branch (0 for receive addresses, 1 for change) and address index,
+ * each 0 by default
  * @returns {string} BIP44 derivation path string
  */
-export function getPath(
-  coinType: number,
-  account = 0,
-  change: number = BIP44Change.EXTERNAL,
-  addressIndex = 0,
-): string {
-  return getBIP32Path(44, coinType, account, change, addressIndex);
+export function getPath(coinType: number, options?: PathLevels): string {
+  const { account, change, addressIndex } = readPathOptions(options);
+  return getBIP32Path(44, { coinType, account, change, addressIndex });
 }
 
 /**
@@ -107,7 +104,7 @@ export function parse(path: string):
     account === undefined ||
     change === undefined ||
     addressIndex === undefined ||
-    !isValidBIP44Components(purpose, coinType, account, change, addressIndex)
+    !isValidBIP44Components({ purpose, coinType, account, change, addressIndex })
   ) {
     return undefined;
   }
@@ -121,23 +118,24 @@ export function parse(path: string):
   };
 }
 
+/** The five levels of a BIP44 path as read, before the hardened offset comes off. */
+interface BIP44Components {
+  readonly purpose: number;
+  readonly coinType: number;
+  readonly account: number;
+  readonly change: number;
+  readonly addressIndex: number;
+}
+
 /**
  * Validate parsed BIP44 path components
  *
- * @param purpose - Parsed purpose segment (hardened offset included)
- * @param coinType - Parsed coin type segment (hardened offset included)
- * @param account - Parsed account segment (hardened offset included)
- * @param change - Parsed change segment
- * @param addressIndex - Parsed address index segment
+ * @param components - Parsed segments: purpose, coin type and account with the hardened offset
+ * included, then change and address index
  * @returns {boolean} True if the components form a valid BIP44 path
  */
-function isValidBIP44Components(
-  purpose: number,
-  coinType: number,
-  account: number,
-  change: number,
-  addressIndex: number,
-): boolean {
+function isValidBIP44Components(components: BIP44Components): boolean {
+  const { purpose, coinType, account, change, addressIndex } = components;
   // Validate purpose is 44'
   if (purpose !== BIP44_PURPOSE) {
     return false;

@@ -26,16 +26,18 @@ interface WordOrderSearch {
 /**
  * Refuses words outside the list by position, never echoing the words.
  * @param words - Words after NFKD normalization, placeholders included
- * @param wordlist - BIP39 word list the words should come from
- * @param label - What the words are, for the error
- * @param listName - Word list name for the error
+ * @param check - BIP39 word list the words should come from, what the words are and the list's
+ * name, both for the error
  */
 function assertListWords(
   words: readonly string[],
-  wordlist: readonly string[],
-  label: string,
-  listName: string,
+  check: {
+    readonly wordlist: readonly string[];
+    readonly label: string;
+    readonly listName: string;
+  },
 ): void {
+  const { wordlist, label, listName } = check;
   const unknown = words.flatMap((word, index) =>
     word === "?" || wordlist.includes(word) ? [] : [index + 1],
   );
@@ -82,8 +84,8 @@ function prepareSearch(words: readonly string[], options: WordOrderOptions): Wor
   }
   const loose = words.map((word) => word.normalize("NFKD").trim());
   const slots = templateSlots(options.template, loose.length);
-  assertListWords(loose, wordlist, "Word", listName);
-  assertListWords(slots, wordlist, "Template word", listName);
+  assertListWords(loose, { wordlist, label: "Word", listName });
+  assertListWords(slots, { wordlist, label: "Template word", listName });
   return {
     wordlist,
     placed: Uint16Array.from(slots, (slot) => (slot === "?" ? 0 : wordlist.indexOf(slot))),
@@ -112,12 +114,11 @@ function nextOrder(indices: Uint16Array): boolean {
 }
 
 /**
- * Writes the loose indices into the open positions of the phrase.
- * @param placed - Indices of the whole phrase, written in place
- * @param open - Open positions in order
- * @param free - Loose indices in their current order
+ * Writes the loose indices, in their current order, into the open positions of the phrase.
+ * @param search - Indices of the whole phrase, written in place, open positions and loose indices
  */
-function fillOpen(placed: Uint16Array, open: readonly number[], free: Uint16Array): void {
+function fillOpen(search: WordOrderSearch): void {
+  const { placed, open, free } = search;
   for (const [slot, position] of open.entries()) placed[position] = free[slot] ?? 0;
 }
 
@@ -172,11 +173,12 @@ export function* orderWords(
   words: readonly string[],
   options: WordOrderOptions = {},
 ): Generator<readonly string[], void, undefined> {
-  const { wordlist, placed, open, free } = prepareSearch(words, options);
+  const search = prepareSearch(words, options);
+  const { wordlist, placed, free } = search;
   const passes = checksumTest(placed.length);
   let checked = 0;
   do {
-    fillOpen(placed, open, free);
+    fillOpen(search);
     if (passes(placed)) yield Array.from(placed, (index) => wordlist[index] ?? "");
     checked++;
     if (checked % PROGRESS_INTERVAL === 0) options.onProgress?.(checked);

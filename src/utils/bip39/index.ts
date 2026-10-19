@@ -3,6 +3,7 @@ import * as bip39 from "@scure/bip39";
 import * as english from "@scure/bip39/wordlists/english.js";
 import { BIP39_WORD_COUNTS, decodeColeman, encodeColeman, isWordCount } from "./coleman.ts";
 import { isBIP39Language, type BIP39Language } from "./languages.ts";
+import { assertOptions } from "../options.ts";
 
 export { BIP39_LANGUAGES, isBIP39Language } from "./languages.ts";
 export type { BIP39Language } from "./languages.ts";
@@ -14,16 +15,36 @@ export type { WordRepair, WordRepairOptions, WordSuggestion, WordSuggestions } f
 // Get English wordlist
 const wordlist = english.wordlist;
 
-/** How strictly a phrase is read. */
+/** Which list a phrase comes from and how strictly it is read. */
 export interface MnemonicOptions {
+  /** BIP39 word list, from `loadWordlist`. Default: English. */
+  readonly wordlist?: readonly string[];
   /** Any 3 words per 32 bits, 3 to 768, as Ian Coleman's tool writes. Not BIP39. Default: false. */
   readonly coleman?: boolean;
 }
 
-/** How a phrase is read and how hard PBKDF2 works it into a seed. */
-export interface SeedOptions extends MnemonicOptions {
+/** The passphrase, how a phrase is read and how hard PBKDF2 works it into a seed. */
+export interface SeedOptions extends Pick<MnemonicOptions, "coleman"> {
+  /** BIP39 passphrase, NFKD normalized and never trimmed. Default: empty. */
+  readonly passphrase?: string;
   /** PBKDF2 rounds. Anything but 2048 makes a seed no wallet app will find. Default: 2048. */
   readonly rounds?: number;
+}
+
+/** Which list `lookupIndices` reads and where its positions start. */
+export interface IndexLookupOptions {
+  /** Official BIP39 language key. Default: `english`. */
+  readonly language?: BIP39Language;
+  /** Whether the positions start at 0 or 1. Default: 0. */
+  readonly indexBase?: 0 | 1;
+}
+
+/** Which list fills the `?` of a template, and its name in errors. */
+export interface WordCandidateOptions {
+  /** BIP39 word list the other words come from, from `loadWordlist`. Default: English. */
+  readonly wordlist?: readonly string[];
+  /** Word list name for the error on a word outside the list. Default: `English` or `selected`. */
+  readonly listName?: string;
 }
 
 /** Rounds BIP39 fixes for its PBKDF2. */
@@ -131,15 +152,15 @@ export async function lookupPrefixes(
 /**
  * Finds words at positions in one official BIP39 list.
  * @param indices - Positions using base 0 or 1
- * @param language - Official BIP39 language key
- * @param indexBase - Whether the supplied positions start at 0 or 1
+ * @param options - Language and whether the positions start at 0 or 1
  * @returns {Promise<ReadonlyArray<BIP39IndexLookup>>} Requested positions and matching words
  */
 export async function lookupIndices(
   indices: readonly number[],
-  language: BIP39Language = "english",
-  indexBase: 0 | 1 = 0,
+  options: IndexLookupOptions = {},
 ): Promise<readonly BIP39IndexLookup[]> {
+  assertOptions(options, "lookupIndices(indices, { language, indexBase })");
+  const { language = "english", indexBase = 0 } = options;
   if (indexBase !== 0 && indexBase !== 1) {
     throw new RangeError("BIP39 index base must be 0 or 1");
   }
@@ -167,31 +188,25 @@ export function generateMnemonic(
 /**
  * Checks words, length and checksum against one list; `inspect` says which of them failed.
  * @param mnemonic - Candidate phrase
- * @param selectedWordlist - BIP39 word list, from `loadWordlist`, defaulting to English
- * @param options - `coleman` takes Ian Coleman's lengths too
+ * @param options - Word list, English by default, and `coleman` for Ian Coleman's lengths too
  * @returns {boolean} Whether the phrase is valid in that list
  */
-export function validateMnemonic(
-  mnemonic: string,
-  selectedWordlist: readonly string[] = wordlist,
-  options: MnemonicOptions = {},
-): boolean {
-  if (options.coleman === true) return inspect(mnemonic, selectedWordlist, options).valid;
-  return bip39.validateMnemonic(mnemonic, [...selectedWordlist]);
+export function validateMnemonic(mnemonic: string, options: MnemonicOptions = {}): boolean {
+  assertOptions(options, "validateMnemonic(mnemonic, { wordlist, coleman })");
+  if (options.coleman === true) return inspect(mnemonic, options).valid;
+  return bip39.validateMnemonic(mnemonic, [...(options.wordlist ?? wordlist)]);
 }
 
 /**
  * Stretches a phrase into the 64-byte BIP39 seed, checking its length but never its checksum.
  * @param mnemonic - Words separated by single spaces
- * @param passphrase - BIP39 passphrase, empty by default
- * @param options - `coleman` takes Ian Coleman's lengths too, `rounds` replaces BIP39's 2048
+ * @param options - Passphrase, empty by default, `coleman` for Ian Coleman's lengths too and
+ * `rounds` in place of BIP39's 2048
  * @returns {Uint8Array} The seed, which is not a BIP32 master key yet
  */
-export function mnemonicToSeed(
-  mnemonic: string,
-  passphrase = "",
-  options: SeedOptions = {},
-): Uint8Array {
+export function mnemonicToSeed(mnemonic: string, options: SeedOptions = {}): Uint8Array {
+  assertOptions(options, "mnemonicToSeed(mnemonic, { passphrase, coleman, rounds })");
+  const { passphrase = "" } = options;
   const rounds = seedRounds(options.rounds);
   const coleman = options.coleman === true;
   if (!coleman && rounds === BIP39_ROUNDS) return bip39.mnemonicToSeedSync(mnemonic, passphrase);
@@ -202,7 +217,7 @@ export function mnemonicToSeed(
         : "Invalid mnemonic",
     );
   }
-  return stretchSeed(mnemonic, passphrase, rounds);
+  return stretchSeed(mnemonic, { passphrase, rounds });
 }
 
 /**
@@ -220,11 +235,14 @@ function seedRounds(rounds = BIP39_ROUNDS): number {
 /**
  * Runs PBKDF2-HMAC-SHA512 over any phrase, BIP39's salt and NFKD included.
  * @param mnemonic - Phrase, NFKD normalized here
- * @param passphrase - BIP39 passphrase, NFKD normalized and never trimmed
- * @param rounds - PBKDF2 rounds
+ * @param stretch - BIP39 passphrase, NFKD normalized and never trimmed, and PBKDF2 rounds
  * @returns {Uint8Array} The 64-byte seed
  */
-function stretchSeed(mnemonic: string, passphrase: string, rounds: number): Uint8Array {
+function stretchSeed(
+  mnemonic: string,
+  stretch: { readonly passphrase: string; readonly rounds: number },
+): Uint8Array {
+  const { passphrase, rounds } = stretch;
   const encoder = new TextEncoder();
   return pbkdf2(
     () => new Sha512Hasher(),
@@ -238,17 +256,14 @@ function stretchSeed(mnemonic: string, passphrase: string, rounds: number): Uint
 /**
  * Reads the entropy back out of a phrase, throwing on a word off the list or a bad checksum.
  * @param mnemonic - Valid phrase
- * @param selectedWordlist - BIP39 word list, from `loadWordlist`, defaulting to English
- * @param options - `coleman` takes Ian Coleman's lengths too
+ * @param options - Word list, English by default, and `coleman` for Ian Coleman's lengths too
  * @returns {Uint8Array} 16 to 32 bytes of entropy, or 4 to 1024 under `coleman`
  */
-export function mnemonicToEntropy(
-  mnemonic: string,
-  selectedWordlist: readonly string[] = wordlist,
-  options: MnemonicOptions = {},
-): Uint8Array {
+export function mnemonicToEntropy(mnemonic: string, options: MnemonicOptions = {}): Uint8Array {
+  assertOptions(options, "mnemonicToEntropy(mnemonic, { wordlist, coleman })");
+  const { wordlist: selectedWordlist = wordlist } = options;
   if (options.coleman !== true) return bip39.mnemonicToEntropy(mnemonic, [...selectedWordlist]);
-  if (!inspect(mnemonic, selectedWordlist, options).valid) {
+  if (!inspect(mnemonic, options).valid) {
     throw new Error("Invalid mnemonic: inspect says which check it fails");
   }
   return decodeColeman(mnemonic.normalize("NFKD").split(" "), selectedWordlist).entropy;
@@ -257,15 +272,12 @@ export function mnemonicToEntropy(
 /**
  * Turns entropy into the phrase it stands for, in any of the ten lists.
  * @param entropy - 16 to 32 bytes, a multiple of 4; under `coleman` 4 to 1024 bytes
- * @param selectedWordlist - BIP39 word list, from `loadWordlist`, defaulting to English
- * @param options - `coleman` takes Ian Coleman's lengths too
+ * @param options - Word list, English by default, and `coleman` for Ian Coleman's lengths too
  * @returns {string} The phrase, ideographic spaces included for Japanese
  */
-export function entropyToMnemonic(
-  entropy: Uint8Array,
-  selectedWordlist: readonly string[] = wordlist,
-  options: MnemonicOptions = {},
-): string {
+export function entropyToMnemonic(entropy: Uint8Array, options: MnemonicOptions = {}): string {
+  assertOptions(options, "entropyToMnemonic(entropy, { wordlist, coleman })");
+  const { wordlist: selectedWordlist = wordlist } = options;
   if (options.coleman === true) return encodeColeman(entropy, selectedWordlist);
   return bip39.entropyToMnemonic(entropy, [...selectedWordlist]);
 }
@@ -286,15 +298,13 @@ export interface BIP39MnemonicInspection {
 /**
  * Separates word count, dictionary membership and checksum after NFKD normalization.
  * @param mnemonic - Candidate phrase with words separated by single spaces
- * @param selectedWordlist - BIP39 word list, defaulting to English
- * @param options - `coleman` takes Ian Coleman's lengths too and adds `standardLength`
+ * @param options - Word list, English by default, and `coleman` for Ian Coleman's lengths too,
+ * which adds `standardLength`
  * @returns {BIP39MnemonicInspection} Diagnostics without echoing the phrase
  */
-export function inspect(
-  mnemonic: string,
-  selectedWordlist: readonly string[] = wordlist,
-  options: MnemonicOptions = {},
-): BIP39MnemonicInspection {
+export function inspect(mnemonic: string, options: MnemonicOptions = {}): BIP39MnemonicInspection {
+  assertOptions(options, "inspect(mnemonic, { wordlist, coleman })");
+  const { wordlist: selectedWordlist = wordlist } = options;
   const coleman = options.coleman === true;
   const normalized = mnemonic.normalize("NFKD");
   const words = normalized === "" ? [] : normalized.split(" ");
@@ -302,7 +312,7 @@ export function inspect(
   const wordlistValid = words.length > 0 && words.every((word) => selectedWordlist.includes(word));
   const checksumValid =
     wordCountValid && wordlistValid
-      ? checksumMatches(normalized, words, selectedWordlist, coleman)
+      ? checksumMatches(words, { wordlist: selectedWordlist, coleman })
       : null;
   return {
     valid: checksumValid === true,
@@ -316,35 +326,32 @@ export function inspect(
 
 /**
  * Checks the checksum of a phrase whose length and words already passed.
- * @param normalized - NFKD normalized phrase
- * @param words - Its words
- * @param selectedWordlist - BIP39 word list the words come from
- * @param coleman - Read it with Coleman's codec, which takes any 3 words per 32 bits
+ * @param words - Words of the NFKD normalized phrase
+ * @param read - BIP39 word list the words come from, and `coleman` to read it with Coleman's
+ * codec, which takes any 3 words per 32 bits
  * @returns {boolean} Whether the checksum matches; never with a list short of 2048 words
  */
 function checksumMatches(
-  normalized: string,
   words: readonly string[],
-  selectedWordlist: readonly string[],
-  coleman: boolean,
+  read: { readonly wordlist: readonly string[]; readonly coleman: boolean },
 ): boolean {
+  const { wordlist: selectedWordlist, coleman } = read;
   if (coleman) {
     return selectedWordlist.length === 2048 && decodeColeman(words, selectedWordlist).checksumValid;
   }
-  return bip39.validateMnemonic(normalized, [...selectedWordlist]);
+  return bip39.validateMnemonic(words.join(" "), [...selectedWordlist]);
 }
 
 /**
  * Refuses template words outside the list by position, never echoing the words.
  * @param words - Template words after NFKD normalization, the placeholder included
- * @param selectedWordlist - BIP39 word list the words should come from
- * @param listName - Word list name for the error
+ * @param list - BIP39 word list the words should come from, and its name for the error
  */
 function assertTemplateWords(
   words: readonly string[],
-  selectedWordlist: readonly string[],
-  listName: string,
+  list: { readonly wordlist: readonly string[]; readonly listName: string },
 ): void {
+  const { wordlist: selectedWordlist, listName } = list;
   const unknown = words.flatMap((word, index) =>
     word === "?" || selectedWordlist.includes(word) ? [] : [index + 1],
   );
@@ -360,31 +367,42 @@ function assertTemplateWords(
 }
 
 /**
- * Lists the words of one BIP39 list that pass the checksum in the one `?` slot of a template.
- * @param mnemonic - Mnemonic template containing exactly one `?`
- * @param selectedWordlist - BIP39 word list the other words come from, defaulting to English
- * @param listName - Word list name for the error on a word outside the list
- * @returns {ReadonlyArray<string>} Candidate words in the list's order
+ * Splits a template into words, refusing a length BIP39 lacks and anything but one `?`.
+ * @param mnemonic - Mnemonic template
+ * @returns {string[]} Its words after NFKD normalization
  */
-export function getMnemonicWordCandidates(
-  mnemonic: string,
-  selectedWordlist: readonly string[] = wordlist,
-  listName = selectedWordlist === wordlist ? "English" : "selected",
-): readonly string[] {
-  if (selectedWordlist.length !== 2048) {
-    throw new TypeError("wordlist must be a BIP39 word list of 2048 words");
-  }
+function templateWords(mnemonic: string): string[] {
   const words = mnemonic.normalize("NFKD").trim().split(/\s+/u);
   if (!BIP39_WORD_COUNTS.includes(words.length)) {
     throw new RangeError("Mnemonic template must contain 12, 15, 18, 21, or 24 words");
   }
-
-  const placeholderCount = words.filter((word) => word === "?").length;
-  if (placeholderCount !== 1) {
+  if (words.filter((word) => word === "?").length !== 1) {
     throw new RangeError("Mnemonic template must contain exactly one ? placeholder");
   }
+  return words;
+}
 
-  assertTemplateWords(words, selectedWordlist, listName);
+/**
+ * Lists the words of one BIP39 list that pass the checksum in the one `?` slot of a template.
+ * @param mnemonic - Mnemonic template containing exactly one `?`
+ * @param options - Word list the other words come from, English by default, and its name for the
+ * error on a word outside the list
+ * @returns {ReadonlyArray<string>} Candidate words in the list's order
+ */
+export function getMnemonicWordCandidates(
+  mnemonic: string,
+  options: WordCandidateOptions = {},
+): readonly string[] {
+  assertOptions(options, "getMnemonicWordCandidates(mnemonic, { wordlist, listName })");
+  const {
+    wordlist: selectedWordlist = wordlist,
+    listName = selectedWordlist === wordlist ? "English" : "selected",
+  } = options;
+  if (selectedWordlist.length !== 2048) {
+    throw new TypeError("wordlist must be a BIP39 word list of 2048 words");
+  }
+  const words = templateWords(mnemonic);
+  assertTemplateWords(words, { wordlist: selectedWordlist, listName });
 
   const placeholderIndex = words.indexOf("?");
   const list = [...selectedWordlist];

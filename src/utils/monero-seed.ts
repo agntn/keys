@@ -63,12 +63,16 @@ function wordIndex(word: string): number | undefined {
 /**
  * Finds one seed word, by its prefix when a checksum word backs the guess, whole otherwise.
  * @param word - The word as given
- * @param position - Its place in the seed, from 0, for the error
- * @param byPrefix - Whether the first three letters are enough
+ * @param lookup - Its place in the seed, from 0, for the error, and whether the first three
+ * letters are enough
  * @returns {number} Its index on the English list
  * @throws {RangeError} When the word is not on the list
  */
-function seedWordIndex(word: string, position: number, byPrefix: boolean): number {
+function seedWordIndex(
+  word: string,
+  lookup: { readonly position: number; readonly byPrefix: boolean },
+): number {
+  const { position, byPrefix } = lookup;
   const index = wordIndex(word);
   if (index === undefined || (!byPrefix && ENGLISH_WORDS[index] !== word.toLowerCase())) {
     throw new RangeError(`Word ${position + 1} is not on Monero's English seed list`);
@@ -89,13 +93,12 @@ function checksumPosition(indices: readonly number[]): number {
 
 /**
  * Turns three word indices back into the little-endian 32-bit word they spell.
- * @param first - Index of the first word, the value mod 1626
- * @param second - Index of the second word
- * @param third - Index of the third word
+ * @param triplet - Indices of the three words, the first being the value mod 1626
  * @returns {number} The 32-bit value
  * @throws {RangeError} When the three words spell no 32-bit value
  */
-function tripletValue(first: number, second: number, third: number): number {
+function tripletValue(triplet: readonly [number, number, number]): number {
+  const [first, second, third] = triplet;
   const value =
     first +
     WORD_COUNT * ((WORD_COUNT - first + second) % WORD_COUNT) +
@@ -121,7 +124,7 @@ export function decodeMoneroSeed(phrase: string): Uint8Array {
     );
   }
   const indices = words.map((word, position) =>
-    seedWordIndex(word, position, words.length > KEY_WORDS),
+    seedWordIndex(word, { position, byPrefix: words.length > KEY_WORDS }),
   );
   const keyIndices = indices.slice(0, KEY_WORDS);
   const checksum = indices[KEY_WORDS];
@@ -131,7 +134,7 @@ export function decodeMoneroSeed(phrase: string): Uint8Array {
   const key = new DataView(new ArrayBuffer(32));
   for (let triplet = 0; triplet < KEY_WORDS / 3; triplet += 1) {
     const [first = 0, second = 0, third = 0] = keyIndices.slice(triplet * 3, triplet * 3 + 3);
-    key.setUint32(triplet * 4, tripletValue(first, second, third), true);
+    key.setUint32(triplet * 4, tripletValue([first, second, third]), true);
   }
   return new Uint8Array(key.buffer);
 }

@@ -13,7 +13,7 @@ describe("wallet scan schemes", () => {
     "opens every chain with the path its own class writes on %s",
     async (network) => {
       for (const chain of TOOL_CHAINS) {
-        const schemes = scanSchemes(chain, network);
+        const schemes = scanSchemes(chain, { network });
         if (["decred", "cardano", "polkadot", "monero"].includes(chain)) {
           expect(schemes, chain).toBeUndefined();
           continue;
@@ -30,8 +30,8 @@ describe("wallet scan schemes", () => {
   );
 
   it("walks coin type 1 and then the mainnet coin type on a UTXO testnet", () => {
-    const mainnet = scanSchemes("dogecoin", "mainnet");
-    expect(scanSchemes("dogecoin", "testnet")).toEqual([
+    const mainnet = scanSchemes("dogecoin", { network: "mainnet" });
+    expect(scanSchemes("dogecoin", { network: "testnet" })).toEqual([
       {
         name: "bip44-testnet",
         path: "m/44'/1'/{account}'/{change}/{index}",
@@ -39,28 +39,34 @@ describe("wallet scan schemes", () => {
       },
       ...(mainnet ?? []),
     ]);
-    expect(scanSchemes("ethereum", "testnet")).toEqual(scanSchemes("ethereum", "mainnet"));
+    expect(scanSchemes("ethereum", { network: "testnet" })).toEqual(
+      scanSchemes("ethereum", { network: "mainnet" }),
+    );
   });
 
   it("walks the coin type of the loaded Cosmos chain and ignores it elsewhere", () => {
-    expect(scanSchemes("cosmos", "mainnet", 330)).toEqual([
+    expect(scanSchemes("cosmos", { network: "mainnet", coinType: 330 })).toEqual([
       { name: "bip44", path: "m/44'/330'/{account}'/0/{index}" },
     ]);
-    expect(scanSchemes("cosmos", "mainnet")?.[0]?.path).toBe("m/44'/118'/{account}'/0/{index}");
-    expect(scanSchemes("ethereum", "mainnet", 330)).toEqual(scanSchemes("ethereum", "mainnet"));
+    expect(scanSchemes("cosmos", { network: "mainnet" })?.[0]?.path).toBe(
+      "m/44'/118'/{account}'/0/{index}",
+    );
+    expect(scanSchemes("ethereum", { network: "mainnet", coinType: 330 })).toEqual(
+      scanSchemes("ethereum", { network: "mainnet" }),
+    );
   });
 
   it("walks each path once under one name on every chain and network", () => {
     for (const chain of TOOL_CHAINS) {
       for (const network of ["mainnet", "testnet"]) {
-        const schemes = scanSchemes(chain, network) ?? [];
+        const schemes = scanSchemes(chain, { network }) ?? [];
         for (const key of ["name", "path"] as const) {
           const values = schemes.map((scheme) => scheme[key]);
           expect(new Set(values).size, `${chain} ${network} ${key}`).toBe(values.length);
         }
       }
     }
-    expect(scanSchemes("ecash", "testnet")?.map((scheme) => scheme.name)).toEqual([
+    expect(scanSchemes("ecash", { network: "testnet" })?.map((scheme) => scheme.name)).toEqual([
       "bip44-testnet",
       "bip44",
       "cashtab",
@@ -74,15 +80,14 @@ describe("walkScheme", () => {
 
   it("counts every path of the ranges and shows them in the template", () => {
     const visited: string[] = [];
-    const walk = walkScheme(
-      scheme,
-      { accounts: 2, indices: 3 },
-      (path) => {
+    const walk = walkScheme(scheme, {
+      ranges: { accounts: 2, indices: 3 },
+      addressAt: (path) => {
         visited.push(path);
         return { publicKey: "", address: path };
       },
-      () => false,
-    );
+      matches: () => false,
+    });
     expect(walk).toEqual({
       tried: { scheme: "bip84", path: "m/84'/0'/{0,1}'/{0,1}/{0..2}", addresses: 12 },
     });
@@ -96,12 +101,11 @@ describe("walkScheme", () => {
   });
 
   it("stops at the match", () => {
-    const walk = walkScheme(
-      scheme,
-      { accounts: 1, indices: 1 },
-      (path) => ({ publicKey: "02", address: path }),
-      (address) => address === "m/84'/0'/0'/1/0",
-    );
+    const walk = walkScheme(scheme, {
+      ranges: { accounts: 1, indices: 1 },
+      addressAt: (path) => ({ publicKey: "02", address: path }),
+      matches: (address) => address === "m/84'/0'/0'/1/0",
+    });
     expect(walk.tried).toMatchObject({ path: "m/84'/0'/0'/{0,1}/0", addresses: 2 });
     expect(walk.match).toEqual({
       scheme: "bip84",

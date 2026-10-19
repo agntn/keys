@@ -14,7 +14,7 @@ console.log(`Master chain code: ${Buffer.from(masterKey.chainCode).toString("hex
 // Derive BIP44-style wallet for Solana (m/44'/501'/0'/0')
 console.log("\n2. Deriving BIP44 path for Solana");
 const solanaPath = "m/44'/501'/0'/0'";
-const solanaKey = deriveHDKey(masterKey, solanaPath);
+const solanaKey = deriveHDKey(masterKey, { path: solanaPath });
 console.log(`Path: ${solanaPath}`);
 console.log(`Private key: ${Buffer.from(solanaKey.privateKey).toString("hex")}`);
 console.log(`Public key: ${Buffer.from(solanaKey.publicKeyRaw).toString("hex")}`);
@@ -23,7 +23,7 @@ console.log(`Public key: ${Buffer.from(solanaKey.publicKeyRaw).toString("hex")}`
 console.log("\n3. Deriving BIP44 path for Cardano");
 const cardanoPath = "m/1852'/1815'/0'/0/0";
 try {
-  const cardanoKey = deriveHDKey(masterKey, cardanoPath);
+  const cardanoKey = deriveHDKey(masterKey, { path: cardanoPath });
   console.log(`Path: ${cardanoPath}`);
   console.log(`Private key: ${Buffer.from(cardanoKey.privateKey).toString("hex")}`);
   console.log(`Public key: ${Buffer.from(cardanoKey.publicKeyRaw).toString("hex")}`);
@@ -34,7 +34,7 @@ try {
 
   // With force hardened = true
   const cardanoHardenedPath = "m/1852'/1815'/0'/0'/0'";
-  const cardanoKey = deriveHDKey(masterKey, cardanoHardenedPath);
+  const cardanoKey = deriveHDKey(masterKey, { path: cardanoHardenedPath });
   console.log(`Using hardened path instead: ${cardanoHardenedPath}`);
   console.log(`Private key: ${Buffer.from(cardanoKey.privateKey).toString("hex")}`);
   console.log(`Public key: ${Buffer.from(cardanoKey.publicKeyRaw).toString("hex")}`);
@@ -45,18 +45,18 @@ console.log("\n4. Deriving multiple accounts from same HD wallet");
 const accountBase = "m/44'/501'/";
 for (let i = 0; i < 3; i++) {
   const accountPath = `${accountBase}${i}'/0'`;
-  const accountKey = deriveHDKey(masterKey, accountPath);
+  const accountKey = deriveHDKey(masterKey, { path: accountPath });
   console.log(`Account ${i} (${accountPath}):`);
   console.log(`  Private key: ${Buffer.from(accountKey.privateKey).toString("hex")}`);
 }
 
 // Demonstrate hardened derivation requirement
 console.log("\n5. SLIP-0010 Ed25519 Hardened Derivation Requirements");
-const parentKey = deriveHDKey(masterKey, "m/44'/501'");
+const parentKey = deriveHDKey(masterKey, { path: "m/44'/501'" });
 
 try {
   // This will fail because we're trying non-hardened derivation
-  const nonHardenedChild = deriveHDKey(parentKey, "m/44'/501'/0", false);
+  const nonHardenedChild = deriveHDKey(parentKey, { path: "m/44'/501'/0", forceHardened: false });
   console.log(
     `Non-hardened derivation succeeded (unexpected): ${Buffer.from(nonHardenedChild.publicKeyRaw).toString("hex")}`,
   );
@@ -66,7 +66,7 @@ try {
   );
 
   // This will work because we force hardened
-  const forcedHardenedChild = deriveHDKey(parentKey, "m/44'/501'/0", true);
+  const forcedHardenedChild = deriveHDKey(parentKey, { path: "m/44'/501'/0", forceHardened: true });
   console.log(
     `Forced hardened derivation succeeds: ${Buffer.from(forcedHardenedChild.publicKeyRaw).toString("hex")}`,
   );

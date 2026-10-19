@@ -118,7 +118,7 @@ export async function lookupBip39Indices(
   const indexBase = parseIndexBase(options.indexBase);
   assertIndexRange(indices, indexBase);
   const language = parseBIP39Language(options.language);
-  const lookups = await lookupBIP39Indices(indices, language, indexBase);
+  const lookups = await lookupBIP39Indices(indices, { language, indexBase });
   return {
     content: content(
       [
@@ -423,7 +423,7 @@ export async function recoverMnemonicWord(
   const language = parseBIP39Language(languageValue);
   const wordlist = await loadBIP39Wordlist(language);
   const position = mnemonic.normalize("NFKD").split(" ").indexOf("?") + 1;
-  const candidates = getMnemonicWordCandidates(mnemonic, wordlist, language);
+  const candidates = getMnemonicWordCandidates(mnemonic, { wordlist, listName: language });
   return {
     content: content(
       `Language: ${language}\nPosition: ${position}\nCandidates (${candidates.length}): ${candidates.length === 0 ? "none" : candidates.join(", ")}`,

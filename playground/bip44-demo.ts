@@ -101,7 +101,7 @@ for (const chain of chains) {
       chain.curve === "secp256k1" ||
       (Array.isArray(chain.curve) && chain.curve.includes("secp256k1"))
         ? bip32Derive(bipMasterKey, path)
-        : slip10Derive(slipMasterKey, path, true);
+        : slip10Derive(slipMasterKey, { path, forceHardened: true });
 
     const privateKey = Buffer.from(
       chain.curve === "secp256k1" ||

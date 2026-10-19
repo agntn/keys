@@ -1405,13 +1405,13 @@ describe("keys MCP server", () => {
   }, 15_000);
 
   /* On testnet only the `-testnet` schemes write anything mainnet does not already cover. */
-  it.each(TOOL_CHAINS.filter((chain) => scanSchemes(chain, "mainnet") !== undefined))(
+  it.each(TOOL_CHAINS.filter((chain) => scanSchemes(chain, { network: "mainnet" }) !== undefined))(
     "reaches the address keys_hd_wallet_derive gives on every %s scheme",
     async (chain) => {
       const client = await connectTestClient();
       const mnemonic = bip39TestVectors.mnemonic;
       const schemes = TOOL_NETWORKS.flatMap((network) =>
-        (scanSchemes(chain, network) ?? [])
+        (scanSchemes(chain, { network }) ?? [])
           .filter((scheme) => network === "mainnet" || scheme.name.endsWith("-testnet"))
           .map((scheme) => ({ network, scheme })),
       );

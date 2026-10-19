@@ -29,6 +29,7 @@ import { ELECTRUM_LEGACY_WORDS } from "./legacy.ts";
 import { ELECTRUM_WHITESPACE, normalizeElectrumText } from "./normalize.ts";
 import { oldChildPublicKey, oldHexSeed, oldMasterPublicKey } from "./old.ts";
 import type { ElectrumSeed } from "../../types.ts";
+import { assertOptions } from "../options.ts";
 
 export type { ElectrumSeed };
 
@@ -114,22 +115,30 @@ export function deriveOldMasterPublicKey(mnemonic: string): Uint8Array {
   return oldMasterPublicKey(oldHexSeed(normalizeElectrumText(mnemonic)));
 }
 
+/** Which address of an old seed `deriveOldPublicKey` reaches. */
+export interface OldAddressOptions {
+  /** 0 for receiving addresses, 1 for change. */
+  readonly change: number;
+  /** Address index on that chain. */
+  readonly index: number;
+}
+
 /**
  * Derives the uncompressed public key of one old seed address from its master public key.
  * @param masterPublicKey - 64 byte MPK from `deriveOldMasterPublicKey` or a watching wallet
- * @param change - 0 for receiving addresses, 1 for change
- * @param index - Address index on that chain
+ * @param options - Change chain, 0 for receiving addresses and 1 for change, and the address index
  * @returns {Uint8Array} Uncompressed SEC1 public key, the one its P2PKH address hashes
  */
 export function deriveOldPublicKey(
   masterPublicKey: Uint8Array,
-  change: number,
-  index: number,
+  options: OldAddressOptions,
 ): Uint8Array {
+  assertOptions(options, "deriveOldPublicKey(masterPublicKey, { change, index })");
+  const { change, index } = options;
   if (masterPublicKey.length !== 64) throw new RangeError("Master public key must be 64 bytes");
   if (change !== 0 && change !== 1) throw new RangeError("Change must be 0 or 1");
   if (!Number.isSafeInteger(index) || index < 0) {
     throw new RangeError("Index must be a non-negative integer");
   }
-  return oldChildPublicKey(masterPublicKey, change, index);
+  return oldChildPublicKey(masterPublicKey, { change, index });
 }

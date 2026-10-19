@@ -172,11 +172,13 @@ export async function deriveBip39Seed(
   const mnemonic = normalizedMnemonic(input);
   const language = parseBIP39Language(options.language);
   const wordlist = await loadBIP39Wordlist(language);
-  const inspection = inspectBIP39Mnemonic(mnemonic, wordlist, { coleman });
+  const inspection = inspectBIP39Mnemonic(mnemonic, { wordlist, coleman });
   if (!inspection.valid) {
-    throw new TypeError(describeInvalidMnemonic(mnemonic, inspection, wordlist, language));
+    throw new TypeError(
+      describeInvalidMnemonic(mnemonic, { inspection, wordlist, listName: language }),
+    );
   }
-  const seed = mnemonicToSeed(mnemonic, passphrase, { coleman, rounds }).toHex();
+  const seed = mnemonicToSeed(mnemonic, { passphrase, coleman, rounds }).toHex();
   const warnings = [
     ...(inspection.standardLength === false ? [NONSTANDARD_LENGTH_WARNING] : []),
     ...(rounds === 2048 ? [] : [NONSTANDARD_ROUNDS_WARNING]),
@@ -343,9 +345,9 @@ export async function inspectMnemonic(
   const language = parseBIP39Language(options.language);
   const preimages = entropyPreimageTexts(options.preimages);
   const wordlist = await loadBIP39Wordlist(language);
-  const inspection = inspectBIP39Mnemonic(mnemonic, wordlist, { coleman });
+  const inspection = inspectBIP39Mnemonic(mnemonic, { wordlist, coleman });
   const entropy = inspectedEntropy(
-    inspection.valid ? mnemonicToEntropy(mnemonic, wordlist, { coleman }) : undefined,
+    inspection.valid ? mnemonicToEntropy(mnemonic, { wordlist, coleman }) : undefined,
     preimages,
   );
   return {
@@ -372,7 +374,7 @@ export async function encodeBip39Entropy(
   const entropy = parseBip39Entropy(entropyValue, coleman);
   const language = parseBIP39Language(options.language);
   const wordlist = await loadBIP39Wordlist(language);
-  const mnemonic = entropyToMnemonic(entropy, wordlist, { coleman });
+  const mnemonic = entropyToMnemonic(entropy, { wordlist, coleman });
   const words = mnemonic.split(/\s+/u).length;
   const warnings = BIP39_ENTROPY_BYTE_LENGTHS.includes(entropy.length)
     ? []

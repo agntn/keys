@@ -12,6 +12,27 @@ function hasStrings(options: unknown, fields: readonly string[]): boolean {
 }
 
 /**
+ * Whether the options are a plain object, not an array, bytes or a value a positional call passes.
+ * @param options - The caller's options
+ * @returns {boolean} Whether they can be read as options
+ */
+function isOptionsObject(options: unknown): options is object {
+  if (typeof options !== "object" || options === null) return false;
+  return !Array.isArray(options) && !ArrayBuffer.isView(options);
+}
+
+/**
+ * Refuses what a positional JS call passes as options, so it throws instead of running on defaults.
+ * @param options - The caller's options
+ * @param usage - The call in its new shape, for the error
+ * @throws {TypeError} When the options are neither left out nor an object
+ */
+export function assertOptions(options: unknown, usage: string): void {
+  if (options === undefined || isOptionsObject(options)) return;
+  throw new TypeError(`Pass the options as an object: ${usage}`);
+}
+
+/**
  * Refuses `signMessage` options without the key, which is what a JS call still written as
  * `signMessage(message, privateKey)` hands over.
  * @param options - The caller's options
@@ -46,7 +67,7 @@ export function assertVerifyOptions(options: unknown): void {
  */
 export function readPathOptions(options: unknown): DerivationPathOptions {
   if (options === undefined) return {};
-  if (typeof options === "object" && options !== null && !Array.isArray(options)) return options;
+  if (isOptionsObject(options)) return options;
   throw new TypeError(
     "Derivation paths take their levels in an options object: { account, change, addressIndex }",
   );

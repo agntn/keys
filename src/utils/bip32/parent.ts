@@ -5,6 +5,7 @@ import { Sha512Hasher, hmac } from "@agntn/hashes";
 import { concatBytes } from "../bytes.ts";
 import { KEY_OFFSET, decodeExtendedKey, extendedKeyVersion } from "../extended-key.ts";
 import { HARDENED_OFFSET } from "../hd-index.ts";
+import { assertOptions } from "../options.ts";
 
 /** Private versions of the public prefixes SLIP-0132 lists for Bitcoin and Litecoin. */
 const PRIVATE_VERSIONS: ReadonlyMap<number, { readonly prefix: string; readonly version: number }> =
@@ -69,6 +70,13 @@ interface ChildKey {
   readonly chainCode?: Uint8Array;
 }
 
+/** What a child xprv has to agree with: the index asked for and the parent it claims. */
+interface ChildClaim {
+  readonly index: number | undefined;
+  readonly parent: HDKey;
+  readonly privateVersion: number;
+}
+
 /**
  * Refuses an index a public key cannot have come down through.
  * @param index - Child index
@@ -100,17 +108,12 @@ function readBareChild(key: Uint8Array, index: number | undefined): ChildKey {
 /**
  * Reads a child xprv and checks it against the parent it claims.
  * @param child - Child extended private key
- * @param index - Optional index the xprv must carry
- * @param parent - Parent public node
- * @param privateVersion - Private version the parent prefix pairs with
+ * @param claim - Optional index the xprv must carry, the parent public node and the private
+ * version the parent prefix pairs with
  * @returns {ChildKey} The key, its index and chain code
  */
-function readExtendedChild(
-  child: string,
-  index: number | undefined,
-  parent: HDKey,
-  privateVersion: number,
-): ChildKey {
+function readExtendedChild(child: string, claim: ChildClaim): ChildKey {
+  const { index, parent, privateVersion } = claim;
   const bytes = decodeExtendedKey(child, "child extended private key");
   if (bytes[KEY_OFFSET] !== 0) {
     throw new Error("Pass the extended private key of the child, not a public one");
@@ -168,23 +171,31 @@ function subtractTweak(parent: HDKey, child: ChildKey): Uint8Array {
   return Fn.toBytes(parentKey);
 }
 
+/** The leaked child `recoverParent` works back from. */
+export interface ParentRecoveryOptions {
+  /** Child xprv, or its 32 byte private key. */
+  readonly child: string | Uint8Array;
+  /** Child index; required for a bare key, optional for an xprv, which carries it. */
+  readonly index?: number;
+}
+
 /**
  * Recovers the parent private key from its xpub and one normal child private key.
  * @param extendedKey - Parent extended public key, such as an account `xpub`
- * @param child - Child xprv, or its 32 byte private key
- * @param index - Child index; required for a bare key, optional for an xprv, which carries it
+ * @param options - Child xprv or bare key, and its index
  * @returns {RecoveredParent} The parent node with its private key, and the child index
  */
 export function recoverParent(
   extendedKey: string,
-  child: string | Uint8Array,
-  index?: number,
+  options: ParentRecoveryOptions,
 ): RecoveredParent {
+  assertOptions(options, "recoverParent(extendedKey, { child, index })");
+  const { child, index } = options;
   if (index !== undefined) assertNormalIndex(index);
   const { parent, privateVersion } = readParent(extendedKey);
   const read =
     typeof child === "string"
-      ? readExtendedChild(child, index, parent, privateVersion)
+      ? readExtendedChild(child, { index, parent, privateVersion })
       : readBareChild(child, index);
   assertNormalIndex(read.index);
   return {

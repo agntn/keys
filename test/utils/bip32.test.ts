@@ -103,20 +103,25 @@ describe("recoverParent", () => {
   const { xpub, xprv, child, hardenedGrandchild } = bip32ParentVector;
 
   it("recovers BIP32 vector 2 from its xpub and the xprv of m/0", () => {
-    const recovered = recoverParent(xpub, child.xprv);
+    const recovered = recoverParent(xpub, { child: child.xprv });
     expect(recovered.parent.privateExtendedKey).toBe(xprv);
     expect(recovered.index).toBe(child.index);
   });
 
   it("takes a bare child key with its index", () => {
-    const recovered = recoverParent(xpub, hex.decode(child.privateKey), child.index);
+    const recovered = recoverParent(xpub, {
+      child: hex.decode(child.privateKey),
+      index: child.index,
+    });
     expect(recovered.parent.privateExtendedKey).toBe(xprv);
   });
 
   it("recovers an account xprv below the master", () => {
     const account = HDKey.fromExtendedKey(slip132PrivateKey);
     const leaked = account.deriveChild(7);
-    const recovered = recoverParent(account.publicExtendedKey, leaked.privateExtendedKey);
+    const recovered = recoverParent(account.publicExtendedKey, {
+      child: leaked.privateExtendedKey,
+    });
     expect(recovered.parent.privateExtendedKey).toBe(slip132PrivateKey);
     expect(account.publicExtendedKey).toBe(slip132Vectors[0].extendedKey);
   });
@@ -139,7 +144,7 @@ describe("recoverParent", () => {
     expect(master.publicExtendedKey.startsWith(prefix)).toBe(true);
     const leaked = master.deriveChild(3).privateKey;
     if (leaked === null) throw new Error("Missing child key");
-    const { parent } = recoverParent(master.publicExtendedKey, leaked, 3);
+    const { parent } = recoverParent(master.publicExtendedKey, { child: leaked, index: 3 });
     expect(parent.privateExtendedKey.startsWith(privatePrefix)).toBe(true);
     expect(parent.publicExtendedKey).toBe(master.publicExtendedKey);
     expect(parent.privateKey).toEqual(master.privateKey);
@@ -156,8 +161,8 @@ describe("recoverParent", () => {
       }
       throw new Error("Expected a mismatch");
     };
-    check(() => recoverParent(xpub, hex.decode(child.privateKey), 1), 1);
-    check(() => recoverParent(slip132Vectors[0].extendedKey, child.xprv), 0);
+    check(() => recoverParent(xpub, { child: hex.decode(child.privateKey), index: 1 }), 1);
+    check(() => recoverParent(slip132Vectors[0].extendedKey, { child: child.xprv }), 0);
     const node = HDKey.fromExtendedKey(child.xprv);
     const zprvChild = new HDKey({
       versions: { public: 0x04b24746, private: 0x04b2430c },
@@ -167,37 +172,39 @@ describe("recoverParent", () => {
       chainCode: node.chainCode ?? undefined,
       privateKey: node.privateKey ?? undefined,
     });
-    check(() => recoverParent(xpub, zprvChild.privateExtendedKey), 0);
+    check(() => recoverParent(xpub, { child: zprvChild.privateExtendedKey }), 0);
   });
 
   it("refuses a hardened child, a private parent, a public child and a missing index", () => {
-    expect(() => recoverParent(child.xpub, hardenedGrandchild)).toThrow(
+    expect(() => recoverParent(child.xpub, { child: hardenedGrandchild })).toThrow(
       "A hardened child does not reveal its parent",
     );
-    expect(() => recoverParent(xpub, hex.decode(child.privateKey), 0x80000000)).toThrow(
-      "A hardened child does not reveal its parent",
-    );
-    expect(() => recoverParent(xprv, child.xprv)).toThrow("not a private one");
-    expect(() => recoverParent(xpub, child.xpub)).toThrow("not a public one");
-    expect(() => recoverParent(xpub, hex.decode(child.privateKey))).toThrow(
+    expect(() =>
+      recoverParent(xpub, { child: hex.decode(child.privateKey), index: 0x80000000 }),
+    ).toThrow("A hardened child does not reveal its parent");
+    expect(() => recoverParent(xprv, { child: child.xprv })).toThrow("not a private one");
+    expect(() => recoverParent(xpub, { child: child.xpub })).toThrow("not a public one");
+    expect(() => recoverParent(xpub, { child: hex.decode(child.privateKey) })).toThrow(
       "A bare child key needs its index",
     );
-    expect(() => recoverParent(xpub, child.xprv, 1)).toThrow("which is at 0");
-    expect(() => recoverParent(xpub, new Uint8Array(32), 0)).toThrow("valid 32 byte");
-    expect(() => recoverParent(`${xpub.slice(0, -1)}C`, child.xprv)).toThrow(
+    expect(() => recoverParent(xpub, { child: child.xprv, index: 1 })).toThrow("which is at 0");
+    expect(() => recoverParent(xpub, { child: new Uint8Array(32), index: 0 })).toThrow(
+      "valid 32 byte",
+    );
+    expect(() => recoverParent(`${xpub.slice(0, -1)}C`, { child: child.xprv })).toThrow(
       "Invalid extended public key encoding or checksum",
     );
   });
 
   it("names the accepted prefixes and keeps the child key out of every error", () => {
     const dgub = HDKey.fromMasterSeed(new Uint8Array(16), { public: 0x02facafd, private: 0 });
-    expect(() => recoverParent(dgub.publicExtendedKey, child.xprv)).toThrow(
+    expect(() => recoverParent(dgub.publicExtendedKey, { child: child.xprv })).toThrow(
       /^Extended key "dgub" is not accepted\. Accepted: xpub, ypub, zpub, tpub, upub, vpub, Ltub, Mtub, ttub$/u,
     );
     for (const run of [
-      () => recoverParent(xpub, `${child.xprv.slice(0, -1)}1`),
-      () => recoverParent(xpub, hex.decode(child.privateKey), 1),
-      () => recoverParent(xpub, child.xprv, 1),
+      () => recoverParent(xpub, { child: `${child.xprv.slice(0, -1)}1` }),
+      () => recoverParent(xpub, { child: hex.decode(child.privateKey), index: 1 }),
+      () => recoverParent(xpub, { child: child.xprv, index: 1 }),
     ]) {
       expect(run).toThrow();
       try {

@@ -1,6 +1,6 @@
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { BIP44Change, getPath } from "./utils/bip44/index.ts";
+import { getPath } from "./utils/bip44/index.ts";
 import {
   deriveExtendedPublicChild,
   SLIP132_FORMATS,
@@ -186,25 +186,19 @@ export abstract class AbstractBlockchain implements Blockchain {
    * @returns {string} The derivation path
    */
   getDerivationPath(options?: DerivationPathOptions): string {
-    const {
-      account = 0,
-      change = BIP44Change.EXTERNAL,
-      addressIndex = 0,
-    } = readPathOptions(options);
-    return getPath(this.coinType, account, change, addressIndex);
+    return getPath(this.coinType, options);
   }
 
   deriveHDWallet(mnemonic: string, options: HDWalletOptions): Wallet {
     const { path, passphrase, allowInvalidChecksum, wordlist, coleman, ...walletOptions } = options;
-    const { privateKey, checksumValid, standardLength } = deriveMnemonicKey(
-      mnemonic,
+    const { privateKey, checksumValid, standardLength } = deriveMnemonicKey(mnemonic, {
       path,
-      this.resolveCurve(walletOptions),
+      curve: this.resolveCurve(walletOptions),
       passphrase,
       allowInvalidChecksum,
       wordlist,
       coleman,
-    );
+    });
 
     const wallet = this.deriveWallet(privateKey, walletOptions);
     const warnings = [
@@ -292,12 +286,11 @@ export abstract class AbstractBlockchain implements Blockchain {
     if (this.curve !== "secp256k1") {
       throw new Error(`${this.name} does not derive from extended public keys`);
     }
-    const child = deriveExtendedPublicChild(
-      extendedKey,
+    const child = deriveExtendedPublicChild(extendedKey, {
       path,
-      this.extendedKeyFormats,
-      `${this.name} ${this.network}`,
-    );
+      formats: this.extendedKeyFormats,
+      label: `${this.name} ${this.network}`,
+    });
     const type = addressType ?? child.addressType ?? this.defaultAddressType;
     return {
       keys: { public: child.publicKey },
@@ -359,9 +352,6 @@ export interface PathSource {
  */
 export function getBlockchainPath(blockchain: PathSource, options?: DerivationPathOptions): string {
   const levels = readPathOptions(options);
-  if (blockchain.getDerivationPath === undefined) {
-    const { account = 0, change = BIP44Change.EXTERNAL, addressIndex = 0 } = levels;
-    return getPath(blockchain.bip44, account, change, addressIndex);
-  }
+  if (blockchain.getDerivationPath === undefined) return getPath(blockchain.bip44, levels);
   return blockchain.getDerivationPath(levels);
 }
