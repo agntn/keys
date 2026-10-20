@@ -1,6 +1,6 @@
 import { equalBytes } from "@noble/curves/utils.js";
 import { concatBytes } from "../bytes.ts";
-import { checkMath, hashAlgorithm } from "./algorithms.ts";
+import { checkMath, hashAlgorithm, minimumDigestBits } from "./algorithms.ts";
 import {
   type Certificate,
   type PublicKey,
@@ -109,6 +109,10 @@ export function failure(
   if (!equalBytes(digest.slice(0, 2), signature.left16))
     return "The text doesn't match what was signed";
   const hash = hashAlgorithm(signature.hashId);
+  const floor = minimumDigestBits(key.material);
+  if (digest.length * 8 < floor) {
+    return `${hash.name} is too short for this key, RFC 9580 asks for at least ${floor} bits`;
+  }
   return checkMath(key.material, signature.algorithm, signature.value, digest, hash)
     ? undefined
     : "The signature doesn't verify against this key";

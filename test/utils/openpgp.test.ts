@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
 import { base64 } from "@agntn/encodings/base64";
-import { checkMath, hashAlgorithm, readKeyMaterial } from "../../src/utils/openpgp/algorithms.ts";
+import {
+  checkMath,
+  hashAlgorithm,
+  minimumDigestBits,
+  readKeyMaterial,
+} from "../../src/utils/openpgp/algorithms.ts";
 import { fitsKey } from "../../src/utils/openpgp/certificate.ts";
 import { inspect, verify } from "../../src/utils/openpgp/index.ts";
 import { readPublicKey } from "../../src/utils/openpgp/keys.ts";
@@ -9,6 +14,7 @@ import { openpgpVectors } from "../fixtures.ts";
 
 const {
   rsa,
+  sha224,
   ed25519,
   dsa,
   secp256k1,
@@ -140,6 +146,7 @@ function breakBackSignature(armored: string): string {
 describe("OpenPGP cleartext verification", () => {
   it.each([
     ["RSA 3072", rsa, "RSA 3072", "SHA512"],
+    ["RSA 3072 SHA-224", sha224, "RSA 3072", "SHA224"],
     ["ECDSA secp256k1", secp256k1, "ECDSA secp256k1", "SHA256"],
   ])("verifies a GnuPG %s signature", (_, vector, algorithm, hash) => {
     const verdict = verify(vector.signed, { publicKey: vector.publicKey });
@@ -201,6 +208,30 @@ describe("OpenPGP cleartext verification", () => {
       created: "2022-12-13T16:08:03.000Z",
       text: "What we need from the grocery store:\n\n- tofu\n- vegetables\n- noodles\n",
     });
+  });
+
+  it("verifies a version 6 signature over SHA3-512", () => {
+    expect(verify(rfc9580.signedSha3_512, { publicKey: rfc9580.publicKey })).toMatchObject({
+      state: "valid",
+      version: 6,
+      algorithm: "Ed25519",
+      hash: "SHA3-512",
+    });
+  });
+
+  it("calls Ed25519 over SHA-224 invalid even with the math holding, as RFC 9580 demands", () => {
+    expect(verify(rfc9580.signedSha224, { publicKey: rfc9580.publicKey })).toMatchObject({
+      state: "invalid",
+      hash: "SHA224",
+      reason: "SHA224 is too short for this key, RFC 9580 asks for at least 256 bits",
+    });
+  });
+
+  it("asks DSA for a hash as long as q, and the curves for 256 bits", () => {
+    const dsaKey = { kind: "dsa", p: 23n, q: (1n << 223n) + 1n, g: 2n, y: 2n, bits: 2048 } as const;
+    expect(minimumDigestBits(dsaKey)).toBe(224);
+    expect(minimumDigestBits({ kind: "eddsa", point: new Uint8Array(32) })).toBe(256);
+    expect(minimumDigestBits({ kind: "rsa", n: 1n, e: 3n, bits: 3072 })).toBe(0);
   });
 
   it("calls altered text invalid, and says so", () => {
