@@ -141,7 +141,7 @@
     "fmt": "obuild && vp lint --fix && vp fmt",
     "lint": "obuild && vp lint && vp fmt --check",
     "lint:fix": "obuild && vp lint --fix && vp fmt",
-    "test": "pnpm lint && pnpm test:types && pnpm build && pnpm test:ext && vp test run --coverage --maxWorkers=8 && node test/eval-mcp.mjs",
+    "test": "pnpm lint && pnpm test:types && pnpm build && pnpm test:ext && vp test run --coverage --maxWorkers=50% && node test/eval-mcp.mjs",
     "test:types": "tsc --noEmit --skipLibCheck && tsc -p tsconfig.type-tests.json --noEmit --skipLibCheck && pnpm --dir docs typecheck",
     "test:ext": "tsc -p tsconfig.extensions.json --noEmit",
     "test:mcp": "pnpm build && node test/eval-mcp.mjs",

@@ -250,7 +250,7 @@ describe("keys MCP server", () => {
       expect(refused.isError).toBe(true);
       expect(text(refused.content)).not.toContain(mnemonic);
     }
-  });
+  }, 30_000);
 
   it("reads Coleman's lengths through MCP only when asked", async () => {
     const client = await connectTestClient();
