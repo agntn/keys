@@ -3355,6 +3355,26 @@ PFwF0ffKv5mbS3o0xy7E5bT8iYB06wA=
 =JWjj
 -----END PGP SIGNATURE-----
 `,
+    /**
+     * The same key with its subkey binding signed again by the primary with a signature
+     * expiration of one second, ten seconds before the message. GnuPG 2.4.9 refuses the subkey.
+     */
+    expiredBinding: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+xjMEatdQ9BYJKwYBBAHaRw8BAQdAZ8dFVi4Ama+TDhChZMTLY0ZuFI05yUzniRIa
+zD9nuP3NGkVkIFRlc3RlciA8ZWRAZXhhbXBsZS5vcmc+wpAEExYKADgWIQSlJ2Ha
+Yh4oRbA6cT8X+l6evYrngAUCatdQ9AIbAQULCQgHAgYVCgkICwIEFgIDAQIeAQIX
+gAAKCRAX+l6evYrngPo6AP9elJZjMJM6+D7OqBmy9klysgS4Qgl2R21bUi0YL63C
+oQEAx6Az0GifobuO79Ks+vVjv2jSzmMeuZJtUKLR+tPVxwDOMwRq11D0FgkrBgEE
+AdpHDwEBB0BUFIeapVM9rvCrCie76Zzfg9rau64X5sXegFc7e1nuqcL/AAAA9QQY
+FgoAJhYhBKUnYdpiHihFsDpxPxf6Xp69iueABQJq11D0AhsCBQMAAAABAIEJEBf6
+Xp69iueAdiAEGRYKAB0WIQRVJtbcdExQ7oxF9edXHjSBjOmhLgUCatdQ9AAKCRBX
+HjSBjOmhLijpAQD/nWI76p8RP9NdHgquHK9fYc9f3s0MClIA9oTBdFMpqwEAxJ+x
+qZJbtyObts7gDelMx3qaHoyqCC9JjnSc7IVoUQtDtQD/b2JpqHUrOWL7mCuEZwd3
+p4g8/Pzm7WJpef9dmv3mwPEBAMLIeq6noOlPQlp/9fYSxiYSic10AL2ynNFtmhOd
+TmED
+-----END PGP PUBLIC KEY BLOCK-----
+`,
   },
   dsa: {
     fingerprint: "54D44E52AAA6A146C2A57C18C1A94E71A16F4BD3",

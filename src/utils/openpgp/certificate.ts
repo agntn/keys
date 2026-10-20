@@ -43,6 +43,12 @@ const MAX_CHECKS = 128;
 /** Checks a self-signature against a key and the data it signs, within the block's budget. */
 type Check = (signature: Signature, key: PublicKey, data: Uint8Array) => boolean;
 
+/** Spends one self-signature check, throwing once a call has used them all. */
+export type Budget = () => void;
+
+/** Public key algorithms that sign, RFC 9580 Table 18. RSA Encrypt-Only (2) is not one. */
+const SIGNING_ALGORITHMS = new Set([1, 3, 17, 19, 22, 27, 28]);
+
 /** Key flag 0x02: the key may sign data. */
 export const SIGN_FLAG = 0x02;
 
@@ -60,12 +66,13 @@ export function issuedBy(signature: Signature, key: PublicKey): boolean {
 }
 
 /**
- * Whether the signature algorithm fits the key: RSA keys sign as 1 or 3, the rest as themselves.
+ * Whether the signature algorithm signs and fits the key: RSA as 1 or 3, the rest as themselves.
  * @param key - Signing key
  * @param algorithm - Algorithm ID on the signature
  * @returns {boolean} Whether they fit
  */
 export function fitsKey(key: PublicKey, algorithm: number): boolean {
+  if (!SIGNING_ALGORITHMS.has(algorithm)) return false;
   if (key.algorithm === 1 || key.algorithm === 3) return algorithm === 1 || algorithm === 3;
   return algorithm === key.algorithm;
 }
@@ -116,17 +123,41 @@ function holds(signature: Signature, key: PublicKey, data: Uint8Array): boolean 
 }
 
 /**
- * Starts the budget of self-signature checks for one key block.
- * @returns {Check} A check that throws once the budget runs out
- * @throws {RangeError} From the check, past 128 tries
+ * Starts the budget of self-signature checks for one call, shared by every evaluation in it.
+ * @returns {Budget} A spender that throws past 128 checks
+ * @throws {RangeError} From the spender, past 128 checks
  */
-function createCheck(): Check {
+export function createBudget(): Budget {
   let left = MAX_CHECKS;
-  return (signature, key, data) => {
+  return () => {
     if (left === 0) {
       throw new RangeError(`OpenPGP key block needs more than ${MAX_CHECKS} self-signature checks`);
     }
     left--;
+  };
+}
+
+/**
+ * Whether a signature had expired by the given time, from its subpacket 3.
+ * @param signature - The signature
+ * @param at - Seconds since 1970
+ * @returns {boolean} Whether it no longer counts then
+ */
+export function expiredAt(signature: Signature, at: number): boolean {
+  const after = signature.expiresAfter ?? 0;
+  return after > 0 && signature.created + after <= at;
+}
+
+/**
+ * A check that drops self-signatures expired at the given time and spends the budget on the rest.
+ * @param at - Time the key is judged at, seconds since 1970
+ * @param budget - The call's budget
+ * @returns {Check} The check
+ */
+function createCheck(at: number, budget: Budget): Check {
+  return (signature, key, data) => {
+    if (expiredAt(signature, at)) return false;
+    budget();
     return holds(signature, key, data);
   };
 }
@@ -281,13 +312,17 @@ function subkeyState(
 }
 
 /**
- * Checks every self-signature. Third-party ones need keys the caller didn't pass.
+ * Checks every self-signature as of one moment. Third-party ones need keys the caller didn't pass.
  * @param certificate - The certificate
+ * @param options - When to judge the key, and the call's budget
  * @returns {CertificateState} What the key's own signatures establish
  * @throws {RangeError} When the block needs more than 128 self-signature checks
  */
-export function evaluateCertificate(certificate: Certificate): CertificateState {
-  const check = createCheck();
+export function evaluateCertificate(
+  certificate: Certificate,
+  options: { readonly at: number; readonly budget: Budget },
+): CertificateState {
+  const check = createCheck(options.at, options.budget);
   const certified = certifiedUserIds(certificate, check);
   const binding = primaryBinding(certificate, certified, check);
   const revocation = newestSelf(

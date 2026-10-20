@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 import { base64 } from "@agntn/encodings/base64";
+import { fitsKey } from "../../src/utils/openpgp/certificate.ts";
 import { inspect, verify } from "../../src/utils/openpgp/index.ts";
+import { readPublicKey } from "../../src/utils/openpgp/keys.ts";
 import { type Packet, readPackets } from "../../src/utils/openpgp/packets.ts";
 import { openpgpVectors } from "../fixtures.ts";
 
@@ -169,6 +171,40 @@ describe("OpenPGP cleartext verification", () => {
       state: "invalid",
       reason: "The signing subkey has no valid back signature (type 0x19)",
     });
+  });
+
+  it("judges the subkey binding as of the signature, so an expired one doesn't count", () => {
+    const key = ed25519.expiredBinding;
+    expect(verify(ed25519.signed, { publicKey: key })).toMatchObject({
+      state: "invalid",
+      reason: "The signing subkey isn't bound to this primary key",
+    });
+    expect(inspect(key)).toMatchObject({ subkeys: [{ bound: false }] });
+  });
+
+  it("never takes RSA Encrypt-Only (algorithm 2) as a signing algorithm", () => {
+    const [packet] = packetsOf(rsa.publicKey);
+    if (packet === undefined) throw new Error("No key packet");
+    const key = readPublicKey(packet.body);
+    expect(fitsKey(key, 1)).toBe(true);
+    expect(fitsKey({ ...key, algorithm: 2 }, 2)).toBe(false);
+    expect(fitsKey({ ...key, algorithm: 2 }, 1)).toBe(false);
+  });
+
+  it("refuses a message with more signatures than anyone signs with", () => {
+    const lines = rsa.signed.split("\n");
+    const start = lines.indexOf("-----BEGIN PGP SIGNATURE-----") + 2;
+    const end = lines.findIndex((line) => line.startsWith("="));
+    const signature = base64.decode(lines.slice(start, end).join(""));
+    const many = base64.encode(
+      Uint8Array.from(Array.from({ length: 17 }, () => [...signature]).flat()),
+    );
+    const flooded = [
+      ...lines.slice(0, start),
+      ...(many.match(/.{1,64}/gu) ?? []),
+      ...lines.slice(end + 1),
+    ].join("\n");
+    expect(() => verify(flooded, { publicKey: rsa.publicKey })).toThrow("at most 16 signatures");
   });
 
   it("keeps identity apart from the math", () => {

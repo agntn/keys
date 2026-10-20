@@ -6,11 +6,12 @@ import {
   type KeyState,
   SIGN_FLAG,
   type SubkeyState,
+  createBudget,
   evaluateCertificate,
   failure,
   issuedBy,
 } from "./certificate.ts";
-import { type PublicKey, readCertificate } from "./keys.ts";
+import { type Certificate, type PublicKey, readCertificate } from "./keys.ts";
 import { isIgnorable, readPackets } from "./packets.ts";
 import { type Signature, readSignature } from "./signatures.ts";
 
@@ -111,6 +112,9 @@ export interface OpenPGPVerification {
 
 const SIGNED_MESSAGE = /^-----BEGIN PGP SIGNED MESSAGE-----\s*$/mu;
 const FINGERPRINT = /^[0-9A-F]+$/u;
+
+/** Most signatures one cleartext message may carry. Real ones have one, each costs math. */
+const MAX_SIGNATURES = 16;
 
 /** Reason for revocation codes, RFC 9580 §5.2.3.31. */
 const REVOCATION_REASONS: Readonly<Record<number, string>> = {
@@ -226,16 +230,19 @@ function issuerOf(signature: Signature): string | undefined {
  * @param bytes - Dearmored packets
  * @returns {Signature[]} The signatures
  * @throws {TypeError} When the block holds anything but signatures
+ * @throws {RangeError} When it holds more than 16
  */
 function readSignatures(bytes: Uint8Array): Signature[] {
-  return readPackets(bytes)
-    .filter((packet) => !isIgnorable(packet.tag))
-    .map((packet) => {
-      if (packet.tag !== 2) {
-        throw new TypeError("OpenPGP signature block holds a packet that isn't a signature");
-      }
-      return readSignature(packet.body);
-    });
+  const packets = readPackets(bytes).filter((packet) => !isIgnorable(packet.tag));
+  if (packets.length > MAX_SIGNATURES) {
+    throw new RangeError(`A cleartext message may carry at most ${MAX_SIGNATURES} signatures`);
+  }
+  return packets.map((packet) => {
+    if (packet.tag !== 2) {
+      throw new TypeError("OpenPGP signature block holds a packet that isn't a signature");
+    }
+    return readSignature(packet.body);
+  });
 }
 
 /**
@@ -256,7 +263,10 @@ function frameWarnings(cleartext: Cleartext): string[] {
  * @returns {OpenPGPKeyInspection} Keys, certified user IDs and subkeys
  */
 function inspectKey(armored: string): OpenPGPKeyInspection {
-  const state = evaluateCertificate(readCertificate(readArmor(armored, "PUBLIC KEY BLOCK")));
+  const state = evaluateCertificate(readCertificate(readArmor(armored, "PUBLIC KEY BLOCK")), {
+    at: Math.floor(Date.now() / 1000),
+    budget: createBudget(),
+  });
   return {
     kind: "public-key",
     primary: keyOf(state.primary),
@@ -466,21 +476,21 @@ function identityOf(
 /**
  * The verdict when no key of the certificate made any signature.
  * @param signatures - Signatures of the message
- * @param certificate - Checked certificate
+ * @param certificate - The certificate
  * @param cleartext - The parsed message
  * @param expected - Normalized expected fingerprint
  * @returns {OpenPGPVerification} An invalid verdict naming the issuer
  */
 function strangerVerdict(
   signatures: readonly Signature[],
-  certificate: CertificateState,
+  certificate: Certificate,
   cleartext: Cleartext,
   expected: string | undefined,
 ): OpenPGPVerification {
   const [signature] = signatures;
   if (signature === undefined) throw new TypeError("OpenPGP signature block holds no signature");
   const issuer = issuerOf(signature);
-  const primaryFingerprint = upper(certificate.primary.key.fingerprint);
+  const primaryFingerprint = upper(certificate.primary.fingerprint);
   return {
     state: "invalid",
     reason: `Signed by ${issuer ?? "an unnamed key"}, which this key block doesn't hold`,
@@ -531,6 +541,23 @@ function verdictOf(
 }
 
 /**
+ * Judges the certificate as of each signature's time, once per time, on one shared budget.
+ * @param certificate - The certificate
+ * @returns {(at: number) => CertificateState} The state at a time, seconds since 1970
+ */
+function statesOf(certificate: Certificate): (at: number) => CertificateState {
+  const budget = createBudget();
+  const states = new Map<number, CertificateState>();
+  return (at) => {
+    const known = states.get(at);
+    if (known !== undefined) return known;
+    const state = evaluateCertificate(certificate, { at, budget });
+    states.set(at, state);
+    return state;
+  };
+}
+
+/**
  * Verifies a cleartext signed message, with math, identity and warnings as separate answers.
  * @param message - The whole `-----BEGIN PGP SIGNED MESSAGE-----` message
  * @param options - The armored public key, and the fingerprint you expect it to have
@@ -552,12 +579,14 @@ export function verify(
     options.fingerprint === undefined ? undefined : readFingerprint(options.fingerprint);
   const cleartext = readCleartext(message);
   const signatures = readSignatures(cleartext.signature);
-  const certificate = evaluateCertificate(
-    readCertificate(readArmor(options.publicKey, "PUBLIC KEY BLOCK")),
-  );
-  const verdicts = matchesOf(signatures, certificate).map((match) =>
-    verdictOf(match, certificate, cleartext, expected),
-  );
+  const certificate = readCertificate(readArmor(options.publicKey, "PUBLIC KEY BLOCK"));
+  const stateAt = statesOf(certificate);
+  const verdicts = signatures.flatMap((signature) => {
+    const state = stateAt(signature.created);
+    return matchesOf([signature], state).map((match) =>
+      verdictOf(match, state, cleartext, expected),
+    );
+  });
   const best =
     verdicts.find((verdict) => verdict.state === "valid") ??
     verdicts.find((verdict) => verdict.state === "inconclusive") ??
