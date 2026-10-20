@@ -19,6 +19,7 @@ import {
   brainwalletVectors,
   storeVectors,
   arweaveVectors,
+  openpgpVectors,
   electrumVectors,
   wifTestVectors,
   localizedMnemonicVectors,
@@ -48,6 +49,7 @@ const EXPORTS = [
   ["@agntn/keys/descriptor", "/dist/utils/descriptor/index.mjs"],
   ["@agntn/keys/bip44", "/dist/utils/bip44/index.mjs"],
   ["@agntn/keys/electrum", "/dist/utils/electrum/index.mjs"],
+  ["@agntn/keys/openpgp", "/dist/utils/openpgp/index.mjs"],
   ["@agntn/keys/script", "/dist/utils/script/index.mjs"],
   ["@agntn/keys/secp256k1", "/dist/utils/secp256k1/index.mjs"],
   ["@agntn/keys/transaction", "/dist/utils/transaction/index.mjs"],
@@ -313,6 +315,19 @@ describe("Public Arweave exports", () => {
   });
 });
 
+describe("Public OpenPGP exports", () => {
+  it("verifies a cleartext signature from the built package, and exports nothing else", async () => {
+    const openpgp = await import("@agntn/keys/openpgp");
+    const { signed, publicKey, fingerprint } = openpgpVectors.rsa;
+    expect(openpgp.verify(signed, { publicKey, fingerprint })).toMatchObject({
+      state: "valid",
+      identity: "match",
+    });
+    expect(openpgp.inspect(publicKey)).toMatchObject({ primary: { fingerprint } });
+    expect(new Set(Object.keys(openpgp))).toEqual(new Set(["inspect", "verify"]));
+  });
+});
+
 describe("Public derivation exports", () => {
   it("exports explicit Electrum derivation from the built package", async () => {
     const { deriveSeed, inspect } = await import("@agntn/keys/electrum");
@@ -488,6 +503,7 @@ describe("Consumer bundles", () => {
     ["derive", "@agntn/keys/brainwallet"],
     ["decrypt", "@agntn/keys/store"],
     ["getAddress", "@agntn/keys/arweave"],
+    ["verify", "@agntn/keys/openpgp"],
     ["decrypt", "@agntn/keys/bip38"],
     ["verify", "@agntn/keys/bip322"],
     ["extractSignatures", "@agntn/keys/transaction"],

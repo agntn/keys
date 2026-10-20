@@ -49,6 +49,7 @@ import {
   warpWalletVectors,
   storeVectors,
   arweaveVectors,
+  openpgpVectors,
   bip322Vectors,
   reusedNonceVector,
   transactionVectors,
@@ -536,6 +537,63 @@ describe("keys MCP server", () => {
       expect(failed.isError).toBe(true);
       expect(text(failed.content)).toContain(message);
     }
+  });
+
+  it("verifies an OpenPGP cleartext signature through MCP, identity kept apart", async () => {
+    const client = await connectTestClient();
+    const { signed, publicKey, fingerprint, subkey } = openpgpVectors.ed25519;
+
+    const matched = await client.callTool({
+      name: "keys_openpgp_verify",
+      arguments: { message: signed, publicKey, fingerprint },
+    });
+    expect(matched.isError).not.toBe(true);
+    expect(text(matched.content)).toMatch(
+      new RegExp(
+        `^Signature is valid \\(v4 EdDSALegacy Ed25519Legacy, SHA512\\)\nIdentity: match, .+\nPrimary key: ${fingerprint}\nSigning subkey: ${subkey}\nSigned: \\S+\nTrust: `,
+        "u",
+      ),
+    );
+
+    const altered = await client.callTool({
+      name: "keys_openpgp_verify",
+      arguments: { message: signed.replace("Ten words", "Ten wards"), publicKey },
+    });
+    expect(text(altered.content)).toMatch(
+      /^Signature is invalid \(.+\): The text doesn't match what was signed\nIdentity: unchecked/u,
+    );
+
+    for (const [args, message] of [
+      [
+        { message: signed, publicKey, fingerprint: fingerprint.slice(-16) },
+        "Invalid arguments at /fingerprint",
+      ],
+      [{ message: signed, publicKey: openpgpVectors.p256.publicKey }, `Signed by ${subkey}`],
+      [
+        { message: openpgpVectors.p256.signed, publicKey: openpgpVectors.p256.publicKey },
+        "aren't supported yet",
+      ],
+      [
+        { message: signed, publicKey: publicKey.replaceAll("PUBLIC", "PRIVATE") },
+        "got a private key block",
+      ],
+    ] as const) {
+      const result = await client.callTool({ name: "keys_openpgp_verify", arguments: args });
+      expect(text(result.content)).toContain(message);
+    }
+  });
+
+  it("inspects an OpenPGP key block through MCP without letting a user ID forge a line", async () => {
+    const client = await connectTestClient();
+    const { publicKey, fingerprint } = openpgpVectors.rsa;
+    const result = await client.callTool({
+      name: "keys_openpgp_inspect",
+      arguments: { armor: publicKey },
+    });
+    expect(result.isError).not.toBe(true);
+    expect(text(result.content)).toBe(
+      `Primary key: ${fingerprint} (v4, RSA 3072, created 2026-10-20T11:31:00.000Z, certify, sign)\nUser ID: "RSA Tester <rsa@example.org>"`,
+    );
   });
 
   it("derives an Arweave address through MCP from a keyfile or its modulus", async () => {

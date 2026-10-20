@@ -7,6 +7,8 @@ import {
   BIP322_SIGN_PARAMETERS,
   BIP322_VERIFY_PARAMETERS,
   CONVERT_PUBLIC_KEY_PARAMETERS,
+  INSPECT_OPENPGP_PARAMETERS,
+  VERIFY_OPENPGP_PARAMETERS,
   DECRYPT_STORE_PARAMETERS,
   GET_ARWEAVE_ADDRESS_PARAMETERS,
   DERIVE_BIP39_SEED_PARAMETERS,
@@ -633,6 +635,27 @@ export const bip322VerifyTool = defineTool({
     (await loadOperations()).verifyBip322(address, options),
 });
 
+export const openpgpInspectTool = defineTool({
+  name: "keys_openpgp_inspect",
+  title: "Inspect OpenPGP",
+  description:
+    "Read an ASCII-armored OpenPGP public key block or cleartext signed message, versions 4 and 6, without a keyring or keyserver. A key block gives full fingerprints, algorithms, flags, expiry, revocation, the user IDs the key certifies and its subkeys with their bindings checked. A signed message gives the exact text the signature covers and who each signature claims to be from, unverified: use keys_openpgp_verify for the verdict.",
+  effect: "read",
+  input: INSPECT_OPENPGP_PARAMETERS,
+  execute: async (params) => (await loadOperations()).inspectOpenpgp(params.armor),
+});
+
+export const openpgpVerifyTool = defineTool({
+  name: "keys_openpgp_verify",
+  title: "Verify OpenPGP",
+  description:
+    "Verify an OpenPGP cleartext signed message (-----BEGIN PGP SIGNED MESSAGE-----) against the signer's armored public key block: RSA, DSA, Ed25519 (v4 legacy and v6) and ECDSA on secp256k1, over SHA-256, SHA-512 or SHA3-256. Answers valid, invalid with the reason, or inconclusive when the math holds over MD5, SHA-1 or RIPEMD-160. A signing subkey counts only with a valid binding and back signature. Identity is a separate answer: pass the full fingerprint you trust to get match or mismatch. Revocation, expiry and text outside the signed block come back as warnings. Nothing gets fetched or imported.",
+  effect: "read",
+  input: VERIFY_OPENPGP_PARAMETERS,
+  execute: async ({ message, ...options }) =>
+    (await loadOperations()).verifyOpenpgp(message, options),
+});
+
 export const transactionSignaturesExtractTool = defineTool({
   name: "keys_transaction_signatures_extract",
   title: "Extract Transaction Signatures",
@@ -721,6 +744,8 @@ export const keysTools: readonly ToolDefinition[] = [
   messageRecoverTool,
   bip322SignTool,
   bip322VerifyTool,
+  openpgpInspectTool,
+  openpgpVerifyTool,
   transactionSignaturesExtractTool,
   bip44ParseTool,
   bip44GenerateTool,
@@ -769,6 +794,14 @@ export const callSummaries: Readonly<
       : preview(args.message),
   keys_bip322_sign: (args) => `${String(args.addressType)} ${preview(args.message)}`,
   keys_bip322_verify: (args) => preview(args.message),
+  keys_openpgp_inspect: (args) =>
+    typeof args.armor === "string" && args.armor.includes("BEGIN PGP SIGNED MESSAGE")
+      ? "signed message"
+      : "key block",
+  keys_openpgp_verify: (args) =>
+    typeof args.fingerprint === "string" && args.fingerprint.trim() !== ""
+      ? "against a fingerprint"
+      : "no fingerprint",
   keys_transaction_signatures_extract: (args) =>
     typeof args.index === "number" ? `input ${args.index}` : "input",
   keys_bip44_parse: (args) => String(args.path),

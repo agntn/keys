@@ -27,6 +27,7 @@ export default defineBuildConfig({
         "./src/utils/descriptor/index.ts",
         "./src/utils/bip44/index.ts",
         "./src/utils/electrum/index.ts",
+        "./src/utils/openpgp/index.ts",
         "./src/utils/script/index.ts",
         "./src/utils/secp256k1/index.ts",
         "./src/utils/slip10/index.ts",

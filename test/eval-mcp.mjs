@@ -18,6 +18,7 @@ import {
   brainwalletVectors,
   storeVectors,
   arweaveVectors,
+  openpgpVectors,
   evmRecoverTestVectors,
   bip39WordOrderVector,
   bip39WordRepairVectors,
@@ -145,6 +146,24 @@ try {
     "keys_arweave_address_get",
     { key: arweaveVectors[0].n, target: arweaveVectors[0].address },
     new RegExp(`^Address: ${arweaveVectors[0].address}\nTarget: match$`),
+  );
+
+  await call(
+    "keys_openpgp_verify",
+    {
+      message: openpgpVectors.rsa.signed,
+      publicKey: openpgpVectors.rsa.publicKey,
+      fingerprint: openpgpVectors.rsa.fingerprint,
+    },
+    /^Signature is valid \(v4 RSA 3072, SHA512\)\nIdentity: match, /,
+  );
+
+  await call(
+    "keys_openpgp_inspect",
+    { armor: openpgpVectors.ed25519.publicKey },
+    new RegExp(
+      `^Primary key: ${openpgpVectors.ed25519.fingerprint} .+\nUser ID: "Ed Tester <ed@example.org>"\nSubkey: ${openpgpVectors.ed25519.subkey} `,
+    ),
   );
 
   await call(

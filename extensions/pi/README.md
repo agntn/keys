@@ -1,6 +1,6 @@
 # @agntn/keys: Pi extension
 
-Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as agent tools for key generation, brainwallets, WIF conversion, BIP38 inspection and decryption, keystore files, Arweave addresses from keyfiles, BIP39 generation, entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, TRON, SUI, Cardano, the XRP Ledger, NEAR, Cosmos SDK chains, Polkadot, Monero and TON.
+Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library as agent tools for key generation, brainwallets, WIF conversion, BIP38 inspection and decryption, keystore files, Arweave addresses from keyfiles, OpenPGP cleartext signatures, BIP39 generation, entropy encoding, inspection and recovery, address derivation, validation, signing, and BIP44 paths across Bitcoin, Bitcoin Cash, Bitcoin Gold, Bitcoin SV, Litecoin, Dash, Decred, Dogecoin, Zcash, eCash, Ethereum, Base, Solana, Stellar, Aptos, TRON, SUI, Cardano, the XRP Ledger, NEAR, Cosmos SDK chains, Polkadot, Monero and TON.
 
 > [!WARNING]
 > **This extension is experimental.** The package name, public API, provider model, CLI flags, and tool surfaces may change before the first stable release. Pin exact versions if you build on it now.
@@ -43,6 +43,8 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 | `keys_message_recover`                | Recover key + address from signmessage, personal_sign or EIP-712        |
 | `keys_bip322_sign`                    | Sign a BIP322 proof for a legacy, P2SH, SegWit or Taproot address       |
 | `keys_bip322_verify`                  | Check a BIP322 proof: valid, invalid or inconclusive with a reason      |
+| `keys_openpgp_inspect`                | Read a PGP key block or signed message, fingerprints and signed text    |
+| `keys_openpgp_verify`                 | Check a PGP cleartext signature, identity against your fingerprint      |
 | `keys_transaction_signatures_extract` | Read r, s, sighash z and signer of each signature on an input           |
 | `keys_bip44_parse`                    | Parse a BIP44 path into its levels                                      |
 | `keys_bip44_generate`                 | Generate the derivation path a chain's wallets use                      |
