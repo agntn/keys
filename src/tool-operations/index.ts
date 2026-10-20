@@ -54,6 +54,8 @@ export type {
 } from "./message.ts";
 export { signBip322, verifyBip322 } from "./bip322.ts";
 export type { BIP322SignatureDetails, BIP322VerificationDetails } from "./bip322.ts";
+export { inspectOpenpgp, verifyOpenpgp } from "./openpgp.ts";
+export type { OpenPGPInspectionDetails, OpenPGPVerificationDetails } from "./openpgp.ts";
 export { getScriptAddress, deriveDescriptor } from "./script.ts";
 export type { ScriptAddressDetails, DescriptorDetails } from "./script.ts";
 export { parseBip44Path, generateBip44Path } from "./bip44.ts";

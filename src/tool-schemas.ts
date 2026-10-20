@@ -40,6 +40,8 @@ import {
   MAX_EXTENDED_KEY_LENGTH,
   MAX_KEYSTORE_LENGTH,
   MAX_ARWEAVE_KEY_LENGTH,
+  MAX_OPENPGP_LENGTH,
+  OPENPGP_FINGERPRINT_SCHEMA_PATTERN,
   MAX_KEYSTORE_PASSWORD_LENGTH,
   MAX_ADDRESS_LENGTH,
   SCAN_ACCOUNTS,
@@ -1057,6 +1059,47 @@ export const BIP322_VERIFY_PARAMETERS = Type.Object(
         "BIP322 signature: smp (simple) or ful (full) and base64, unprefixed base64 read as simple, or signmessage's base64 for a P2PKH address",
     }),
     network: networkArgument,
+  },
+  { additionalProperties: false },
+);
+
+/** Shared MCP and Pi schema for reading an OpenPGP key block or signed message. */
+export const INSPECT_OPENPGP_PARAMETERS = Type.Object(
+  {
+    armor: Type.String({
+      minLength: 1,
+      maxLength: MAX_OPENPGP_LENGTH,
+      description:
+        "ASCII-armored -----BEGIN PGP PUBLIC KEY BLOCK----- or -----BEGIN PGP SIGNED MESSAGE-----, BEGIN and END lines included",
+    }),
+  },
+  { additionalProperties: false },
+);
+
+/** Shared MCP and Pi schema for verifying an OpenPGP cleartext signature. */
+export const VERIFY_OPENPGP_PARAMETERS = Type.Object(
+  {
+    message: Type.String({
+      minLength: 1,
+      maxLength: MAX_OPENPGP_LENGTH,
+      description:
+        "Whole cleartext signed message, from -----BEGIN PGP SIGNED MESSAGE----- to -----END PGP SIGNATURE-----, line breaks and whitespace as received",
+    }),
+    publicKey: Type.String({
+      minLength: 1,
+      maxLength: MAX_OPENPGP_LENGTH,
+      description:
+        "ASCII-armored public key block of the signer. Nothing gets fetched from a keyserver",
+    }),
+    fingerprint: Type.Optional(
+      Type.String({
+        minLength: 40,
+        maxLength: 80,
+        pattern: OPENPGP_FINGERPRINT_SCHEMA_PATTERN,
+        description:
+          "Full fingerprint you already trust for the signer, 40 hex digits for a version 4 key or 64 for version 6, spaces allowed. Without it, identity stays unchecked",
+      }),
+    ),
   },
   { additionalProperties: false },
 );

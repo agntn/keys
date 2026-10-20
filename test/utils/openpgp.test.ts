@@ -1,0 +1,624 @@
+import { describe, expect, it } from "vite-plus/test";
+import { base64 } from "@agntn/encodings/base64";
+import { checkMath, hashAlgorithm, readKeyMaterial } from "../../src/utils/openpgp/algorithms.ts";
+import { fitsKey } from "../../src/utils/openpgp/certificate.ts";
+import { inspect, verify } from "../../src/utils/openpgp/index.ts";
+import { readPublicKey } from "../../src/utils/openpgp/keys.ts";
+import { type Packet, readPackets } from "../../src/utils/openpgp/packets.ts";
+import { openpgpVectors } from "../fixtures.ts";
+
+const {
+  rsa,
+  ed25519,
+  dsa,
+  secp256k1,
+  p256,
+  expired,
+  renewed,
+  rfc9580,
+  shortRsa,
+  weakSelfSignature,
+} = openpgpVectors;
+
+/* Dearmors a public key block into packets. */
+function packetsOf(armored: string): Packet[] {
+  const lines = armored.split("\n");
+  const start = lines.findIndex((line) => line === "") + 1;
+  const end = lines.findIndex((line) => line.startsWith("=") || line.startsWith("-----END"));
+  return readPackets(base64.decode(lines.slice(start, end).join("")));
+}
+
+/* Armors packets back into a public key block, new format headers, no checksum. */
+function armorKey(packets: readonly Packet[]): string {
+  const bytes = packets.flatMap(({ tag, body }) => {
+    const length =
+      body.length < 192
+        ? [body.length]
+        : [
+            0xff,
+            body.length >>> 24,
+            (body.length >>> 16) & 0xff,
+            (body.length >>> 8) & 0xff,
+            body.length & 0xff,
+          ];
+    return [0xc0 | tag, ...length, ...body];
+  });
+  const data = base64.encode(Uint8Array.from(bytes)).match(/.{1,64}/gu) ?? [];
+  return [
+    "-----BEGIN PGP PUBLIC KEY BLOCK-----",
+    "",
+    ...data,
+    "-----END PGP PUBLIC KEY BLOCK-----",
+    "",
+  ].join("\n");
+}
+
+/* Flips the last byte of the signature after the subkey, which breaks its binding. */
+function breakBinding(armored: string): string {
+  const packets = packetsOf(armored);
+  const subkey = packets.findIndex((packet) => packet.tag === 14);
+  return armorKey(
+    packets.map((packet, index) => {
+      if (index !== subkey + 1) return packet;
+      const body = packet.body.slice();
+      body[body.length - 1] = (body.at(-1) ?? 0) ^ 1;
+      return { tag: packet.tag, body };
+    }),
+  );
+}
+
+/* Writes a number as an OpenPGP MPI: bit count, then big endian bytes. */
+function mpiOf(value: bigint): number[] {
+  const hex = value.toString(16);
+  const even = hex.length % 2 === 0 ? hex : `0${hex}`;
+  const bits = value.toString(2).length;
+  return [
+    bits >> 8,
+    bits & 0xff,
+    ...(even.match(/../gu)?.map((pair) => Number.parseInt(pair, 16)) ?? []),
+  ];
+}
+
+/* Dearmors the signature block of a cleartext message. */
+function signatureBytes(message: string): Uint8Array {
+  const lines = message.split("\n");
+  const start = lines.indexOf("-----BEGIN PGP SIGNATURE-----") + 2;
+  const end = lines.findIndex((line) => line.startsWith("="));
+  return base64.decode(lines.slice(start, end).join(""));
+}
+
+/* Puts other signature bytes into a cleartext message, in place of its own. */
+function withSignatures(message: string, bytes: Uint8Array): string {
+  const lines = message.split("\n");
+  const start = lines.indexOf("-----BEGIN PGP SIGNATURE-----") + 2;
+  const end = lines.findIndex((line) => line.startsWith("="));
+  const data = base64.encode(bytes).match(/.{1,64}/gu) ?? [];
+  return [...lines.slice(0, start), ...data, ...lines.slice(end + 1)].join("\n");
+}
+
+/* Moves the creation time of a v4 signature back by some seconds, which breaks it. */
+function backdate(bytes: Uint8Array, seconds: number): Uint8Array {
+  const [packet] = readPackets(bytes);
+  if (packet === undefined) throw new Error("No signature packet");
+  const body = packet.body.slice();
+  const end = 6 + (((body[4] ?? 0) << 8) | (body[5] ?? 0));
+  for (let offset = 6; offset < end; offset += (body[offset] ?? 0) + 1) {
+    if (body[offset + 1] !== 2) continue;
+    const view = new DataView(body.buffer, offset + 2, 4);
+    view.setUint32(0, view.getUint32(0) - seconds);
+    const length = body.length;
+    return Uint8Array.from([
+      0xc2,
+      0xff,
+      length >>> 24,
+      (length >>> 16) & 0xff,
+      (length >>> 8) & 0xff,
+      length & 0xff,
+      ...body,
+    ]);
+  }
+  throw new Error("No creation time");
+}
+
+/* Flips the last unhashed byte of the subkey binding, where GnuPG keeps the back signature. */
+function breakBackSignature(armored: string): string {
+  const packets = packetsOf(armored);
+  const subkey = packets.findIndex((packet) => packet.tag === 14);
+  return armorKey(
+    packets.map((packet, index) => {
+      if (index !== subkey + 1) return packet;
+      const body = packet.body.slice();
+      const hashed = ((body[4] ?? 0) << 8) | (body[5] ?? 0);
+      const unhashed = ((body[6 + hashed] ?? 0) << 8) | (body[7 + hashed] ?? 0);
+      const last = 8 + hashed + unhashed - 1;
+      body[last] = (body[last] ?? 0) ^ 1;
+      return { tag: packet.tag, body };
+    }),
+  );
+}
+
+describe("OpenPGP cleartext verification", () => {
+  it.each([
+    ["RSA 3072", rsa, "RSA 3072", "SHA512"],
+    ["ECDSA secp256k1", secp256k1, "ECDSA secp256k1", "SHA256"],
+  ])("verifies a GnuPG %s signature", (_, vector, algorithm, hash) => {
+    const verdict = verify(vector.signed, { publicKey: vector.publicKey });
+    expect(verdict).toMatchObject({
+      state: "valid",
+      identity: "unchecked",
+      primaryFingerprint: vector.fingerprint,
+      signingFingerprint: vector.fingerprint,
+      issuer: vector.fingerprint,
+      algorithm,
+      hash,
+      version: 4,
+      warnings: [],
+    });
+    expect(verdict.reason).toBeUndefined();
+  });
+
+  it("checks the DSA math but calls it inconclusive, since RFC 9580 retired DSA", () => {
+    expect(verify(dsa.signed, { publicKey: dsa.publicKey })).toMatchObject({
+      state: "inconclusive",
+      reason: "The math checks out, but it rests on DSA, which RFC 9580 tells verifiers not to use",
+      signingFingerprint: dsa.fingerprint,
+      algorithm: "DSA 2048",
+    });
+    const altered = dsa.signed.replace("Ten words", "Ten wards");
+    expect(verify(altered, { publicKey: dsa.publicKey }).state).toBe("invalid");
+  });
+
+  it("gives back the text the signature covers, escapes undone and trailing whitespace cut", () => {
+    const { text } = verify(rsa.signed, { publicKey: rsa.publicKey });
+    expect(text).toBe(openpgpVectors.text.replaceAll(/[ \t]+\n/gu, "\n"));
+  });
+
+  it("verifies through a signing subkey bound to a certify-only primary", () => {
+    const verdict = verify(ed25519.signed, {
+      publicKey: ed25519.publicKey,
+      fingerprint: ed25519.fingerprint,
+    });
+    expect(verdict).toMatchObject({
+      state: "valid",
+      identity: "match",
+      primaryFingerprint: ed25519.fingerprint,
+      signingFingerprint: ed25519.subkey,
+      algorithm: "EdDSALegacy Ed25519Legacy",
+    });
+  });
+
+  it("verifies the version 6 sample of RFC 9580 Appendix A.6", () => {
+    const verdict = verify(rfc9580.signed, {
+      publicKey: rfc9580.publicKey,
+      fingerprint: rfc9580.fingerprint,
+    });
+    expect(verdict).toMatchObject({
+      state: "valid",
+      identity: "match",
+      version: 6,
+      algorithm: "Ed25519",
+      hash: "SHA512",
+      created: "2022-12-13T16:08:03.000Z",
+      text: "What we need from the grocery store:\n\n- tofu\n- vegetables\n- noodles\n",
+    });
+  });
+
+  it("calls altered text invalid, and says so", () => {
+    const altered = rsa.signed.replace("Ten words", "Ten wards");
+    expect(verify(altered, { publicKey: rsa.publicKey })).toMatchObject({
+      state: "invalid",
+      reason: "The text doesn't match what was signed",
+    });
+  });
+
+  it("calls a changed signature value invalid against the right key", () => {
+    const lines = rsa.signed.split("\n");
+    const index = lines.findIndex((line) => line.startsWith("-----END")) - 3;
+    const line = lines[index] ?? "";
+    lines[index] = (line.startsWith("A") ? "B" : "A") + line.slice(1);
+    expect(verify(lines.join("\n"), { publicKey: rsa.publicKey })).toMatchObject({
+      state: "invalid",
+    });
+  });
+
+  it("names the issuer when the key block holds a different key", () => {
+    const verdict = verify(rsa.signed, { publicKey: ed25519.publicKey });
+    expect(verdict).toMatchObject({
+      state: "invalid",
+      reason: `Signed by ${rsa.fingerprint}, which this key block doesn't hold`,
+      primaryFingerprint: ed25519.fingerprint,
+      issuer: rsa.fingerprint,
+    });
+    expect(verdict.signingFingerprint).toBeUndefined();
+  });
+
+  it("refuses a signing subkey whose binding doesn't hold", () => {
+    expect(verify(ed25519.signed, { publicKey: breakBinding(ed25519.publicKey) })).toMatchObject({
+      state: "invalid",
+      reason: "The signing subkey isn't bound to this primary key",
+    });
+  });
+
+  it("refuses a signing subkey that never signed back", () => {
+    const key = breakBackSignature(ed25519.publicKey);
+    expect(inspect(key)).toMatchObject({ subkeys: [{ bound: true }] });
+    expect(verify(ed25519.signed, { publicKey: key })).toMatchObject({
+      state: "invalid",
+      reason: "The signing subkey has no valid back signature (type 0x19)",
+    });
+  });
+
+  it("judges the subkey binding as of the signature, so an expired one doesn't count", () => {
+    const key = ed25519.expiredBinding;
+    expect(verify(ed25519.signed, { publicKey: key })).toMatchObject({
+      state: "invalid",
+      reason: "The signing subkey isn't bound to this primary key",
+    });
+    expect(inspect(key)).toMatchObject({ subkeys: [{ bound: false }] });
+  });
+
+  it("still counts a binding renewed after the signature, the way GnuPG does", () => {
+    expect(verify(renewed.signed, { publicKey: renewed.publicKey })).toMatchObject({
+      state: "valid",
+      created: "2020-06-01T00:00:00.000Z",
+    });
+  });
+
+  it("never takes RSA Encrypt-Only (algorithm 2) as a signing algorithm", () => {
+    const [packet] = packetsOf(rsa.publicKey);
+    if (packet === undefined) throw new Error("No key packet");
+    const key = readPublicKey(packet.body);
+    expect(fitsKey(key, 1)).toBe(true);
+    expect(fitsKey({ ...key, algorithm: 2 }, 2)).toBe(false);
+    expect(fitsKey({ ...key, algorithm: 2 }, 1)).toBe(false);
+  });
+
+  it("refuses a message with more signatures than anyone signs with", () => {
+    const signature = signatureBytes(rsa.signed);
+    const many = Uint8Array.from(Array.from({ length: 17 }, () => [...signature]).flat());
+    expect(() => verify(withSignatures(rsa.signed, many), { publicKey: rsa.publicKey })).toThrow(
+      "at most 16 signatures",
+    );
+  });
+
+  it("keeps a valid signature when another one in the block can't be checked", () => {
+    const both = Uint8Array.from([
+      ...signatureBytes(rsa.signedSha384),
+      ...signatureBytes(rsa.signed),
+    ]);
+    expect(verify(withSignatures(rsa.signed, both), { publicKey: rsa.publicKey })).toMatchObject({
+      state: "valid",
+      hash: "SHA512",
+    });
+  });
+
+  it("refuses a real DSA group once g has order 2 instead of q", () => {
+    const [packet] = packetsOf(dsa.publicKey);
+    if (packet === undefined) throw new Error("No key packet");
+    const { material } = readPublicKey(packet.body);
+    if (material.kind !== "dsa") throw new Error("Not a DSA key");
+    const numbers = [material.p, material.q, material.p - 1n, material.y];
+    expect(() =>
+      readKeyMaterial(17, Uint8Array.from(numbers.flatMap((value) => mpiOf(value)))),
+    ).toThrow("OpenPGP DSA key has broken group parameters");
+  });
+
+  it("refuses an Ed25519 key at the identity, which ZIP 215 rules would let sign anything", () => {
+    const identity = Uint8Array.from([1, ...Array.from({ length: 31 }, () => 0)]);
+    const value = Uint8Array.from([...identity, ...Array.from({ length: 32 }, () => 0)]);
+    const key = { kind: "eddsa", point: identity } as const;
+    expect(checkMath(key, 27, value, new Uint8Array(64).fill(7), hashAlgorithm(10))).toBe(false);
+  });
+
+  it.each([
+    ["g = y = 1, where r = s = 1 verifies anything", [23n, 11n, 1n, 1n]],
+    ["a subgroup of order 2", [29n, 14n, 28n, 28n]],
+    [
+      "a composite q that passes every other check",
+      [
+        0x85877de23f1b785525d271477d3f591e0b688a5c2df220cb92993b0c0161a44495ac71e8db5a5f3542cf5ce9f553e742246f7b73724c3f4f104cd6e78de0ec07805ecf6d93318bd11bf394a41588327c93793d9f9c78e31550faeef071b4def5feba2557eacf00238d2e8b1cb10ba93c81e166da1e525c621550c31b5c585d1fn,
+        0x9b0a343816ce0fcc83cf57c2457ca5148d12b69bn,
+        0x3eec44ab3103de710f8f7b09ab41fee3b4651910f97f94d91a61bd368e0243d00253086823b79be5e7c937cfab85f426f461b3a36980c3c64c56c1d14137b1947519de243baaf74f6352b4363f85bb4eb96332c11a3d54b7cb0f5b830bbe65f63c7685f78e694f6847712e9777434b00d1e80c8fb6371f32c27a66be53d16062n,
+        0x1f5078fea5a19e4730df09f4fc70ba9419aaa6410f2dba4396d41bdfc1edf41518fed4f0304c99dc315d27b9ac6e435c55a73e87e559918ab5d42b67604de869c324e1c51cde32e39e7b4b3b4e117aefac9bf0bbc74efed2448ebcdd2f04f845f7aaf34133bc93bab5dd84ca68994acdd4a6ffd4a8499d810de2ee20c99d9f36n,
+      ],
+    ],
+  ])("refuses a DSA group with %s", (_, numbers) => {
+    const material = Uint8Array.from(numbers.flatMap((value) => mpiOf(value)));
+    expect(() => readKeyMaterial(17, material)).toThrow(
+      "OpenPGP DSA key has broken group parameters",
+    );
+  });
+
+  it("needs a standing direct key signature before a version 6 key signs anything", () => {
+    for (const publicKey of [rfc9580.noDirectKey, rfc9580.revokedDirectKey]) {
+      expect(verify(rfc9580.signed, { publicKey })).toMatchObject({
+        state: "invalid",
+        reason: "The key has no valid self-signature, so nothing ties it together",
+      });
+    }
+  });
+
+  it("takes a self-certified User Attribute the way it takes a user ID", () => {
+    const verdict = verify(ed25519.signed, { publicKey: ed25519.attributeOnly });
+    expect(verdict.state).toBe("valid");
+    expect(inspect(ed25519.attributeOnly)).toMatchObject({ userIds: [], uncertifiedUserIds: 0 });
+  });
+
+  it("treats RSA under 2048 bits as retired and warns under 3072", () => {
+    expect(verify(shortRsa.signed1024, { publicKey: shortRsa.key1024 })).toMatchObject({
+      state: "inconclusive",
+      reason:
+        "The math checks out, but it rests on RSA 1024, which RFC 9580 tells verifiers not to use",
+    });
+    expect(verify(shortRsa.signed2048, { publicKey: shortRsa.key2048 })).toMatchObject({
+      state: "valid",
+      warnings: ["The key is RSA 2048, under the 3072 bits RFC 9580 asks for"],
+    });
+  });
+
+  it("calls a strong signature inconclusive when the key's own self-signature is SHA-1", () => {
+    expect(
+      verify(weakSelfSignature.signed, { publicKey: weakSelfSignature.publicKey }),
+    ).toMatchObject({
+      state: "inconclusive",
+      hash: "SHA256",
+      reason:
+        "The math checks out, but the key's self-signature uses SHA1, which RFC 9580 tells verifiers not to accept",
+    });
+  });
+
+  it("refuses a signature made for an encrypted recipient, even though the math holds", () => {
+    expect(verify(ed25519.intendedRecipient, { publicKey: ed25519.publicKey })).toMatchObject({
+      state: "invalid",
+      reason:
+        "The signature names an intended recipient, so it belongs inside an encrypted message",
+    });
+  });
+
+  it("ignores a revocation against a self-signature marked not revocable", () => {
+    const verdict = verify(rfc9580.signed, { publicKey: rfc9580.unrevocableDirectKey });
+    expect(verdict.state).toBe("valid");
+  });
+
+  it("doesn't let extra signatures starve the real one of self-signature checks", () => {
+    const packets = packetsOf(shortRsa.key2048);
+    const at = packets.findIndex((packet) => packet.tag === 13) + 1;
+    const certification = packets[at];
+    if (certification === undefined) throw new Error("No certification after the user ID");
+    const forged = Array.from({ length: 10 }, (_, index) => {
+      const body = certification.body.slice();
+      body[body.length - 1] = index;
+      return { tag: 2, body };
+    });
+    const key = armorKey([...packets.slice(0, at), ...forged, ...packets.slice(at)]);
+    const real = signatureBytes(shortRsa.signed2048);
+    const decoys = Array.from({ length: 15 }, (_, index) => backdate(real, index + 1));
+    const message = withSignatures(
+      shortRsa.signed2048,
+      Uint8Array.from([...decoys.flatMap((bytes) => [...bytes]), ...real]),
+    );
+    expect(verify(message, { publicKey: key }).state).toBe("valid");
+  });
+
+  it("keeps identity apart from the math", () => {
+    const mismatch = verify(rsa.signed, { publicKey: rsa.publicKey, fingerprint: dsa.fingerprint });
+    expect(mismatch).toMatchObject({ state: "valid", identity: "mismatch" });
+    const spaced = rsa.fingerprint.toLowerCase().replaceAll(/(.{4})/gu, "$1 ");
+    expect(verify(rsa.signed, { publicKey: rsa.publicKey, fingerprint: spaced }).identity).toBe(
+      "match",
+    );
+  });
+
+  it("refuses a key ID where a fingerprint belongs", () => {
+    expect(() =>
+      verify(rsa.signed, { publicKey: rsa.publicKey, fingerprint: rsa.fingerprint.slice(-16) }),
+    ).toThrow("Pass the full fingerprint, not a key ID");
+    expect(() => verify(rsa.signed, { publicKey: rsa.publicKey, fingerprint: "ABCD" })).toThrow(
+      "Fingerprint must be 40 hex digits",
+    );
+  });
+
+  it("holds the math over SHA-1 but calls it inconclusive", () => {
+    expect(verify(rsa.signedSha1, { publicKey: rsa.publicKey })).toMatchObject({
+      state: "inconclusive",
+      hash: "SHA1",
+      reason: "The math checks out, but it's SHA1, which RFC 9580 tells verifiers not to accept",
+    });
+  });
+
+  it("refuses what it can't check instead of calling it invalid", () => {
+    expect(() => verify(rsa.signedSha384, { publicKey: rsa.publicKey })).toThrow(
+      "OpenPGP signatures over SHA384 aren't supported yet",
+    );
+    expect(() => verify(p256.signed, { publicKey: p256.publicKey })).toThrow(
+      "ECDSA NIST P-256 signatures aren't supported yet",
+    );
+  });
+
+  it("warns about a revoked key without changing the verdict", () => {
+    const verdict = verify(rsa.signed, { publicKey: rsa.revokedKey });
+    expect(verdict.state).toBe("valid");
+    expect(verdict.warnings).toEqual([
+      expect.stringMatching(/^The key was revoked on .+ \(no reason given\)$/u),
+    ]);
+  });
+
+  it("warns about a key that has expired since", () => {
+    const verdict = verify(expired.signed, { publicKey: expired.publicKey });
+    expect(verdict).toMatchObject({
+      state: "valid",
+      warnings: ["The key expired on 2020-01-02T00:00:00.000Z"],
+    });
+  });
+});
+
+describe("OpenPGP cleartext framing", () => {
+  it("reads CRLF line endings the same as LF", () => {
+    const crlf = rsa.signed.replaceAll("\n", "\r\n");
+    expect(verify(crlf, { publicKey: rsa.publicKey }).state).toBe("valid");
+  });
+
+  it("ignores trailing whitespace, as RFC 9580 section 7.1 says, but not inner whitespace", () => {
+    const padded = rsa.signed.replace("Last line", "Last line \t ");
+    expect(verify(padded, { publicKey: rsa.publicKey }).state).toBe("valid");
+    const inner = rsa.signed.replace("Last line", "Last  line");
+    expect(verify(inner, { publicKey: rsa.publicKey }).state).toBe("invalid");
+  });
+
+  it("ignores what a well formed Hash header says", () => {
+    const relabeled = rsa.signed.replace("Hash: SHA512", "Hash: SHA256, SHA1");
+    expect(verify(relabeled, { publicKey: rsa.publicKey }).state).toBe("valid");
+  });
+
+  it.each([
+    ["another header", "Comment: trust me", "may only carry Hash headers"],
+    ["a malformed Hash header", "Hash: SHA512 and then some", "must list OpenPGP hash names"],
+  ])("refuses %s in the cleartext header", (_, header, message) => {
+    const tampered = rsa.signed.replace("Hash: SHA512", header);
+    expect(() => verify(tampered, { publicKey: rsa.publicKey })).toThrow(message);
+  });
+
+  it("warns about text outside the signed block", () => {
+    const wrapped = `Send 5 BTC to the address below.\n${rsa.signed}\nP.S. it's legit\n`;
+    expect(verify(wrapped, { publicKey: rsa.publicKey })).toMatchObject({
+      state: "valid",
+      warnings: ["Text outside the signed block isn't covered by the signature"],
+    });
+  });
+
+  it("ignores a wrong armor checksum, as RFC 9580 section 6.1 asks", () => {
+    const bad = rsa.signed.replace(/^=.{4}$/mu, "=AAAA");
+    expect(bad).not.toBe(rsa.signed);
+    expect(verify(bad, { publicKey: rsa.publicKey }).state).toBe("valid");
+  });
+
+  it("cuts trailing whitespace in linear time", () => {
+    const line = `${" ".repeat(200_000)}x`;
+    const started = performance.now();
+    const verdict = verify(rsa.signed.replace("Last line", line), { publicKey: rsa.publicKey });
+    expect(verdict.state).toBe("invalid");
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
+  it("tells a private key block apart from a public one", () => {
+    const secret = rsa.publicKey.replaceAll("PUBLIC KEY BLOCK", "PRIVATE KEY BLOCK");
+    expect(() => verify(rsa.signed, { publicKey: secret })).toThrow("got a private key block");
+  });
+
+  it("refuses a positional call instead of guessing", () => {
+    /* @ts-expect-error the old positional shape on purpose */
+    expect(() => verify(rsa.signed, rsa.publicKey)).toThrow("Pass the options as an object");
+  });
+});
+
+describe("OpenPGP inspection", () => {
+  it("reads a key block with its subkey and certified user ID", () => {
+    expect(inspect(ed25519.publicKey)).toMatchObject({
+      kind: "public-key",
+      primary: {
+        fingerprint: ed25519.fingerprint,
+        keyId: ed25519.fingerprint.slice(-16),
+        version: 4,
+        algorithm: "EdDSALegacy Ed25519Legacy",
+        flags: ["certify"],
+      },
+      userIds: ["Ed Tester <ed@example.org>"],
+      uncertifiedUserIds: 0,
+      subkeys: [{ fingerprint: ed25519.subkey, flags: ["sign"], bound: true }],
+    });
+  });
+
+  it("reads the version 6 certificate of RFC 9580 Appendix A.3", () => {
+    expect(inspect(rfc9580.publicKey)).toMatchObject({
+      primary: {
+        fingerprint: rfc9580.fingerprint,
+        keyId: rfc9580.fingerprint.slice(0, 16),
+        version: 6,
+      },
+      subkeys: [
+        { fingerprint: rfc9580.subkey, algorithm: "X25519", flags: ["encrypt"], bound: true },
+      ],
+    });
+  });
+
+  it("leaves out a user ID the key never certified", () => {
+    const packets = packetsOf(rsa.publicKey);
+    const forged = {
+      tag: 13,
+      body: new TextEncoder().encode("Satoshi Nakamoto <satoshi@gmx.com>"),
+    };
+    const inspection = inspect(armorKey([...packets, forged]));
+    expect(inspection).toMatchObject({
+      userIds: ["RSA Tester <rsa@example.org>"],
+      uncertifiedUserIds: 1,
+    });
+  });
+
+  it("skips Padding and non-critical packets, and refuses an unknown critical one", () => {
+    const packets = packetsOf(ed25519.publicKey);
+    const filler = new Uint8Array(8);
+    const padded = armorKey([...packets, { tag: 21, body: filler }, { tag: 40, body: filler }]);
+    expect(inspect(padded)).toMatchObject({ subkeys: [{ bound: true }] });
+    expect(verify(ed25519.signed, { publicKey: padded }).state).toBe("valid");
+    expect(() => inspect(armorKey([...packets, { tag: 30, body: filler }]))).toThrow(
+      "OpenPGP key block holds a packet of type 30",
+    );
+  });
+
+  it("caps self-signature checks, since a forged one costs as much math as a real one", () => {
+    const packets = packetsOf(rsa.publicKey);
+    const at = packets.findIndex((packet) => packet.tag === 13) + 1;
+    const certification = packets[at];
+    if (certification === undefined) throw new Error("No certification after the user ID");
+    const forge = (index: number) => {
+      const body = certification.body.slice();
+      body[body.length - 1] = index;
+      body[body.length - 2] = (body.at(-2) ?? 0) ^ 1;
+      return { tag: 2, body };
+    };
+    const flood = (count: number) =>
+      armorKey([
+        ...packets.slice(0, at),
+        ...Array.from({ length: count }, (_, index) => forge(index)),
+        ...packets.slice(at),
+      ]);
+    expect(inspect(flood(100))).toMatchObject({ userIds: ["RSA Tester <rsa@example.org>"] });
+    expect(() => inspect(flood(130))).toThrow("needs more than 128 self-signature checks");
+    const copies = armorKey([
+      ...packets.slice(0, at),
+      ...Array.from({ length: 300 }, () => forge(0)),
+      ...packets.slice(at),
+    ]);
+    expect(inspect(copies)).toMatchObject({ userIds: ["RSA Tester <rsa@example.org>"] });
+  });
+
+  it("shows the revocation and the expiry", () => {
+    expect(inspect(rsa.revokedKey)).toMatchObject({
+      primary: { revoked: { reason: "no reason given" } },
+    });
+    expect(inspect(expired.publicKey)).toMatchObject({
+      primary: { expires: "2020-01-02T00:00:00.000Z" },
+    });
+  });
+
+  it("reads a signed message without verifying it", () => {
+    expect(inspect(ed25519.signed)).toMatchObject({
+      kind: "signed-message",
+      hashHeaders: ["SHA512"],
+      signatures: [
+        { version: 4, algorithm: "EdDSALegacy", hash: "SHA512", issuer: ed25519.subkey },
+      ],
+      warnings: [],
+    });
+  });
+
+  it("names a hash it can't compute instead of failing to read it", () => {
+    expect(inspect(rsa.signedSha384)).toMatchObject({ signatures: [{ hash: "SHA384" }] });
+  });
+
+  it("refuses something that is neither block", () => {
+    expect(() => inspect("-----BEGIN PGP MESSAGE-----\n\nAAAA\n-----END PGP MESSAGE-----")).toThrow(
+      "got BEGIN PGP MESSAGE",
+    );
+  });
+});

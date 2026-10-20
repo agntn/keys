@@ -3175,3 +3175,631 @@ export const tonChainWallets = [
     "0:E047B8D9CBD0FCF08042DDD2B8A842636FD0FC5A67C26CBF6FFB8163B23CE6ED",
   ],
 ] as const;
+
+/**
+ * Throwaway keys made with GnuPG 2.4.9 (libgcrypt 1.12.4) in an empty keyring on 2026-10-20, public
+ * halves only. Every message signs the same text, with trailing spaces, a tab and two lines that
+ * need dash escaping. `gpg --verify` called each signature good.
+ */
+export const openpgpVectors = {
+  text: "Ten words of puzzle text.   \n- a dash line\n-----BEGIN looks like armor\n\tTabbed, with trailing tab\t\nLast line\n",
+  rsa: {
+    fingerprint: "82463E7DE654EB03C1C11767C20FCF8B1FD20A24",
+    publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mQGNBGrXUPQBDAC0S3rpZAvegX0+scCpvs1uoTcIP7fJY9wkg6RwT9LrGZrYcfQV
+3S98rSMOYCghHHxmxV0Zuqs1kC3uFHzSo7igguQsLlNR6mDui9cCbVDm+Xho52Vf
+I2+8nvfEeegvnDSMzMTwZwi5ppnab3fce/smB1oPSKwbgie22Ly63D3WtLPmVdFU
+sihnhUOZLcn8CbWiFZnXrkFBAsaLBfi/S/OaoqnORYbWE+v0NyJn8u2WUdhYJpJ8
+z+fV00Vhbv+O/Uilp9qgMoLatYmbxbT0kKaCUj2R9q8qytRb8JTStZhNV7vXtTx9
+BRaWqFlwPYSciM6eGbU/Qs7d/0Coqwh+YYXWDCtT2OuquoXS7RqqCD1SnpMatKNM
+2L9714DgnVTl5MLhPm1jCV3hkZrVYDXM/Hp3NfvqN6FCHlWUvGStM5kstqvGfWbv
+z7YfwUO+GnF4R3bEdNLkd9sZ/3f/o8dwG16HVkBoVN7DvqYiQCx6MfI324BuUYL3
+3BX88zEEbbyPsKMAEQEAAbQcUlNBIFRlc3RlciA8cnNhQGV4YW1wbGUub3JnPokB
+zgQTAQoAOBYhBIJGPn3mVOsDwcEXZ8IPz4sf0gokBQJq11D0AhsDBQsJCAcCBhUK
+CQgLAgQWAgMBAh4BAheAAAoJEMIPz4sf0gokspoL/A9pn4LA48C+OpJWO5H6JxlY
+3/xXHbKlht04zIDw0/cVWpjydKL8DaqZ7GznTY7uUamjeiN7JBM2TIde10NRA+PH
+uhSICX8lvW5PQVSxMl2eD08dbjlKmm/UB3QsV8IFTRCEicVNo7wtveruLbaGFaX8
+bkxQe9GLLujVMxGYmEv0WXP02SSUI5QAH5zPC66NPBz4kid/SQAZRhH0si67VS5F
+9KKvd3tEaS2v9puAG/Rtp/zWZnu0W8E2BPm5V0A2GDdS9DE7BaYwF2KZcgl0tZA1
+sqGA1O5LP+1j8WpJyURZ5nMXMSTilvEk+e7jEsvn0oH1tj4oMq+r773hWF/JzdRZ
+8bBUSa7Cinjwwu2Eg91Gsh8eX3cyh2dtjIGE2EPLx45aGU0qh40B6LA9vQqKtzf5
+rl6tuFVNg0TCAhrhtHwiTi1wzb3ZOvF7J+ERK6oUXuKAtdxhJJLgQr8B2opruQOL
+/+Wqp/HIoROqqPQmYPruXs19kJLuakH58u6+YJDHbg==
+=rs2G
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    signed: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+iQGzBAEBCgAdFiEEgkY+feZU6wPBwRdnwg/Pix/SCiQFAmrXUP4ACgkQwg/Pix/S
+CiT6kgv/SaI40CV5zSR069Y4snfxhOHY9iRcnjQYFCrTBH6XMgT67lcE7ItMgQes
+V0jTWbYV/HSjICqFL6XkHdj4M8ZSMZ95u1gaVGCSNIac70lYOH8trG8NAFMCSNpo
+3m8J55l2R3TvdC83eOwUOe++v9KvxshQjHES36FU5VbkGju1ya8oq6dzH+oJor5R
+qyoCdfh0D494DbEIdrNt6g1hPVpmOlo1/ExSim207Yw4sjYpn1QwQs9tKuujyhPc
+0AtfHGnlHIzYhscSBgzdYrmcY2rI3aimS6jFVsYL+d8kt8k3OXepX1+P7ZlUbSZ3
+uhKuGuNzmY43uTczZzGe0EJIHIXoboWKNuqMzkoHQl32sQB8ijZmemWWwdBEuP/m
+XLdL4hyer8cko/Z1o6Wvdt2m0s8sd+EG3R3bQUgWH6Iy0sFqadoO1xt5vxI8AjwR
+xagAXVnZtjcKSB5/GKIrwriU7bOPfv7aWW9f+XhsPIEQNFn7MZVKX5vFe2wyBWOz
+teDqGTL2
+=BZ4k
+-----END PGP SIGNATURE-----
+`,
+    /** Same key with its revocation certificate imported. */
+    revokedKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mQGNBGrXUPQBDAC0S3rpZAvegX0+scCpvs1uoTcIP7fJY9wkg6RwT9LrGZrYcfQV
+3S98rSMOYCghHHxmxV0Zuqs1kC3uFHzSo7igguQsLlNR6mDui9cCbVDm+Xho52Vf
+I2+8nvfEeegvnDSMzMTwZwi5ppnab3fce/smB1oPSKwbgie22Ly63D3WtLPmVdFU
+sihnhUOZLcn8CbWiFZnXrkFBAsaLBfi/S/OaoqnORYbWE+v0NyJn8u2WUdhYJpJ8
+z+fV00Vhbv+O/Uilp9qgMoLatYmbxbT0kKaCUj2R9q8qytRb8JTStZhNV7vXtTx9
+BRaWqFlwPYSciM6eGbU/Qs7d/0Coqwh+YYXWDCtT2OuquoXS7RqqCD1SnpMatKNM
+2L9714DgnVTl5MLhPm1jCV3hkZrVYDXM/Hp3NfvqN6FCHlWUvGStM5kstqvGfWbv
+z7YfwUO+GnF4R3bEdNLkd9sZ/3f/o8dwG16HVkBoVN7DvqYiQCx6MfI324BuUYL3
+3BX88zEEbbyPsKMAEQEAAYkBtgQgAQoAIBYhBIJGPn3mVOsDwcEXZ8IPz4sf0gok
+BQJq11D0Ah0AAAoJEMIPz4sf0gok7Q4MAKmixZDrImWxipwS8hRYgjX8igEDilmH
+AADvZj3DpuMZ1rJGx0guf3COJtKci0VZI1WCFfAnUMVXNElv7GbClp+Xwl0w4NE5
+Hg2lSAMOrZtw7fB7QoMu9p2U9l77bT3qLCAL8qf6NrluTm/oTW11fu8ZUSWNmMcl
+lJflznASr7ZgowA9sr4p1Rshk+jwmeZKaMdJTjtHgg7PNFdEdGN/9KKst6t4+kgH
++XJyY1IHvIbjFyRpHkRsrTCZK9Z9rV4RxhZqz4JAGYEOIwVTZHE/SxQNzeD9Ke/0
+Ef7umpBVNHZfIAAUCXw7pDpxZVKrv5DsmSHuhrM202SlFUARNpm0MqnQ+VLEiBHR
+HVtZFvO/CYBJM/+6s1TNrzWpBeSfAAihl+ySb5zNRD+FgQaZkwMfGF9KRKlTGDRD
+jIjvSpqg/HMXyN7G9zRR3ewAdyOL9iuOOzxSYiUdNRRDWfAPOdpIweE3xMNkn4+3
+/ZCpfJIfAkvH0MAlefNp0Ag7/g7ArhwifbQcUlNBIFRlc3RlciA8cnNhQGV4YW1w
+bGUub3JnPokBzgQTAQoAOBYhBIJGPn3mVOsDwcEXZ8IPz4sf0gokBQJq11D0AhsD
+BQsJCAcCBhUKCQgLAgQWAgMBAh4BAheAAAoJEMIPz4sf0gokspoL/A9pn4LA48C+
+OpJWO5H6JxlY3/xXHbKlht04zIDw0/cVWpjydKL8DaqZ7GznTY7uUamjeiN7JBM2
+TIde10NRA+PHuhSICX8lvW5PQVSxMl2eD08dbjlKmm/UB3QsV8IFTRCEicVNo7wt
+veruLbaGFaX8bkxQe9GLLujVMxGYmEv0WXP02SSUI5QAH5zPC66NPBz4kid/SQAZ
+RhH0si67VS5F9KKvd3tEaS2v9puAG/Rtp/zWZnu0W8E2BPm5V0A2GDdS9DE7BaYw
+F2KZcgl0tZA1sqGA1O5LP+1j8WpJyURZ5nMXMSTilvEk+e7jEsvn0oH1tj4oMq+r
+773hWF/JzdRZ8bBUSa7Cinjwwu2Eg91Gsh8eX3cyh2dtjIGE2EPLx45aGU0qh40B
+6LA9vQqKtzf5rl6tuFVNg0TCAhrhtHwiTi1wzb3ZOvF7J+ERK6oUXuKAtdxhJJLg
+Qr8B2opruQOL/+Wqp/HIoROqqPQmYPruXs19kJLuakH58u6+YJDHbg==
+=ZmDl
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    /** Made with `--digest-algo SHA1`. */
+    signedSha1: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+iQGzBAEBAgAdFiEEgkY+feZU6wPBwRdnwg/Pix/SCiQFAmrXUP4ACgkQwg/Pix/S
+CiRzsQwAm8iaADNMkhIuS/yrijE13iC9Tt/dcdzy42fF6Ns7hsh+5fKEGfRG2ih3
+W/yI6flFUTy+lEHMqHWjCYweCxf/kswM2/yLak5kD/kF95n4IBydBH/nwHjy5c18
+DTcXOpBdUzM83ms6YgfoveXYZmW5WeFdTV0myKWPtEYjRZLCNG6uRyGXloikjuK3
+HBc6BTyOuVOsB6J9BTHwXq9352LmueHgFXT0S5504VXKCNiwwQjSulrwCCwTInsu
+5u8PRaNf2Rn2qZDqQDKVssx+kHD6FOIbZhAFgA/bWWtXuI/MWsDKyaWXk7JHHJAO
+mZSRs0v9Rn0mJ4pKjnKLmP7OVY6zQYu8CZAFTlX9Bit0vlQdFUN+PBlE5c+ZkxfM
+oCRFehKTOTKuBy37Q1L080VSKxJ1odA9e0o2iV7XhdqdWiV8zdXOIQOCPjPHDv/R
+/pj9IdVXv0+h3cyWHqbblKxFWEKHEwCbOOANeCMXgz4XZo+YVIsMjcWI/oUvFmn2
+ae+Gd6p9
+=xjgG
+-----END PGP SIGNATURE-----
+`,
+    /** Made with `--digest-algo SHA384`, which the pinned hashes release has no export for. */
+    signedSha384: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA384
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+iQGzBAEBCQAdFiEEgkY+feZU6wPBwRdnwg/Pix/SCiQFAmrXUP4ACgkQwg/Pix/S
+CiQ1gQv+MhZBPHNgqWkMybT5DlDwP3KVIFx6epBYfSTZKmgZuHO3ZjBc/SWwxmbV
+mYF02G2Gv13B2h2WkHPuQYPeWNKZfaf4S7T5+NZb1ykhR+FULCxZm6HbgQTVYBSB
+N93VUUHzi0+3xj/N/UNhl2ebEAYKEXizgizchleStn8gSvrosJlK9rZOsoMQsnhI
+0SXZPj0nccOB5RzrUTbFZOTJvYmLbstAmteG7O8Kq+D4N6TGU6ZXlJhig2Cds3k6
+Cvdvwhm3aYPSIYmosGt2YjtNBdw8Z+cZp5bOSoiGhTjPXvxqHJHHZdWvLRtSwHbs
+ChE2yJUpCr2qrw5TzIKtMkyFca84bkx8VeZbMtPn2yRKTRRnami++6V5FfKAv4gx
+hVO5+pr+VhG2acbncXDihbNkMDgcvNA3N/5WertmpijZEpZRuMYz5ESJli5HKgHY
+GBjMI50p3LjTTnUJ85pbgTUUrfC94/bpnQiWB8n3WUGf8te7yjGj3NQt2emMa8p/
+URQvZ0N5
+=ShY+
+-----END PGP SIGNATURE-----
+`,
+  },
+  ed25519: {
+    fingerprint: "A52761DA621E2845B03A713F17FA5E9EBD8AE780",
+    subkey: "5526D6DC744C50EE8C45F5E7571E34818CE9A12E",
+    /** Certify-only primary key with an Ed25519Legacy signing subkey. */
+    publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mDMEatdQ9BYJKwYBBAHaRw8BAQdAZ8dFVi4Ama+TDhChZMTLY0ZuFI05yUzniRIa
+zD9nuP20GkVkIFRlc3RlciA8ZWRAZXhhbXBsZS5vcmc+iJAEExYKADgWIQSlJ2Ha
+Yh4oRbA6cT8X+l6evYrngAUCatdQ9AIbAQULCQgHAgYVCgkICwIEFgIDAQIeAQIX
+gAAKCRAX+l6evYrngPo6AP9elJZjMJM6+D7OqBmy9klysgS4Qgl2R21bUi0YL63C
+oQEAx6Az0GifobuO79Ks+vVjv2jSzmMeuZJtUKLR+tPVxwC4MwRq11D0FgkrBgEE
+AdpHDwEBB0BUFIeapVM9rvCrCie76Zzfg9rau64X5sXegFc7e1nuqYjvBBgWCgAg
+FiEEpSdh2mIeKEWwOnE/F/penr2K54AFAmrXUPQCGwIAgQkQF/penr2K54B2IAQZ
+FgoAHRYhBFUm1tx0TFDujEX151ceNIGM6aEuBQJq11D0AAoJEFceNIGM6aEuKOkB
+AP+dYjvqnxE/010eCq4cr19hz1/ezQwKUgD2hMF0UymrAQDEn7Gpklu3I5u2zuAN
+6UzHepoejKoIL0mOdJzshWhRC/KXAP9oVtZlbGPsnzSoKWMJnZAyjg4TT0AOrTsc
+ROY+TsqHVgD/U7mEcS4vJ9OSQcNv++9uK3i+IEoxxRmImXAS7nmcfQ4=
+=kkpt
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    signed: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+iHUEARYKAB0WIQRVJtbcdExQ7oxF9edXHjSBjOmhLgUCatdQ/gAKCRBXHjSBjOmh
+LmRoAP9WsBkJt7du9+qOlPWrqIJTAd9vwhInm2XjhDDGjqrVIwD+IwQUkTIWEXnX
+PFwF0ffKv5mbS3o0xy7E5bT8iYB06wA=
+=JWjj
+-----END PGP SIGNATURE-----
+`,
+    /**
+     * The same key with its subkey binding signed again by the primary with a signature
+     * expiration of one second, ten seconds before the message. GnuPG 2.4.9 refuses the subkey.
+     */
+    expiredBinding: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+xjMEatdQ9BYJKwYBBAHaRw8BAQdAZ8dFVi4Ama+TDhChZMTLY0ZuFI05yUzniRIa
+zD9nuP3NGkVkIFRlc3RlciA8ZWRAZXhhbXBsZS5vcmc+wpAEExYKADgWIQSlJ2Ha
+Yh4oRbA6cT8X+l6evYrngAUCatdQ9AIbAQULCQgHAgYVCgkICwIEFgIDAQIeAQIX
+gAAKCRAX+l6evYrngPo6AP9elJZjMJM6+D7OqBmy9klysgS4Qgl2R21bUi0YL63C
+oQEAx6Az0GifobuO79Ks+vVjv2jSzmMeuZJtUKLR+tPVxwDOMwRq11D0FgkrBgEE
+AdpHDwEBB0BUFIeapVM9rvCrCie76Zzfg9rau64X5sXegFc7e1nuqcL/AAAA9QQY
+FgoAJhYhBKUnYdpiHihFsDpxPxf6Xp69iueABQJq11D0AhsCBQMAAAABAIEJEBf6
+Xp69iueAdiAEGRYKAB0WIQRVJtbcdExQ7oxF9edXHjSBjOmhLgUCatdQ9AAKCRBX
+HjSBjOmhLijpAQD/nWI76p8RP9NdHgquHK9fYc9f3s0MClIA9oTBdFMpqwEAxJ+x
+qZJbtyObts7gDelMx3qaHoyqCC9JjnSc7IVoUQtDtQD/b2JpqHUrOWL7mCuEZwd3
+p4g8/Pzm7WJpef9dmv3mwPEBAMLIeq6noOlPQlp/9fYSxiYSic10AL2ynNFtmhOd
+TmED
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    /**
+     * The same key with a self-certified User Attribute, a tiny JPEG, in place of its user ID.
+     * GnuPG 2.4.9 calls the subkey's signature good.
+     */
+    attributeOnly: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+xjMEatdQ9BYJKwYBBAHaRw8BAQdAZ8dFVi4Ama+TDhChZMTLY0ZuFI05yUzniRIa
+zD9nuP3RFhUBEAABAQAAAAAAAAAAAAAAAP/Y/9nCeAQTFgoAIBYhBKUnYdpiHihF
+sDpxPxf6Xp69iueABQJq11D5AhsBAAoJEBf6Xp69iueAwF4BAPmDzKdhhy7jYupQ
+VVoski3jJxe0Jqc0pVbNRNQnr2V+APwK7NUBfE/+E5i5/UQQc8nmuyLuwxKCL0LU
+Ytw9I9OQBc4zBGrXUPQWCSsGAQQB2kcPAQEHQFQUh5qlUz2u8KsKJ7vpnN+D2tq7
+rhfmxd6AVzt7We6pwv8AAADvBBgWCgAgFiEEpSdh2mIeKEWwOnE/F/penr2K54AF
+AmrXUPQCGwIAgQkQF/penr2K54B2IAQZFgoAHRYhBFUm1tx0TFDujEX151ceNIGM
+6aEuBQJq11D0AAoJEFceNIGM6aEuKOkBAP+dYjvqnxE/010eCq4cr19hz1/ezQwK
+UgD2hMF0UymrAQDEn7Gpklu3I5u2zuAN6UzHepoejKoIL0mOdJzshWhRC/KXAP9o
+VtZlbGPsnzSoKWMJnZAyjg4TT0AOrTscROY+TsqHVgD/U7mEcS4vJ9OSQcNv++9u
+K3i+IEoxxRmImXAS7nmcfQ4=
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    /** Built here: the subkey signs the same text with a hashed Intended Recipient Fingerprint. */
+    intendedRecipient: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+wowEARYKADQWIQRVJtbcdExQ7oxF9edXHjSBjOmhLgUCatdRCBYjBKurq6urq6ur
+q6urq6urq6urq6urAAoJEFceNIGM6aEumhsBANE5voMJcecxnbWljismGQEWPC/C
+K/bSA0wX1yrHe4YgAP9BLfRwfbU8ksJtqKyUQgJtowMtBx9oUhw9N9u+n+92Aw==
+-----END PGP SIGNATURE-----
+`,
+  },
+  /** RSA 3072 from `--cert-digest-algo SHA1`: a SHA-1 self-signature over a SHA-256 message. */
+  weakSelfSignature: {
+    publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mQGNBGrXZ/UBDADaKBoAKFWpDJLQDGHpAq4Otjo5+csfQj2BQnsH/CNnznJvebg6
+sidTcjwtR2goVvlj++J3oWfOg8bX2/RkiPyAjB+Rk0oUwMzxk/KcHbo/c+zC/003
+ErtjhNF6M4v9TeUiAJiggX/9f3nb3rXH/33L7mro01juuv/7A/CbDZrBZv2xvXvA
+BjtVWkkDlkLuEld276XB7VQUfaDo+fh0tuKRJxDATQsnADUXugiw8z6LCoivjlLE
+Lep9MeaKoHLDdeFMvpZqiOEOGNEI49oY15TFoSfmMiYFTBuqESrNMHA82o3dOLI5
+wBXQEY/0ptXtUdzC9PtkWdL+35rCg8fCoRzNrRjxqVw8AqmRhRsvvt+E2Fxwpf8w
+rBpyIda832AgI7KwHOVExrDK2xNNov65V7H7MVwmz+2h2bHIhhgCqp+9j2lKcZlH
+sQ+AxbSrWXDHIPR6DMEIt4ePgFPdxJJC3je9NIo6pJeQHx65rP2RHZKXcOmLaAus
+KxPYXtYBN0bMyMsAEQEAAbQeU0hBMSBSU0EgPHNoYTFyc2FAZXhhbXBsZS5vcmc+
+iQHOBBMBAgA4FiEEVUpH1sTlVskCqGG4p0dIydkiDdwFAmrXZ/UCGwMFCwkIBwIG
+FQoJCAsCBBYCAwECHgECF4AACgkQp0dIydkiDdz6ZAwAmGZmSgSYCNnZMzINVSfU
+lKo3A/U1irtLhnvlCDjk9UCiHT04qCiV0MVWTjWuxLN9kYw3aeaudyR1FTG/B58X
+LxU6Jt+lhegg6w+O0rx/QXMmCgEG+XCmH/XlK6fLhqsINwMQNoRkgJjKSnoQk86B
+NycGnXzBIcTLEE40Zy8YCsDtTqOMknxJsk47I0ykPjnvRmbeZvzFnoNFkzcR//wd
+ZbWmZSZwa5AaJ/4/YMliDnevmLZ7h3Vy/emJJsnIQ/dFSXFfI8ZiWo/LgSoAPLJQ
+IM+pV3443UEkzfVMuvRjgUw37aLExaCBswBQxggcyZR77/N9eJ9TOASqe+JzdcJZ
+KypIe18jZlTTkNPJzp0P2y+jcw539lvygu0t07XaouFZK+F49SaBfpf9KKLNwNl6
+5eRkntsVzUBmTPAXM7sx/qYJ7LEdkJTPY8xNs76fpw+sMLfkZT3uBDF1nQSrG+H0
+u6xXL1bmn7Uc7LWgodv5d13EQ/xNd3sM11zggVnQqm0A
+=GkhH
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    signed: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+iQGzBAEBCAAdFiEEVUpH1sTlVskCqGG4p0dIydkiDdwFAmrXZ/YACgkQp0dIydki
+DdxDfgwAlXdVpuVAIbod03VbcWCOL/T/cSiw8Z0x77jJdvC+im52nJyUrNCB1UNd
+yMLBjRg42MXlIJ1cg/WnzXslDIcrcMnH1Jc3ZqFbgTnLp7VMGW/Y1fRJQGSrUKfT
++52xI3Fm175np+9SpYL1G1WHTaHFucbaBDNpqHmujogHqsI/OJhvtAkJWuagiieL
+M//ma5pTlGZBQSbU//NkgVbKdzmVYFA1fSWV5IlY0WarTJ8wrSx/Lo/XXfq2QTZm
+RQ7H6jtnzuQX8OldwtVQSz5OVlbs4DyCxr3aWHEWO2YGndOn5GtAhxYpag1ks0PL
+2PMUWmNzXeoowM2BITpSvLZysKYOLH7z/bxxBV2q//8q6iRsLMPxEGZmcEICwly6
+jiu+VseuF738+S9LOvcHVkDa5rF+v0fjJmsVW6VBQlEtdO43B7ADjXzGDz83hGPD
+HDeZAhtTyyItempZcxM6ggalqtZ1Iqjhl7mqU6zRfRJ7n8EFTxr4Wg2py/XjIgyD
+hcVDPHkQ
+=5Yd6
+-----END PGP SIGNATURE-----
+`,
+  },
+  /** RSA keys below the 3072 bits RFC 9580 §12.4 asks for, made and signed by GnuPG 2.4.9. */
+  shortRsa: {
+    key1024: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mI0Eatdk/gEEAMyLQ+8hYg3pmPBOaA/ayjhPs3XfWskRB7kTM1qvhDK9f8R+tX7i
+8Mys6RRbi1ukztmuDk2YdUE/h+/6CVvnYFd9Yv7V2jJXq8bGZPutev1/1B2f2zpk
+lKfNAfe8K+uO3+I/XURuPuUwErfvoxG1p9+mFlCNeY2Z7+IXd1uuyoOrABEBAAG0
+JFJTQTEwMjQgVGVzdGVyIDxyc2ExMDI0QGV4YW1wbGUub3JnPojOBBMBCgA4FiEE
+VY95Cvp0DLQsTTTWCuvKkU5vnaoFAmrXZP4CGwMFCwkIBwIGFQoJCAsCBBYCAwEC
+HgECF4AACgkQCuvKkU5vnaq1HwP5AZIfBP0xo0RypZxKal9dIr0pWZ+Jz1e6+yiP
+bTrfe0s51giPE55+B+ZVI9yb3U6GRbx2P4/W4uWE0ejV6q0YhM7xhSLcaF4wPsSk
+f90ZrvfXt3zDZifm4FH02X2ub5dCXvBQl+r78W6Z6rq+9A6QS5OeN7MfZ0VD4fmk
+PYTDoPw=
+=3m+e
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    signed1024: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+iLMEAQEKAB0WIQRVj3kK+nQMtCxNNNYK68qRTm+dqgUCatdk/wAKCRAK68qRTm+d
+qv4/A/4rpwnWrTCL3GH+a6F9iY6iPd1YLJpff6nDs3eTsYhxB78PEoD5dqXQ8Fh2
+hHIgWAxrSRoQC80kH7GcrhLBTRwjH+SX8FZNP2kHXerB+CKVZASkPF7pMdTEuU4p
+DAO4cbrYwpKNpwrt5BsSvSgBjaN/yC6rHQe4yGu8FdJBlfn3dQ==
+=PvrN
+-----END PGP SIGNATURE-----
+`,
+    key2048: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mQENBGrXZP4BCADZTP/LZXUTexOBgeqA0bbqQv8CjSgqR6PYMdBgPx4+G+Td2lx4
+yb5M0js3p5XFC/EiCjvByVdS8KTuLRDyXMNFyBDYf4hkYr08yp7i8KweK8g/+2iT
+DP2m5QBDDk9KBDrwrV6EEs4AhgdylR64KbeGPhGp+NBgD0C22o8HXbt0TZVaHRsZ
+UZD5CZeRlPXqz0VlFJQB9H/yYJGIEtVKiDu0K6Q9oQ7s+WQxT7ee8dBWDf26gbFh
+f+dwoA/QcnDxHhkq9fmIiOkljO3ibVX4+tp3UfI+UOn8bAOljs/S07Ud28HJEm88
+Y1he7HhQpjAE1KlmjqaXMKVbRIRvet5ygqFpABEBAAG0JFJTQTIwNDggVGVzdGVy
+IDxyc2EyMDQ4QGV4YW1wbGUub3JnPokBTgQTAQoAOBYhBIkX6H/P7VWSlsvMaBT5
+9aiTJGCSBQJq12T+AhsDBQsJCAcCBhUKCQgLAgQWAgMBAh4BAheAAAoJEBT59aiT
+JGCSQUUIANYssJaesHCWkSluXN0deGd3/m1Ne24t3ibjDp4WWozvrhdhbwJ/nVOq
+cSA6ii70Tv94UbOTkZXDmwYwPBqMu8LrW3QZOdWS78S3WKCPmWQMmQpsxhtP3qe+
+9RKinvoT+7UWBOKvbn79QU+o86O/4nSTEZ+psuXiWHJ5zbm0461aEQIk2vsEOtcO
+zufZN1j3vaTV4sQ+NAqCjn6J6UvU9DCzS76Q5MUofsYAnP+Ir/8evSAM/HzdE+6e
+L/6HMVdzq7ziI7C91KUKNsXsnfowfi+gPSnfziuLsZFfQ9r60PWJP7RSrx7ftYnh
+yl4UqXc3qx16+YjEOrzddTntfqhoeZs=
+=Cljk
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    signed2048: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+iQEzBAEBCgAdFiEEiRfof8/tVZKWy8xoFPn1qJMkYJIFAmrXZP8ACgkQFPn1qJMk
+YJKY/Qf9HJuHF++PvNEZL/VSzDZa5CjPuaZ0YfPchZtzQ3gid9EmJpUXvtfZtBq8
+ZgqWKnzhhdr0o2ms5PBPELSEm07jR3lIddBRGXStoVdB+WDwLD0R8/xZUJ0huZ5Q
+sqcE+FWEDt+TUf8uLKlNVCoMXWlBkhMAUdVMbx+17lfhvpHmxpTUrpXJAVl3KJ9a
+sIh8UaLyQpcqNE8CFmgtiUwUjxiHTuSwVHcja7S0gUficS4bzgDRSjvlVno8IKZT
+McspQlpF4yDlCGrs/feqrrg43PW2T8GjSZvPpQh9SfpJTVayiQozchldjj6fQS+l
+T3v4l8nne0Nn0nt4Ryc2olkbilrcxA==
+=uqTC
+-----END PGP SIGNATURE-----
+`,
+  },
+  dsa: {
+    fingerprint: "54D44E52AAA6A146C2A57C18C1A94E71A16F4BD3",
+    publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mQMuBGrXUPURCAD+7346j06tQ4Khhy5/SG1ukdU3nZmKTZHD0hueCnLWm9IBSGgS
+XDpHzuLA8qPC5KDjIm6eRe2b+qvs6+RCW30wTfUUwQQy6gkFGkS6IRxWD1DlPwtC
+Q/yrx+nWRcRQg0zB8Cz/DpKwUO/IENWtdVqPrOGk8ImbZSjAwG10AEt66yxom4cA
+2fCwsAk82k+VxBIRThbeH0lBP3GhvjSXUIfL/+iFbTyCmanxokhur8uPLIDwara7
+y8wTRoBmKuYek1PWfpl5ElB/MD8Lnq+JYod+Pp8jzEJSoxiteqmHiE8vIhCvA1l/
+E0BYk7BjKnVpvIXNWJcm/efYS79fYmM6I9JTAQDshlAsocgbblXR2UxV7qxDX4pS
+HOwWH0W+dd9vUEVWwwgA/IWEi0mnXC+uLMbyfrbpNeeMVCf+AaeJYmKYSxVCnPCq
+SbsNqCtxqJq494NrPKlgnr0W8I7/1TEzrx8X5kGoQZSp7CsbVhcv5IZwc8zYoEdL
+wki/+pDCv05lv5lhWGPFJ4jCUfLVfFOqzuKNc2pc+7sx0cpOrKRLuQGRYhGvKjMq
+0hbcOV+uluJ0ZIL9VWTRTScb0UTXE+nYIDFEBWkZCWs50mM+gtNuzWaK4WN5ZUPj
+agXjcBxgN/8jfdrrzjpSzmuUcYGjS5L6EXquTISmrr9JC9lOsVYkZSNndEPb1MM/
+VlDA8D4/T02EKAvrzxIahwxVGgRmKd1ekz6RcH4YdAf/TXAJIawrw6tzMINvUUwL
+EtW4zp29g5auj1LNgX4psMq72NwE5DtIAZQ7HieF4b6KRTBh+l+n2arJXyG89ziL
+HlKHxUotrb12m0d81CoKbQL5MS1tgIFNudRo0VAHIy4csRQKOyvrftK3hmdGBIMp
+YDvMJjpH5ZZY52aaEARi0ynsAXvSQuHRwAkBUVA1/vdEPcRtkqe6IJk0ItIoHZeT
+/7gInDL9Sx7k1uHPw1nuKy3M94sCOkF7xiNDJ4uPX6l8kZIHucAgaZy9iApx8D5v
+eJqEZ2QBA2Pp0O7IIzAK7tWf9zTZ+0wef2sEoosfcZd9e8bEBgJ6wPvZh12r7Z1W
+XLQcRFNBIFRlc3RlciA8ZHNhQGV4YW1wbGUub3JnPoiQBBMRCAA4FiEEVNROUqqm
+oUbCpXwYwalOcaFvS9MFAmrXUPUCGwMFCwkIBwIGFQoJCAsCBBYCAwECHgECF4AA
+CgkQwalOcaFvS9PsGAD/SFbcw9gIHbLbjuonGJrAQZLHMjNARWkeb5TGopz9NsgB
+AKC9kB5NMzc/yLPikryfZDPXvfrTpQIUj+mVuOf8c7YE
+=uFs/
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    signed: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+iHUEAREIAB0WIQRU1E5SqqahRsKlfBjBqU5xoW9L0wUCatdQ/gAKCRDBqU5xoW9L
+0z1sAPwOU0D8MUb0z6OoRsrlNC3z7FO9d07K2th8kQPr4kUXwQEApGxTQfoBTLpK
+fagpSOAjSUERRKAaVPcHlqahDGzHv74=
+=dxRG
+-----END PGP SIGNATURE-----
+`,
+  },
+  secp256k1: {
+    fingerprint: "DCA8DD8D276B6543520C8FF8E5B39FE5875482F6",
+    publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mE8EatdQ9RMFK4EEAAoCAwRnmc5T0adduP1KcYmSrLkNJg2o9Vuiahi5EoxniKCm
+OiNLEav0DI87wBNCwHQTQazki3YFEQSi0U6dRtR9Y7uNtBpLMSBUZXN0ZXIgPGsx
+QGV4YW1wbGUub3JnPoiQBBMTCAA4FiEE3KjdjSdrZUNSDI/45bOf5YdUgvYFAmrX
+UPUCGwMFCwkIBwIGFQoJCAsCBBYCAwECHgECF4AACgkQ5bOf5YdUgvYGfwEA/Kuw
+feajgH/HRInQI3u2JQDGVLqkPvBPckzJ54cmxf8A/1UGXI8hdps/oCvw71nXTuGs
+37/dLSz+aQfThgRHbHdx
+=+HTy
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    signed: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+iHQEARMIAB0WIQTcqN2NJ2tlQ1IMj/jls5/lh1SC9gUCatdQ/gAKCRDls5/lh1SC
+9kJGAPd/yES2Plb78gRjeLBJbmb3eYhM7yKo//y50nqo1BXBAP4ynb1lYoq7v0FR
+TZj6raLR9iDnZJnE8Y1JdtaRN3Y45w==
+=GncF
+-----END PGP SIGNATURE-----
+`,
+  },
+  p256: {
+    publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mFIEatdQ9RMIKoZIzj0DAQcCAwS8P3FgUeefzc2C7jB31vfVbMYSbTTzGkrU9/Yl
+gM1QiRbNOmDhissYNB+cjnHeqHWl3JE52aVaTaZgGoQi+MHOtB5QMjU2IFRlc3Rl
+ciA8cDI1NkBleGFtcGxlLm9yZz6IkAQTEwgAOBYhBAiwPY/EirSLfTqF3/P18MGN
+ZjiKBQJq11D1AhsDBQsJCAcCBhUKCQgLAgQWAgMBAh4BAheAAAoJEPP18MGNZjiK
+aNQBAN02wIrm3O28xqKQgSy5m6/NdxvMNL4r1sBS6+aO//6AAP9KNQ0jMauDBc71
+Jj3KIcWqtsSiPQm10egRQjmLk5+1dQ==
+=Aw0m
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    signed: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+iHUEARMIAB0WIQQIsD2PxIq0i306hd/z9fDBjWY4igUCatdQ/gAKCRDz9fDBjWY4
+ihJUAQCIxRrTCCtSChWnDMe8UVlhRsPSb9IZiVF6oKwFNd9RtQD/cKhgA/vOVW24
+/QSki2dDAbwpL4qpuxuZ/ylKTuunRtQ=
+=86hv
+-----END PGP SIGNATURE-----
+`,
+  },
+  /** Made with `--faked-system-time 20200101T000000`, valid for one day, signed at noon. */
+  expired: {
+    fingerprint: "267D8C0F3C3935E3C4BB148AD9E8396E68A3FDC9",
+    publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mDMEXgvhABYJKwYBBAHaRw8BAQdAFhKcwX8dUjX1OB9i1jTIQQ/1Mfsub84lYMJZ
+jJamJbS0HE9sZCBUZXN0ZXIgPG9sZEBleGFtcGxlLm9yZz6IlgQTFgoAPhYhBCZ9
+jA88OTXjxLsUitnoOW5oo/3JBQJeC+EAAhsDBQkAAVGABQsJCAcCBhUKCQgLAgQW
+AgMBAh4BAheAAAoJENnoOW5oo/3JJGEBAJ/9Chunzp0iXKZdVVGaa/e9tdDx0R8P
+C0A5EtzmEyVmAP9+Z9AssxLnZKla3jo9E5jthGRRwXr72XME+jFbK56NDg==
+=plOD
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    signed: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+iHUEARYKAB0WIQQmfYwPPDk148S7FIrZ6DluaKP9yQUCXgyJwAAKCRDZ6DluaKP9
+yRuAAP96bgDymK9hBikEDI8C+QG9um21vk8ckqysfDRWb+7hkQD/SHH2IBov+Rup
+3Ktq4qFWtsir1/UtahDSAWcZ/4vangc=
+=Xgut
+-----END PGP SIGNATURE-----
+`,
+  },
+  /**
+   * Signed on 2020-06-01 by a subkey whose expiry changed on 2021-01-01, exported with
+   * `--export-options export-minimal`, so only the newer binding is left. `gpg --verify` says good.
+   */
+  renewed: {
+    publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mDMEXgvhABYJKwYBBAHaRw8BAQdAZDuzR3aQeeLk+ZOS+BS+f3SVzcF4XSycgUt8
+/VyG7ru0IFJlbmV3IFRlc3RlciA8cmVuZXdAZXhhbXBsZS5vcmc+iJAEExYKADgW
+IQQbrHDu91bU9vCkLJyVF2FUVKCEVgUCXgvhAAIbAQULCQgHAgYVCgkICwIEFgID
+AQIeAQIXgAAKCRCVF2FUVKCEVkT5AP4/Imo1HRI1lYZuhIBQg+A8OmVUtGpB8JmB
+Is3e4MsDCgD+O0sh5d5GC3UqIEY/NTKaSc0Cdqn2VxA5yix7IwyprQG4MwReC+E8
+FgkrBgEEAdpHDwEBB0BIUnIN5Ot2JBR3oKB8kLy7rhkVvEzpvIOcAnaRo6XuH4jv
+BBgWCgAgAhsCFiEEG6xw7vdW1PbwpCyclRdhVFSghFYFAl/uZgAAgXYgBBkWCgAd
+FiEE3tixe+shzlbi3Tm2fRft/OzqwU4FAl4L4TwACgkQfRft/OzqwU53zwEAqUwh
+9Kp/EP+MX8mSDZ5Zq9XwZTOkpp3EOUAL+x/L1J4A+gOmk3/EWc6NezEh8r1RquBK
+yN3DAyWFZS/hTU9EsVgECRCVF2FUVKCEVksXAQCsQKy9kxMhWBkLA0bwqdBKzhfX
+HpkS73L4fjhFSb0FUQEAvToWkoSs8uH5tVcZruq2S8Ma1RMyligZley0p8m+4QQ=
+=dAA7
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    signed: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+iHUEARYKAB0WIQTe2LF76yHOVuLdObZ9F+387OrBTgUCXtRFAAAKCRB9F+387OrB
+TuzxAPkBrbIqR6k2RynBVEoLQ9HtPxUAGxMyF5bYcZnFstoJ7QEAgWdLn8wulRO+
+5eSHewjoV7n9EKlhLQebuYh/OyCXzw8=
+=anrC
+-----END PGP SIGNATURE-----
+`,
+  },
+  /** RFC 9580 Appendix A.3, a version 6 certificate, and A.6, the cleartext message it signs. */
+  rfc9580: {
+    fingerprint: "CB186C4F0609A697E4D52DFA6C722B0C1F1E27C18A56708F6525EC27BAD9ACC9",
+    subkey: "12C83F1E706F6308FE151A417743A1F033790E93E9978488D1DB378DA9930885",
+    publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+xioGY4d/4xsAAAAg+U2nu0jWCmHlZ3BqZYfQMxmZu52JGggkLq2EVD34laPCsQYf
+GwoAAABCBYJjh3/jAwsJBwUVCg4IDAIWAAKbAwIeCSIhBssYbE8GCaaX5NUt+mxy
+KwwfHifBilZwj2Ul7Ce62azJBScJAgcCAAAAAK0oIBA+LX0ifsDm185Ecds2v8lw
+gyU2kCcUmKfvBXbAf6rhRYWzuQOwEn7E/aLwIwRaLsdry0+VcallHhSu4RN6HWaE
+QsiPlR4zxP/TP7mhfVEe7XWPxtnMUMtf15OyA51YBM4qBmOHf+MZAAAAIIaTJINn
++eUBXbki+PSAld2nhJh/LVmFsS+60WyvXkQ1wpsGGBsKAAAALAWCY4d/4wKbDCIh
+BssYbE8GCaaX5NUt+mxyKwwfHifBilZwj2Ul7Ce62azJAAAAAAQBIKbpGG2dWTX8
+j+VjFM21J0hqWlEg+bdiojWnKfA5AQpWUWtnNwDEM0g12vYxoWM8Y81W+bHBw805
+I8kWVkXU6vFOi+HWvv/ira7ofJu16NnoUkhclkUrk0mXubZvyl4GBg==
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    signed: `-----BEGIN PGP SIGNED MESSAGE-----
+
+What we need from the grocery store:
+
+- - tofu
+- - vegetables
+- - noodles
+
+-----BEGIN PGP SIGNATURE-----
+
+wpgGARsKAAAAKQWCY5ijYyIhBssYbE8GCaaX5NUt+mxyKwwfHifBilZwj2Ul7Ce6
+2azJAAAAAGk2IHZJX1AhiJD39eLuPBgiUU9wUA9VHYblySHkBONKU/usJ9BvuAqo
+/FvLFuGWMbKAdA+epq7V4HOtAPlBWmU8QOd6aud+aSunHQaaEJ+iTFjP2OMW0KBr
+NK2ay45cX1IVAQ==
+-----END PGP SIGNATURE-----
+`,
+    /**
+     * Built here with the A.4 secret: no direct key signature, a certified user ID instead.
+     * RFC 9580 §5.2.3.10 says a version 6 key without a valid direct key signature isn't used.
+     */
+    noDirectKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+xioGY4d/4xsAAAAg+U2nu0jWCmHlZ3BqZYfQMxmZu52JGggkLq2EVD34laPNIUdy
+b2NlcnkgVGVzdGVyIDx0b2Z1QGV4YW1wbGUub3JnPsKbBhMbCgAAACwiIQbLGGxP
+Bgmml+TVLfpscisMHx4nwYpWcI9lJewnutmsyQUCY4fugAIbAwAAAACGYSATOF2C
+p8zxFjtgharP9Bk+Y4it0vccQWaLsNX6H0Rpji2FiszL+x09UDwKwWHm1s5B+iDJ
+arDLbZ5fBcKJ4O2reK0wf9FTYibEDffPVZ/8It3kZE1zrv9ijCfNHEBHywjOKgZj
+h3/jGQAAACCGkySDZ/nlAV25Ivj0gJXdp4SYfy1ZhbEvutFsr15ENcKbBhgbCgAA
+ACwFgmOHf+MCmwwiIQbLGGxPBgmml+TVLfpscisMHx4nwYpWcI9lJewnutmsyQAA
+AAAEASCm6RhtnVk1/I/lYxTNtSdIalpRIPm3YqI1pynwOQEKVlFrZzcAxDNINdr2
+MaFjPGPNVvmxwcPNOSPJFlZF1OrxTovh1r7/4q2u6HybtejZ6FJIXJZFK5NJl7m2
+b8peBgY=
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    /** Built with the A.4 secret: the A.3 certificate plus a later 0x30 on its direct key. */
+    revokedDirectKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+xioGY4d/4xsAAAAg+U2nu0jWCmHlZ3BqZYfQMxmZu52JGggkLq2EVD34laPCsQYf
+GwoAAABCBYJjh3/jAwsJBwUVCg4IDAIWAAKbAwIeCSIhBssYbE8GCaaX5NUt+mxy
+KwwfHifBilZwj2Ul7Ce62azJBScJAgcCAAAAAK0oIBA+LX0ifsDm185Ecds2v8lw
+gyU2kCcUmKfvBXbAf6rhRYWzuQOwEn7E/aLwIwRaLsdry0+VcallHhSu4RN6HWaE
+QsiPlR4zxP/TP7mhfVEe7XWPxtnMUMtf15OyA51YBMKYBjAbCgAAACkiIQbLGGxP
+Bgmml+TVLfpscisMHx4nwYpWcI9lJewnutmsyQUCY4fugAAAAAAPUyAwVXqfxOkO
+M1h9osfsETZbgKXK7xQ5XoOozfIXPGGGq9RIAxHg/Mv0A+x9IG/IITu4EReciN1N
+GgxpiPFJ8Ywl6mUxm8EeuN+MXzD1Ibol66vXwnaElPZImUDFOp6DzQ/OKgZjh3/j
+GQAAACCGkySDZ/nlAV25Ivj0gJXdp4SYfy1ZhbEvutFsr15ENcKbBhgbCgAAACwF
+gmOHf+MCmwwiIQbLGGxPBgmml+TVLfpscisMHx4nwYpWcI9lJewnutmsyQAAAAAE
+ASCm6RhtnVk1/I/lYxTNtSdIalpRIPm3YqI1pynwOQEKVlFrZzcAxDNINdr2MaFj
+PGPNVvmxwcPNOSPJFlZF1OrxTovh1r7/4q2u6HybtejZ6FJIXJZFK5NJl7m2b8pe
+BgY=
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    /** Built with the A.4 secret: a direct key signature with Revocable 0, then a later 0x30. */
+    unrevocableDirectKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+xioGY4d/4xsAAAAg+U2nu0jWCmHlZ3BqZYfQMxmZu52JGggkLq2EVD34laPCngYf
+GwoAAAAvIiEGyxhsTwYJppfk1S36bHIrDB8eJ8GKVnCPZSXsJ7rZrMkFAmOHf+MC
+GwMCBwAAAAAA8a4gH0RpjrPY/SJHbJG22wAlSm+Uud4DKE1yl7zhBitQdZrYE7lk
+BL7uKoWhC4sfS4UxmmhG2UW7RAOwXzrRah0OVOxZ1G01nBX7MQQm9Ms4thtmYXbB
+tgPL89mTIKwOy7ANwpgGMBsKAAAAKSIhBssYbE8GCaaX5NUt+mxyKwwfHifBilZw
+j2Ul7Ce62azJBQJjh+6AAAAAAA9TIDBVep/E6Q4zWH2ix+wRNluApcrvFDleg6jN
+8hc8YYar1EgDEeD8y/QD7H0gb8ghO7gRF5yI3U0aDGmI8UnxjCXqZTGbwR6434xf
+MPUhuiXrq9fCdoSU9kiZQMU6noPND84qBmOHf+MZAAAAIIaTJINn+eUBXbki+PSA
+ld2nhJh/LVmFsS+60WyvXkQ1wpsGGBsKAAAALAWCY4d/4wKbDCIhBssYbE8GCaaX
+5NUt+mxyKwwfHifBilZwj2Ul7Ce62azJAAAAAAQBIKbpGG2dWTX8j+VjFM21J0hq
+WlEg+bdiojWnKfA5AQpWUWtnNwDEM0g12vYxoWM8Y81W+bHBw805I8kWVkXU6vFO
+i+HWvv/ira7ofJu16NnoUkhclkUrk0mXubZvyl4GBg==
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+  },
+} as const;

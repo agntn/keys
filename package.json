@@ -16,6 +16,7 @@
     "keys",
     "monero",
     "near",
+    "openpgp",
     "polkadot",
     "solana",
     "stellar",
@@ -96,6 +97,10 @@
     "./electrum": {
       "types": "./dist/utils/electrum/index.d.mts",
       "default": "./dist/utils/electrum/index.mjs"
+    },
+    "./openpgp": {
+      "types": "./dist/utils/openpgp/index.d.mts",
+      "default": "./dist/utils/openpgp/index.mjs"
     },
     "./script": {
       "types": "./dist/utils/script/index.d.mts",

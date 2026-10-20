@@ -39,6 +39,8 @@ export const TOOL_NAMES = [
   "keys_message_recover",
   "keys_bip322_sign",
   "keys_bip322_verify",
+  "keys_openpgp_inspect",
+  "keys_openpgp_verify",
   "keys_transaction_signatures_extract",
   "keys_bip44_parse",
   "keys_bip44_generate",
@@ -340,6 +342,12 @@ export const MAX_BIP322_SIGNATURE_LENGTH = 8192;
 
 /** JSON Schema pattern for a BIP322 signature: an optional `smp`, `ful` or `pof`, then base64. */
 export const BIP322_SIGNATURE_SCHEMA_PATTERN = "^(?:smp|ful|pof)?[A-Za-z0-9+/]*={0,2}$";
+
+/** Longest armored key block or signed message the OpenPGP tools read, in characters. */
+export const MAX_OPENPGP_LENGTH = 262_144;
+
+/** A full OpenPGP fingerprint as hex, spaces allowed the way GnuPG groups it. */
+export const OPENPGP_FINGERPRINT_SCHEMA_PATTERN = "^[0-9A-Fa-f ]+$";
 
 /** Signature schemes `keys_secp256k1_nonce_recover` solves. */
 export const NONCE_SIGNATURE_TYPES = ["ecdsa", "schnorr"] as const;
