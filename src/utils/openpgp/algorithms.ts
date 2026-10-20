@@ -1,3 +1,4 @@
+import { isPrime } from "@agntn/curves";
 import { md5, ripemd160, sha1, sha256, sha3_256, sha512 } from "@agntn/hashes";
 import { invert, pow } from "@noble/curves/abstract/modular.js";
 import { ed25519 } from "@noble/curves/ed25519.js";
@@ -126,6 +127,12 @@ const MAX_MODULUS_BITS = 8192;
 /** Largest DSA prime read, the top size FIPS 186-4 allows. */
 const MAX_DSA_BITS = 3072;
 
+/** Smallest DSA prime read, the bottom size FIPS 186-4 allows. */
+const MIN_DSA_BITS = 1024;
+
+/** Subgroup sizes FIPS 186-4 §4.2 allows for `q`, in bits. */
+const DSA_SUBGROUP_BITS = new Set([160, 224, 256]);
+
 /** Largest RSA exponent read. GnuPG uses 65537; an 8192-bit one costs half a second a check. */
 const MAX_EXPONENT_BITS = 64;
 
@@ -234,7 +241,7 @@ function readRsa(reader: Reader): KeyMaterial {
 }
 
 /**
- * Refuses a DSA group where `g` or `y` has no order `q`. With `g = y = 1` any `r = s = 1` verifies.
+ * Refuses a DSA group outside FIPS 186-4: a prime `q` of 160, 224 or 256 bits, `g` and `y` in it.
  * @param p - The prime
  * @param rest - `q`, `g` and `y`
  * @throws {TypeError} When the group is broken
@@ -245,7 +252,8 @@ function checkDsaGroup(
 ): void {
   const { q, g, y } = rest;
   const inGroup = (value: bigint): boolean => value > 1n && value < p && pow(value, q, p) === 1n;
-  if (q <= 1n || (p - 1n) % q !== 0n || !inGroup(g) || !inGroup(y)) {
+  const sized = p.toString(2).length >= MIN_DSA_BITS && DSA_SUBGROUP_BITS.has(q.toString(2).length);
+  if (!sized || (p - 1n) % q !== 0n || !isPrime(q) || !inGroup(g) || !inGroup(y)) {
     throw new TypeError("OpenPGP DSA key has broken group parameters");
   }
 }

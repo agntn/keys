@@ -56,6 +56,18 @@ function breakBinding(armored: string): string {
   );
 }
 
+/* Writes a number as an OpenPGP MPI: bit count, then big endian bytes. */
+function mpiOf(value: bigint): number[] {
+  const hex = value.toString(16);
+  const even = hex.length % 2 === 0 ? hex : `0${hex}`;
+  const bits = value.toString(2).length;
+  return [
+    bits >> 8,
+    bits & 0xff,
+    ...(even.match(/../gu)?.map((pair) => Number.parseInt(pair, 16)) ?? []),
+  ];
+}
+
 /* Dearmors the signature block of a cleartext message. */
 function signatureBytes(message: string): Uint8Array {
   const lines = message.split("\n");
@@ -93,7 +105,6 @@ function breakBackSignature(armored: string): string {
 describe("OpenPGP cleartext verification", () => {
   it.each([
     ["RSA 3072", rsa, "RSA 3072", "SHA512"],
-    ["DSA 2048", dsa, "DSA 2048", "SHA256"],
     ["ECDSA secp256k1", secp256k1, "ECDSA secp256k1", "SHA256"],
   ])("verifies a GnuPG %s signature", (_, vector, algorithm, hash) => {
     const verdict = verify(vector.signed, { publicKey: vector.publicKey });
@@ -109,6 +120,17 @@ describe("OpenPGP cleartext verification", () => {
       warnings: [],
     });
     expect(verdict.reason).toBeUndefined();
+  });
+
+  it("checks the DSA math but calls it inconclusive, since RFC 9580 retired DSA", () => {
+    expect(verify(dsa.signed, { publicKey: dsa.publicKey })).toMatchObject({
+      state: "inconclusive",
+      reason: "The math checks out, but it rests on DSA, which RFC 9580 tells verifiers not to use",
+      signingFingerprint: dsa.fingerprint,
+      algorithm: "DSA 2048",
+    });
+    const altered = dsa.signed.replace("Ten words", "Ten wards");
+    expect(verify(altered, { publicKey: dsa.publicKey }).state).toBe("invalid");
   });
 
   it("gives back the text the signature covers, escapes undone and trailing whitespace cut", () => {
@@ -235,6 +257,17 @@ describe("OpenPGP cleartext verification", () => {
     });
   });
 
+  it("refuses a real DSA group once g has order 2 instead of q", () => {
+    const [packet] = packetsOf(dsa.publicKey);
+    if (packet === undefined) throw new Error("No key packet");
+    const { material } = readPublicKey(packet.body);
+    if (material.kind !== "dsa") throw new Error("Not a DSA key");
+    const numbers = [material.p, material.q, material.p - 1n, material.y];
+    expect(() =>
+      readKeyMaterial(17, Uint8Array.from(numbers.flatMap((value) => mpiOf(value)))),
+    ).toThrow("OpenPGP DSA key has broken group parameters");
+  });
+
   it("refuses an Ed25519 key at the identity, which ZIP 215 rules would let sign anything", () => {
     const identity = Uint8Array.from([1, ...Array.from({ length: 31 }, () => 0)]);
     const value = Uint8Array.from([...identity, ...Array.from({ length: 32 }, () => 0)]);
@@ -242,9 +275,20 @@ describe("OpenPGP cleartext verification", () => {
     expect(checkMath(key, 27, value, new Uint8Array(64).fill(7), hashAlgorithm(10))).toBe(false);
   });
 
-  it("refuses a DSA key whose group lets r = s = 1 verify anything", () => {
-    const mpi = (value: number) => [0, value.toString(2).length, value];
-    const material = Uint8Array.from([...mpi(23), ...mpi(11), ...mpi(1), ...mpi(1)]);
+  it.each([
+    ["g = y = 1, where r = s = 1 verifies anything", [23n, 11n, 1n, 1n]],
+    ["a subgroup of order 2", [29n, 14n, 28n, 28n]],
+    [
+      "a composite q that passes every other check",
+      [
+        0x85877de23f1b785525d271477d3f591e0b688a5c2df220cb92993b0c0161a44495ac71e8db5a5f3542cf5ce9f553e742246f7b73724c3f4f104cd6e78de0ec07805ecf6d93318bd11bf394a41588327c93793d9f9c78e31550faeef071b4def5feba2557eacf00238d2e8b1cb10ba93c81e166da1e525c621550c31b5c585d1fn,
+        0x9b0a343816ce0fcc83cf57c2457ca5148d12b69bn,
+        0x3eec44ab3103de710f8f7b09ab41fee3b4651910f97f94d91a61bd368e0243d00253086823b79be5e7c937cfab85f426f461b3a36980c3c64c56c1d14137b1947519de243baaf74f6352b4363f85bb4eb96332c11a3d54b7cb0f5b830bbe65f63c7685f78e694f6847712e9777434b00d1e80c8fb6371f32c27a66be53d16062n,
+        0x1f5078fea5a19e4730df09f4fc70ba9419aaa6410f2dba4396d41bdfc1edf41518fed4f0304c99dc315d27b9ac6e435c55a73e87e559918ab5d42b67604de869c324e1c51cde32e39e7b4b3b4e117aefac9bf0bbc74efed2448ebcdd2f04f845f7aaf34133bc93bab5dd84ca68994acdd4a6ffd4a8499d810de2ee20c99d9f36n,
+      ],
+    ],
+  ])("refuses a DSA group with %s", (_, numbers) => {
+    const material = Uint8Array.from(numbers.flatMap((value) => mpiOf(value)));
     expect(() => readKeyMaterial(17, material)).toThrow(
       "OpenPGP DSA key has broken group parameters",
     );

@@ -427,11 +427,32 @@ function judge(
   }
   const reason = failure(signature, signer.key, canonical) ?? signerFailure(match, certificate);
   if (reason !== undefined) return { state: "invalid", reason };
-  const hash = hashAlgorithm(signature.hashId);
-  if (!hash.weak) return { state: "valid" };
+  return retiredVerdict(match, certificate) ?? { state: "valid" };
+}
+
+/**
+ * Math that holds on something RFC 9580 retired: a weak hash (§9.5), or DSA anywhere in the
+ * chain (§12.5 says verifiers must not use DSA keys at all).
+ * @param match - Signature and signer
+ * @param certificate - Checked certificate
+ * @returns {{ state: OpenPGPState; reason: string } | undefined} The inconclusive verdict, if any
+ */
+function retiredVerdict(
+  match: Match,
+  certificate: CertificateState,
+): { state: OpenPGPState; reason: string } | undefined {
+  const hash = hashAlgorithm(match.signature.hashId);
+  if (hash.weak) {
+    return {
+      state: "inconclusive",
+      reason: `The math checks out, but it's ${hash.name}, which RFC 9580 tells verifiers not to accept`,
+    };
+  }
+  const chain = match.subkey === undefined ? [match.signer] : [certificate.primary, match.subkey];
+  if (!chain.some((state) => state.key.algorithm === 17)) return undefined;
   return {
     state: "inconclusive",
-    reason: `The math checks out, but it's ${hash.name}, which RFC 9580 tells verifiers not to accept`,
+    reason: "The math checks out, but it rests on DSA, which RFC 9580 tells verifiers not to use",
   };
 }
 
