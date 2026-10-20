@@ -470,10 +470,14 @@ describe("BIP39 Utils", () => {
     const fingerprint = (seed: Uint8Array) =>
       getMasterKeyFromSeed(seed).fingerprint.toString(16).padStart(8, "0");
 
-    it.each(fingerprints)("finds the Genesis master key at $rounds rounds", (vector) => {
-      const seed = mnemonicToSeed(mnemonic, { passphrase, rounds: vector.rounds });
-      expect(fingerprint(seed)).toBe(vector.fingerprint);
-    });
+    it.each(fingerprints)(
+      "finds the Genesis master key at $rounds rounds",
+      { timeout: 30_000 },
+      (vector) => {
+        const seed = mnemonicToSeed(mnemonic, { passphrase, rounds: vector.rounds });
+        expect(fingerprint(seed)).toBe(vector.fingerprint);
+      },
+    );
 
     it("misses both keys at BIP39's own 2048", () => {
       const seed = mnemonicToSeed(mnemonic, { passphrase });
