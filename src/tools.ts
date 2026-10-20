@@ -649,7 +649,7 @@ export const openpgpVerifyTool = defineTool({
   name: "keys_openpgp_verify",
   title: "Verify OpenPGP",
   description:
-    "Verify an OpenPGP cleartext signed message (-----BEGIN PGP SIGNED MESSAGE-----) against the signer's armored public key block: RSA, Ed25519 (v4 legacy and v6) and ECDSA on secp256k1, over SHA-256, SHA-512 or SHA3-256. Answers valid, invalid with the reason, or inconclusive when the math holds over MD5, SHA-1 or RIPEMD-160 or on a DSA key, which RFC 9580 retired. A signing subkey counts only with a valid binding and back signature. Identity is a separate answer: pass the full fingerprint you trust to get match or mismatch. Revocation, expiry and text outside the signed block come back as warnings. Nothing gets fetched or imported.",
+    "Verify an OpenPGP cleartext signed message (-----BEGIN PGP SIGNED MESSAGE-----) against the signer's armored public key block: RSA, Ed25519 (v4 legacy and v6) and ECDSA on secp256k1, over SHA-256, SHA-512 or SHA3-256. Answers valid, invalid with the reason, or inconclusive when the math holds over MD5, SHA-1 or RIPEMD-160, or on DSA or RSA under 2048 bits, all retired by RFC 9580. A signing subkey counts only with a valid binding and back signature. Identity is a separate answer: pass the full fingerprint you trust to get match or mismatch. Revocation, expiry and text outside the signed block come back as warnings. Nothing gets fetched or imported.",
   effect: "read",
   input: VERIFY_OPENPGP_PARAMETERS,
   execute: async ({ message, ...options }) =>

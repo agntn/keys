@@ -32,6 +32,10 @@ export interface Signature {
   readonly embedded: readonly Uint8Array[];
   /** Type of a hashed subpacket marked critical that this module doesn't know. */
   readonly unknownCritical?: number;
+  /** False when subpacket 7 says later revocations don't count, RFC 9580 §5.2.3.20. */
+  readonly revocable: boolean;
+  /** Whether a hashed subpacket 35 ties the signature to an encrypted recipient. */
+  readonly intendedRecipient: boolean;
 }
 
 /** Subpacket types this module knows, critical or not: RFC 9580 Table 5 minus notations. */
@@ -157,6 +161,8 @@ export function readSignature(body: Uint8Array): Signature {
     ...issuerOf([...hashed, ...unhashed], version),
     ...hashedFields(hashed),
     primaryUserId: find(hashed, 25)?.[0] === 1,
+    revocable: find(hashed, 7)?.[0] !== 0,
+    intendedRecipient: find(hashed, 35) !== undefined,
     embedded: [...hashed, ...unhashed]
       .filter((subpacket) => subpacket.type === 32)
       .map((s) => s.body),

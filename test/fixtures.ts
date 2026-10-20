@@ -3394,6 +3394,98 @@ VtZlbGPsnzSoKWMJnZAyjg4TT0AOrTscROY+TsqHVgD/U7mEcS4vJ9OSQcNv++9u
 K3i+IEoxxRmImXAS7nmcfQ4=
 -----END PGP PUBLIC KEY BLOCK-----
 `,
+    /** Built here: the subkey signs the same text with a hashed Intended Recipient Fingerprint. */
+    intendedRecipient: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+wowEARYKADQWIQRVJtbcdExQ7oxF9edXHjSBjOmhLgUCatdRCBYjBKurq6urq6ur
+q6urq6urq6urq6urAAoJEFceNIGM6aEumhsBANE5voMJcecxnbWljismGQEWPC/C
+K/bSA0wX1yrHe4YgAP9BLfRwfbU8ksJtqKyUQgJtowMtBx9oUhw9N9u+n+92Aw==
+-----END PGP SIGNATURE-----
+`,
+  },
+  /** RSA keys below the 3072 bits RFC 9580 §12.4 asks for, made and signed by GnuPG 2.4.9. */
+  shortRsa: {
+    key1024: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mI0Eatdk/gEEAMyLQ+8hYg3pmPBOaA/ayjhPs3XfWskRB7kTM1qvhDK9f8R+tX7i
+8Mys6RRbi1ukztmuDk2YdUE/h+/6CVvnYFd9Yv7V2jJXq8bGZPutev1/1B2f2zpk
+lKfNAfe8K+uO3+I/XURuPuUwErfvoxG1p9+mFlCNeY2Z7+IXd1uuyoOrABEBAAG0
+JFJTQTEwMjQgVGVzdGVyIDxyc2ExMDI0QGV4YW1wbGUub3JnPojOBBMBCgA4FiEE
+VY95Cvp0DLQsTTTWCuvKkU5vnaoFAmrXZP4CGwMFCwkIBwIGFQoJCAsCBBYCAwEC
+HgECF4AACgkQCuvKkU5vnaq1HwP5AZIfBP0xo0RypZxKal9dIr0pWZ+Jz1e6+yiP
+bTrfe0s51giPE55+B+ZVI9yb3U6GRbx2P4/W4uWE0ejV6q0YhM7xhSLcaF4wPsSk
+f90ZrvfXt3zDZifm4FH02X2ub5dCXvBQl+r78W6Z6rq+9A6QS5OeN7MfZ0VD4fmk
+PYTDoPw=
+=3m+e
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    signed1024: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+iLMEAQEKAB0WIQRVj3kK+nQMtCxNNNYK68qRTm+dqgUCatdk/wAKCRAK68qRTm+d
+qv4/A/4rpwnWrTCL3GH+a6F9iY6iPd1YLJpff6nDs3eTsYhxB78PEoD5dqXQ8Fh2
+hHIgWAxrSRoQC80kH7GcrhLBTRwjH+SX8FZNP2kHXerB+CKVZASkPF7pMdTEuU4p
+DAO4cbrYwpKNpwrt5BsSvSgBjaN/yC6rHQe4yGu8FdJBlfn3dQ==
+=PvrN
+-----END PGP SIGNATURE-----
+`,
+    key2048: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mQENBGrXZP4BCADZTP/LZXUTexOBgeqA0bbqQv8CjSgqR6PYMdBgPx4+G+Td2lx4
+yb5M0js3p5XFC/EiCjvByVdS8KTuLRDyXMNFyBDYf4hkYr08yp7i8KweK8g/+2iT
+DP2m5QBDDk9KBDrwrV6EEs4AhgdylR64KbeGPhGp+NBgD0C22o8HXbt0TZVaHRsZ
+UZD5CZeRlPXqz0VlFJQB9H/yYJGIEtVKiDu0K6Q9oQ7s+WQxT7ee8dBWDf26gbFh
+f+dwoA/QcnDxHhkq9fmIiOkljO3ibVX4+tp3UfI+UOn8bAOljs/S07Ud28HJEm88
+Y1he7HhQpjAE1KlmjqaXMKVbRIRvet5ygqFpABEBAAG0JFJTQTIwNDggVGVzdGVy
+IDxyc2EyMDQ4QGV4YW1wbGUub3JnPokBTgQTAQoAOBYhBIkX6H/P7VWSlsvMaBT5
+9aiTJGCSBQJq12T+AhsDBQsJCAcCBhUKCQgLAgQWAgMBAh4BAheAAAoJEBT59aiT
+JGCSQUUIANYssJaesHCWkSluXN0deGd3/m1Ne24t3ibjDp4WWozvrhdhbwJ/nVOq
+cSA6ii70Tv94UbOTkZXDmwYwPBqMu8LrW3QZOdWS78S3WKCPmWQMmQpsxhtP3qe+
+9RKinvoT+7UWBOKvbn79QU+o86O/4nSTEZ+psuXiWHJ5zbm0461aEQIk2vsEOtcO
+zufZN1j3vaTV4sQ+NAqCjn6J6UvU9DCzS76Q5MUofsYAnP+Ir/8evSAM/HzdE+6e
+L/6HMVdzq7ziI7C91KUKNsXsnfowfi+gPSnfziuLsZFfQ9r60PWJP7RSrx7ftYnh
+yl4UqXc3qx16+YjEOrzddTntfqhoeZs=
+=Cljk
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    signed2048: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+iQEzBAEBCgAdFiEEiRfof8/tVZKWy8xoFPn1qJMkYJIFAmrXZP8ACgkQFPn1qJMk
+YJKY/Qf9HJuHF++PvNEZL/VSzDZa5CjPuaZ0YfPchZtzQ3gid9EmJpUXvtfZtBq8
+ZgqWKnzhhdr0o2ms5PBPELSEm07jR3lIddBRGXStoVdB+WDwLD0R8/xZUJ0huZ5Q
+sqcE+FWEDt+TUf8uLKlNVCoMXWlBkhMAUdVMbx+17lfhvpHmxpTUrpXJAVl3KJ9a
+sIh8UaLyQpcqNE8CFmgtiUwUjxiHTuSwVHcja7S0gUficS4bzgDRSjvlVno8IKZT
+McspQlpF4yDlCGrs/feqrrg43PW2T8GjSZvPpQh9SfpJTVayiQozchldjj6fQS+l
+T3v4l8nne0Nn0nt4Ryc2olkbilrcxA==
+=uqTC
+-----END PGP SIGNATURE-----
+`,
   },
   dsa: {
     fingerprint: "54D44E52AAA6A146C2A57C18C1A94E71A16F4BD3",
@@ -3639,6 +3731,23 @@ gmOHf+MCmwwiIQbLGGxPBgmml+TVLfpscisMHx4nwYpWcI9lJewnutmsyQAAAAAE
 ASCm6RhtnVk1/I/lYxTNtSdIalpRIPm3YqI1pynwOQEKVlFrZzcAxDNINdr2MaFj
 PGPNVvmxwcPNOSPJFlZF1OrxTovh1r7/4q2u6HybtejZ6FJIXJZFK5NJl7m2b8pe
 BgY=
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    /** Built with the A.4 secret: a direct key signature with Revocable 0, then a later 0x30. */
+    unrevocableDirectKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+xioGY4d/4xsAAAAg+U2nu0jWCmHlZ3BqZYfQMxmZu52JGggkLq2EVD34laPCngYf
+GwoAAAAvIiEGyxhsTwYJppfk1S36bHIrDB8eJ8GKVnCPZSXsJ7rZrMkFAmOHf+MC
+GwMCBwAAAAAA8a4gH0RpjrPY/SJHbJG22wAlSm+Uud4DKE1yl7zhBitQdZrYE7lk
+BL7uKoWhC4sfS4UxmmhG2UW7RAOwXzrRah0OVOxZ1G01nBX7MQQm9Ms4thtmYXbB
+tgPL89mTIKwOy7ANwpgGMBsKAAAAKSIhBssYbE8GCaaX5NUt+mxyKwwfHifBilZw
+j2Ul7Ce62azJBQJjh+6AAAAAAA9TIDBVep/E6Q4zWH2ix+wRNluApcrvFDleg6jN
+8hc8YYar1EgDEeD8y/QD7H0gb8ghO7gRF5yI3U0aDGmI8UnxjCXqZTGbwR6434xf
+MPUhuiXrq9fCdoSU9kiZQMU6noPND84qBmOHf+MZAAAAIIaTJINn+eUBXbki+PSA
+ld2nhJh/LVmFsS+60WyvXkQ1wpsGGBsKAAAALAWCY4d/4wKbDCIhBssYbE8GCaaX
+5NUt+mxyKwwfHifBilZwj2Ul7Ce62azJAAAAAAQBIKbpGG2dWTX8j+VjFM21J0hq
+WlEg+bdiojWnKfA5AQpWUWtnNwDEM0g12vYxoWM8Y81W+bHBw805I8kWVkXU6vFO
+i+HWvv/ira7ofJu16NnoUkhclkUrk0mXubZvyl4GBg==
 -----END PGP PUBLIC KEY BLOCK-----
 `,
   },

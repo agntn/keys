@@ -50,8 +50,8 @@ const MAX_CHECKS = 128;
 /** Checks a self-signature against a key and the data it signs, within the block's budget. */
 type Check = (signature: Signature, key: PublicKey, data: Uint8Array) => boolean;
 
-/** Spends one self-signature check, throwing once a call has used them all. */
-export type Budget = () => void;
+/** Runs the math of a self-signature once per call, throwing once the call used up its budget. */
+export type Budget = Check;
 
 /** Public key algorithms that sign, RFC 9580 Table 18. RSA Encrypt-Only (2) is not one. */
 const SIGNING_ALGORITHMS = new Set([1, 3, 17, 19, 22, 27, 28]);
@@ -130,17 +130,24 @@ function holds(signature: Signature, key: PublicKey, data: Uint8Array): boolean 
 }
 
 /**
- * Starts the budget of self-signature checks for one call, shared by every evaluation in it.
- * @returns {Budget} A spender that throws past 128 checks
- * @throws {RangeError} From the spender, past 128 checks
+ * Starts the budget for one call, shared by every evaluation in it. A signature already checked
+ * against the same key and data costs nothing the second time.
+ * @returns {Budget} The memoized check
+ * @throws {RangeError} From the check, past 128 distinct signatures
  */
 export function createBudget(): Budget {
-  let left = MAX_CHECKS;
-  return () => {
-    if (left === 0) {
+  const known = new Map<string, boolean>();
+  return (signature, key, data) => {
+    const parts = [key.fingerprint, data, signature.hashedBody, signature.value];
+    const id = parts.map((bytes) => bytes.toHex()).join(":");
+    const cached = known.get(id);
+    if (cached !== undefined) return cached;
+    if (known.size === MAX_CHECKS) {
       throw new RangeError(`OpenPGP key block needs more than ${MAX_CHECKS} self-signature checks`);
     }
-    left--;
+    const result = holds(signature, key, data);
+    known.set(id, result);
+    return result;
   };
 }
 
@@ -162,11 +169,7 @@ export function expiredAt(signature: Signature, at: number): boolean {
  * @returns {Check} The check
  */
 function createCheck(at: number, budget: Budget): Check {
-  return (signature, key, data) => {
-    if (expiredAt(signature, at)) return false;
-    budget();
-    return holds(signature, key, data);
-  };
+  return (signature, key, data) => !expiredAt(signature, at) && budget(signature, key, data);
 }
 
 /**
@@ -234,7 +237,7 @@ interface Certified {
 }
 
 /**
- * The newest valid self-signature of the types, unless a newer 0x30 revokes it, RFC 9580 §5.2.1.13.
+ * Newest valid self-signature of the types, unless a newer 0x30 revokes it (§5.2.1.13, §5.2.3.20).
  * @param signatures - Candidates and their revocations
  * @param types - Signature Type IDs to accept
  * @param data - What they sign
@@ -248,7 +251,7 @@ function standing(
   context: { readonly primary: PublicKey; readonly check: Check },
 ): Signature | undefined {
   const signature = newestSelf(signatures, types, context.primary, data, context.check);
-  if (signature === undefined) return undefined;
+  if (signature === undefined || !signature.revocable) return signature;
   const revocation = newestSelf(signatures, [0x30], context.primary, data, context.check);
   return revocation !== undefined && revocation.created >= signature.created
     ? undefined

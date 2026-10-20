@@ -425,6 +425,13 @@ function judge(
   if (signer.key.material.kind === "none") {
     throw new RangeError(`${describeKey(signer.key)} signatures aren't supported yet`);
   }
+  if (signature.intendedRecipient) {
+    return {
+      state: "invalid",
+      reason:
+        "The signature names an intended recipient, so it belongs inside an encrypted message",
+    };
+  }
   const reason = failure(signature, signer.key, canonical) ?? signerFailure(match, certificate);
   if (reason !== undefined) return { state: "invalid", reason };
   return retiredVerdict(match, certificate) ?? { state: "valid" };
@@ -448,12 +455,52 @@ function retiredVerdict(
       reason: `The math checks out, but it's ${hash.name}, which RFC 9580 tells verifiers not to accept`,
     };
   }
-  const chain = match.subkey === undefined ? [match.signer] : [certificate.primary, match.subkey];
-  if (!chain.some((state) => state.key.algorithm === 17)) return undefined;
+  const retired = chainOf(match, certificate)
+    .map((key) => retiredKey(key))
+    .find(Boolean);
+  if (retired === undefined) return undefined;
   return {
     state: "inconclusive",
-    reason: "The math checks out, but it rests on DSA, which RFC 9580 tells verifiers not to use",
+    reason: `The math checks out, but it rests on ${retired}, which RFC 9580 tells verifiers not to use`,
   };
+}
+
+/**
+ * The keys a verdict rests on: the signer, and the primary key that binds a signing subkey.
+ * @param match - Signature and signer
+ * @param certificate - Checked certificate
+ * @returns {PublicKey[]} One key, or the primary and the subkey
+ */
+function chainOf(match: Match, certificate: CertificateState): PublicKey[] {
+  return match.subkey === undefined
+    ? [match.signer.key]
+    : [certificate.primary.key, match.subkey.key];
+}
+
+/**
+ * Names a key RFC 9580 says not to verify with: DSA (§12.5), RSA under 2048 bits (§12.4).
+ * @param key - The key
+ * @returns {string | undefined} What it is, undefined for a key that's fine
+ */
+function retiredKey(key: PublicKey): string | undefined {
+  if (key.algorithm === 17) return "DSA";
+  return key.material.kind === "rsa" && key.material.bits < 2048
+    ? `RSA ${key.material.bits}`
+    : undefined;
+}
+
+/**
+ * Warns about RSA under the 3072 bits RFC 9580 §12.4 asks for, short of the 2048 it forbids.
+ * @param match - Signature and signer
+ * @param certificate - Checked certificate
+ * @returns {string[]} Warnings
+ */
+function sizeWarnings(match: Match, certificate: CertificateState): string[] {
+  return chainOf(match, certificate).flatMap(({ material }) =>
+    material.kind === "rsa" && material.bits >= 2048 && material.bits < 3072
+      ? [`The key is RSA ${material.bits}, under the 3072 bits RFC 9580 asks for`]
+      : [],
+  );
 }
 
 /**
@@ -494,6 +541,7 @@ function warningsOf(match: Match, certificate: CertificateState, cleartext: Clea
     ...keyWarnings(certificate.primary, "key", signature.created),
     ...(subkey === undefined ? [] : keyWarnings(subkey, "signing subkey", signature.created)),
     ...(expired ? [`The signature expired on ${iso(signature.created + expiresAfter)}`] : []),
+    ...sizeWarnings(match, certificate),
     ...frameWarnings(cleartext),
   ];
 }
@@ -636,7 +684,13 @@ function verdictsOf(
   const verdicts: OpenPGPVerification[] = [];
   const errors: Error[] = [];
   for (const signature of signatures) {
-    const state = stateAt(signature.created);
+    let state: CertificateState;
+    try {
+      state = stateAt(signature.created);
+    } catch (error) {
+      errors.push(asError(error));
+      continue;
+    }
     for (const match of matchesOf([signature], state)) {
       try {
         verdicts.push(verdictOf(match, state, target.cleartext, target.expected));
