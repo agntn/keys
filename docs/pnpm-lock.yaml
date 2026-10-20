@@ -18,8 +18,8 @@ importers:
         specifier: 0.1.2
         version: 0.1.2(ai@7.0.87(zod@4.6.5))
       '@agntn/hashes':
-        specifier: 0.6.3
-        version: 0.6.3(ai@7.0.87(zod@4.6.5))
+        specifier: 0.7.1
+        version: 0.7.1(ai@7.0.87(zod@4.6.5))(zod@4.6.5)
       '@agntn/tools':
         specifier: 0.2.3
         version: 0.2.3(@modelcontextprotocol/server@2.0.0)(ai@7.0.87(zod@4.6.5))(zod@4.6.5)
@@ -147,12 +147,12 @@ packages:
       ai:
         optional: true
 
-  '@agntn/hashes@0.6.3':
-    resolution: {integrity: sha512-/0GejNXPCrSQGge/BoQ5iu2h+hUn9XXEDx/hhrSWKV1RYAuImWtx4WDDnn3LCLIAFzFTPK40RkNhbROExjZxkw==}
+  '@agntn/hashes@0.6.7':
+    resolution: {integrity: sha512-dzMenq6k5KdhQXUOLREXzD2/K58EotQadV8IJIXCEqbRKmVJgpuZIQERDM1fKPD6NUOojCBTt4+DACrstRqT9g==}
     engines: {node: '>=26'}
     hasBin: true
     peerDependencies:
-      '@earendil-works/pi-coding-agent': '>=0.87.1 <1'
+      '@earendil-works/pi-coding-agent': '>=0.87.1 <2'
       '@oh-my-pi/pi-coding-agent': '>=18.4.2 <19'
       ai: '>=7.0.0'
     peerDependenciesMeta:
@@ -163,8 +163,8 @@ packages:
       ai:
         optional: true
 
-  '@agntn/hashes@0.6.7':
-    resolution: {integrity: sha512-dzMenq6k5KdhQXUOLREXzD2/K58EotQadV8IJIXCEqbRKmVJgpuZIQERDM1fKPD6NUOojCBTt4+DACrstRqT9g==}
+  '@agntn/hashes@0.7.1':
+    resolution: {integrity: sha512-VspWveoZuOs7Qh0JI/+Wx3dV6sMdgbZNIANBjfvsnWJwH2sJETH9pyYO/fxponmz+Eco2dvpSfqLljwwVYP0dg==}
     engines: {node: '>=26'}
     hasBin: true
     peerDependencies:
@@ -220,6 +220,30 @@ packages:
 
   '@agntn/tools@0.2.3':
     resolution: {integrity: sha512-SyLKX2cHvchI2tLItMw/YFNS+j2Cb85eSi3QkN5oqXUSL0aMa1tznRRG45zlxYZaHTTqsezhPv6jKArW2eE1Kw==}
+    engines: {node: '>=26'}
+    peerDependencies:
+      '@earendil-works/pi-coding-agent': '>=0.84.2 <2'
+      '@modelcontextprotocol/server': '>=2.2.0 <3'
+      '@oh-my-pi/pi-coding-agent': '>=18.0.0 <19'
+      ai: '>=7.0.0 <8'
+      h3-mcp: '>=0.2.0 <0.3'
+      zod: '>=4.1.13 <5'
+    peerDependenciesMeta:
+      '@earendil-works/pi-coding-agent':
+        optional: true
+      '@modelcontextprotocol/server':
+        optional: true
+      '@oh-my-pi/pi-coding-agent':
+        optional: true
+      ai:
+        optional: true
+      h3-mcp:
+        optional: true
+      zod:
+        optional: true
+
+  '@agntn/tools@0.2.4':
+    resolution: {integrity: sha512-5fRpNr2WFaumfl+S7IkaCgkFXqD6hNRHqZfL90FEJb/yJdD5xoRBYgYXalSw6WNSoeoe7+qaVHgZP9bGsBo/Zw==}
     engines: {node: '>=26'}
     peerDependencies:
       '@earendil-works/pi-coding-agent': '>=0.84.2 <2'
@@ -7822,14 +7846,6 @@ snapshots:
     optionalDependencies:
       ai: 7.0.87(zod@4.6.5)
 
-  '@agntn/hashes@0.6.3(ai@7.0.87(zod@4.6.5))':
-    dependencies:
-      '@agntn/tools': 0.0.0(@modelcontextprotocol/server@2.2.0)(ai@7.0.87(zod@4.6.5))
-      '@modelcontextprotocol/server': 2.2.0
-      citty: 0.2.2
-    optionalDependencies:
-      ai: 7.0.87(zod@4.6.5)
-
   '@agntn/hashes@0.6.7(ai@7.0.87(zod@4.6.5))':
     dependencies:
       '@agntn/tools': 0.2.0(@modelcontextprotocol/server@2.2.0)(ai@7.0.87(zod@4.6.5))
@@ -7839,6 +7855,16 @@ snapshots:
       ai: 7.0.87(zod@4.6.5)
     transitivePeerDependencies:
       - h3-mcp
+
+  '@agntn/hashes@0.7.1(ai@7.0.87(zod@4.6.5))(zod@4.6.5)':
+    dependencies:
+      '@agntn/tools': 0.2.4(@modelcontextprotocol/server@2.2.0)(ai@7.0.87(zod@4.6.5))(zod@4.6.5)
+      '@modelcontextprotocol/server': 2.2.0
+    optionalDependencies:
+      ai: 7.0.87(zod@4.6.5)
+    transitivePeerDependencies:
+      - h3-mcp
+      - zod
 
   '@agntn/tools@0.0.0(@modelcontextprotocol/server@2.2.0)(ai@7.0.87(zod@4.6.5))':
     optionalDependencies:
@@ -7857,6 +7883,12 @@ snapshots:
       zod: 4.6.5
 
   '@agntn/tools@0.2.3(@modelcontextprotocol/server@2.2.0)(ai@7.0.87(zod@4.6.5))(zod@4.6.5)':
+    optionalDependencies:
+      '@modelcontextprotocol/server': 2.2.0
+      ai: 7.0.87(zod@4.6.5)
+      zod: 4.6.5
+
+  '@agntn/tools@0.2.4(@modelcontextprotocol/server@2.2.0)(ai@7.0.87(zod@4.6.5))(zod@4.6.5)':
     optionalDependencies:
       '@modelcontextprotocol/server': 2.2.0
       ai: 7.0.87(zod@4.6.5)

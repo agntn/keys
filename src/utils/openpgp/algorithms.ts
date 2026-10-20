@@ -1,5 +1,14 @@
 import { isPrime } from "@agntn/curves";
-import { md5, ripemd160, sha1, sha256, sha3_256, sha512 } from "@agntn/hashes";
+import {
+  Sha224Hasher,
+  md5,
+  ripemd160,
+  sha1,
+  sha256,
+  sha3_256,
+  sha3_512,
+  sha512,
+} from "@agntn/hashes";
 import { invert, pow } from "@noble/curves/abstract/modular.js";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
@@ -71,6 +80,13 @@ const HASHES: Readonly<Record<number, HashAlgorithm>> = {
     salt: 32,
     weak: false,
   },
+  11: {
+    name: "SHA224",
+    digest: (data) => new Sha224Hasher().update(data).digest(),
+    prefix: hex("302d300d06096086480165030402040500041c"),
+    salt: 16,
+    weak: false,
+  },
   12: {
     name: "SHA3-256",
     digest: sha3_256,
@@ -78,13 +94,18 @@ const HASHES: Readonly<Record<number, HashAlgorithm>> = {
     salt: 16,
     weak: false,
   },
+  14: {
+    name: "SHA3-512",
+    digest: sha3_512,
+    prefix: hex("3051300d060960864801650304020a05000440"),
+    salt: 32,
+    weak: false,
+  },
 };
 
 /** Hashes RFC 9580 defines that `@agntn/hashes` doesn't export yet, with their salt sizes. */
 const MISSING_HASHES: Readonly<Record<number, { readonly name: string; readonly salt: number }>> = {
   9: { name: "SHA384", salt: 24 },
-  11: { name: "SHA224", salt: 16 },
-  14: { name: "SHA3-512", salt: 32 },
 };
 
 /** Text names of every hash in RFC 9580 Table 23, which a `Hash:` header may list. */
@@ -447,6 +468,23 @@ function verifyEdDsa(
     ? concatBytes(pad(reader.mpi(), 32), pad(reader.mpi(), 32))
     : reader.read(64);
   return ed25519.verify(signature, digest, key.point, { zip215: false });
+}
+
+/**
+ * Shortest hash RFC 9580 §5.2.3 lets a key sign with: the bits of `q` for DSA, 256 for the curves.
+ * @param key - The signer's material
+ * @returns {number} Digest bits, 0 where any hash goes
+ */
+export function minimumDigestBits(key: KeyMaterial): number {
+  switch (key.kind) {
+    case "dsa":
+      return key.q.toString(2).length;
+    case "ecdsa":
+    case "eddsa":
+      return 256;
+    default:
+      return 0;
+  }
 }
 
 /**
