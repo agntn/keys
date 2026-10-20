@@ -19,8 +19,8 @@ export interface KeyState {
   /** Expiry in seconds since 1970. */
   readonly expires?: number;
   readonly revoked?: { readonly at: number; readonly code?: number };
-  /** Whether the self-signature this state comes from uses MD5, SHA-1 or RIPEMD-160. */
-  readonly weakHash: boolean;
+  /** MD5, SHA1 or RIPEMD160 when the self-signature this state comes from uses one. */
+  readonly weakHash?: string;
 }
 
 /** The primary key, plus whether any self-signature on it holds up. */
@@ -212,8 +212,19 @@ function stateOf(
     ...(binding?.keyFlags === undefined ? {} : { flags: binding.keyFlags }),
     ...(expiresAfter > 0 ? { expires: key.created + expiresAfter } : {}),
     ...(revocation === undefined ? {} : { revoked: revokedAt(revocation) }),
-    weakHash: binding !== undefined && hashAlgorithm(binding.hashId).weak,
+    ...weakHashOf(binding),
   };
+}
+
+/**
+ * Names the weak hash of a self-signature.
+ * @param binding - The self-signature, if any
+ * @returns {{ weakHash?: string }} The hash name when it's one RFC 9580 calls weak
+ */
+function weakHashOf(binding: Signature | undefined): { weakHash?: string } {
+  if (binding === undefined) return {};
+  const hash = hashAlgorithm(binding.hashId);
+  return hash.weak ? { weakHash: hash.name } : {};
 }
 
 /**

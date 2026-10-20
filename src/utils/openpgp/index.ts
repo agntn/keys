@@ -455,6 +455,13 @@ function retiredVerdict(
       reason: `The math checks out, but it's ${hash.name}, which RFC 9580 tells verifiers not to accept`,
     };
   }
+  const weak = weakBinding(match, certificate);
+  if (weak !== undefined) {
+    return {
+      state: "inconclusive",
+      reason: `The math checks out, but the ${weak.label} self-signature uses ${weak.hash}, which RFC 9580 tells verifiers not to accept`,
+    };
+  }
   const retired = chainOf(match, certificate)
     .map((key) => retiredKey(key))
     .find(Boolean);
@@ -463,6 +470,22 @@ function retiredVerdict(
     state: "inconclusive",
     reason: `The math checks out, but it rests on ${retired}, which RFC 9580 tells verifiers not to use`,
   };
+}
+
+/**
+ * The first self-signature of the chain made over a weak hash: the key's own, then the subkey's.
+ * @param match - Signature and signer
+ * @param certificate - Checked certificate
+ * @returns {{ label: string; hash: string } | undefined} Which binding and which hash
+ */
+function weakBinding(
+  match: Match,
+  certificate: CertificateState,
+): { label: string; hash: string } | undefined {
+  const { weakHash } = certificate.primary;
+  if (weakHash !== undefined) return { label: "key's", hash: weakHash };
+  const subkeyHash = match.subkey?.weakHash;
+  return subkeyHash === undefined ? undefined : { label: "subkey's", hash: subkeyHash };
 }
 
 /**
@@ -521,8 +544,6 @@ function keyWarnings(state: KeyState, label: string, signedAt: number): string[]
   } else if (state.expires !== undefined && state.expires * 1000 <= Date.now()) {
     warnings.push(`The ${label} expired on ${iso(state.expires)}`);
   }
-  if (state.weakHash)
-    warnings.push(`The ${label}'s self-signature uses a hash RFC 9580 calls weak`);
   return warnings;
 }
 

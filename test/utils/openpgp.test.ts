@@ -7,7 +7,18 @@ import { readPublicKey } from "../../src/utils/openpgp/keys.ts";
 import { type Packet, readPackets } from "../../src/utils/openpgp/packets.ts";
 import { openpgpVectors } from "../fixtures.ts";
 
-const { rsa, ed25519, dsa, secp256k1, p256, expired, renewed, rfc9580, shortRsa } = openpgpVectors;
+const {
+  rsa,
+  ed25519,
+  dsa,
+  secp256k1,
+  p256,
+  expired,
+  renewed,
+  rfc9580,
+  shortRsa,
+  weakSelfSignature,
+} = openpgpVectors;
 
 /* Dearmors a public key block into packets. */
 function packetsOf(armored: string): Packet[] {
@@ -342,6 +353,17 @@ describe("OpenPGP cleartext verification", () => {
     expect(verify(shortRsa.signed2048, { publicKey: shortRsa.key2048 })).toMatchObject({
       state: "valid",
       warnings: ["The key is RSA 2048, under the 3072 bits RFC 9580 asks for"],
+    });
+  });
+
+  it("calls a strong signature inconclusive when the key's own self-signature is SHA-1", () => {
+    expect(
+      verify(weakSelfSignature.signed, { publicKey: weakSelfSignature.publicKey }),
+    ).toMatchObject({
+      state: "inconclusive",
+      hash: "SHA256",
+      reason:
+        "The math checks out, but the key's self-signature uses SHA1, which RFC 9580 tells verifiers not to accept",
     });
   });
 

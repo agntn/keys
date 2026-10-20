@@ -3412,6 +3412,57 @@ K/bSA0wX1yrHe4YgAP9BLfRwfbU8ksJtqKyUQgJtowMtBx9oUhw9N9u+n+92Aw==
 -----END PGP SIGNATURE-----
 `,
   },
+  /** RSA 3072 from `--cert-digest-algo SHA1`: a SHA-1 self-signature over a SHA-256 message. */
+  weakSelfSignature: {
+    publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mQGNBGrXZ/UBDADaKBoAKFWpDJLQDGHpAq4Otjo5+csfQj2BQnsH/CNnznJvebg6
+sidTcjwtR2goVvlj++J3oWfOg8bX2/RkiPyAjB+Rk0oUwMzxk/KcHbo/c+zC/003
+ErtjhNF6M4v9TeUiAJiggX/9f3nb3rXH/33L7mro01juuv/7A/CbDZrBZv2xvXvA
+BjtVWkkDlkLuEld276XB7VQUfaDo+fh0tuKRJxDATQsnADUXugiw8z6LCoivjlLE
+Lep9MeaKoHLDdeFMvpZqiOEOGNEI49oY15TFoSfmMiYFTBuqESrNMHA82o3dOLI5
+wBXQEY/0ptXtUdzC9PtkWdL+35rCg8fCoRzNrRjxqVw8AqmRhRsvvt+E2Fxwpf8w
+rBpyIda832AgI7KwHOVExrDK2xNNov65V7H7MVwmz+2h2bHIhhgCqp+9j2lKcZlH
+sQ+AxbSrWXDHIPR6DMEIt4ePgFPdxJJC3je9NIo6pJeQHx65rP2RHZKXcOmLaAus
+KxPYXtYBN0bMyMsAEQEAAbQeU0hBMSBSU0EgPHNoYTFyc2FAZXhhbXBsZS5vcmc+
+iQHOBBMBAgA4FiEEVUpH1sTlVskCqGG4p0dIydkiDdwFAmrXZ/UCGwMFCwkIBwIG
+FQoJCAsCBBYCAwECHgECF4AACgkQp0dIydkiDdz6ZAwAmGZmSgSYCNnZMzINVSfU
+lKo3A/U1irtLhnvlCDjk9UCiHT04qCiV0MVWTjWuxLN9kYw3aeaudyR1FTG/B58X
+LxU6Jt+lhegg6w+O0rx/QXMmCgEG+XCmH/XlK6fLhqsINwMQNoRkgJjKSnoQk86B
+NycGnXzBIcTLEE40Zy8YCsDtTqOMknxJsk47I0ykPjnvRmbeZvzFnoNFkzcR//wd
+ZbWmZSZwa5AaJ/4/YMliDnevmLZ7h3Vy/emJJsnIQ/dFSXFfI8ZiWo/LgSoAPLJQ
+IM+pV3443UEkzfVMuvRjgUw37aLExaCBswBQxggcyZR77/N9eJ9TOASqe+JzdcJZ
+KypIe18jZlTTkNPJzp0P2y+jcw539lvygu0t07XaouFZK+F49SaBfpf9KKLNwNl6
+5eRkntsVzUBmTPAXM7sx/qYJ7LEdkJTPY8xNs76fpw+sMLfkZT3uBDF1nQSrG+H0
+u6xXL1bmn7Uc7LWgodv5d13EQ/xNd3sM11zggVnQqm0A
+=GkhH
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    signed: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+iQGzBAEBCAAdFiEEVUpH1sTlVskCqGG4p0dIydkiDdwFAmrXZ/YACgkQp0dIydki
+DdxDfgwAlXdVpuVAIbod03VbcWCOL/T/cSiw8Z0x77jJdvC+im52nJyUrNCB1UNd
+yMLBjRg42MXlIJ1cg/WnzXslDIcrcMnH1Jc3ZqFbgTnLp7VMGW/Y1fRJQGSrUKfT
++52xI3Fm175np+9SpYL1G1WHTaHFucbaBDNpqHmujogHqsI/OJhvtAkJWuagiieL
+M//ma5pTlGZBQSbU//NkgVbKdzmVYFA1fSWV5IlY0WarTJ8wrSx/Lo/XXfq2QTZm
+RQ7H6jtnzuQX8OldwtVQSz5OVlbs4DyCxr3aWHEWO2YGndOn5GtAhxYpag1ks0PL
+2PMUWmNzXeoowM2BITpSvLZysKYOLH7z/bxxBV2q//8q6iRsLMPxEGZmcEICwly6
+jiu+VseuF738+S9LOvcHVkDa5rF+v0fjJmsVW6VBQlEtdO43B7ADjXzGDz83hGPD
+HDeZAhtTyyItempZcxM6ggalqtZ1Iqjhl7mqU6zRfRJ7n8EFTxr4Wg2py/XjIgyD
+hcVDPHkQ
+=5Yd6
+-----END PGP SIGNATURE-----
+`,
+  },
   /** RSA keys below the 3072 bits RFC 9580 §12.4 asks for, made and signed by GnuPG 2.4.9. */
   shortRsa: {
     key1024: `-----BEGIN PGP PUBLIC KEY BLOCK-----
