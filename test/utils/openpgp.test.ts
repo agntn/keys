@@ -6,7 +6,7 @@ import { readPublicKey } from "../../src/utils/openpgp/keys.ts";
 import { type Packet, readPackets } from "../../src/utils/openpgp/packets.ts";
 import { openpgpVectors } from "../fixtures.ts";
 
-const { rsa, ed25519, dsa, secp256k1, p256, expired, rfc9580 } = openpgpVectors;
+const { rsa, ed25519, dsa, secp256k1, p256, expired, renewed, rfc9580 } = openpgpVectors;
 
 /* Dearmors a public key block into packets. */
 function packetsOf(armored: string): Packet[] {
@@ -180,6 +180,13 @@ describe("OpenPGP cleartext verification", () => {
       reason: "The signing subkey isn't bound to this primary key",
     });
     expect(inspect(key)).toMatchObject({ subkeys: [{ bound: false }] });
+  });
+
+  it("still counts a binding renewed after the signature, the way GnuPG does", () => {
+    expect(verify(renewed.signed, { publicKey: renewed.publicKey })).toMatchObject({
+      state: "valid",
+      created: "2020-06-01T00:00:00.000Z",
+    });
   });
 
   it("never takes RSA Encrypt-Only (algorithm 2) as a signing algorithm", () => {

@@ -149,7 +149,7 @@ export function expiredAt(signature: Signature, at: number): boolean {
 }
 
 /**
- * A check that drops self-signatures expired at the given time and spends the budget on the rest.
+ * Drops self-signatures expired by `at`, not ones made after it: GnuPG keeps only the renewed one.
  * @param at - Time the key is judged at, seconds since 1970
  * @param budget - The call's budget
  * @returns {Check} The check

@@ -3514,6 +3514,45 @@ yRuAAP96bgDymK9hBikEDI8C+QG9um21vk8ckqysfDRWb+7hkQD/SHH2IBov+Rup
 -----END PGP SIGNATURE-----
 `,
   },
+  /**
+   * Signed on 2020-06-01 by a subkey whose expiry changed on 2021-01-01, exported with
+   * `--export-options export-minimal`, so only the newer binding is left. `gpg --verify` says good.
+   */
+  renewed: {
+    publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mDMEXgvhABYJKwYBBAHaRw8BAQdAZDuzR3aQeeLk+ZOS+BS+f3SVzcF4XSycgUt8
+/VyG7ru0IFJlbmV3IFRlc3RlciA8cmVuZXdAZXhhbXBsZS5vcmc+iJAEExYKADgW
+IQQbrHDu91bU9vCkLJyVF2FUVKCEVgUCXgvhAAIbAQULCQgHAgYVCgkICwIEFgID
+AQIeAQIXgAAKCRCVF2FUVKCEVkT5AP4/Imo1HRI1lYZuhIBQg+A8OmVUtGpB8JmB
+Is3e4MsDCgD+O0sh5d5GC3UqIEY/NTKaSc0Cdqn2VxA5yix7IwyprQG4MwReC+E8
+FgkrBgEEAdpHDwEBB0BIUnIN5Ot2JBR3oKB8kLy7rhkVvEzpvIOcAnaRo6XuH4jv
+BBgWCgAgAhsCFiEEG6xw7vdW1PbwpCyclRdhVFSghFYFAl/uZgAAgXYgBBkWCgAd
+FiEE3tixe+shzlbi3Tm2fRft/OzqwU4FAl4L4TwACgkQfRft/OzqwU53zwEAqUwh
+9Kp/EP+MX8mSDZ5Zq9XwZTOkpp3EOUAL+x/L1J4A+gOmk3/EWc6NezEh8r1RquBK
+yN3DAyWFZS/hTU9EsVgECRCVF2FUVKCEVksXAQCsQKy9kxMhWBkLA0bwqdBKzhfX
+HpkS73L4fjhFSb0FUQEAvToWkoSs8uH5tVcZruq2S8Ma1RMyligZley0p8m+4QQ=
+=dAA7
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    signed: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+iHUEARYKAB0WIQTe2LF76yHOVuLdObZ9F+387OrBTgUCXtRFAAAKCRB9F+387OrB
+TuzxAPkBrbIqR6k2RynBVEoLQ9HtPxUAGxMyF5bYcZnFstoJ7QEAgWdLn8wulRO+
+5eSHewjoV7n9EKlhLQebuYh/OyCXzw8=
+=anrC
+-----END PGP SIGNATURE-----
+`,
+  },
   /** RFC 9580 Appendix A.3, a version 6 certificate, and A.6, the cleartext message it signs. */
   rfc9580: {
     fingerprint: "CB186C4F0609A697E4D52DFA6C722B0C1F1E27C18A56708F6525EC27BAD9ACC9",
