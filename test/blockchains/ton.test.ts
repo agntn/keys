@@ -92,6 +92,9 @@ describe("TON", () => {
     it("refuses a type that names no contract", () => {
       expect(() => blockchain.getAddress(vector.publicKey, "v4r1")).toThrow(/Supported: v3r2/u);
       expect(() => blockchain.getAddress(vector.publicKey, "v4r2-raw")).toThrow(RangeError);
+      expect(() => blockchain.getAddress(vector.publicKey, "v4r2-bounceable-raw")).toThrow(
+        RangeError,
+      );
     });
 
     it("rejects a public key that is not 32 bytes", () => {

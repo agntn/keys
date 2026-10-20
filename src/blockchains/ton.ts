@@ -32,14 +32,15 @@ const ADDRESS_TYPES: readonly string[] = [
  * @throws {RangeError} When the type names no contract keys knows
  */
 function readAddressType(type: string): { version: TonWalletVersion; bounceable: boolean } {
-  const [version, form] = type.split("-");
-  const known = TON_WALLET_VERSIONS.find((candidate) => candidate === version);
-  if (known === undefined || (form !== undefined && form !== "bounceable")) {
+  const version = TON_WALLET_VERSIONS.find(
+    (candidate) => type === candidate || type === `${candidate}-bounceable`,
+  );
+  if (version === undefined) {
     throw new RangeError(
       `Address type ${JSON.stringify(type)} is not supported for ton. Supported: ${ADDRESS_TYPES.join(", ")}`,
     );
   }
-  return { version: known, bounceable: form === "bounceable" };
+  return { version, bounceable: type !== version };
 }
 
 /** TON, where the address hashes a wallet contract, so one key gets one address per contract. */
