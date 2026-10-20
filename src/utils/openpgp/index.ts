@@ -225,24 +225,59 @@ function issuerOf(signature: Signature): string | undefined {
   return signature.issuerKeyId === undefined ? undefined : upper(signature.issuerKeyId);
 }
 
+/** A signature block: the signatures that parse, and why the others didn't. */
+interface SignatureBlock {
+  readonly signatures: readonly Signature[];
+  readonly errors: readonly Error[];
+}
+
 /**
- * Reads every signature packet of a dearmored signature block.
+ * Reads the signature packets, keeping going past one that doesn't parse, as RFC 9580 §5.2.5 asks.
  * @param bytes - Dearmored packets
- * @returns {Signature[]} The signatures
+ * @returns {SignatureBlock} The signatures, and the errors of the rest
  * @throws {TypeError} When the block holds anything but signatures
  * @throws {RangeError} When it holds more than 16
  */
-function readSignatures(bytes: Uint8Array): Signature[] {
+function readSignatureBlock(bytes: Uint8Array): SignatureBlock {
   const packets = readPackets(bytes).filter((packet) => !isIgnorable(packet.tag));
   if (packets.length > MAX_SIGNATURES) {
     throw new RangeError(`A cleartext message may carry at most ${MAX_SIGNATURES} signatures`);
   }
-  return packets.map((packet) => {
+  const signatures: Signature[] = [];
+  const errors: Error[] = [];
+  for (const packet of packets) {
     if (packet.tag !== 2) {
       throw new TypeError("OpenPGP signature block holds a packet that isn't a signature");
     }
-    return readSignature(packet.body);
-  });
+    try {
+      signatures.push(readSignature(packet.body));
+    } catch (error) {
+      errors.push(asError(error));
+    }
+  }
+  return { signatures, errors };
+}
+
+/**
+ * Keeps an error as it is, wraps anything else thrown.
+ * @param error - What was caught
+ * @returns {Error} An error to throw later
+ */
+function asError(error: unknown): Error {
+  return error instanceof Error ? error : new TypeError(String(error));
+}
+
+/**
+ * Reads every signature of a block, failing on the first one that doesn't parse.
+ * @param bytes - Dearmored packets
+ * @returns {readonly Signature[]} The signatures
+ * @throws {TypeError | RangeError} When the block is malformed or a signature can't be read
+ */
+function readSignatures(bytes: Uint8Array): readonly Signature[] {
+  const { signatures, errors } = readSignatureBlock(bytes);
+  const [error] = errors;
+  if (error !== undefined) throw error;
+  return signatures;
 }
 
 /**
@@ -557,6 +592,41 @@ function statesOf(certificate: Certificate): (at: number) => CertificateState {
   };
 }
 
+/** What `verify` compares against beside the key: the message and the expected fingerprint. */
+interface Target {
+  readonly cleartext: Cleartext;
+  readonly expected: string | undefined;
+}
+
+/**
+ * A verdict for every signature a key of the certificate made. One that can't be judged (a hash
+ * not supported here) leaves its error and lets the others through, as RFC 9580 §5.2.5 asks.
+ * @param signatures - The message's signatures
+ * @param certificate - The certificate
+ * @param target - Message and expected fingerprint
+ * @returns {{ verdicts: OpenPGPVerification[]; errors: Error[] }} Verdicts, and what blocked others
+ */
+function verdictsOf(
+  signatures: readonly Signature[],
+  certificate: Certificate,
+  target: Target,
+): { verdicts: OpenPGPVerification[]; errors: Error[] } {
+  const stateAt = statesOf(certificate);
+  const verdicts: OpenPGPVerification[] = [];
+  const errors: Error[] = [];
+  for (const signature of signatures) {
+    const state = stateAt(signature.created);
+    for (const match of matchesOf([signature], state)) {
+      try {
+        verdicts.push(verdictOf(match, state, target.cleartext, target.expected));
+      } catch (error) {
+        errors.push(asError(error));
+      }
+    }
+  }
+  return { verdicts, errors };
+}
+
 /**
  * Verifies a cleartext signed message, with math, identity and warnings as separate answers.
  * @param message - The whole `-----BEGIN PGP SIGNED MESSAGE-----` message
@@ -578,18 +648,15 @@ export function verify(
   const expected =
     options.fingerprint === undefined ? undefined : readFingerprint(options.fingerprint);
   const cleartext = readCleartext(message);
-  const signatures = readSignatures(cleartext.signature);
+  const block = readSignatureBlock(cleartext.signature);
   const certificate = readCertificate(readArmor(options.publicKey, "PUBLIC KEY BLOCK"));
-  const stateAt = statesOf(certificate);
-  const verdicts = signatures.flatMap((signature) => {
-    const state = stateAt(signature.created);
-    return matchesOf([signature], state).map((match) =>
-      verdictOf(match, state, cleartext, expected),
-    );
-  });
+  const { verdicts, errors } = verdictsOf(block.signatures, certificate, { cleartext, expected });
   const best =
     verdicts.find((verdict) => verdict.state === "valid") ??
     verdicts.find((verdict) => verdict.state === "inconclusive") ??
     verdicts[0];
-  return best ?? strangerVerdict(signatures, certificate, cleartext, expected);
+  if (best !== undefined) return best;
+  const [error] = [...block.errors, ...errors];
+  if (error !== undefined) throw error;
+  return strangerVerdict(block.signatures, certificate, cleartext, expected);
 }

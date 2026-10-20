@@ -234,10 +234,28 @@ function readRsa(reader: Reader): KeyMaterial {
 }
 
 /**
+ * Refuses a DSA group where `g` or `y` has no order `q`. With `g = y = 1` any `r = s = 1` verifies.
+ * @param p - The prime
+ * @param rest - `q`, `g` and `y`
+ * @throws {TypeError} When the group is broken
+ */
+function checkDsaGroup(
+  p: bigint,
+  rest: { readonly q: bigint; readonly g: bigint; readonly y: bigint },
+): void {
+  const { q, g, y } = rest;
+  const inGroup = (value: bigint): boolean => value > 1n && value < p && pow(value, q, p) === 1n;
+  if (q <= 1n || (p - 1n) % q !== 0n || !inGroup(g) || !inGroup(y)) {
+    throw new TypeError("OpenPGP DSA key has broken group parameters");
+  }
+}
+
+/**
  * Reads DSA `p`, `q`, `g` and `y`.
  * @param reader - Reader at the material
  * @returns {KeyMaterial} DSA material
  * @throws {RangeError} When `p` is longer than 3072 bits
+ * @throws {TypeError} When the group is broken
  */
 function readDsa(reader: Reader): KeyMaterial {
   const p = readBig(reader);
@@ -245,6 +263,7 @@ function readDsa(reader: Reader): KeyMaterial {
     throw new RangeError(`OpenPGP DSA primes longer than ${MAX_DSA_BITS} bits aren't read`);
   }
   const [q, g, y] = [readBig(reader), readBig(reader), readBig(reader)];
+  checkDsaGroup(p.value, { q: q.value, g: g.value, y: y.value });
   return { kind: "dsa", p: p.value, q: q.value, g: g.value, y: y.value, bits: p.bits };
 }
 

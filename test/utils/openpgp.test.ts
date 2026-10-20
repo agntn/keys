@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { base64 } from "@agntn/encodings/base64";
+import { checkMath, hashAlgorithm, readKeyMaterial } from "../../src/utils/openpgp/algorithms.ts";
 import { fitsKey } from "../../src/utils/openpgp/certificate.ts";
 import { inspect, verify } from "../../src/utils/openpgp/index.ts";
 import { readPublicKey } from "../../src/utils/openpgp/keys.ts";
@@ -53,6 +54,23 @@ function breakBinding(armored: string): string {
       return { tag: packet.tag, body };
     }),
   );
+}
+
+/* Dearmors the signature block of a cleartext message. */
+function signatureBytes(message: string): Uint8Array {
+  const lines = message.split("\n");
+  const start = lines.indexOf("-----BEGIN PGP SIGNATURE-----") + 2;
+  const end = lines.findIndex((line) => line.startsWith("="));
+  return base64.decode(lines.slice(start, end).join(""));
+}
+
+/* Puts other signature bytes into a cleartext message, in place of its own. */
+function withSignatures(message: string, bytes: Uint8Array): string {
+  const lines = message.split("\n");
+  const start = lines.indexOf("-----BEGIN PGP SIGNATURE-----") + 2;
+  const end = lines.findIndex((line) => line.startsWith("="));
+  const data = base64.encode(bytes).match(/.{1,64}/gu) ?? [];
+  return [...lines.slice(0, start), ...data, ...lines.slice(end + 1)].join("\n");
 }
 
 /* Flips the last unhashed byte of the subkey binding, where GnuPG keeps the back signature. */
@@ -199,19 +217,37 @@ describe("OpenPGP cleartext verification", () => {
   });
 
   it("refuses a message with more signatures than anyone signs with", () => {
-    const lines = rsa.signed.split("\n");
-    const start = lines.indexOf("-----BEGIN PGP SIGNATURE-----") + 2;
-    const end = lines.findIndex((line) => line.startsWith("="));
-    const signature = base64.decode(lines.slice(start, end).join(""));
-    const many = base64.encode(
-      Uint8Array.from(Array.from({ length: 17 }, () => [...signature]).flat()),
+    const signature = signatureBytes(rsa.signed);
+    const many = Uint8Array.from(Array.from({ length: 17 }, () => [...signature]).flat());
+    expect(() => verify(withSignatures(rsa.signed, many), { publicKey: rsa.publicKey })).toThrow(
+      "at most 16 signatures",
     );
-    const flooded = [
-      ...lines.slice(0, start),
-      ...(many.match(/.{1,64}/gu) ?? []),
-      ...lines.slice(end + 1),
-    ].join("\n");
-    expect(() => verify(flooded, { publicKey: rsa.publicKey })).toThrow("at most 16 signatures");
+  });
+
+  it("keeps a valid signature when another one in the block can't be checked", () => {
+    const both = Uint8Array.from([
+      ...signatureBytes(rsa.signedSha384),
+      ...signatureBytes(rsa.signed),
+    ]);
+    expect(verify(withSignatures(rsa.signed, both), { publicKey: rsa.publicKey })).toMatchObject({
+      state: "valid",
+      hash: "SHA512",
+    });
+  });
+
+  it("refuses an Ed25519 key at the identity, which ZIP 215 rules would let sign anything", () => {
+    const identity = Uint8Array.from([1, ...Array.from({ length: 31 }, () => 0)]);
+    const value = Uint8Array.from([...identity, ...Array.from({ length: 32 }, () => 0)]);
+    const key = { kind: "eddsa", point: identity } as const;
+    expect(checkMath(key, 27, value, new Uint8Array(64).fill(7), hashAlgorithm(10))).toBe(false);
+  });
+
+  it("refuses a DSA key whose group lets r = s = 1 verify anything", () => {
+    const mpi = (value: number) => [0, value.toString(2).length, value];
+    const material = Uint8Array.from([...mpi(23), ...mpi(11), ...mpi(1), ...mpi(1)]);
+    expect(() => readKeyMaterial(17, material)).toThrow(
+      "OpenPGP DSA key has broken group parameters",
+    );
   });
 
   it("keeps identity apart from the math", () => {
