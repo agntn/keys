@@ -65,4 +65,5 @@ export const blockchains = {
   cosmos: lazy("cosmos", () => import("./blockchains/cosmos.ts")),
   polkadot: lazy("polkadot", () => import("./blockchains/polkadot.ts")),
   monero: lazy("monero", () => import("./blockchains/monero.ts")),
+  ton: lazy("ton", () => import("./blockchains/ton.ts")),
 };

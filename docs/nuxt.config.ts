@@ -150,6 +150,7 @@ export default defineNuxtConfig({
         "token:ltc",
         "token:sol",
         "token:sui",
+        "token:ton",
         "token:trx",
         "token:xec",
         "token:xlm",

@@ -129,6 +129,7 @@ export const TOOL_CHAINS = [
   "cosmos",
   "polkadot",
   "monero",
+  "ton",
 ] as const;
 
 /** Blockchain name accepted by the tool surfaces. */
@@ -153,6 +154,15 @@ const XRPL_ADDRESS_TYPES = ["secp256k1", "ed25519"] as const;
 export const POLKADOT_ADDRESS_TYPES = ["sr25519", "ed25519"] as const;
 /** Monero writes a key pair as a subaddress under this type, the standard address without one. */
 const MONERO_ADDRESS_TYPES = ["subaddress"] as const;
+/** TON wallet contracts, its default first, each also in the bounceable form. */
+const TON_ADDRESS_TYPES = [
+  "v4r2",
+  "v5r1",
+  "v3r2",
+  "v4r2-bounceable",
+  "v5r1-bounceable",
+  "v3r2-bounceable",
+] as const;
 
 /** Every address type exposed by the tool surfaces. */
 export const TOOL_ADDRESS_TYPES = [
@@ -161,6 +171,7 @@ export const TOOL_ADDRESS_TYPES = [
   ...SUI_ADDRESS_TYPES,
   "sr25519",
   ...MONERO_ADDRESS_TYPES,
+  ...TON_ADDRESS_TYPES,
 ] as const;
 
 /** Address types accepted for each tool chain. */
@@ -188,6 +199,7 @@ export const TOOL_ADDRESS_TYPES_BY_CHAIN: Readonly<Record<ToolChain, readonly st
   cosmos: [],
   polkadot: POLKADOT_ADDRESS_TYPES,
   monero: MONERO_ADDRESS_TYPES,
+  ton: TON_ADDRESS_TYPES,
 };
 
 /** Native WIF chains exposed by both agent transports. */
@@ -265,8 +277,8 @@ export const FAMILY_SEED_SCHEMA_PATTERN = "^s[1-9A-HJ-NP-Za-km-z]{28,30}$";
 /** Longest secret `keys_wallet_derive` reads, room for 25 seed words with loose spacing. */
 export const MAX_WALLET_SECRET_LENGTH = 1024;
 
-/** JSON Schema pattern for Monero seed words: 25 with the checksum word, or the 24 alone. */
-export const MONERO_SEED_SCHEMA_PATTERN = "^\\s*[A-Za-z]+(?:\\s+[A-Za-z]+){23,24}\\s*$";
+/** JSON Schema pattern for seed words of a chain's own: Monero's 24 or 25, or TON's 24. */
+export const SEED_WORDS_SCHEMA_PATTERN = "^\\s*[A-Za-z]+(?:\\s+[A-Za-z]+){23,24}\\s*$";
 
 /** Largest Monero account or address index, a uint32 in wallet2. */
 export const MAX_MONERO_SUBADDRESS_INDEX = 0xffffffff;
@@ -276,7 +288,7 @@ export const MONERO_PAYMENT_ID_SCHEMA_PATTERN = "^[0-9A-Fa-f]{16}$";
 
 /**
  * JSON Schema pattern for the secret a wallet is derived from: a private key, a Polkadot sr25519
- * secret, an XRPL family seed, or Monero seed words.
+ * secret, an XRPL family seed, or Monero or TON seed words.
  */
 export const WALLET_SECRET_SCHEMA_PATTERN =
   "^(?:(?:[0-9A-Fa-f]{64}){1,2}|s[1-9A-HJ-NP-Za-km-z]{28,30}|\\s*[A-Za-z]+(?:\\s+[A-Za-z]+){23,24}\\s*)$";

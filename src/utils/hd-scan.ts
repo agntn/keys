@@ -102,6 +102,18 @@ const EVM_SCHEMES: readonly ScanScheme[] = [
   { name: "ledger-legacy", path: "m/44'/60'/0'/{index}" },
 ];
 
+/**
+ * Lists TON's BIP39 paths, Trust Wallet's and then Ledger's, both writing v4r2.
+ * @param network - 0 on mainnet, 1 on testnet, the third level of Ledger's path
+ * @returns {ScanScheme[]} Schemes in the order the scan walks them
+ */
+function ton(network: number): ScanScheme[] {
+  return [
+    { name: "bip44", path: "m/44'/607'/{index}'", addressType: "v4r2" },
+    { name: "ledger", path: `m/44'/607'/${network}'/0'/{index}'/0'`, addressType: "v4r2" },
+  ];
+}
+
 /** Wallet paths per chain, in the order the scan walks them; the UTXO coin types are mainnet. */
 const CHAIN_SCHEMES: Readonly<Record<string, readonly ScanScheme[]>> = {
   bitcoin: utxo(0, ["bip44", "bip49", "bip84", "bip86"]),
@@ -132,6 +144,12 @@ const CHAIN_SCHEMES: Readonly<Record<string, readonly ScanScheme[]>> = {
     { name: "ledger", path: "m/44'/397'/0'/0'/{index}'" },
   ],
   cosmos: cosmos(118),
+  ton: ton(0),
+};
+
+/** Paths a chain's wallets take on testnet instead of the mainnet ones. */
+const TESTNET_SCHEMES: Readonly<Record<string, readonly ScanScheme[]>> = {
+  ton: ton(1),
 };
 
 /** UTXO chains, whose testnet wallets take coin type 1. */
@@ -162,15 +180,28 @@ export interface SchemeTarget {
 }
 
 /**
+ * Picks a chain's schemes: Cosmos by coin type, then testnet paths, then the mainnet ones.
+ * @param chain - Tool chain name
+ * @param target - Network name and the coin type of the loaded chain
+ * @returns {readonly ScanScheme[] | undefined} Schemes, or undefined for a chain without any
+ */
+function chainSchemes(chain: string, target: SchemeTarget): readonly ScanScheme[] | undefined {
+  if (chain === "cosmos" && target.coinType !== undefined) return cosmos(target.coinType);
+  if (target.network === "testnet" && Object.hasOwn(TESTNET_SCHEMES, chain)) {
+    return TESTNET_SCHEMES[chain];
+  }
+  return CHAIN_SCHEMES[chain];
+}
+
+/**
  * Lists the BIP39 wallet paths of a chain; a UTXO testnet walks coin type 1 as `-testnet` first.
  * @param chain - Tool chain name
  * @param target - Network name and the coin type of the loaded chain
  * @returns {ScanScheme[] | undefined} Schemes, or undefined for a chain without BIP39 derivation
  */
 export function scanSchemes(chain: string, target: SchemeTarget): ScanScheme[] | undefined {
-  const { network, coinType } = target;
-  if (chain === "cosmos" && coinType !== undefined) return cosmos(coinType);
-  const schemes = CHAIN_SCHEMES[chain];
+  const { network } = target;
+  const schemes = chainSchemes(chain, target);
   if (schemes === undefined) return undefined;
   if (network !== "testnet" || !UTXO_CHAINS.has(chain)) return [...schemes];
   const testnet = new Map<string, ScanScheme>();

@@ -29,6 +29,13 @@ describe("wallet scan schemes", () => {
     },
   );
 
+  it("moves TON's Ledger path to network 1 on testnet, where the Ledger app puts it", () => {
+    const ledger = (network: string) =>
+      scanSchemes("ton", { network })?.find((scheme) => scheme.name === "ledger")?.path;
+    expect(ledger("mainnet")).toBe("m/44'/607'/0'/0'/{index}'/0'");
+    expect(ledger("testnet")).toBe("m/44'/607'/1'/0'/{index}'/0'");
+  });
+
   it("walks coin type 1 and then the mainnet coin type on a UTXO testnet", () => {
     const mainnet = scanSchemes("dogecoin", { network: "mainnet" });
     expect(scanSchemes("dogecoin", { network: "testnet" })).toEqual([

@@ -48,6 +48,7 @@ export const BIP44 = {
   COSMOS: 118,
   POLKADOT: 354,
   MONERO: 128,
+  TON: 607,
 } as const;
 
 /**
