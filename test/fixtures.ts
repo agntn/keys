@@ -3375,6 +3375,25 @@ p4g8/Pzm7WJpef9dmv3mwPEBAMLIeq6noOlPQlp/9fYSxiYSic10AL2ynNFtmhOd
 TmED
 -----END PGP PUBLIC KEY BLOCK-----
 `,
+    /**
+     * The same key with a self-certified User Attribute, a tiny JPEG, in place of its user ID.
+     * GnuPG 2.4.9 calls the subkey's signature good.
+     */
+    attributeOnly: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+xjMEatdQ9BYJKwYBBAHaRw8BAQdAZ8dFVi4Ama+TDhChZMTLY0ZuFI05yUzniRIa
+zD9nuP3RFhUBEAABAQAAAAAAAAAAAAAAAP/Y/9nCeAQTFgoAIBYhBKUnYdpiHihF
+sDpxPxf6Xp69iueABQJq11D5AhsBAAoJEBf6Xp69iueAwF4BAPmDzKdhhy7jYupQ
+VVoski3jJxe0Jqc0pVbNRNQnr2V+APwK7NUBfE/+E5i5/UQQc8nmuyLuwxKCL0LU
+Ytw9I9OQBc4zBGrXUPQWCSsGAQQB2kcPAQEHQFQUh5qlUz2u8KsKJ7vpnN+D2tq7
+rhfmxd6AVzt7We6pwv8AAADvBBgWCgAgFiEEpSdh2mIeKEWwOnE/F/penr2K54AF
+AmrXUPQCGwIAgQkQF/penr2K54B2IAQZFgoAHRYhBFUm1tx0TFDujEX151ceNIGM
+6aEuBQJq11D0AAoJEFceNIGM6aEuKOkBAP+dYjvqnxE/010eCq4cr19hz1/ezQwK
+UgD2hMF0UymrAQDEn7Gpklu3I5u2zuAN6UzHepoejKoIL0mOdJzshWhRC/KXAP9o
+VtZlbGPsnzSoKWMJnZAyjg4TT0AOrTscROY+TsqHVgD/U7mEcS4vJ9OSQcNv++9u
+K3i+IEoxxRmImXAS7nmcfQ4=
+-----END PGP PUBLIC KEY BLOCK-----
+`,
   },
   dsa: {
     fingerprint: "54D44E52AAA6A146C2A57C18C1A94E71A16F4BD3",
@@ -3585,6 +3604,42 @@ wpgGARsKAAAAKQWCY5ijYyIhBssYbE8GCaaX5NUt+mxyKwwfHifBilZwj2Ul7Ce6
 /FvLFuGWMbKAdA+epq7V4HOtAPlBWmU8QOd6aud+aSunHQaaEJ+iTFjP2OMW0KBr
 NK2ay45cX1IVAQ==
 -----END PGP SIGNATURE-----
+`,
+    /**
+     * Built here with the A.4 secret: no direct key signature, a certified user ID instead.
+     * RFC 9580 §5.2.3.10 says a version 6 key without a valid direct key signature isn't used.
+     */
+    noDirectKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+xioGY4d/4xsAAAAg+U2nu0jWCmHlZ3BqZYfQMxmZu52JGggkLq2EVD34laPNIUdy
+b2NlcnkgVGVzdGVyIDx0b2Z1QGV4YW1wbGUub3JnPsKbBhMbCgAAACwiIQbLGGxP
+Bgmml+TVLfpscisMHx4nwYpWcI9lJewnutmsyQUCY4fugAIbAwAAAACGYSATOF2C
+p8zxFjtgharP9Bk+Y4it0vccQWaLsNX6H0Rpji2FiszL+x09UDwKwWHm1s5B+iDJ
+arDLbZ5fBcKJ4O2reK0wf9FTYibEDffPVZ/8It3kZE1zrv9ijCfNHEBHywjOKgZj
+h3/jGQAAACCGkySDZ/nlAV25Ivj0gJXdp4SYfy1ZhbEvutFsr15ENcKbBhgbCgAA
+ACwFgmOHf+MCmwwiIQbLGGxPBgmml+TVLfpscisMHx4nwYpWcI9lJewnutmsyQAA
+AAAEASCm6RhtnVk1/I/lYxTNtSdIalpRIPm3YqI1pynwOQEKVlFrZzcAxDNINdr2
+MaFjPGPNVvmxwcPNOSPJFlZF1OrxTovh1r7/4q2u6HybtejZ6FJIXJZFK5NJl7m2
+b8peBgY=
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    /** Built with the A.4 secret: the A.3 certificate plus a later 0x30 on its direct key. */
+    revokedDirectKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+xioGY4d/4xsAAAAg+U2nu0jWCmHlZ3BqZYfQMxmZu52JGggkLq2EVD34laPCsQYf
+GwoAAABCBYJjh3/jAwsJBwUVCg4IDAIWAAKbAwIeCSIhBssYbE8GCaaX5NUt+mxy
+KwwfHifBilZwj2Ul7Ce62azJBScJAgcCAAAAAK0oIBA+LX0ifsDm185Ecds2v8lw
+gyU2kCcUmKfvBXbAf6rhRYWzuQOwEn7E/aLwIwRaLsdry0+VcallHhSu4RN6HWaE
+QsiPlR4zxP/TP7mhfVEe7XWPxtnMUMtf15OyA51YBMKYBjAbCgAAACkiIQbLGGxP
+Bgmml+TVLfpscisMHx4nwYpWcI9lJewnutmsyQUCY4fugAAAAAAPUyAwVXqfxOkO
+M1h9osfsETZbgKXK7xQ5XoOozfIXPGGGq9RIAxHg/Mv0A+x9IG/IITu4EReciN1N
+GgxpiPFJ8Ywl6mUxm8EeuN+MXzD1Ibol66vXwnaElPZImUDFOp6DzQ/OKgZjh3/j
+GQAAACCGkySDZ/nlAV25Ivj0gJXdp4SYfy1ZhbEvutFsr15ENcKbBhgbCgAAACwF
+gmOHf+MCmwwiIQbLGGxPBgmml+TVLfpscisMHx4nwYpWcI9lJewnutmsyQAAAAAE
+ASCm6RhtnVk1/I/lYxTNtSdIalpRIPm3YqI1pynwOQEKVlFrZzcAxDNINdr2MaFj
+PGPNVvmxwcPNOSPJFlZF1OrxTovh1r7/4q2u6HybtejZ6FJIXJZFK5NJl7m2b8pe
+BgY=
+-----END PGP PUBLIC KEY BLOCK-----
 `,
   },
 } as const;

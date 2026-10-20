@@ -250,6 +250,21 @@ describe("OpenPGP cleartext verification", () => {
     );
   });
 
+  it("needs a standing direct key signature before a version 6 key signs anything", () => {
+    for (const publicKey of [rfc9580.noDirectKey, rfc9580.revokedDirectKey]) {
+      expect(verify(rfc9580.signed, { publicKey })).toMatchObject({
+        state: "invalid",
+        reason: "The key has no valid self-signature, so nothing ties it together",
+      });
+    }
+  });
+
+  it("takes a self-certified User Attribute the way it takes a user ID", () => {
+    const verdict = verify(ed25519.signed, { publicKey: ed25519.attributeOnly });
+    expect(verdict.state).toBe("valid");
+    expect(inspect(ed25519.attributeOnly)).toMatchObject({ userIds: [], uncertifiedUserIds: 0 });
+  });
+
   it("keeps identity apart from the math", () => {
     const mismatch = verify(rsa.signed, { publicKey: rsa.publicKey, fingerprint: dsa.fingerprint });
     expect(mismatch).toMatchObject({ state: "valid", identity: "mismatch" });

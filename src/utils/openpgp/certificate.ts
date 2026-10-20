@@ -1,7 +1,14 @@
 import { equalBytes } from "@noble/curves/utils.js";
 import { concatBytes } from "../bytes.ts";
 import { checkMath, hashAlgorithm } from "./algorithms.ts";
-import { type Certificate, type PublicKey, type UserId, frameKey, frameUserId } from "./keys.ts";
+import {
+  type Certificate,
+  type PublicKey,
+  type UserId,
+  frameKey,
+  frameUserAttribute,
+  frameUserId,
+} from "./keys.ts";
 import { type Signature, signatureDigest, tryReadSignature } from "./signatures.ts";
 
 /** What the self-signatures say about one key. */
@@ -217,59 +224,80 @@ function revokedAt(revocation: Signature): { at: number; code?: number } {
     : { at: revocation.created, code: revocation.revocationCode };
 }
 
+/** Certification types, 0x10 to 0x13, RFC 9580 §5.2.1. */
+const CERTIFICATIONS = [0x10, 0x11, 0x12, 0x13];
+
+/** A certified user ID or User Attribute and the self-signature that certifies it. */
+interface Certified {
+  readonly id: UserId;
+  readonly signature: Signature;
+}
+
 /**
- * The newest valid certification of each user ID, left out when a newer revocation stands.
- * @param certificate - The certificate
- * @param check - The block's budgeted check
- * @returns {{ id: UserId; signature: Signature }[]} Certified user IDs and their certifications
+ * The newest valid self-signature of the types, unless a newer 0x30 revokes it, RFC 9580 §5.2.1.13.
+ * @param signatures - Candidates and their revocations
+ * @param types - Signature Type IDs to accept
+ * @param data - What they sign
+ * @param context - Primary key and the block's budgeted check
+ * @returns {Signature | undefined} The signature that stands
  */
-function certifiedUserIds(
-  certificate: Certificate,
-  check: Check,
-): { id: UserId; signature: Signature }[] {
-  const framedKey = frameKey(certificate.primary);
-  return certificate.userIds.flatMap((id) => {
-    const data = concatBytes(framedKey, frameUserId(id.id));
-    const signature = newestSelf(
+function standing(
+  signatures: readonly Signature[],
+  types: readonly number[],
+  data: Uint8Array,
+  context: { readonly primary: PublicKey; readonly check: Check },
+): Signature | undefined {
+  const signature = newestSelf(signatures, types, context.primary, data, context.check);
+  if (signature === undefined) return undefined;
+  const revocation = newestSelf(signatures, [0x30], context.primary, data, context.check);
+  return revocation !== undefined && revocation.created >= signature.created
+    ? undefined
+    : signature;
+}
+
+/**
+ * User IDs or User Attributes with a standing self-certification.
+ * @param components - User IDs or User Attributes
+ * @param frame - Their framing, 0xB4 or 0xD1
+ * @param context - Primary key and the block's budgeted check
+ * @returns {Certified[]} The certified ones
+ */
+function certifiedOf(
+  components: readonly UserId[],
+  frame: (body: Uint8Array) => Uint8Array,
+  context: { readonly primary: PublicKey; readonly check: Check },
+): Certified[] {
+  const framedKey = frameKey(context.primary);
+  return components.flatMap((id) => {
+    const signature = standing(
       id.signatures,
-      [0x10, 0x11, 0x12, 0x13],
-      certificate.primary,
-      data,
-      check,
+      CERTIFICATIONS,
+      concatBytes(framedKey, frame(id.id)),
+      context,
     );
-    const revocation = newestSelf(id.signatures, [0x30], certificate.primary, data, check);
-    if (
-      signature === undefined ||
-      (revocation !== undefined && revocation.created >= signature.created)
-    ) {
-      return [];
-    }
-    return [{ id, signature }];
+    return signature === undefined ? [] : [{ id, signature }];
   });
 }
 
 /**
- * Self-signature with the primary key's flags and expiry, picked by version per RFC 9580 §5.2.3.10.
+ * Self-signature with the primary key's flags and expiry, RFC 9580 §5.2.3.10. A version 6 key
+ * must have a standing direct key signature; version 4 prefers the primary user ID's.
  * @param certificate - The certificate
- * @param certified - Certified user IDs
+ * @param certified - Certified user IDs, then User Attributes
  * @param check - The block's budgeted check
  * @returns {Signature | undefined} The signature to read properties from
  */
 function primaryBinding(
   certificate: Certificate,
-  certified: readonly { readonly id: UserId; readonly signature: Signature }[],
+  certified: readonly Certified[],
   check: Check,
 ): Signature | undefined {
-  const direct = newestSelf(
-    certificate.direct,
-    [0x1f],
-    certificate.primary,
-    frameKey(certificate.primary),
-    check,
-  );
+  const { primary } = certificate;
+  const direct = standing(certificate.direct, [0x1f], frameKey(primary), { primary, check });
+  if (primary.version === 6) return direct;
   const fromUserId = (certified.find((entry) => entry.signature.primaryUserId) ?? certified[0])
     ?.signature;
-  return certificate.primary.version === 6 ? (direct ?? fromUserId) : (fromUserId ?? direct);
+  return fromUserId ?? direct;
 }
 
 /**
@@ -323,8 +351,10 @@ export function evaluateCertificate(
   options: { readonly at: number; readonly budget: Budget },
 ): CertificateState {
   const check = createCheck(options.at, options.budget);
-  const certified = certifiedUserIds(certificate, check);
-  const binding = primaryBinding(certificate, certified, check);
+  const context = { primary: certificate.primary, check };
+  const certified = certifiedOf(certificate.userIds, frameUserId, context);
+  const attributes = certifiedOf(certificate.userAttributes, frameUserAttribute, context);
+  const binding = primaryBinding(certificate, [...certified, ...attributes], check);
   const revocation = newestSelf(
     certificate.direct,
     [0x20],

@@ -41,6 +41,8 @@ export interface Certificate {
   /** Direct key signatures and key revocations right after the primary key. */
   readonly direct: readonly Signature[];
   readonly userIds: readonly UserId[];
+  /** User Attributes, a photo ID say, which certify the key the same way a user ID does. */
+  readonly userAttributes: readonly UserId[];
   readonly subkeys: readonly Subkey[];
 }
 
@@ -78,6 +80,15 @@ export function frameKey(key: PublicKey): Uint8Array {
  */
 export function frameUserId(id: Uint8Array): Uint8Array {
   return concatBytes(Uint8Array.of(0xb4), bigEndian(id.length, 4), id);
+}
+
+/**
+ * Frames a User Attribute for a certification: 0xD1 and a 4-byte length, RFC 9580 §5.2.4.
+ * @param attribute - User Attribute packet body
+ * @returns {Uint8Array} The framed attribute
+ */
+export function frameUserAttribute(attribute: Uint8Array): Uint8Array {
+  return concatBytes(Uint8Array.of(0xd1), bigEndian(attribute.length, 4), attribute);
 }
 
 /**
@@ -122,6 +133,7 @@ export function readPublicKey(body: Uint8Array): PublicKey {
 class CertificateBuilder {
   readonly #direct: Signature[] = [];
   readonly #userIds: { id: Uint8Array; signatures: Signature[] }[] = [];
+  readonly #userAttributes: { id: Uint8Array; signatures: Signature[] }[] = [];
   readonly #subkeys: { key: PublicKey; signatures: Signature[] }[] = [];
   #primary: PublicKey | undefined;
   #target: Signature[] = this.#direct;
@@ -166,6 +178,7 @@ class CertificateBuilder {
         return;
       case 17:
         this.#target = [];
+        this.#userAttributes.push({ id: packet.body, signatures: this.#target });
         return;
       case 6:
         throw new TypeError("OpenPGP key block holds more than one key. Pass one");
@@ -185,6 +198,7 @@ class CertificateBuilder {
       primary: this.#primary,
       direct: this.#direct,
       userIds: this.#userIds,
+      userAttributes: this.#userAttributes,
       subkeys: this.#subkeys,
     };
   }
