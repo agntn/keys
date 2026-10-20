@@ -21,7 +21,7 @@ The docs live at [keys.agntn.dev](https://keys.agntn.dev), keyspace explorer inc
 
 ## ✨ Features
 
-- ⛓️ **Twenty-three chains, one interface.** Bitcoin and its forks, Ethereum, Solana, Cosmos, Monero and the rest of the table below. Same methods on every one.
+- ⛓️ **Twenty-four chains, one interface.** Bitcoin and its forks, Ethereum, Solana, Cosmos, Monero, TON and the rest of the table below. Same methods on every one.
 - 🧬 **Two curves.** secp256k1 and ed25519. Sui and the XRP Ledger take either.
 - 🏠 **Bitcoin the way Bitcoin wants it.** Legacy, P2SH, segwit, P2WSH and taproot. Your path picks the type.
 - 🌱 **Mnemonic in, wallet out.** BIP39 into BIP32 or SLIP-10, passphrase optional, all ten word lists.
@@ -210,12 +210,14 @@ The tools that open a secret answer agents with an address, a public key or a fi
 | **Cosmos**       | secp256k1          | bech32 under any prefix              | -       |
 | **Polkadot**     | sr25519, ed25519   | SS58 under any network prefix        | ✅      |
 | **Monero**       | ed25519            | standard, subaddress, integrated     | ✅      |
+| **TON**          | ed25519            | v3r2, v4r2, v5r1 wallets, UQ and EQ  | ✅      |
 
 Most of them need nothing past the loader. A few have opinions:
 
 - Cosmos takes a `prefix`, so `blockchains.cosmos({ prefix: "osmo" })()` writes Osmosis addresses.
 - Polkadot takes `ss58Prefix`, 2 for Kusama. It writes sr25519 like the wallets, until `addressType: "ed25519"` says otherwise.
-- Monero and the XRP Ledger restore from their own seeds through `deriveSeedWallet`.
+- Monero, TON and the XRP Ledger restore from their own seeds through `deriveSeedWallet`.
+- TON writes one address per wallet contract, so `addressType` picks `v4r2`, `v5r1` or `v3r2`.
 - Decred and Cardano refuse `deriveHDWallet` on purpose.
 
 Testnet is a constructor option, `blockchains.bitcoin({ network: "testnet" })()`, and segwit starts with `tb1q`. Per chain quirks: [Blockchains](https://keys.agntn.dev/blockchains).
@@ -275,7 +277,7 @@ Curves and HD derivation come from [@paulmillr](https://github.com/paulmillr): [
 
 ## ➕ Adding a chain
 
-Want a twenty-fourth? Extend `AbstractBlockchain`, or `AbstractEVMBlockchain` if it's EVM, where a `name` and a `bip44` coin type is the whole class. Register it in the lazy loader and mirror a test file. The docs site lists chains by hand, so the [checklist](./CONTRIBUTING.md#adding-a-chain) covers that too. Walkthrough: [Creating custom blockchains](https://keys.agntn.dev/guide/custom).
+Want a twenty-fifth? Extend `AbstractBlockchain`, or `AbstractEVMBlockchain` if it's EVM, where a `name` and a `bip44` coin type is the whole class. Register it in the lazy loader and mirror a test file. The docs site lists chains by hand, so the [checklist](./CONTRIBUTING.md#adding-a-chain) covers that too. Walkthrough: [Creating custom blockchains](https://keys.agntn.dev/guide/custom).
 
 ## 🛠️ Development
 

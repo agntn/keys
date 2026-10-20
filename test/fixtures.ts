@@ -3086,3 +3086,92 @@ export const arweaveVectors = [
     address: "2pwE_LEzD0z6m_ENCDIta9YTBKXW9FFCURrx1yJoO7w",
   },
 ] as const;
+
+/**
+ * TON wallets from @ton/crypto 3.3.0 and @ton/ton 16.3.0, the locked phrase under `hunter2`.
+ * Each address set holds the raw, bounceable and non-bounceable form.
+ */
+export const tonTestVectors = {
+  phrase:
+    "open you repeat drift approve view between cover myth feed rice cloud library index chase crime minute roast vault error kid abandon velvet vacuum",
+  lockedPhrase:
+    "follow robust mule labor what beach truth embark express spoil gadget quiz benefit ability east drink apart prevent lake mixture alcohol wrong pass hand",
+  privateKey: "8d563095269157517b883bb4f765ddfceec30bb9d6d227170e898fa9e1faade2",
+  publicKey: "fa86305ed66920ddc1b041db6ba756147b7e627d5bcffbe5cd2bfd0039fa9152",
+  mainnet: {
+    v3r2: [
+      "0:1c3c1f04b90430573297d94ca73661359cf6c0ce2328c2b78360e6d575eca20a",
+      "EQAcPB8EuQQwVzKX2UynNmE1nPbAziMowreDYObVdeyiCoZl",
+      "UQAcPB8EuQQwVzKX2UynNmE1nPbAziMowreDYObVdeyiCtug",
+    ],
+    v4r2: [
+      "0:f1ac29b9def55428e2208f57f7222ca32c360bbda051f7e0f967155d1f99d754",
+      "EQDxrCm53vVUKOIgj1f3IiyjLDYLvaBR9-D5ZxVdH5nXVJzC",
+      "UQDxrCm53vVUKOIgj1f3IiyjLDYLvaBR9-D5ZxVdH5nXVMEH",
+    ],
+    v5r1: [
+      "0:1aec04ef24593140def78fcfcf8997846f9fb214fbecec90c7cd07ec1c60213b",
+      "EQAa7ATvJFkxQN73j8_PiZeEb5-yFPvs7JDHzQfsHGAhOyTl",
+      "UQAa7ATvJFkxQN73j8_PiZeEb5-yFPvs7JDHzQfsHGAhO3kg",
+    ],
+  },
+  testnet: {
+    v3r2: [
+      "0:1c3c1f04b90430573297d94ca73661359cf6c0ce2328c2b78360e6d575eca20a",
+      "kQAcPB8EuQQwVzKX2UynNmE1nPbAziMowreDYObVdeyiCj3v",
+      "0QAcPB8EuQQwVzKX2UynNmE1nPbAziMowreDYObVdeyiCmAq",
+    ],
+    v4r2: [
+      "0:f1ac29b9def55428e2208f57f7222ca32c360bbda051f7e0f967155d1f99d754",
+      "kQDxrCm53vVUKOIgj1f3IiyjLDYLvaBR9-D5ZxVdH5nXVCdI",
+      "0QDxrCm53vVUKOIgj1f3IiyjLDYLvaBR9-D5ZxVdH5nXVHqN",
+    ],
+    v5r1: [
+      "0:b5719c419e19f99b1d928e00bd281b867914ba4cd544c1fcde15d81638124deb",
+      "kQC1cZxBnhn5mx2SjgC9KBuGeRS6TNVEwfzeFdgWOBJN66YO",
+      "0QC1cZxBnhn5mx2SjgC9KBuGeRS6TNVEwfzeFdgWOBJN6_vL",
+    ],
+  },
+  bip39: [
+    [
+      "m/44'/607'/0'",
+      "b477ef5ed17fb8a2b8faddd7a9835a227243a82c70b190c7af4896155aa7df9f",
+      "UQAzWZa6nM5mJev91wGc7VCSfBoIsYRqKJpV78N8Add9-RKY",
+      "UQBHyu-oZVDHRYQ1-rKlGqpHy5yAqanPBirEQNMNOmfHLtaT",
+    ],
+    [
+      "m/44'/607'/1'",
+      "ee7d43cd863e47480496a7ab9e8ff8daaa220cb90d21747800b3e07fdf49152e",
+      "UQDVJucJT96vGh_bYm3e5uzenasiTOwA9orUHQiyhNsKmBrP",
+      "UQAockb65N9NqreZHrYfhipG94Q_gZYTBkV0mvaopLEEzOgi",
+    ],
+    [
+      "m/44'/607'/0'/0'/0'/0'",
+      "e9e687151cbe21cba3153a3d3c02fde8f6cc04e9843d49ac043f3440993c415e",
+      "UQAhEnZmOZ4XCJ1BKsvvt4D1DobiFgIf8nbZdTiT0l-8mOpj",
+      "UQCr0pJvwmgWeI7Wu0TaRn77bD0m7JkkbnGRCxRUxhbyvbdS",
+    ],
+  ],
+  message: "ton me",
+  signature:
+    "f6e6cd61ba930581e5a24e5ef30c4e511b2f93c4e67e634ac3b5609ebc833814f042e73c6bf0336b7ae6a316e5d8259330d57975c03972865c5e7339b0fea105",
+} as const;
+
+/** Deployed mainnet wallets and their `get_public_key`, read through toncenter on 2026-10-20. */
+export const tonChainWallets = [
+  [
+    "v4r2",
+    "25bf0159c7aefdde0a21522fbd3c4b0a29d45a56322596301abfff77907f710d",
+    "0:46635CBDD634C45992509A7BE7F1341E8744A01B4BFA5336EE7D62EBD342D6CC",
+  ],
+  [
+    "v4r2",
+    "4e3c6090eb3c57d29f16b1fcdc818979fa05c100d6970ef5dd44ecc9a30db80c",
+    "0:B7F6D83B736DC011C8AA756027218005DADDC74AE7FDBCBBF6DB40C646C620BF",
+  ],
+  [
+    "v5r1",
+    "38456bbf50aef15caff8246298ce609366dfcc0eddfa4214bc24d838abc90b7f",
+    "0:E047B8D9CBD0FCF08042DDD2B8A842636FD0FC5A67C26CBF6FFB8163B23CE6ED",
+  ],
+] as const;

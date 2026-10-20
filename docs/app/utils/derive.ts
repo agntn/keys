@@ -50,6 +50,7 @@ export type ExplorerChains = {
   readonly cosmos: AbstractBlockchain;
   readonly polkadot: AbstractBlockchain;
   readonly monero: AbstractBlockchain;
+  readonly ton: AbstractBlockchain;
 };
 
 /** Constructs every explorer chain. Client only in the app, nothing here runs on the server. */
@@ -80,6 +81,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     cosmos,
     polkadot,
     monero,
+    ton,
   ] = await Promise.all([
     load("bitcoin"),
     load("bitcoincash"),
@@ -104,6 +106,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     load("cosmos"),
     load("polkadot"),
     load("monero"),
+    load("ton"),
   ]);
   return {
     bitcoin,
@@ -129,6 +132,7 @@ export async function loadExplorerChains(keys: KeysModule): Promise<ExplorerChai
     cosmos,
     polkadot,
     monero,
+    ton,
   };
 }
 
@@ -161,6 +165,7 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
     cosmos,
     polkadot,
     monero,
+    ton,
   } = chains;
 
   return {
@@ -260,6 +265,7 @@ export function deriveAddresses(hex: string, chains: ExplorerChains): Derivation
         "ed25519",
       ),
       ...moneroRows(monero, hex),
+      addressRow(ton, hex, "ton", "TON", "ed25519", "v4r2"),
     ],
   };
 }

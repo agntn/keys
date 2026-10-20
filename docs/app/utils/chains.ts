@@ -36,6 +36,7 @@ export const CHAINS: readonly ChainEntry[] = [
   { driver: "cosmos", label: "Cosmos", curve: "secp256k1", icon: "i-token-atom", row: "atom", blurb: "One driver for the Hub, Osmosis, Celestia and the rest. Same key, same path, only the letters before the `1` disagree." },
   { driver: "polkadot", label: "Polkadot", curve: "sr25519 · ed25519", icon: "i-token-dot", row: "dot", blurb: "SS58 under any network prefix, Kusama included. sr25519 like the wallets, soft junctions too, and ed25519 when you ask." },
   { driver: "monero", label: "Monero", curve: "ed25519", icon: "i-token-xmr", row: "xmr", blurb: "Two public keys in one 95-character address, and a 25th seed word that only checks the other 24." },
+  { driver: "ton", label: "TON", curve: "ed25519", icon: "i-token-ton", row: "ton", blurb: "The address hashes a wallet contract, not the key. One key, three contracts, three addresses, two spellings each." },
 ].map((entry) => ({ ...entry, to: `/blockchains/${entry.driver}` }));
 
 /**

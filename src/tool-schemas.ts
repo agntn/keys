@@ -573,7 +573,7 @@ export const DERIVE_WALLET_PARAMETERS = Type.Object(
       pattern: WALLET_SECRET_SCHEMA_PATTERN,
       maxLength: MAX_WALLET_SECRET_LENGTH,
       description:
-        "Private key as 64 hex characters without 0x. On polkadot also the 128-character sr25519 secret of a derived account. On xrpl also a family seed: s... for secp256k1, sEd... for ed25519. On monero also the 25 seed words",
+        "Private key as 64 hex characters without 0x. On polkadot also the 128-character sr25519 secret of a derived account. On xrpl also a family seed: s... for secp256k1, sEd... for ed25519. On monero also the 25 seed words, on ton the 24 words TON wallets write",
     }),
     addressType: addressTypeArgument,
     network: networkArgument,

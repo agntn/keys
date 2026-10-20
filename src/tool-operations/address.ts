@@ -6,6 +6,7 @@ import {
   CHAIN_NETWORKS,
   TOOL_NETWORKS,
 } from "../tool-parameters.ts";
+import { decodeTonAddress } from "../utils/ton-address.ts";
 import { hexArgument, chainPublicKey, requiredString } from "./arguments.ts";
 import { type ChainArguments, addressTypeLines, getBlockchain } from "./blockchain.ts";
 import { type ToolResult, content, sanitizeToolText } from "./results.ts";
@@ -181,14 +182,32 @@ async function otherNetworkOf(
 /** Bech32 as an encoder writes it: a BIP-173 prefix without uppercase, `1`, then the data. */
 const BECH32_WRITTEN = /^[\x21-\x40\x5B-\x7E]{1,83}1[02-9ac-hj-np-z]{6,}$/u;
 
+/** A user-friendly TON address as `getAddress` writes it, bounceable or not, on either network. */
+const TON_WRITTEN = /^[UEk0]Q[A-Za-z0-9_-]{46}$/u;
+
 /**
- * Compare a written address with a typed one: bech32 and CashAddr ignore case, base58 doesn't.
+ * Tells whether two TON addresses name one account, whatever form each is in.
+ * @param written - User-friendly address from `getAddress`
+ * @param given - Raw or user-friendly address the caller passed
+ * @returns {boolean} True when workchain and account ID agree
+ */
+function sameTonAccount(written: string, given: string): boolean {
+  const left = decodeTonAddress(written);
+  const right = decodeTonAddress(given);
+  if (left === undefined || right === undefined) return false;
+  return left.workchain === right.workchain && left.hash.toHex() === right.hash.toHex();
+}
+
+/**
+ * Compare a written address with a typed one: bech32 and CashAddr ignore case, base58 doesn't,
+ * and TON's forms of one account all match.
  * @param written - Address from `getAddress`
  * @param given - Address the caller passed, already validated for the chain
  * @returns {boolean} True when both name the same address
  */
 export function sameAddress(written: string, given: string): boolean {
   if (written === given) return true;
+  if (TON_WRITTEN.test(written)) return sameTonAccount(written, given);
   if (written.startsWith("0x")) return written.toLowerCase() === given.toLowerCase();
   if (!written.includes(":") && !BECH32_WRITTEN.test(written)) return false;
   const lower = given.toLowerCase();
