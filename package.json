@@ -160,7 +160,7 @@
     "@agntn/encodings": "0.1.2",
     "@agntn/hashes": "0.7.1",
     "@agntn/tools": "0.2.3",
-    "@modelcontextprotocol/server": "2.2.0",
+    "@modelcontextprotocol/server": "2.3.0",
     "@noble/curves": "2.4.0",
     "@scure/bip32": "2.4.0",
     "@scure/bip39": "2.4.0",
