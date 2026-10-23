@@ -25,7 +25,7 @@
     "docus": "5.13.0",
     "micro-key-producer": "0.10.2",
     "nuxt": "4.5.2",
-    "zod": "4.6.5"
+    "zod": "4.6.6"
   },
   "devDependencies": {
     "@iconify-json/lucide": "1.2.144",
