@@ -158,7 +158,7 @@
     "@agntn/ciphers": "0.5.2",
     "@agntn/curves": "0.2.1",
     "@agntn/encodings": "0.1.2",
-    "@agntn/hashes": "0.7.1",
+    "@agntn/hashes": "0.7.2",
     "@agntn/tools": "0.2.3",
     "@modelcontextprotocol/server": "2.2.0",
     "@noble/curves": "2.4.0",

@@ -112,18 +112,32 @@ function backdate(bytes: Uint8Array, seconds: number): Uint8Array {
     if (body[offset + 1] !== 2) continue;
     const view = new DataView(body.buffer, offset + 2, 4);
     view.setUint32(0, view.getUint32(0) - seconds);
-    const length = body.length;
-    return Uint8Array.from([
-      0xc2,
-      0xff,
-      length >>> 24,
-      (length >>> 16) & 0xff,
-      (length >>> 8) & 0xff,
-      length & 0xff,
-      ...body,
-    ]);
+    return signaturePacket(body);
   }
   throw new Error("No creation time");
+}
+
+/* Swaps the hash ID of a signature, so the math can't even start. */
+function rehash(bytes: Uint8Array, hashId: number): Uint8Array {
+  const [packet] = readPackets(bytes);
+  if (packet === undefined) throw new Error("No signature packet");
+  const body = packet.body.slice();
+  body[3] = hashId;
+  return signaturePacket(body);
+}
+
+/* Frames a signature body as a packet with a five-byte length. */
+function signaturePacket(body: Uint8Array): Uint8Array {
+  const length = body.length;
+  return Uint8Array.from([
+    0xc2,
+    0xff,
+    length >>> 24,
+    (length >>> 16) & 0xff,
+    (length >>> 8) & 0xff,
+    length & 0xff,
+    ...body,
+  ]);
 }
 
 /* Flips the last unhashed byte of the subkey binding, where GnuPG keeps the back signature. */
@@ -314,7 +328,7 @@ describe("OpenPGP cleartext verification", () => {
 
   it("keeps a valid signature when another one in the block can't be checked", () => {
     const both = Uint8Array.from([
-      ...signatureBytes(rsa.signedSha384),
+      ...rehash(signatureBytes(rsa.signedSha384), 13),
       ...signatureBytes(rsa.signed),
     ]);
     expect(verify(withSignatures(rsa.signed, both), { publicKey: rsa.publicKey })).toMatchObject({
@@ -457,9 +471,21 @@ describe("OpenPGP cleartext verification", () => {
     });
   });
 
+  it("verifies a GnuPG signature over SHA-384", () => {
+    expect(verify(rsa.signedSha384, { publicKey: rsa.publicKey })).toMatchObject({
+      state: "valid",
+      signingFingerprint: rsa.fingerprint,
+      algorithm: "RSA 3072",
+      hash: "SHA384",
+    });
+    const altered = rsa.signedSha384.replace("Ten words", "Ten wards");
+    expect(verify(altered, { publicKey: rsa.publicKey }).state).toBe("invalid");
+  });
+
   it("refuses what it can't check instead of calling it invalid", () => {
-    expect(() => verify(rsa.signedSha384, { publicKey: rsa.publicKey })).toThrow(
-      "OpenPGP signatures over SHA384 aren't supported yet",
+    const unknown = withSignatures(rsa.signed, rehash(signatureBytes(rsa.signed), 13));
+    expect(() => verify(unknown, { publicKey: rsa.publicKey })).toThrow(
+      "OpenPGP signatures over hash 13 aren't supported yet",
     );
     expect(() => verify(p256.signed, { publicKey: p256.publicKey })).toThrow(
       "ECDSA NIST P-256 signatures aren't supported yet",

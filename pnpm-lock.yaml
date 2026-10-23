@@ -34,8 +34,8 @@ importers:
         specifier: 0.1.2
         version: 0.1.2(@earendil-works/pi-coding-agent@0.99.2(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.31.0(supports-color@7.2.0)(zod@4.4.3))(@smithy/signature-v4@5.7.3)(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))
       '@agntn/hashes':
-        specifier: 0.7.1
-        version: 0.7.1(@earendil-works/pi-coding-agent@0.99.2(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.31.0(supports-color@7.2.0)(zod@4.4.3))(@smithy/signature-v4@5.7.3)(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3)
+        specifier: 0.7.2
+        version: 0.7.2(@earendil-works/pi-coding-agent@0.99.2(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.31.0(supports-color@7.2.0)(zod@4.4.3))(@smithy/signature-v4@5.7.3)(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3)
       '@agntn/tools':
         specifier: 0.2.3
         version: 0.2.3(@earendil-works/pi-coding-agent@0.99.2(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.31.0(supports-color@7.2.0)(zod@4.4.3))(@smithy/signature-v4@5.7.3)(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3)
@@ -188,13 +188,13 @@ packages:
       ai:
         optional: true
 
-  '@agntn/hashes@0.7.1':
-    resolution: {integrity: sha512-VspWveoZuOs7Qh0JI/+Wx3dV6sMdgbZNIANBjfvsnWJwH2sJETH9pyYO/fxponmz+Eco2dvpSfqLljwwVYP0dg==}
+  '@agntn/hashes@0.7.2':
+    resolution: {integrity: sha512-yrhws6tj5nNqnDXSTti+bIfqq4zEnt/3KPkYhduCHorX4U82UtaFulSf4tkvcCn8zmF1jVNnJH23NuOMOMFEWg==}
     engines: {node: '>=26'}
     hasBin: true
     peerDependencies:
-      '@earendil-works/pi-coding-agent': '>=0.87.1 <2'
-      '@oh-my-pi/pi-coding-agent': '>=18.4.2 <19'
+      '@earendil-works/pi-coding-agent': '>=0.84.2 <2'
+      '@oh-my-pi/pi-coding-agent': '>=18.0.0 <19'
       ai: '>=7.0.0'
     peerDependenciesMeta:
       '@earendil-works/pi-coding-agent':
@@ -3555,7 +3555,7 @@ snapshots:
     transitivePeerDependencies:
       - h3-mcp
 
-  '@agntn/hashes@0.7.1(@earendil-works/pi-coding-agent@0.99.2(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.31.0(supports-color@7.2.0)(zod@4.4.3))(@smithy/signature-v4@5.7.3)(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3)':
+  '@agntn/hashes@0.7.2(@earendil-works/pi-coding-agent@0.99.2(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.31.0(supports-color@7.2.0)(zod@4.4.3))(@smithy/signature-v4@5.7.3)(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3)':
     dependencies:
       '@agntn/tools': 0.2.4(@earendil-works/pi-coding-agent@0.99.2(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.31.0(supports-color@7.2.0)(zod@4.4.3))(@smithy/signature-v4@5.7.3)(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3)
       '@modelcontextprotocol/server': 2.2.0

@@ -7,6 +7,7 @@ import {
   sha256,
   sha3_256,
   sha3_512,
+  sha384,
   sha512,
 } from "@agntn/hashes";
 import { invert, pow } from "@noble/curves/abstract/modular.js";
@@ -73,6 +74,13 @@ const HASHES: Readonly<Record<number, HashAlgorithm>> = {
     salt: 16,
     weak: false,
   },
+  9: {
+    name: "SHA384",
+    digest: sha384,
+    prefix: hex("3041300d060960864801650304020205000430"),
+    salt: 24,
+    weak: false,
+  },
   10: {
     name: "SHA512",
     digest: sha512,
@@ -103,14 +111,9 @@ const HASHES: Readonly<Record<number, HashAlgorithm>> = {
   },
 };
 
-/** Hashes RFC 9580 defines that `@agntn/hashes` doesn't export yet, with their salt sizes. */
-const MISSING_HASHES: Readonly<Record<number, { readonly name: string; readonly salt: number }>> = {
-  9: { name: "SHA384", salt: 24 },
-};
-
 /** Text names of every hash in RFC 9580 Table 23, which a `Hash:` header may list. */
 export const HASH_NAMES: ReadonlySet<string> = new Set(
-  [...Object.values(HASHES), ...Object.values(MISSING_HASHES)].map((hash) => hash.name),
+  Object.values(HASHES).map((hash) => hash.name),
 );
 
 /** Curve OIDs from RFC 9580 Table 19, as hex, with the names it gives them. */
@@ -167,29 +170,28 @@ function hex(text: string): Uint8Array {
 }
 
 /**
- * Looks up a hash by its ID, refusing the ones this module can't compute.
+ * Looks up a hash by its ID, refusing an ID outside RFC 9580 Table 23.
  * @param id - Hash algorithm ID
  * @returns {HashAlgorithm} The hash
  * @throws {RangeError} For a hash that isn't supported here
  */
 export function hashAlgorithm(id: number): HashAlgorithm {
-  const hash = Object.hasOwn(HASHES, id) ? HASHES[id] : undefined;
+  const hash = hashInfo(id);
   if (hash !== undefined) return hash;
   throw new RangeError(`OpenPGP signatures over ${hashName(id)} aren't supported yet`);
 }
 
 /**
- * Any hash RFC 9580 defines, computable here or not.
+ * A hash from RFC 9580 Table 23. `@agntn/hashes` covers every one it names.
  * @param id - Hash algorithm ID
- * @returns {{ name: string; salt: number } | undefined} Its name and version 6 salt size
+ * @returns {HashAlgorithm | undefined} The hash, undefined for an ID the table doesn't have
  */
-function hashInfo(id: number): { readonly name: string; readonly salt: number } | undefined {
-  if (Object.hasOwn(HASHES, id)) return HASHES[id];
-  return Object.hasOwn(MISSING_HASHES, id) ? MISSING_HASHES[id] : undefined;
+function hashInfo(id: number): HashAlgorithm | undefined {
+  return Object.hasOwn(HASHES, id) ? HASHES[id] : undefined;
 }
 
 /**
- * Names a hash, including the ones this module can't compute.
+ * Names a hash.
  * @param id - Hash algorithm ID
  * @returns {string} Its text name, or the ID for an unknown one
  */

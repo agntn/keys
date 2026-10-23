@@ -3292,7 +3292,7 @@ ae+Gd6p9
 =xjgG
 -----END PGP SIGNATURE-----
 `,
-    /** Made with `--digest-algo SHA384`, which the pinned hashes release has no export for. */
+    /** Made with `--digest-algo SHA384`. */
     signedSha384: `-----BEGIN PGP SIGNED MESSAGE-----
 Hash: SHA384
 
