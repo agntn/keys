@@ -71,6 +71,14 @@ export default defineNuxtConfig({
     url: "https://keys.agntn.dev",
     name: "@agntn/keys",
   },
+  /** Keyspace has no markdown twin, so agents get the page itself, not a `/raw` 404. */
+  agentDiscovery: {
+    excludePrefixes: { extend: ["/keyspace"] },
+  },
+  /** Docus lists `content/` only and leaves app routes out, so the Vue pages come from here. */
+  sitemap: {
+    sources: ["/api/__sitemap__/pages"],
+  },
   llms: {
     domain: "https://keys.agntn.dev",
     title: "@agntn/keys",
@@ -99,6 +107,17 @@ export default defineNuxtConfig({
               "Walk secp256k1 private keys in the browser and derive addresses for every chain in the package",
           },
         ],
+      },
+      /** Left alone, agent discovery lumps guide and chains together and calls the landing `/`. */
+      {
+        title: "Guide",
+        contentCollection: "docs",
+        contentFilters: [{ field: "path", operator: "LIKE", value: "/guide%" }],
+      },
+      {
+        title: "Blockchains",
+        contentCollection: "docs",
+        contentFilters: [{ field: "path", operator: "LIKE", value: "/blockchains%" }],
       },
     ],
   },
@@ -201,27 +220,28 @@ export default defineNuxtConfig({
         "node_modules/@modelcontextprotocol/sdk/dist/esm",
       ),
     },
-    /** Types only: src/tools.ts and the /mcp adapter see one `ToolDefinition`, the copy here. */
-    typescript: {
-      tsConfig: {
-        compilerOptions: {
-          paths: {
-            "@agntn/tools": ["../node_modules/@agntn/tools/dist/index.d.mts"],
-            "@agntn/tools/toolkit": ["../node_modules/@agntn/tools/dist/toolkit.d.mts"],
-          },
-        },
-      },
-    },
     compatibilityDate: "2026-09-03",
     /** The library writes bigint literals, which have no es2019 form. The worker runs them as they are. */
     esbuild: { options: { target: "es2022" } },
-    prerender: {
-      crawlLinks: true,
-      routes: ["/", "/keyspace", "/sitemap.xml", "/robots.txt", "/llms.txt", "/llms-full.txt"],
-    },
     cloudflare: {
       deployConfig: true,
       nodeCompat: true,
+    },
+  },
+  /** Nuxt's own prerender option. The same keys under `nitro.prerender` are deprecated. */
+  prerender: {
+    crawlLinks: true,
+    routes: ["/", "/keyspace", "/sitemap.xml", "/robots.txt", "/llms.txt", "/llms-full.txt"],
+  },
+  typescript: {
+    /** Types only: src/tools.ts and the /mcp adapter see one `ToolDefinition`, the copy here. */
+    serverTsConfig: {
+      compilerOptions: {
+        paths: {
+          "@agntn/tools": ["../node_modules/@agntn/tools/dist/index.d.mts"],
+          "@agntn/tools/toolkit": ["../node_modules/@agntn/tools/dist/toolkit.d.mts"],
+        },
+      },
     },
   },
   compatibilityDate: "2026-09-03",

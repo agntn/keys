@@ -3,11 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "nuxt dev --extends docus",
-    "build": "NUXT_SITE_URL=https://keys.agntn.dev nuxt build --extends docus",
-    "generate": "NUXT_SITE_URL=https://keys.agntn.dev nuxt generate --extends docus",
-    "preview": "nuxt preview --extends docus",
-    "typecheck": "nuxt prepare --extends docus && node scripts/typecheck.ts",
+    "dev": "nuxt dev",
+    "build": "NUXT_SITE_URL=https://keys.agntn.dev nuxt build",
+    "generate": "NUXT_SITE_URL=https://keys.agntn.dev nuxt generate",
+    "preview": "nuxt preview",
+    "typecheck": "nuxt prepare && node scripts/typecheck.ts",
     "deploy": "pnpm build && wrangler deploy"
   },
   "dependencies": {
@@ -22,9 +22,9 @@
     "@scure/bip39": "2.4.0",
     "agents": "0.24.0",
     "better-sqlite3": "12.11.1",
-    "docus": "5.13.0",
+    "docus": "5.15.0",
     "micro-key-producer": "0.10.2",
-    "nuxt": "4.5.2",
+    "nuxt": "4.6.2",
     "zod": "4.6.6"
   },
   "devDependencies": {

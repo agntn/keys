@@ -104,7 +104,7 @@ function sectionActive(link: TocLink): boolean {
       </div>
     </nav>
 
-    <DocsAsideMobileBar :links="links" />
+    <LazyDocsAsideMobileBar :links="links" />
   </div>
 </template>
 
