@@ -170,7 +170,7 @@
     "@agntn/ox": "0.1.0",
     "@earendil-works/pi-coding-agent": "0.99.2",
     "@earendil-works/pi-tui": "0.99.2",
-    "@modelcontextprotocol/client": "2.2.0",
+    "@modelcontextprotocol/client": "2.3.0",
     "@modelcontextprotocol/sdk": "1.31.0",
     "@oh-my-pi/pi-coding-agent": "18.4.12",
     "@types/node": "26.4.1",
