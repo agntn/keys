@@ -11,6 +11,12 @@ const description =
 
 useSeo({ title, description, type: "article" });
 
+/** `useSeo` points agents at `/keyspace.md`, a twin this page doesn't have, so the link goes. */
+const dropMarkdownTwin = injectHead().hooks?.hook("tags:resolve", (ctx) => {
+  ctx.tags = ctx.tags.filter((tag) => !(tag.tag === "link" && tag.props.type === "text/markdown"));
+});
+onScopeDispose(() => dropMarkdownTwin?.());
+
 defineOgImage(
   "Docs",
   { headline: "Explorer", title, description },

@@ -4,19 +4,23 @@
  * top right corner cut, and the menu in the tooltip's grammar (`.keys-menu` in app.css).
  */
 import { useClipboard } from "@vueuse/core";
-import { joinURL, withTrailingSlash } from "ufo";
+import { joinURL } from "ufo";
 
 const route = useRoute();
 const toast = useToast();
 const runtimeConfig = useRuntimeConfig();
 const appBaseURL = runtimeConfig.app?.baseURL || "/";
 const mcpRoute = (runtimeConfig.public.mcp as { route?: string } | undefined)?.route || "/mcp";
+/** Where `nuxt-agent-discovery` serves each page's markdown, `/raw` unless configured. */
+const rawPrefix =
+  (runtimeConfig.public.agentDiscovery as { rawPrefix?: string } | undefined)?.rawPrefix || "/raw";
 
 const { copy, copied } = useClipboard();
 const { t } = useDocusI18n();
 
+const rawPath = computed(() => `${joinURL(rawPrefix, route.path)}.md`);
 const markdownLink = computed(
-  () => `${window?.location?.origin}${withTrailingSlash(appBaseURL)}raw${route.path}.md`,
+  () => `${window?.location?.origin}${joinURL(appBaseURL, rawPath.value)}`,
 );
 const mcpServerUrl = computed(() => `${window?.location?.origin}${joinURL(appBaseURL, mcpRoute)}`);
 const mcpDeeplink = computed(
@@ -79,7 +83,7 @@ const MENU_UI = {
 };
 
 async function copyPage() {
-  const page = await $fetch<string>(`/raw${route.path}.md`);
+  const page = await $fetch<string>(rawPath.value);
   await copy(page);
 }
 </script>

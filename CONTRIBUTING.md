@@ -46,8 +46,8 @@ The lint scripts build first, because the Pi and OMP extensions take their tool 
 `pnpm docs` serves it on port 3000.
 
 - `pnpm --dir docs typecheck` runs vue-tsc over the app, `.vue` files too. `pnpm test:types` calls it. Docus ships raw TypeScript that fails this config, so the script skips its errors and fails on yours.
-- A page under `docs/app/pages/` calls `useSeo` and `defineOgImage` itself, gets appended in `server/routes/sitemap.xml.ts` and listed in `llms.sections` in `nuxt.config.ts`. Skip one and crawlers or agents never see it.
-- A frontmatter `description` stays under 160 characters, with periods instead of commas, since the OG card drops commas. The landing's SEO description has no trailing period, or the OG image silently skips the prerender; `test/docs-og.test.ts` checks that one.
+- A page under `docs/app/pages/` calls `useSeo` and `defineOgImage` itself, goes into `PAGES` in `server/api/__sitemap__/pages.ts` and gets listed in `llms.sections` in `nuxt.config.ts`. Skip one and crawlers or agents never see it.
+- A frontmatter `description` stays under 160 characters. Commas and a closing period are fine. The OG card keeps them, and its file is named by a hash, not by your sentence.
 - Icons: `token` for chains by ticker, Lucide for the interface, `simple-icons` for GitHub and npm, `vscode-icons` for file types. A chain icon that only comes in colour doesn't justify a second set.
 - `public/favicon.svg` is the source. The PNGs and the `.ico` are cut from it with ImageMagick, and both MCP servers show `favicon.svg` and `icon-512.png`.
 - A new npm import that `src/index.ts` reaches goes into `docs/package.json` at the root's version, `libraryDependencies` and `libraryEntries` in `nuxt.config.ts`. Miss one and the deploy or the dev server breaks.
