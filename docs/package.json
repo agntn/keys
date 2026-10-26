@@ -28,10 +28,10 @@
     "zod": "4.6.6"
   },
   "devDependencies": {
-    "@iconify-json/lucide": "1.2.144",
+    "@iconify-json/lucide": "1.2.147",
     "@iconify-json/simple-icons": "1.2.100",
     "@iconify-json/token": "1.2.42",
-    "@iconify-json/vscode-icons": "1.2.89",
+    "@iconify-json/vscode-icons": "1.2.92",
     "typescript": "6.0.3",
     "vue-tsc": "3.3.13",
     "wrangler": "4.128.0"
