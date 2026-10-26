@@ -37,8 +37,8 @@ importers:
         specifier: 0.7.2
         version: 0.7.2(@earendil-works/pi-coding-agent@0.99.2(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.31.0(supports-color@7.2.0)(zod@4.4.3))(@smithy/signature-v4@5.7.3)(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3)
       '@agntn/tools':
-        specifier: 0.2.3
-        version: 0.2.3(@earendil-works/pi-coding-agent@0.99.2(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.31.0(supports-color@7.2.0)(zod@4.4.3))(@smithy/signature-v4@5.7.3)(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3)
+        specifier: 0.2.4
+        version: 0.2.4(@earendil-works/pi-coding-agent@0.99.2(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.31.0(supports-color@7.2.0)(zod@4.4.3))(@smithy/signature-v4@5.7.3)(bufferutil@4.1.0)(supports-color@7.2.0)(utf-8-validate@6.0.6)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3))(@modelcontextprotocol/server@2.2.0)(@oh-my-pi/pi-coding-agent@18.4.12(@types/node@26.4.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(zod@4.4.3)
       '@modelcontextprotocol/server':
         specifier: 2.2.0
         version: 2.2.0
