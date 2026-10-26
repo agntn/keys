@@ -21,8 +21,8 @@ importers:
         specifier: 0.7.2
         version: 0.7.2(ai@7.0.149(zod@4.6.6))(zod@4.6.6)
       '@agntn/tools':
-        specifier: 0.2.3
-        version: 0.2.3(@modelcontextprotocol/server@2.0.0)(ai@7.0.149(zod@4.6.6))(zod@4.6.6)
+        specifier: 0.2.4
+        version: 0.2.4(@modelcontextprotocol/server@2.0.0)(ai@7.0.149(zod@4.6.6))(zod@4.6.6)
       '@modelcontextprotocol/sdk':
         specifier: 1.31.0
         version: 1.31.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.6)
@@ -7866,15 +7866,15 @@ snapshots:
       '@modelcontextprotocol/server': 2.2.0
       ai: 7.0.149(zod@4.6.6)
 
-  '@agntn/tools@0.2.3(@modelcontextprotocol/server@2.0.0)(ai@7.0.149(zod@4.6.6))(zod@4.6.6)':
-    optionalDependencies:
-      '@modelcontextprotocol/server': 2.0.0
-      ai: 7.0.149(zod@4.6.6)
-      zod: 4.6.6
-
   '@agntn/tools@0.2.3(@modelcontextprotocol/server@2.2.0)(ai@7.0.149(zod@4.6.6))(zod@4.6.6)':
     optionalDependencies:
       '@modelcontextprotocol/server': 2.2.0
+      ai: 7.0.149(zod@4.6.6)
+      zod: 4.6.6
+
+  '@agntn/tools@0.2.4(@modelcontextprotocol/server@2.0.0)(ai@7.0.149(zod@4.6.6))(zod@4.6.6)':
+    optionalDependencies:
+      '@modelcontextprotocol/server': 2.0.0
       ai: 7.0.149(zod@4.6.6)
       zod: 4.6.6
 
