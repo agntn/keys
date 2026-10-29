@@ -10,7 +10,7 @@ minimumReleaseAgeExclude:
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@0.3.3
   vitest: 4.1.11
-  vite-plus: 0.3.3
+  vite-plus: 1.1.0
 
 # One version per name for the library and docs/, whose bundle and /mcp route run the library's code.
 catalogs:
