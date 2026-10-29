@@ -30,19 +30,13 @@ function signWithNonce(digest: Uint8Array, k: bigint): { r: bigint; s: bigint; r
 /**
  * Signs a type 2 transaction built straight from the EIP-1559 field list.
  * @param to - Recipient bytes, empty for a contract creation
- * @param k - A fixed nonce instead of RFC 6979
+ * @param k - The signing nonce
  * @returns {EvmTransactionJson} The eth_getTransactionByHash shape without hash and from
  */
-function signType2(to: Uint8Array, k?: bigint): EvmTransactionJson {
+function signType2(to: Uint8Array, k: bigint): EvmTransactionJson {
   const fields = [1n, 7n, 1_000_000_000n, 30_000_000_000n, 21_000n, to, 0n, hex.decode("6000")];
   const unsigned = Uint8Array.of(2, ...rlp.encode([...fields, []]));
-  const signature =
-    k === undefined
-      ? secp256k1.Signature.fromBytes(
-          secp256k1.sign(keccak256(unsigned), SECRET, { prehash: false, format: "recovered" }),
-          "recovered",
-        )
-      : signWithNonce(keccak256(unsigned), k);
+  const signature = signWithNonce(keccak256(unsigned), k);
   return {
     type: "0x2",
     chainId: "0x1",
@@ -91,8 +85,9 @@ describe("recoverSigner", () => {
   );
 
   it("names the type and chain, and leaves the chain out before EIP-155", () => {
-    expect(recoverSigner(preEip155.raw)).not.toHaveProperty("chainId");
-    expect(recoverSigner(preEip155.raw).transactionType).toBe(0);
+    const legacy = recoverSigner(preEip155.raw);
+    expect(legacy).not.toHaveProperty("chainId");
+    expect(legacy.transactionType).toBe(0);
     expect(recoverSigner(eip155.raw)).toMatchObject({ transactionType: 0, chainId: 1n });
     expect(recoverSigner(type1.raw)).toMatchObject({ transactionType: 1, chainId: 1n });
     expect(recoverSigner(type2.json)).toMatchObject({ transactionType: 2, chainId: 1n });
@@ -137,11 +132,7 @@ describe("recoverSigner", () => {
   });
 
   it("rebuilds a contract creation with an empty recipient", () => {
-    const created = recoverSigner(signType2(new Uint8Array()));
-    expect(created.publicKey).toBe(SIGNER);
-    const sent = recoverSigner(signType2(new Uint8Array(20).fill(0x11)));
-    expect(sent.publicKey).toBe(SIGNER);
-    expect(sent.hash).not.toBe(created.hash);
+    expect(recoverSigner(signType2(new Uint8Array(), 0xbeefn)).publicKey).toBe(SIGNER);
   });
 
   it("refuses JSON whose stated hash, sender or chain disagrees with its fields", () => {

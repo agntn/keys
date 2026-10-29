@@ -1,6 +1,7 @@
 import { rlp, type RlpInput, type RlpItem } from "@agntn/encodings/rlp";
 import { keccak256 } from "@agntn/hashes";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { concatBytes } from "../bytes.ts";
 import { generateAddress } from "../evm-address.ts";
 
 /** A signed transaction as `eth_getTransactionByHash` returns it, quantities and data as 0x hex. */
@@ -66,10 +67,23 @@ interface SignedPayload {
   readonly s: bigint;
 }
 
-/** Fields before the signature, per type. */
-const FIELD_COUNTS = { 0: 6, 1: 8, 2: 9 } as const;
-/** Where each typed transaction keeps its access list. */
-const ACCESS_LIST_INDEX = { 1: 7, 2: 8 } as const;
+/** JSON names of the fields before the signature, in RLP order, per type. */
+const LAYOUTS = {
+  0: ["nonce", "gasPrice", "gas", "to", "value", "input"],
+  1: ["chainId", "nonce", "gasPrice", "gas", "to", "value", "input", "accessList"],
+  2: [
+    "chainId",
+    "nonce",
+    "maxPriorityFeePerGas",
+    "maxFeePerGas",
+    "gas",
+    "to",
+    "value",
+    "input",
+    "accessList",
+  ],
+} as const;
+type FieldName = (typeof LAYOUTS)[keyof typeof LAYOUTS][number];
 const QUANTITY = /^0x[0-9a-f]+$/iu;
 const DATA = /^0x(?:[0-9a-f]{2})*$/iu;
 const UNSUPPORTED_TYPES: Readonly<Record<string, string>> = {
@@ -101,10 +115,10 @@ function toHex32(value: bigint): string {
  * @returns {string} The refusal
  */
 function unsupportedType(type: bigint): string {
-  const key = type.toString();
-  return Object.hasOwn(UNSUPPORTED_TYPES, key)
-    ? (UNSUPPORTED_TYPES[key] ?? "")
-    : `Transaction type 0x${type.toString(16).padStart(2, "0")} is not an EVM transaction this reads`;
+  return (
+    UNSUPPORTED_TYPES[type.toString()] ??
+    `Transaction type 0x${type.toString(16).padStart(2, "0")} is not an EVM transaction this reads`
+  );
 }
 
 /**
@@ -161,18 +175,16 @@ function scalarField(item: ReadItem | undefined, position: number): bigint {
  * @returns {readonly ReadItem[]} The same fields
  */
 function payloadFields(items: readonly ReadItem[], type: 0 | 1 | 2): readonly ReadItem[] {
-  const count = FIELD_COUNTS[type];
-  if (items.length !== count + 3) {
+  const layout: readonly FieldName[] = LAYOUTS[type];
+  if (items.length !== layout.length + 3) {
     throw new RangeError(
-      `A type ${type} transaction has ${count + 3} fields, this one has ${items.length}`,
+      `A type ${type} transaction has ${layout.length + 3} fields, this one has ${items.length}`,
     );
   }
-  const fields = items.slice(0, count);
-  const listIndex = type === 0 ? -1 : ACCESS_LIST_INDEX[type];
+  const fields = items.slice(0, layout.length);
   for (const [position, item] of fields.entries()) {
-    if (position === listIndex) {
-      if (item instanceof Uint8Array) throw new TypeError("Access list must be a list");
-    } else bytesField(item, position);
+    if (layout[position] !== "accessList") bytesField(item, position);
+    else if (item instanceof Uint8Array) throw new TypeError("Access list must be a list");
   }
   return fields;
 }
@@ -197,38 +209,22 @@ function decodeList(bytes: Uint8Array): readonly RlpItem[] {
 }
 
 /**
- * Splits a raw legacy transaction.
- * @param bytes - The RLP list
+ * Splits a raw transaction body: the signed fields, then v or yParity, r and s.
+ * @param type - The transaction type
+ * @param body - The RLP list, after the type byte of a typed transaction
  * @returns {SignedPayload} Its parts
  */
-function legacyPayload(bytes: Uint8Array): SignedPayload {
-  const items = decodeList(bytes);
-  const fields = payloadFields(items, 0);
-  const { chainId, recovery } = splitLegacyV(toBigInt(bytesField(items[6], 6)));
-  const signature = { recovery, r: scalarField(items[7], 7), s: scalarField(items[8], 8) };
-  return chainId === undefined
-    ? { type: 0, fields, ...signature }
-    : { type: 0, fields, chainId, ...signature };
-}
-
-/**
- * Splits a raw EIP-2930 or EIP-1559 transaction.
- * @param type - 1 or 2
- * @param body - The RLP list after the type byte
- * @returns {SignedPayload} Its parts
- */
-function typedPayload(type: 1 | 2, body: Uint8Array): SignedPayload {
+function rlpPayload(type: 0 | 1 | 2, body: Uint8Array): SignedPayload {
   const items = decodeList(body);
   const fields = payloadFields(items, type);
-  const at = FIELD_COUNTS[type];
-  return {
-    type,
-    fields,
-    chainId: toBigInt(bytesField(items[0], 0)),
-    recovery: parity(toBigInt(bytesField(items[at], at))),
-    r: scalarField(items[at + 1], at + 1),
-    s: scalarField(items[at + 2], at + 2),
-  };
+  const at = fields.length;
+  const v = toBigInt(bytesField(items[at], at));
+  const { chainId, recovery } =
+    type === 0
+      ? splitLegacyV(v)
+      : { chainId: toBigInt(bytesField(items[0], 0)), recovery: parity(v) };
+  const r = scalarField(items[at + 1], at + 1);
+  return { type, fields, chainId, recovery, r, s: scalarField(items[at + 2], at + 2) };
 }
 
 /**
@@ -251,8 +247,8 @@ function rawBytes(transaction: string): Uint8Array {
  */
 function rawPayload(bytes: Uint8Array): SignedPayload {
   const [first = 0] = bytes;
-  if (first >= 0xc0) return legacyPayload(bytes);
-  if (first === 1 || first === 2) return typedPayload(first, bytes.subarray(1));
+  if (first >= 0xc0) return rlpPayload(0, bytes);
+  if (first === 1 || first === 2) return rlpPayload(first, bytes.subarray(1));
   if (first >= 0x80) throw new TypeError("Transaction must be an RLP list or a typed envelope");
   throw new RangeError(unsupportedType(BigInt(first)));
 }
@@ -332,30 +328,16 @@ function jsonType(value: unknown): 0 | 1 | 2 {
 }
 
 /**
- * Lists the JSON fields before the signature, in RLP order.
+ * Reads one JSON field into its RLP form.
  * @param json - The transaction
- * @param type - Its type
- * @returns {readonly RlpInput[]} The fields
+ * @param name - The field
+ * @returns {RlpInput} Its value
  */
-function jsonFields(json: Readonly<EvmTransactionJson>, type: 0 | 1 | 2): readonly RlpInput[] {
-  const head = type === 0 ? [] : [quantity(json.chainId, "chainId")];
-  const nonce = quantity(json.nonce, "nonce");
-  const fees =
-    type === 2
-      ? [
-          quantity(json.maxPriorityFeePerGas, "maxPriorityFeePerGas"),
-          quantity(json.maxFeePerGas, "maxFeePerGas"),
-        ]
-      : [quantity(json.gasPrice, "gasPrice")];
-  const body = [
-    quantity(json.gas, "gas"),
-    recipient(json.to),
-    quantity(json.value, "value"),
-    data(json.input, "input"),
-  ];
-  return type === 0
-    ? [nonce, ...fees, ...body]
-    : [...head, nonce, ...fees, ...body, accessList(json.accessList)];
+function jsonField(json: Readonly<EvmTransactionJson>, name: FieldName): RlpInput {
+  if (name === "to") return recipient(json.to);
+  if (name === "input") return data(json.input, "input");
+  if (name === "accessList") return accessList(json.accessList);
+  return quantity(json[name], name);
 }
 
 /**
@@ -393,12 +375,10 @@ function jsonSignature(
  */
 function jsonPayload(json: Readonly<EvmTransactionJson>): SignedPayload {
   const type = jsonType(json.type);
-  const fields = jsonFields(json, type);
+  const fields = LAYOUTS[type].map((name: FieldName) => jsonField(json, name));
   const { chainId, recovery } = jsonSignature(json, type);
   const signature = { recovery, r: quantity(json.r, "r"), s: quantity(json.s, "s") };
-  return chainId === undefined
-    ? { type, fields, ...signature }
-    : { type, fields, chainId, ...signature };
+  return { type, fields, chainId, ...signature };
 }
 
 /**
@@ -408,11 +388,7 @@ function jsonPayload(json: Readonly<EvmTransactionJson>): SignedPayload {
  * @returns {Uint8Array} The envelope, or the list itself for legacy
  */
 function envelope(type: 0 | 1 | 2, body: Uint8Array): Uint8Array {
-  if (type === 0) return body;
-  const bytes = new Uint8Array(body.length + 1);
-  bytes[0] = type;
-  bytes.set(body, 1);
-  return bytes;
+  return type === 0 ? body : concatBytes(Uint8Array.of(type), body);
 }
 
 /**

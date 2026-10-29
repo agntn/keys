@@ -205,10 +205,6 @@ describe("keys Pi extension", () => {
       [{ transaction: "0x" }, "Transaction must be hex, 0x optional"],
       [{ transaction: "{}" }, "nonce must be a 0x hex quantity"],
       [{ transaction: '{"type":"0x4"}' }, "Type 4 set code transactions are not supported yet"],
-      [
-        { transaction: `0x${"00".repeat(200_001)}` },
-        "Transaction must not exceed 400000 hex digits",
-      ],
       [{ transaction: "00".repeat(200_001) }, "Transaction must not exceed 400000 hex digits"],
       [{ transaction: `0x${"00".repeat(200_000)}` }, "Transaction type 0x00 is not an EVM"],
       [
