@@ -549,6 +549,36 @@ describe("OpenPGP cleartext framing", () => {
     expect(verify(bad, { publicKey: rsa.publicKey }).state).toBe("valid");
   });
 
+  it.each([
+    [
+      "a cut signature",
+      rsa.signed.replace(/-----END PGP SIGNATURE-----\s*$/u, ""),
+      rsa.publicKey,
+      /END PGP SIGNATURE/u,
+    ],
+    [
+      "a cut key",
+      rsa.signed,
+      rsa.publicKey.replace("-----END PGP PUBLIC KEY BLOCK-----", ""),
+      /END PGP PUBLIC KEY BLOCK/u,
+    ],
+    [
+      "a key line that isn't base64",
+      rsa.signed,
+      rsa.publicKey.replace("\n\n", "\n\nnot base64!\n"),
+      /base64/u,
+    ],
+    [
+      "a key block with no data",
+      rsa.signed,
+      "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\n-----END PGP PUBLIC KEY BLOCK-----",
+      /no data/u,
+    ],
+  ] as const)("refuses %s as malformed armor", (_, signed, publicKey, message) => {
+    expect(() => verify(signed, { publicKey })).toThrow(TypeError);
+    expect(() => verify(signed, { publicKey })).toThrow(message);
+  });
+
   it("cuts trailing whitespace in linear time", () => {
     const line = `${" ".repeat(200_000)}x`;
     const started = performance.now();
