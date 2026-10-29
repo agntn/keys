@@ -284,8 +284,7 @@ Want a twenty-fifth? Extend `AbstractBlockchain`, or `AbstractEVMBlockchain` if 
 ## 🛠️ Development
 
 ```bash
-pnpm install
-pnpm --dir docs install   # the /mcp test borrows Zod and the toolkit from here
+pnpm install      # installs the library and docs
 pnpm dev          # vp test in watch mode
 pnpm lint         # builds first, then vp lint and vp fmt --check
 pnpm test:types   # tsc over the library and the type tests, vue-tsc over the docs app

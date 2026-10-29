@@ -11,30 +11,28 @@
     "deploy": "pnpm build && wrangler deploy"
   },
   "dependencies": {
-    "@agntn/ciphers": "0.5.2",
-    "@agntn/curves": "0.2.1",
-    "@agntn/encodings": "0.2.0",
-    "@agntn/hashes": "0.7.2",
-    "@agntn/tools": "0.2.4",
-    "@modelcontextprotocol/sdk": "1.32.0",
-    "@noble/curves": "2.4.0",
-    "@scure/bip32": "2.4.0",
-    "@scure/bip39": "2.4.0",
-    "agents": "0.30.1",
-    "better-sqlite3": "12.11.1",
-    "docus": "5.15.0",
-    "micro-key-producer": "0.10.2",
-    "nuxt": "4.6.2",
-    "zod": "4.6.7"
+    "@agntn/tools": "catalog:deps",
+    "@modelcontextprotocol/sdk": "catalog:deps",
+    "@nuxtjs/mcp-toolkit": "catalog:deps",
+    "@vueuse/core": "catalog:deps",
+    "agents": "catalog:deps",
+    "better-sqlite3": "catalog:deps",
+    "docus": "catalog:deps",
+    "nuxt": "catalog:deps",
+    "ufo": "catalog:deps",
+    "zod": "catalog:deps"
   },
   "devDependencies": {
-    "@iconify-json/lucide": "1.2.147",
-    "@iconify-json/simple-icons": "1.2.100",
-    "@iconify-json/token": "1.2.42",
-    "@iconify-json/vscode-icons": "1.2.92",
-    "typescript": "6.0.3",
-    "vue-tsc": "3.3.13",
-    "wrangler": "4.152.0"
+    "@iconify-json/lucide": "catalog:dev",
+    "@iconify-json/simple-icons": "catalog:dev",
+    "@iconify-json/token": "catalog:dev",
+    "@iconify-json/vscode-icons": "catalog:dev",
+    "@nuxt/content": "catalog:dev",
+    "@nuxt/ui": "catalog:dev",
+    "shiki": "catalog:dev",
+    "typescript": "catalog:nuxt",
+    "vue-tsc": "catalog:dev",
+    "wrangler": "catalog:dev"
   },
   "packageManager": "pnpm@12.11.2"
 }
