@@ -181,7 +181,8 @@
     "typebox": "catalog:dev",
     "typescript": "catalog:dev",
     "vite": "catalog:",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "vitest": "catalog:"
   },
   "engines": {
     "node": ">=26"

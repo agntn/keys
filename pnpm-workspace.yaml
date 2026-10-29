@@ -8,9 +8,9 @@ minimumReleaseAgeExclude:
   - obuild@0.4.43
 
 catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@0.3.3
-  vitest: 4.1.11
-  vite-plus: 0.3.3
+  vite: npm:@voidzero-dev/vite-plus-core@1.4.0
+  vitest: 5.0.5
+  vite-plus: 1.4.0
 
 # One version per name for the library and docs/, whose bundle and /mcp route run the library's code.
 catalogs:
@@ -47,7 +47,7 @@ catalogs:
     "@nuxt/ui": 4.12.0
     "@oh-my-pi/pi-coding-agent": 18.4.12
     "@types/node": 26.6.5
-    "@vitest/coverage-v8": 4.1.11
+    "@vitest/coverage-v8": 5.0.5
     jiti: 2.7.0
     obuild: 0.4.45
     shiki: 4.5.0
