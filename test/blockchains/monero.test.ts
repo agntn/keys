@@ -6,7 +6,7 @@ import Monero from "../../src/blockchains/monero";
 import { useBlockchain } from "../../src/blockchain";
 import { blockchains } from "../../src/_blockchains";
 import { ed25519 } from "@noble/curves/ed25519.js";
-import { decodeMoneroBase58, encodeMoneroBase58 } from "../../src/utils/monero-base58.ts";
+import { base58 } from "@agntn/encodings/base58";
 import {
   deriveHdWallet,
   deriveWallet,
@@ -115,7 +115,9 @@ describe("Monero", () => {
       const keyPublic = `${spend}${first.publicKey.slice(64)}`;
       expect(() => blockchain.getAddress(keyPublic)).toThrow("main subgroup");
       const body = Uint8Array.of(18, ...hex.decode(keyPublic));
-      const address = encodeMoneroBase58(Uint8Array.of(...body, ...keccak256(body).subarray(0, 4)));
+      const address = base58.encode(Uint8Array.of(...body, ...keccak256(body).subarray(0, 4)), {
+        blocks: true,
+      });
       expect(blockchain.validateAddress(address)).toBe(false);
     });
 
@@ -126,6 +128,7 @@ describe("Monero", () => {
       expect(blockchain.validateAddress(first.address.slice(0, -1))).toBe(false);
       expect(blockchain.validateAddress(`${first.address}1`)).toBe(false);
       expect(blockchain.validateAddress(first.address.replace("4", "0"))).toBe(false);
+      expect(blockchain.validateAddress(`zzzzzzzzzzz${first.address.slice(11)}`)).toBe(false);
       expect(blockchain.validateAddress("")).toBe(false);
     });
 
@@ -275,7 +278,9 @@ describe("Monero", () => {
 
     it("refuses the integrated network byte on an address without a payment ID", () => {
       const body = Uint8Array.of(19, ...hex.decode(first.publicKey));
-      const address = encodeMoneroBase58(Uint8Array.of(...body, ...keccak256(body).subarray(0, 4)));
+      const address = base58.encode(Uint8Array.of(...body, ...keccak256(body).subarray(0, 4)), {
+        blocks: true,
+      });
       expect(blockchain.validateAddress(address)).toBe(false);
     });
   });
@@ -296,10 +301,10 @@ describe("Monero", () => {
 
     /* Swaps r for r + l: the same point, but a scalar wallet2 refuses. */
     function withUnreducedR(signature: string): string {
-      const bytes = decodeMoneroBase58(signature.slice(5));
+      const bytes = base58.decode(signature.slice(5), { blocks: true });
       const r = BigInt(`0x${hex.encode(bytes.slice(32).reverse())}`) + ed25519.Point.Fn.ORDER;
       const unreduced = hex.decode(r.toString(16).padStart(64, "0")).reverse();
-      return `SigV2${encodeMoneroBase58(Uint8Array.of(...bytes.slice(0, 32), ...unreduced))}`;
+      return `SigV2${base58.encode(Uint8Array.of(...bytes.slice(0, 32), ...unreduced), { blocks: true })}`;
     }
 
     it.each(vector.signatures)("checks what monero-wallet-rpc signed for $message", (entry) => {
@@ -477,7 +482,13 @@ describe("Monero", () => {
           signature: entry.spend.slice(0, -1),
           publicKey: first.publicKey,
         }),
-      ).toThrow("overflows its bytes");
+      ).toThrow("overflows its 7 bytes");
+      expect(() =>
+        blockchain.verifyMessage("", {
+          signature: `${entry.spend.slice(0, -1)}0`,
+          publicKey: first.publicKey,
+        }),
+      ).toThrow(RangeError);
       expect(() =>
         blockchain.verifyMessage("", {
           signature: entry.spend.slice(0, 49),
