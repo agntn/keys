@@ -132,7 +132,7 @@ describe("HD checksum policy", () => {
     );
     expect(() =>
       chain.deriveHDWallet(mnemonic, { path: "m/44'/501'/0'/0", allowInvalidChecksum: true }),
-    ).toThrow("Non-hardened");
+    ).toThrow("level 4 of the derivation path needs ' or h");
   });
 });
 

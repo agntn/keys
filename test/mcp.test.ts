@@ -919,6 +919,32 @@ describe("keys MCP server", () => {
     expect(text(response.content)).not.toContain(mnemonic);
   });
 
+  it("names the path level an HD derivation refuses", async () => {
+    const client = await connectTestClient();
+    const { mnemonic } = bip39TestVectors;
+    for (const [name, args, message] of [
+      [
+        "keys_hd_wallet_derive",
+        { chain: "solana", mnemonic, path: "m/44'/501'/0'/0" },
+        "keys_hd_wallet_derive failed: SLIP-10 walks ed25519 down hardened levels only, so level 4 of the derivation path needs ' or h",
+      ],
+      [
+        "keys_hd_wallet_derive",
+        { chain: "bitcoin", mnemonic, path: "m/84'/0'/2147483648'" },
+        "keys_hd_wallet_derive failed: Level 3 of the derivation path is above 2147483647; mark a hardened level with ' or h instead of adding 2^31",
+      ],
+      [
+        "keys_electrum_wallet_derive",
+        { mnemonic: electrumVectors[0]?.mnemonic, path: "m/0/2147483648" },
+        "keys_electrum_wallet_derive failed: Level 2 of the derivation path is above 2147483647",
+      ],
+    ] as const) {
+      const refused = await client.callTool({ name, arguments: args });
+      expect(refused.isError).toBe(true);
+      expect(text(refused.content)).toContain(message);
+    }
+  });
+
   it("derives an HD wallet from the BIP39 list the language names", async () => {
     const client = await connectTestClient();
     const path = "m/44'/0'/0'/0/0";

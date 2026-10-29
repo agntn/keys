@@ -12,7 +12,7 @@ import {
 } from "./address.ts";
 import { decodeCashAddr, encodeCashAddr } from "./cashaddr.ts";
 import { SLIP132_FORMATS, type ExtendedKeyFormats } from "./extended-key.ts";
-import { normalizeHardenedMarkers } from "./hd-index.ts";
+import { normalizeDerivationPath } from "./hd-index.ts";
 import { assertSignOptions, assertVerifyOptions } from "./options.ts";
 import {
   isCompactSignature,
@@ -285,7 +285,7 @@ export abstract class AbstractBitcoinBlockchain extends AbstractBitcoinMessageBl
    * @returns {Wallet} The wallet at the path
    */
   override deriveHDWallet(mnemonic: string, options: HDWalletOptions): Wallet {
-    const purpose = /^[mM]'?\/(\d+)'/u.exec(normalizeHardenedMarkers(options.path))?.[1];
+    const purpose = /^[mM]'?\/(\d+)'/u.exec(normalizeDerivationPath(options.path))?.[1];
     const inferredType = purpose === undefined ? undefined : PURPOSE_ADDRESS_TYPES[Number(purpose)];
     return super.deriveHDWallet(mnemonic, {
       ...options,

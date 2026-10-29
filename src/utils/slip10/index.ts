@@ -3,7 +3,7 @@ import { HDKey } from "micro-key-producer/slip10.js";
 // Reexport the SLIP10 implementation
 export { HDKey };
 
-import { normalizeHardenedMarkers } from "../hd-index.ts";
+import { normalizeDerivationPath } from "../hd-index.ts";
 import { assertOptions } from "../options.ts";
 
 export { HARDENED_OFFSET, hardenedIndex, isHardenedIndex, formatIndex } from "../hd-index.ts";
@@ -34,7 +34,10 @@ export interface SLIP10PathOptions {
 export function deriveHDKey(parent: HDKey, options: SLIP10PathOptions): HDKey {
   assertOptions(options, "deriveHDKey(parent, { path, forceHardened })");
   const { path, forceHardened = true } = options;
-  return parent.derive(normalizeHardenedMarkers(path), forceHardened);
+  return parent.derive(
+    normalizeDerivationPath(path, { hardenedOnly: !forceHardened }),
+    forceHardened,
+  );
 }
 
 /**

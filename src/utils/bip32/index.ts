@@ -1,7 +1,7 @@
 import { HDKey } from "@scure/bip32";
 export { HDKey };
 
-import { normalizeHardenedMarkers } from "../hd-index.ts";
+import { normalizeDerivationPath } from "../hd-index.ts";
 
 export { HARDENED_OFFSET, hardenedIndex, isHardenedIndex, formatIndex } from "../hd-index.ts";
 
@@ -30,7 +30,7 @@ export function getHDKeyFromExtended(xkey: string): HDKey {
  * @returns {HDKey} Derived HDKey instance
  */
 export function deriveHDKey(parent: HDKey, path: string): HDKey {
-  return parent.derive(normalizeHardenedMarkers(path));
+  return parent.derive(normalizeDerivationPath(path));
 }
 
 /**
