@@ -43,7 +43,7 @@ The lint scripts build first, because the Pi and OMP extensions take their tool 
 
 ## Docs site
 
-`pnpm docs` serves it on port 3000.
+`pnpm run docs` starts the site on port 3000. pnpm 12 has its own `docs` command, and it gets first dibs on the name.
 
 - `pnpm --dir docs typecheck` runs vue-tsc over the app, `.vue` files too. `pnpm test:types` calls it. Docus ships raw TypeScript that fails this config, so the script skips its errors and fails on yours.
 - A page under `docs/app/pages/` calls `useSeo` and `defineOgImage` itself, goes into `PAGES` in `server/api/__sitemap__/pages.ts` and gets listed in `llms.sections` in `nuxt.config.ts`. Skip one and crawlers or agents never see it.
