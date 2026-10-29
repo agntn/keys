@@ -209,6 +209,8 @@ describe("keys Pi extension", () => {
         { transaction: `0x${"00".repeat(200_001)}` },
         "Transaction must not exceed 400000 hex digits",
       ],
+      [{ transaction: "00".repeat(200_001) }, "Transaction must not exceed 400000 hex digits"],
+      [{ transaction: `0x${"00".repeat(200_000)}` }, "Transaction type 0x00 is not an EVM"],
       [
         { transaction: `{${" ".repeat(420_000)}}` },
         "Transaction JSON must not exceed 420000 characters",

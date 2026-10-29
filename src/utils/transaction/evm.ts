@@ -121,10 +121,11 @@ function splitLegacyV(v: bigint): { chainId?: bigint; recovery: 0 | 1 } {
 /**
  * Reads the recovery bit of a typed transaction.
  * @param value - yParity
+ * @param name - The field it came from, for the error
  * @returns {0 | 1} The bit
  */
-function parity(value: bigint): 0 | 1 {
-  if (value !== 0n && value !== 1n) throw new RangeError("yParity must be 0 or 1");
+function parity(value: bigint, name = "yParity"): 0 | 1 {
+  if (value !== 0n && value !== 1n) throw new RangeError(`${name} must be 0 or 1`);
   return value === 0n ? 0 : 1;
 }
 
@@ -368,10 +369,10 @@ function jsonSignature(
   type: 0 | 1 | 2,
 ): { chainId?: bigint; recovery: 0 | 1 } {
   if (type !== 0) {
-    const bit = json.yParity ?? json.v;
+    const [bit, name] = json.yParity === undefined ? [json.v, "v"] : [json.yParity, "yParity"];
     return {
       chainId: quantity(json.chainId, "chainId"),
-      recovery: parity(quantity(bit, "yParity")),
+      recovery: parity(quantity(bit, name), name),
     };
   }
   const split = splitLegacyV(quantity(json.v, "v"));

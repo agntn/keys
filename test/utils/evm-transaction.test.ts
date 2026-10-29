@@ -216,6 +216,9 @@ describe("recoverSigner", () => {
     expect(() => recoverSigner({ ...type2.json, yParity: "0x2" })).toThrow(
       "yParity must be 0 or 1",
     );
+    const { yParity: _yParity, ...onlyV } = type2.json;
+    expect(recoverSigner(onlyV).address).toBe(type2.address);
+    expect(() => recoverSigner({ ...onlyV, v: "0x1b" })).toThrow("v must be 0 or 1");
     expect(() =>
       recoverSigner({ ...type1.json, accessList: [{ address: "0x00" }] } as never),
     ).toThrow("accessList[0].storageKeys must be an array");

@@ -157,7 +157,7 @@ export interface TransactionSignerDetails {
 function signedTransaction(value: unknown): string | EvmTransactionJson {
   const text = requiredString(value, "Transaction").trim();
   if (!text.startsWith("{")) {
-    if (text.length > MAX_TRANSACTION_HEX_LENGTH + 2) {
+    if (text.length - (text.startsWith("0x") ? 2 : 0) > MAX_TRANSACTION_HEX_LENGTH) {
       throw new RangeError(`Transaction must not exceed ${MAX_TRANSACTION_HEX_LENGTH} hex digits`);
     }
     return text;
