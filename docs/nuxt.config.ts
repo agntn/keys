@@ -22,6 +22,7 @@ const libraryEntries = [
   "@agntn/curves/ed25519",
   "@agntn/curves/secp256k1",
   "@agntn/curves/sr25519",
+  "@agntn/encodings/armor",
   "@agntn/encodings/base32",
   "@agntn/encodings/base64",
   "@agntn/encodings/base58",

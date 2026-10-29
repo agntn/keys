@@ -1,4 +1,4 @@
-import { base64 } from "@agntn/encodings/base64";
+import { armor } from "@agntn/encodings/armor";
 import { HASH_NAMES } from "./algorithms.ts";
 
 /** What a cleartext signed message splits into. */
@@ -17,10 +17,9 @@ export interface Cleartext {
   readonly unescapedDash: boolean;
 }
 
-const ARMOR_HEADER = /^[A-Za-z][\w-]*: /u;
-const BASE64_LINE = /^[A-Za-z0-9+/]+=*$/u;
 const ANY_BEGIN = /^-----BEGIN PGP ([A-Z ,/0-9]+)-----\s*$/mu;
 const SIGNED_MESSAGE = "-----BEGIN PGP SIGNED MESSAGE-----";
+const SIGNATURE_END = "-----END PGP SIGNATURE-----";
 
 /**
  * Whether a line is the given armor line, which may only trail whitespace.
@@ -57,51 +56,20 @@ function missingBlock(text: string, label: string): TypeError {
 }
 
 /**
- * Index of the first line after the armor headers and their blank line.
- * @param lines - Lines after the BEGIN line
- * @returns {number} Index of the first data line
- */
-function dataStart(lines: readonly string[]): number {
-  let index = 0;
-  while (index < lines.length && ARMOR_HEADER.test(lines[index] ?? "")) index++;
-  while (index < lines.length && isBlank(lines[index] ?? "")) index++;
-  return index;
-}
-
-/**
- * Reads the base64 up to the checksum or END. The CRC24 is ignored, as RFC 9580 §6.1 asks.
- * @param lines - Lines after the BEGIN line
- * @param end - The END line to stop at
- * @returns {{ bytes: Uint8Array; next: number }} Bytes, and the index after the END line
- * @throws {TypeError} When the END line is missing or a line isn't base64
- */
-function armorData(lines: readonly string[], end: string): { bytes: Uint8Array; next: number } {
-  const data: string[] = [];
-  for (let index = dataStart(lines); index < lines.length; index++) {
-    const line = (lines[index] ?? "").trim();
-    if (line === end) return { bytes: decodeData(data), next: index + 1 };
-    if (line.startsWith("=") && isLine(lines[index + 1] ?? "", end)) {
-      return { bytes: decodeData(data), next: index + 2 };
-    }
-    if (!BASE64_LINE.test(line))
-      throw new TypeError("OpenPGP armor holds a line that isn't base64");
-    data.push(line);
-  }
-  throw new TypeError(`OpenPGP armor has no ${end} line`);
-}
-
-/**
- * Decodes the joined base64 of an armor block.
- * @param data - The base64 lines
+ * Dearmors through `@agntn/encodings`, which shrugs off a bad CRC24, but keeps our `TypeError`.
+ * @param text - Text holding the block
+ * @param label - The block to read
  * @returns {Uint8Array} The packets
- * @throws {TypeError} When the base64 doesn't decode or holds nothing
+ * @throws {TypeError} When the block is cut, not base64 or empty
  */
-function decodeData(data: readonly string[]): Uint8Array {
+function dearmor(text: string, label: string): Uint8Array {
   let bytes: Uint8Array;
   try {
-    bytes = base64.decode(data.join(""));
-  } catch {
-    throw new TypeError("OpenPGP armor is not valid base64");
+    ({ bytes } = armor.decode(text, { label }));
+  } catch (error) {
+    throw new TypeError(`OpenPGP ${error instanceof Error ? error.message : String(error)}`, {
+      cause: error,
+    });
   }
   if (bytes.length === 0) throw new TypeError("OpenPGP armor holds no data");
   return bytes;
@@ -115,10 +83,9 @@ function decodeData(data: readonly string[]): Uint8Array {
  * @throws {TypeError} When the block is missing, cut or not base64
  */
 export function readArmor(text: string, label: string): Uint8Array {
-  const lines = text.split(/\r?\n/u);
-  const begin = lines.findIndex((line) => isLine(line, `-----BEGIN PGP ${label}-----`));
-  if (begin === -1) throw missingBlock(text, label);
-  return armorData(lines.slice(begin + 1), `-----END PGP ${label}-----`).bytes;
+  const begin = `-----BEGIN PGP ${label}-----`;
+  if (!text.split(/\r?\n/u).some((line) => isLine(line, begin))) throw missingBlock(text, label);
+  return dearmor(text, label);
 }
 
 /**
@@ -175,12 +142,15 @@ export function readCleartext(message: string): Cleartext {
   const headers = hashHeaders(lines.slice(begin + 1, blank));
   const body = lines.slice(blank + 1, signatureLine);
   const signed = body.map((line) => signedLine(line));
-  const { bytes, next } = armorData(lines.slice(signatureLine + 1), "-----END PGP SIGNATURE-----");
-  const after = lines.slice(signatureLine + 1 + next);
+  const end = lines.findIndex(
+    (line, index) => index > signatureLine && line.trim() === SIGNATURE_END,
+  );
+  if (end === -1) throw new TypeError(`OpenPGP armor has no ${SIGNATURE_END} line`);
+  const after = lines.slice(end + 1);
   return {
     text: signed.join("\n"),
     canonical: new TextEncoder().encode(signed.join("\r\n")),
-    signature: bytes,
+    signature: dearmor(lines.slice(signatureLine, end + 1).join("\n"), "SIGNATURE"),
     hashHeaders: headers,
     outside:
       !lines.slice(0, begin).every((line) => isBlank(line)) ||
