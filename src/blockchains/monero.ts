@@ -8,13 +8,13 @@ import {
   multiplyPoint,
   reduceScalar as reduceHex,
 } from "@agntn/curves/ed25519";
+import { base58 } from "@agntn/encodings/base58";
 import { keccak256 } from "@agntn/hashes";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { bytesToNumberLE, equalBytes } from "@noble/curves/utils.js";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { concatBytes } from "../utils/bytes.ts";
-import { decodeMoneroBase58, encodeMoneroBase58 } from "../utils/monero-base58.ts";
 import { decodeMoneroSeed } from "../utils/monero-seed.ts";
 import { assertSignOptions, assertVerifyOptions } from "../utils/options.ts";
 import { assertNoRecoveryByte } from "../utils/signing.ts";
@@ -81,6 +81,9 @@ const SIGNATURE_V1 = "SigV1";
 
 /** Bytes of a signature: the challenge `c`, then the response `r`. */
 const SIGNATURE_BYTES = 64;
+
+/** Monero's base58: every eight bytes as eleven characters, whatever their value. */
+const BLOCKS = { blocks: true } as const;
 
 /**
  * Reduces 32 little-endian bytes mod l, as Monero's `sc_reduce32` does before a key is used.
@@ -244,7 +247,7 @@ function addressSecrets(spend: bigint, at: SubaddressIndex): readonly [bigint, b
  */
 function encodeAddress(body: ArrayLike<number>): string {
   const bytes = Uint8Array.from(body);
-  return encodeMoneroBase58(concatBytes(bytes, keccak256(bytes).subarray(0, CHECKSUM_BYTES)));
+  return base58.encode(concatBytes(bytes, keccak256(bytes).subarray(0, CHECKSUM_BYTES)), BLOCKS);
 }
 
 /**
@@ -387,7 +390,13 @@ function readSignature(signature: string): Readonly<{ v2: boolean; bytes: Uint8A
   if (header !== SIGNATURE_V2 && header !== SIGNATURE_V1) {
     throw new RangeError("A Monero signature starts with SigV2 or SigV1, as wallets print it");
   }
-  const bytes = decodeMoneroBase58(signature.slice(header.length));
+  let bytes: Uint8Array;
+  try {
+    bytes = base58.decode(signature.slice(header.length), BLOCKS);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new RangeError(`Monero signature after ${header}, ${reason}`, { cause: error });
+  }
   if (bytes.length !== SIGNATURE_BYTES) {
     throw new RangeError("A Monero signature holds 64 bytes after its header: c, then r");
   }
@@ -580,7 +589,7 @@ export class Monero extends AbstractBlockchain {
   override validateAddress(address: string): boolean {
     let bytes: Uint8Array;
     try {
-      bytes = decodeMoneroBase58(address);
+      bytes = base58.decode(address, BLOCKS);
     } catch {
       return false;
     }
@@ -634,7 +643,7 @@ export class Monero extends AbstractBlockchain {
       mode === SIGNING_MODES.view
         ? schnorrSign(hash, { key: viewKey, secret: view })
         : schnorrSign(hash, { key: spendKey, secret: spend });
-    return SIGNATURE_V2 + encodeMoneroBase58(signature);
+    return SIGNATURE_V2 + base58.encode(signature, BLOCKS);
   }
 
   /**
