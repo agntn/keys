@@ -176,7 +176,7 @@
     "@types/node": "26.6.5",
     "@vitest/coverage-v8": "4.1.11",
     "jiti": "2.7.0",
-    "obuild": "0.4.43",
+    "obuild": "0.4.45",
     "tsx": "4.23.15",
     "typebox": "1.4.3",
     "typescript": "7.0.2",
