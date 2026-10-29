@@ -1,3 +1,6 @@
+packages:
+  - docs
+
 minimumReleaseAgeExclude:
   - typebox
   - vite
@@ -8,6 +11,56 @@ catalog:
   vite: npm:@voidzero-dev/vite-plus-core@0.3.3
   vitest: 4.1.11
   vite-plus: 0.3.3
+
+# One version per name for the library and docs/, whose bundle and /mcp route run the library's code.
+catalogs:
+  deps:
+    "@agntn/ciphers": 0.5.2
+    "@agntn/curves": 0.2.1
+    "@agntn/encodings": 0.2.0
+    "@agntn/hashes": 0.7.2
+    "@agntn/tools": 0.2.4
+    "@modelcontextprotocol/sdk": 1.32.0
+    "@modelcontextprotocol/server": 2.4.0
+    "@noble/curves": 2.4.0
+    "@nuxtjs/mcp-toolkit": 0.23.0
+    "@scure/bip32": 2.4.0
+    "@scure/bip39": 2.4.0
+    "@vueuse/core": 14.4.0
+    agents: 0.30.1
+    better-sqlite3: 12.11.1
+    docus: 5.15.0
+    micro-key-producer: 0.10.2
+    nuxt: 4.6.2
+    ufo: 1.6.4
+    zod: 4.6.7
+  dev:
+    "@agntn/ox": 0.1.0
+    "@earendil-works/pi-coding-agent": 0.99.2
+    "@earendil-works/pi-tui": 0.99.2
+    "@iconify-json/lucide": 1.2.147
+    "@iconify-json/simple-icons": 1.2.100
+    "@iconify-json/token": 1.2.42
+    "@iconify-json/vscode-icons": 1.2.92
+    "@modelcontextprotocol/client": 2.3.0
+    "@nuxt/content": 3.16.2
+    "@nuxt/ui": 4.12.0
+    "@oh-my-pi/pi-coding-agent": 18.4.12
+    "@types/node": 26.6.5
+    "@vitest/coverage-v8": 4.1.11
+    jiti: 2.7.0
+    obuild: 0.4.45
+    shiki: 4.5.0
+    tsx: 4.23.15
+    typebox: 1.4.3
+    typescript: 7.0.2
+    vue-tsc: 3.3.13
+    wrangler: 4.152.0
+  # vue-tsc and Nuxt's type generation need the TypeScript API, which 7 no longer ships.
+  nuxt:
+    typescript: 6.0.3
+
+cleanupUnusedCatalogs: true
 
 overrides:
   vite@*: "catalog:"
@@ -23,11 +76,15 @@ peerDependencyRules:
 
 allowBuilds:
   "@google/genai": false
+  better-sqlite3: true
   bufferutil: false
+  core-js-pure: false
   esbuild: true
   onnxruntime-node: false
   protobufjs: false
   utf-8-validate: false
+  vue-demi: true
+  workerd: true
 
 patchedDependencies:
   micro-key-producer@0.10.2: patches/micro-key-producer@0.10.2.patch

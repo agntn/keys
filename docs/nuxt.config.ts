@@ -1,10 +1,10 @@
 import { resolve } from "node:path";
 import { keysTheme } from "./shiki-theme";
 
-/** Bundled from the checkout's sources: a deploy needs neither dist/ nor the root node_modules. */
+/** Bundled from the checkout's sources: no dist/ needed, imports resolve from the root. */
 const librarySource = resolve(import.meta.dirname, "../src");
 
-/** What src/index.ts and src/tools.ts import at runtime, resolved from docs/node_modules. */
+/** What src/index.ts and src/tools.ts import at runtime, resolved from the root's node_modules. */
 const libraryDependencies = [
   "@agntn/ciphers",
   "@agntn/curves",
@@ -49,8 +49,6 @@ const libraryEntries = [
 
 export default defineNuxtConfig({
   extends: ["docus"],
-  /** The repo root is its own pnpm workspace; Nuxt must not treat it as this site's. */
-  workspaceDir: import.meta.dirname,
   alias: {
     "@agntn/keys": resolve(librarySource, "index.ts"),
   },
@@ -61,10 +59,6 @@ export default defineNuxtConfig({
     },
     optimizeDeps: {
       include: libraryEntries,
-    },
-    server: {
-      /** Dev serves the library from outside the workspace, which Vite refuses without this. */
-      fs: { allow: [librarySource] },
     },
   },
   devtools: { enabled: false },
@@ -214,7 +208,7 @@ export default defineNuxtConfig({
     preset: "cloudflare_module",
     /**
      * One MCP SDK in the worker. The toolkit builds its server from one copy and `agents` checks it
-     * with `instanceof` against another. pnpm splits them by the `zod` peer each one resolves.
+     * with `instanceof` against another. pnpm splits them by the peers each one resolves.
      */
     alias: {
       "@modelcontextprotocol/sdk": resolve(

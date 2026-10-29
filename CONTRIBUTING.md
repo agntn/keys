@@ -2,7 +2,7 @@
 
 ## Setup
 
-Run `pnpm install`, then `pnpm --dir docs install`. Yes, both: `test/docs-mcp.test.ts` loads Zod and the toolkit from `docs/node_modules`. `pnpm test` runs lint, the type checks, the build, the extension checks, the suite with coverage and the MCP eval.
+Run `pnpm install` at the root. One install is enough now. It also fills `docs/node_modules`, where `test/docs-mcp.test.ts` loads Zod and the toolkit. `pnpm test` runs lint, the type checks, the build, the extension checks, the suite with coverage and the MCP eval.
 
 The lint scripts build first, because the Pi and OMP extensions take their tool types from `dist/tools.d.mts`. So `build`, `lint`, `fmt`, `test`, `test:mcp` and packing all rewrite `dist/`. Serving `keys mcp` or an extension from your checkout? Run them in a separate worktree, or the live server gets a new bundle under its feet.
 
@@ -50,6 +50,6 @@ The lint scripts build first, because the Pi and OMP extensions take their tool 
 - A frontmatter `description` stays under 160 characters. Commas and a closing period are fine. The OG card keeps them, and its file is named by a hash, not by your sentence.
 - Icons: `token` for chains by ticker, Lucide for the interface, `simple-icons` for GitHub and npm, `vscode-icons` for file types. A chain icon that only comes in colour doesn't justify a second set.
 - `public/favicon.svg` is the source. The PNGs and the `.ico` are cut from it with ImageMagick, and both MCP servers show `favicon.svg` and `icon-512.png`.
-- A new npm import that `src/index.ts` reaches goes into `docs/package.json` at the root's version, `libraryDependencies` and `libraryEntries` in `nuxt.config.ts`. Miss one and the deploy or the dev server breaks.
+- A new npm import that `src/index.ts` reaches goes into `libraryDependencies` and `libraryEntries` in `docs/nuxt.config.ts`, not `docs/package.json`. Miss either list and the dev server breaks. The site's own imports still need to be in `docs/package.json`, and `test/docs-dependencies.test.ts` checks them.
 - Pure helpers go in `app/utils/` so the root suite can test them. Anything touching `ref` or `onMounted` goes in `app/composables/`.
 - The explorer derives in the browser. `/mcp` is the only server route that takes key material, and that's not an invitation to add another.
