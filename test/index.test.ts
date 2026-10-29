@@ -169,7 +169,7 @@ describe("deriveHDWallet", () => {
 
   it("rejects a path that does not start at the master key", () => {
     expect(() => blockchain.deriveHDWallet(mnemonic, { path: "84'/0'/0'/0/0" })).toThrow(
-      "Derivation path must start with m",
+      "Derivation path must be m or start with m/",
     );
   });
 });

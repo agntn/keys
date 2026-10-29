@@ -67,7 +67,8 @@ describe("normalizeDerivationPath", () => {
   });
 
   it.each([
-    ["84'/0'/0'/0/0", {}, "Derivation path must start with m, such as m/84'/0'/0'/0/0"],
+    ["84'/0'/0'/0/0", {}, "Derivation path must be m or start with m/, such as m/84'/0'/0'/0/0"],
+    ["m84'/0'/0'", {}, "Derivation path must be m or start with m/"],
     [
       "m/84'/0'/x",
       {},
@@ -91,8 +92,10 @@ describe("normalizeDerivationPath", () => {
 
   it("keeps a mnemonic typed into the path out of the error", () => {
     const { mnemonic } = bip39TestVectors;
-    expect(() => normalizeDerivationPath(`m${mnemonic}`)).toThrow("Level 1 of the derivation path");
-    expect(() => normalizeDerivationPath(`m${mnemonic}`)).not.toThrow("abandon");
+    expect(() => normalizeDerivationPath(`m/${mnemonic}`)).toThrow(
+      "Level 1 of the derivation path",
+    );
+    expect(() => normalizeDerivationPath(`m/${mnemonic}`)).not.toThrow("abandon");
   });
 
   it("refuses a path that is not a string", () => {

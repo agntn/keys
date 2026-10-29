@@ -53,13 +53,12 @@ export function normalizeDerivationPath(path: string, rules: DerivationPathRules
     throw new TypeError("Derivation path must be a string, such as m/84'/0'/0'/0/0");
   }
   const normalized = normalizeHardenedMarkers(path);
-  const root = /^[mM]'?/u.exec(normalized)?.[0];
+  const root = /^[mM]'?(?=\/|$)/u.exec(normalized)?.[0];
   if (root === undefined) {
-    throw new RangeError("Derivation path must start with m, such as m/84'/0'/0'/0/0");
+    throw new RangeError("Derivation path must be m or start with m/, such as m/84'/0'/0'/0/0");
   }
   if (normalized !== root) {
-    const below = normalized.slice(root.length);
-    assertLevels(below.startsWith("/") ? below.slice(1).split("/") : [normalized], rules);
+    assertLevels(normalized.slice(root.length + 1).split("/"), rules);
   }
   return normalized;
 }
