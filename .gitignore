@@ -6,3 +6,4 @@ docs/.output
 docs/.data
 docs/.nitro
 docs/.cache
+.vitest/
