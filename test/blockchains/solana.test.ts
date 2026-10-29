@@ -124,7 +124,7 @@ describe("Solana Blockchain", () => {
     it("rejects non-hardened segments on ed25519", () => {
       expect(() =>
         blockchain.deriveHDWallet(bip39TestVectors.mnemonic, { path: "m/44'/501'/0'/0" }),
-      ).toThrow("Non-hardened");
+      ).toThrow("level 4 of the derivation path needs ' or h");
     });
   });
 

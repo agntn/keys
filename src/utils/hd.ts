@@ -5,7 +5,7 @@ import {
   wordlist as englishWordlist,
   type BIP39MnemonicInspection,
 } from "./bip39/index.ts";
-import { normalizeHardenedMarkers } from "./hd-index.ts";
+import { normalizeDerivationPath } from "./hd-index.ts";
 import { getMasterKeyFromSeed as getSLIP10MasterKey } from "./slip10/index.ts";
 import type { Curve, ElectrumSeed } from "../types.ts";
 
@@ -222,7 +222,7 @@ function deriveSeedKey(seed: Uint8Array, target: SeedPath): string {
   if (curve === "sr25519") {
     throw new RangeError("sr25519 keys walk Substrate junctions, not BIP32 or SLIP-10 paths");
   }
-  const hdPath = normalizeHardenedMarkers(path);
+  const hdPath = normalizeDerivationPath(path, { hardenedOnly: curve === "ed25519" });
   const privateKey =
     curve === "ed25519"
       ? getSLIP10MasterKey(seed).derive(hdPath).privateKey
