@@ -1,11 +1,18 @@
 import {
   MAX_SPENT_SCRIPT_HEX_LENGTH,
   MAX_TRANSACTION_HEX_LENGTH,
+  MAX_TRANSACTION_JSON_LENGTH,
   MAX_INPUT_INDEX,
   MAX_SPENT_OUTPUTS,
   MAX_SPENT_SCRIPTS_HEX_LENGTH,
 } from "../tool-parameters.ts";
-import { type InputSignature, extractSignatures } from "../utils/transaction/index.ts";
+import {
+  type EvmTransactionJson,
+  type InputSignature,
+  type TransactionSigner,
+  extractSignatures,
+  recoverSigner,
+} from "../utils/transaction/index.ts";
 import {
   closedObject,
   requiredString,
@@ -127,4 +134,81 @@ export function extractTransactionSignatures(
           ...signatures.map((signature, position) => signatureText(signature, position + 1)),
         ].join("\n");
   return { content: content(text), details: { index, signatures } };
+}
+
+/** What the EVM signer tool gives back: the signer and the signature it left. */
+export interface TransactionSignerDetails {
+  transactionType: 0 | 1 | 2;
+  /** Decimal, since a chain id may outgrow a JSON number. Absent before EIP-155. */
+  chainId?: string;
+  hash: string;
+  publicKey: string;
+  address: string;
+  r: string;
+  s: string;
+  z: string;
+}
+
+/**
+ * Reads the transaction argument: JSON when it opens with a brace, raw hex otherwise.
+ * @param value - Raw hex or eth_getTransactionByHash output as text
+ * @returns {string | EvmTransactionJson} What `recoverSigner` takes
+ */
+function signedTransaction(value: unknown): string | EvmTransactionJson {
+  const text = requiredString(value, "Transaction").trim();
+  if (!text.startsWith("{")) {
+    if (text.length - (text.startsWith("0x") ? 2 : 0) > MAX_TRANSACTION_HEX_LENGTH) {
+      throw new RangeError(`Transaction must not exceed ${MAX_TRANSACTION_HEX_LENGTH} hex digits`);
+    }
+    return text;
+  }
+  if (text.length > MAX_TRANSACTION_JSON_LENGTH) {
+    throw new RangeError(
+      `Transaction JSON must not exceed ${MAX_TRANSACTION_JSON_LENGTH} characters`,
+    );
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new TypeError("Transaction JSON does not parse");
+  }
+  return parsed as EvmTransactionJson;
+}
+
+/**
+ * Names the signing rule a transaction follows.
+ * @param signer - The recovered signer
+ * @returns {string} Its type line
+ */
+function typeLine(signer: Readonly<TransactionSigner>): string {
+  const { transactionType: type, chainId } = signer;
+  if (chainId === undefined) return "Type: legacy, signed before EIP-155, so no chain id";
+  const chain = `chain ${chainId.toString()}`;
+  if (type === 0) return `Type: legacy with EIP-155, ${chain}`;
+  return `Type: ${type === 1 ? "1 (EIP-2930)" : "2 (EIP-1559)"}, ${chain}`;
+}
+
+/**
+ * Recover the signer of a signed EVM transaction, with r, s and the digest z it signed.
+ * @param transactionValue - Raw hex, 0x optional, or the eth_getTransactionByHash object as JSON.
+ * @returns {ToolResult<TransactionSignerDetails>} Public key, address, hash, r, s and z.
+ */
+export function recoverTransactionSigner(
+  transactionValue: unknown,
+): ToolResult<TransactionSignerDetails> {
+  const signer = recoverSigner(signedTransaction(transactionValue));
+  const { chainId, ...rest } = signer;
+  const details: TransactionSignerDetails =
+    chainId === undefined ? rest : { ...rest, chainId: chainId.toString() };
+  const text = [
+    typeLine(signer),
+    `Hash: ${signer.hash}`,
+    `Public key: ${signer.publicKey}`,
+    `Address: ${signer.address}`,
+    `r: ${signer.r}`,
+    `s: ${signer.s}`,
+    `z: ${signer.z}`,
+  ].join("\n");
+  return { content: content(text), details };
 }

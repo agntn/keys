@@ -1,5 +1,6 @@
 import { Type, type TString } from "@agntn/tools";
 import {
+  MAX_TRANSACTION_JSON_LENGTH,
   TOOL_CHAINS,
   TOOL_ADDRESS_TYPES,
   SUI_ADDRESS_TYPES,
@@ -322,6 +323,19 @@ export const EXTRACT_TRANSACTION_SIGNATURES_PARAMETERS = Type.Object(
         description: `The output this input spends, or one per input in order. A Taproot input needs every one unless it signs with ANYONECANPAY; SegWit inputs need the value. All scripts together take at most ${MAX_SPENT_SCRIPTS_HEX_LENGTH} hex digits`,
       },
     ),
+  },
+  { additionalProperties: false },
+);
+
+/** Shared MCP and Pi schema for the signer of an EVM transaction, raw or as JSON. */
+export const RECOVER_TRANSACTION_SIGNER_PARAMETERS = Type.Object(
+  {
+    transaction: Type.String({
+      minLength: 2,
+      maxLength: MAX_TRANSACTION_JSON_LENGTH,
+      description:
+        "The signed transaction: raw hex, 0x optional, as eth_getRawTransactionByHash returns it, or the object eth_getTransactionByHash returns, as JSON. A JSON hash or from that disagrees with the rebuilt transaction is an error",
+    }),
   },
   { additionalProperties: false },
 );

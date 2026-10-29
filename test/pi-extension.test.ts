@@ -38,6 +38,7 @@ import {
   openpgpVectors,
   reusedNonceVector,
   transactionVectors,
+  evmTransactionVectors,
   descriptorVectors,
   multisigVector,
 } from "./fixtures.ts";
@@ -179,6 +180,42 @@ describe("keys Pi extension", () => {
       await expect(skipSchema(tool)("parent", bad)).rejects.toThrow(message);
     }
   });
+  it("recovers an EVM transaction signer with the shared executor", async () => {
+    const tool = (await registerTools()).get("keys_transaction_signer_recover");
+    if (!tool) throw new Error("Missing transaction signer tool");
+    const { type1, eip155 } = evmTransactionVectors;
+    const args = { transaction: type1.raw };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    await expect(tool.execute("signer", args)).resolves.toMatchObject({
+      details: {
+        transactionType: 1,
+        chainId: "1",
+        hash: type1.hash,
+        address: type1.address,
+        z: type1.z,
+      },
+    });
+    await expect(
+      tool.execute("signer", { transaction: ` ${JSON.stringify(eip155.json)}\n` }),
+    ).resolves.toMatchObject({
+      details: { transactionType: 0, chainId: "1", address: eip155.address },
+    });
+    for (const [bad, message] of [
+      [{ transaction: 42 }, "Transaction must be a string"],
+      [{ transaction: "0x" }, "Transaction must be hex, 0x optional"],
+      [{ transaction: "{}" }, "nonce must be a 0x hex quantity"],
+      [{ transaction: '{"type":"0x4"}' }, "Type 4 set code transactions are not supported yet"],
+      [{ transaction: "00".repeat(200_001) }, "Transaction must not exceed 400000 hex digits"],
+      [{ transaction: `0x${"00".repeat(200_000)}` }, "Transaction type 0x00 is not an EVM"],
+      [
+        { transaction: `{${" ".repeat(420_000)}}` },
+        "Transaction JSON must not exceed 420000 characters",
+      ],
+    ] as const) {
+      await expect(skipSchema(tool)("signer", bad)).rejects.toThrow(message);
+    }
+  });
+
   it("checks the nonce and transaction arguments without the schema", async () => {
     const tools = await registerTools();
     const nonce = tools.get("keys_secp256k1_nonce_recover");

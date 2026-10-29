@@ -25,6 +25,7 @@ import {
   bip322Vectors,
   reusedNonceVector,
   transactionVectors,
+  evmTransactionVectors,
   descriptorVectors,
   multisigVector,
 } from "./fixtures.ts";
@@ -403,6 +404,13 @@ try {
     },
     new RegExp(
       `^Input 1: 1 signature\n1\\. ecdsa SIGHASH_ALL\n   r: ${transactionVectors.reusedNonce2012.r}\n`,
+    ),
+  );
+  await call(
+    "keys_transaction_signer_recover",
+    { transaction: evmTransactionVectors.eip155.raw },
+    new RegExp(
+      `^Type: legacy with EIP-155, chain 1\nHash: ${evmTransactionVectors.eip155.hash}\nPublic key: ${evmTransactionVectors.eip155.publicKey}\nAddress: ${evmTransactionVectors.eip155.address}\n`,
     ),
   );
   await call(

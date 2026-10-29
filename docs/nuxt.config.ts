@@ -26,6 +26,7 @@ const libraryEntries = [
   "@agntn/encodings/base64",
   "@agntn/encodings/base58",
   "@agntn/encodings/bech32",
+  "@agntn/encodings/rlp",
   "@agntn/hashes",
   "@noble/curves/ed25519.js",
   "@noble/curves/secp256k1.js",

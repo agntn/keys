@@ -66,7 +66,7 @@ const signer = ethereumChain.recoverMessageSigner("hello", recoverable);
 ethereumChain.getAddress(signer.publicKey); // 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf
 ```
 
-Typed data and raw `ecrecover` digests go through `hashTypedData` and `recoverDigestSigner`. The [EVM guide](/guide/evm#who-signed-this) has both. Same rule as always: check the address.
+Typed data and raw `ecrecover` digests go through `hashTypedData` and `recoverDigestSigner`. The [EVM guide](/guide/evm#who-signed-this) has both. Same rule as always: check the address. Transactions work too: [`recoverSigner`](/guide/evm#who-signed-this-transaction) reads the key and address straight from the signature.
 
 ## One driver, every EVM chain
 

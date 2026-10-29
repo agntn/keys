@@ -31,6 +31,7 @@ import {
   secp256k1MathVectors,
   secp256k1TestVectors,
   transactionVectors,
+  evmTransactionVectors,
   multisigVector,
   curveVectors,
   slip132Vectors,
@@ -270,8 +271,18 @@ describe("Public transaction exports", () => {
     expect([a?.r, b?.r]).toEqual([r, r]);
     if (a === undefined || b === undefined) throw new Error("missing signature");
     expect(recoverReusedNonce([a, b]).publicKey).toMatch(/^0[23]dbd0c615/u);
-    expect(new Set(Object.keys(transaction))).toEqual(new Set(["extractSignatures"]));
+    expect(new Set(Object.keys(transaction))).toEqual(
+      new Set(["extractSignatures", "recoverSigner"]),
+    );
     expect(await import("@agntn/keys")).not.toHaveProperty("extractSignatures");
+  });
+
+  it("recovers an EVM transaction signer from the built package", async () => {
+    const { recoverSigner } = await import("@agntn/keys/transaction");
+    const { type2 } = evmTransactionVectors;
+    expect(recoverSigner(type2.raw)).toMatchObject({ publicKey: type2.publicKey, chainId: 1n });
+    expect(recoverSigner(type2.json).address).toBe(type2.address);
+    expect(await import("@agntn/keys")).not.toHaveProperty("recoverSigner");
   });
 });
 
@@ -507,6 +518,7 @@ describe("Consumer bundles", () => {
     ["decrypt", "@agntn/keys/bip38"],
     ["verify", "@agntn/keys/bip322"],
     ["extractSignatures", "@agntn/keys/transaction"],
+    ["recoverSigner", "@agntn/keys/transaction"],
     ["multisig", "@agntn/keys/script"],
     ["parse", "@agntn/keys/descriptor"],
   ])(

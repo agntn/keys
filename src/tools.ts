@@ -23,6 +23,7 @@ import {
   DERIVE_WALLET_PARAMETERS,
   DERIVE_XPUB_WALLET_PARAMETERS,
   EXTRACT_TRANSACTION_SIGNATURES_PARAMETERS,
+  RECOVER_TRANSACTION_SIGNER_PARAMETERS,
   ENCODE_BIP39_ENTROPY_PARAMETERS,
   GENERATE_MNEMONIC_PARAMETERS,
   GENERATE_WALLET_PARAMETERS,
@@ -675,6 +676,23 @@ export const transactionSignaturesExtractTool = defineTool({
     (await loadOperations()).extractTransactionSignatures(transaction, options),
 });
 
+export const transactionSignerRecoverTool = defineTool({
+  name: "keys_transaction_signer_recover",
+  title: "Recover Transaction Signer",
+  description:
+    "Recover who signed an EVM transaction: the public key and address, the hash, and r, s and the digest z the signature signs. Takes the raw hex eth_getRawTransactionByHash gives or the JSON eth_getTransactionByHash gives. Reads legacy before and after EIP-155, type 1 (EIP-2930) and type 2 (EIP-1559). Type 3 blob and type 4 set code transactions are refused. A JSON transaction is rebuilt, and a hash or from that disagrees with the rebuild is an error, not a quiet wrong key.",
+  snippet:
+    "Use to get the public key of an EVM address that has sent a transaction, or r, s and z for nonce reuse analysis.",
+  guidelines: [
+    "Pass the hex or the JSON as it comes from the node. Extra fields such as blockHash are ignored",
+    "Any EVM chain works: the chain id, when there is one, comes from the transaction itself",
+    "Two transactions with the same r go to keys_secp256k1_nonce_recover with their r, s and z",
+  ],
+  effect: "read",
+  input: RECOVER_TRANSACTION_SIGNER_PARAMETERS,
+  execute: async (params) => (await loadOperations()).recoverTransactionSigner(params.transaction),
+});
+
 export const bip44ParseTool = defineTool({
   name: "keys_bip44_parse",
   title: "Parse BIP44 Path",
@@ -747,6 +765,7 @@ export const keysTools: readonly ToolDefinition[] = [
   openpgpInspectTool,
   openpgpVerifyTool,
   transactionSignaturesExtractTool,
+  transactionSignerRecoverTool,
   bip44ParseTool,
   bip44GenerateTool,
 ];
@@ -804,6 +823,10 @@ export const callSummaries: Readonly<
       : "no fingerprint",
   keys_transaction_signatures_extract: (args) =>
     typeof args.index === "number" ? `input ${args.index}` : "input",
+  keys_transaction_signer_recover: (args) =>
+    typeof args.transaction === "string" && args.transaction.trim().startsWith("{")
+      ? "json"
+      : "raw",
   keys_bip44_parse: (args) => String(args.path),
   keys_bip44_generate: (args) => String(args.chain),
 };
