@@ -53,6 +53,7 @@ import {
   bip322Vectors,
   reusedNonceVector,
   transactionVectors,
+  evmTransactionVectors,
   descriptorVectors,
   multisigVector,
 } from "./fixtures.ts";
@@ -2350,6 +2351,56 @@ describe("keys MCP server", () => {
     ] as const) {
       const failed = await client.callTool({
         name: "keys_transaction_signatures_extract",
+        arguments: args,
+      });
+      expect(failed.isError).toBe(true);
+      expect(text(failed.content)).toContain(error);
+    }
+  });
+
+  it("recovers the signer of an EVM transaction through MCP, raw or as JSON", async () => {
+    const client = await connectTestClient();
+    const { preEip155, type2 } = evmTransactionVectors;
+    const raw = await client.callTool({
+      name: "keys_transaction_signer_recover",
+      arguments: { transaction: type2.raw },
+    });
+    expect(raw.isError).not.toBe(true);
+    expect(text(raw.content)).toBe(
+      [
+        "Type: 2 (EIP-1559), chain 1",
+        `Hash: ${type2.hash}`,
+        `Public key: ${type2.publicKey}`,
+        `Address: ${type2.address}`,
+        `r: ${type2.json.r.slice(2)}`,
+        `s: ${type2.json.s.slice(2)}`,
+        `z: ${type2.z}`,
+      ].join("\n"),
+    );
+
+    const json = await client.callTool({
+      name: "keys_transaction_signer_recover",
+      arguments: { transaction: JSON.stringify(preEip155.json) },
+    });
+    expect(text(json.content)).toMatch(
+      new RegExp(
+        `^Type: legacy, signed before EIP-155, so no chain id\nHash: ${preEip155.hash}\n`,
+        "u",
+      ),
+    );
+
+    for (const [args, error] of [
+      [
+        { transaction: `0x03${type2.raw.slice(4)}` },
+        "Type 3 blob transactions are not supported yet",
+      ],
+      [{ transaction: JSON.stringify({ ...type2.json, value: "0x1" }) }, "not the stated hash"],
+      [{ transaction: '{"nonce":' }, "Transaction JSON does not parse"],
+      [{ transaction: "" }, "Invalid arguments at /transaction"],
+      [{ transaction: type2.raw, json: "{}" }, "Invalid arguments"],
+    ] as const) {
+      const failed = await client.callTool({
+        name: "keys_transaction_signer_recover",
         arguments: args,
       });
       expect(failed.isError).toBe(true);

@@ -46,6 +46,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 | `keys_openpgp_inspect`                | Read a PGP key block or signed message, fingerprints and signed text    |
 | `keys_openpgp_verify`                 | Check a PGP cleartext signature, identity against your fingerprint      |
 | `keys_transaction_signatures_extract` | Read r, s, sighash z and signer of each signature on an input           |
+| `keys_transaction_signer_recover`     | Recover key + address, r, s and z from a signed EVM transaction         |
 | `keys_bip44_parse`                    | Parse a BIP44 path into its levels                                      |
 | `keys_bip44_generate`                 | Generate the derivation path a chain's wallets use                      |
 

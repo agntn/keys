@@ -42,6 +42,7 @@ export const TOOL_NAMES = [
   "keys_openpgp_inspect",
   "keys_openpgp_verify",
   "keys_transaction_signatures_extract",
+  "keys_transaction_signer_recover",
   "keys_bip44_parse",
   "keys_bip44_generate",
 ] as const;
@@ -357,6 +358,9 @@ export const NONCE_SCALAR_SCHEMA_PATTERN = "^[0-9A-Fa-f]{1,64}$";
 
 /** Longest raw transaction `keys_transaction_signatures_extract` reads, 200 kB as hex. */
 export const MAX_TRANSACTION_HEX_LENGTH = 400_000;
+
+/** Longest transaction JSON the signer tool reads: the raw limit plus the field names. */
+export const MAX_TRANSACTION_JSON_LENGTH = 420_000;
 
 /** Longest spent output script it reads, 10 kB as hex, the size Core lets a script run at. */
 export const MAX_SPENT_SCRIPT_HEX_LENGTH = 20_000;
