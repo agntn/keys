@@ -38,10 +38,10 @@ catalogs:
     "@agntn/ox": 0.1.0
     "@earendil-works/pi-coding-agent": 0.99.2
     "@earendil-works/pi-tui": 0.99.2
-    "@iconify-json/lucide": 1.2.147
-    "@iconify-json/simple-icons": 1.2.100
+    "@iconify-json/lucide": 1.2.149
+    "@iconify-json/simple-icons": 1.2.101
     "@iconify-json/token": 1.2.42
-    "@iconify-json/vscode-icons": 1.2.92
+    "@iconify-json/vscode-icons": 1.2.94
     "@modelcontextprotocol/client": 2.3.0
     "@nuxt/content": 3.16.2
     "@nuxt/ui": 4.12.0
