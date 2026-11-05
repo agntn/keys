@@ -1,4 +1,7 @@
 import { isPrime } from "@agntn/curves";
+import { type VerifyOptions, verify as verifyP256 } from "@agntn/curves/p256";
+import { verify as verifyP384 } from "@agntn/curves/p384";
+import { verify as verifyP521 } from "@agntn/curves/p521";
 import {
   Sha224Hasher,
   md5,
@@ -41,7 +44,7 @@ export type KeyMaterial =
       readonly y: bigint;
       readonly bits: number;
     }
-  | { readonly kind: "ecdsa"; readonly curve: string; readonly point: Uint8Array }
+  | { readonly kind: "ecdsa"; readonly curve: EcdsaCurveName; readonly point: Uint8Array }
   | { readonly kind: "eddsa"; readonly point: Uint8Array }
   | { readonly kind: "none"; readonly curve?: string; readonly bits?: number };
 
@@ -128,6 +131,51 @@ const CURVES: Readonly<Record<string, string>> = {
   "2b06010401da470f01": "Ed25519Legacy",
   "2b060104019755010501": "Curve25519Legacy",
 };
+
+/** An ECDSA curve this module checks. */
+interface EcdsaCurve {
+  /** Bytes of `r` and of `s`. */
+  readonly size: number;
+  /** Shortest hash RFC 9580 §5.2.3.2 allows: the curve's fsize, and 512 bits for P-521. */
+  readonly minimumDigestBits: number;
+  /** Checks `r || s` over the digest as given, no second hash, either `s` accepted. */
+  readonly verify: (signature: Uint8Array, digest: Uint8Array, point: Uint8Array) => boolean;
+}
+
+/**
+ * Adapts a curve's hex `verify` from `@agntn/curves` to the bytes OpenPGP hands over.
+ * @param check - The curve's `verify`
+ * @returns {EcdsaCurve["verify"]} The same check over bytes
+ */
+function sec1(check: (signature: string, options: VerifyOptions) => boolean): EcdsaCurve["verify"] {
+  return (signature, digest, point) =>
+    check(signature.toHex(), { digest: digest.toHex(), publicKey: point.toHex() });
+}
+
+/** ECDSA curves with a fast check, by their RFC 9580 Table 19 names. */
+const ECDSA_CURVES = {
+  "NIST P-256": { size: 32, minimumDigestBits: 256, verify: sec1(verifyP256) },
+  "NIST P-384": { size: 48, minimumDigestBits: 384, verify: sec1(verifyP384) },
+  "NIST P-521": { size: 66, minimumDigestBits: 512, verify: sec1(verifyP521) },
+  secp256k1: {
+    size: 32,
+    minimumDigestBits: 256,
+    verify: (signature, digest, point) =>
+      secp256k1.verify(signature, digest, point, { prehash: false, lowS: false }),
+  },
+} as const satisfies Readonly<Record<string, EcdsaCurve>>;
+
+/** Name of a curve in `ECDSA_CURVES`. */
+type EcdsaCurveName = keyof typeof ECDSA_CURVES;
+
+/**
+ * Whether this module can check ECDSA on a curve.
+ * @param curve - Curve name from `readCurve`
+ * @returns {boolean} Whether `ECDSA_CURVES` has it
+ */
+function isEcdsaCurve(curve: string): curve is EcdsaCurveName {
+  return Object.hasOwn(ECDSA_CURVES, curve);
+}
 
 /** Public key algorithm names, RFC 9580 Table 18. */
 const ALGORITHMS: Readonly<Record<number, string>> = {
@@ -299,14 +347,14 @@ function readDsa(reader: Reader): KeyMaterial {
 }
 
 /**
- * Reads an ECDSA key. Only secp256k1 gets checked, the rest stays a name.
+ * Reads an ECDSA key. The NIST curves and secp256k1 get checked, the rest stays a name.
  * @param reader - Reader at the material
  * @returns {KeyMaterial} ECDSA material, or a named curve this module can't check
  */
 function readEcdsa(reader: Reader): KeyMaterial {
   const curve = readCurve(reader);
   const point = reader.mpi();
-  return curve === "secp256k1" ? { kind: "ecdsa", curve, point } : { kind: "none", curve };
+  return isEcdsaCurve(curve) ? { kind: "ecdsa", curve, point } : { kind: "none", curve };
 }
 
 /**
@@ -435,8 +483,8 @@ function pad(bytes: Uint8Array, width: number): Uint8Array {
 }
 
 /**
- * Checks an ECDSA signature on secp256k1 over the digest as given, no second hash.
- * @param key - secp256k1 material
+ * Checks an ECDSA signature over the digest as given, no second hash.
+ * @param key - ECDSA material
  * @param reader - Reader at `r` and `s`
  * @param digest - The hash
  * @returns {boolean} Whether it matches
@@ -446,9 +494,10 @@ function verifyEcdsa(
   reader: Reader,
   digest: Uint8Array,
 ): boolean {
-  if (digest.length < 32) return false;
-  const signature = concatBytes(pad(reader.mpi(), 32), pad(reader.mpi(), 32));
-  return secp256k1.verify(signature, digest, key.point, { prehash: false, lowS: false });
+  const curve = ECDSA_CURVES[key.curve];
+  if (digest.length * 8 < curve.minimumDigestBits) return false;
+  const signature = concatBytes(pad(reader.mpi(), curve.size), pad(reader.mpi(), curve.size));
+  return curve.verify(signature, digest, key.point);
 }
 
 /**
@@ -473,7 +522,7 @@ function verifyEdDsa(
 }
 
 /**
- * Shortest hash RFC 9580 §5.2.3 lets a key sign with: the bits of `q` for DSA, 256 for the curves.
+ * Shortest hash RFC 9580 §5.2.3 lets a key sign with: the bits of `q` for DSA, the curve's for ECC.
  * @param key - The signer's material
  * @returns {number} Digest bits, 0 where any hash goes
  */
@@ -482,6 +531,7 @@ export function minimumDigestBits(key: KeyMaterial): number {
     case "dsa":
       return key.q.toString(2).length;
     case "ecdsa":
+      return ECDSA_CURVES[key.curve].minimumDigestBits;
     case "eddsa":
       return 256;
     default:

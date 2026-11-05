@@ -571,8 +571,11 @@ describe("keys MCP server", () => {
       ],
       [{ message: signed, publicKey: openpgpVectors.p256.publicKey }, `Signed by ${subkey}`],
       [
-        { message: openpgpVectors.p256.signed, publicKey: openpgpVectors.p256.publicKey },
-        "aren't supported yet",
+        {
+          message: openpgpVectors.brainpoolP256r1.signed,
+          publicKey: openpgpVectors.brainpoolP256r1.publicKey,
+        },
+        "ECDSA brainpoolP256r1 signatures aren't supported yet",
       ],
       [
         { message: signed, publicKey: publicKey.replaceAll("PUBLIC", "PRIVATE") },
