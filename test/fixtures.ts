@@ -3783,6 +3783,7 @@ TZj6raLR9iDnZJnE8Y1JdtaRN3Y45w==
 `,
   },
   p256: {
+    fingerprint: "08B03D8FC48AB48B7D3A85DFF3F5F0C18D66388A",
     publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
 
 mFIEatdQ9RMIKoZIzj0DAQcCAwS8P3FgUeefzc2C7jB31vfVbMYSbTTzGkrU9/Yl
@@ -3809,6 +3810,109 @@ iHUEARMIAB0WIQQIsD2PxIq0i306hd/z9fDBjWY4igUCatdQ/gAKCRDz9fDBjWY4
 ihJUAQCIxRrTCCtSChWnDMe8UVlhRsPSb9IZiVF6oKwFNd9RtQD/cKhgA/vOVW24
 /QSki2dDAbwpL4qpuxuZ/ylKTuunRtQ=
 =86hv
+-----END PGP SIGNATURE-----
+`,
+  },
+  /** Made on 2026-11-05 with the same GnuPG, which picks SHA-384 for this curve. */
+  p384: {
+    fingerprint: "4D27B6BE9B1E18F1A7BC902BD654207043F5EF0F",
+    publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mG8Eauz7XRMFK4EEACIDAwSBbadeVmw/xPhCglID0TgmlBPXpnjNTNsCSrCioo3d
+3cjIoFLmfILFdMo2raWVzipUFBJRm835i7P5DxLHUw17Xq/bUVPZ1H1syQtXykdi
+F1vvc/piKdgBoZgE3udj7pa0HlAzODQgVGVzdGVyIDxwMzg0QGV4YW1wbGUub3Jn
+PoiwBBMTCQA4FiEETSe2vpseGPGnvJAr1lQgcEP17w8FAmrs+10CGwMFCwkIBwIG
+FQoJCAsCBBYCAwECHgECF4AACgkQ1lQgcEP17w8JeQF/eZOLm0hSyTCxvPBa118e
++SjQebE1HYhbewSijF59NaSY+l+6gNYJr7q80Oq29bR5AX9L+c1fl/nMCQ/Wham+
+HXFJ92+mdjHJTAuhpp/mRLoYq+W5RvaEMgTT50toRuw37yw=
+=6h2x
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    signed: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA384
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+iKcEARMJAC8WIQRNJ7a+mx4Y8ae8kCvWVCBwQ/XvDwUCauz7YxEccDM4NEBleGFt
+cGxlLm9yZwAKCRDWVCBwQ/XvD55CAYCa0N0mQyhDl7jk/+2dl7snnHPC9+oQtJOU
+gO5qumlcA/fX1f2o2mJXTMsEpOtRt2ABf3LBGrn1IbK9JMe7KzAyO5xON+2kNSCN
+QQ3o/i+Mz31M+kEyDY4HCmOLsv9Z55kUIw==
+=E/7C
+-----END PGP SIGNATURE-----
+`,
+  },
+  /** Made on 2026-11-05 with the same GnuPG, which picks SHA-512 for this curve. */
+  p521: {
+    fingerprint: "BA1A286532DB786452F1B1CEC98EF9D8938F24A1",
+    publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mJMEauz7XRMFK4EEACMEIwQB4HrXW0W5/I4dwNKLDAa3zqimrT/FusKRCT7lsDAg
+vcY+xfbQUA0IKJ4YWW3Y9wfFSbwbnFFfH8zo+o9PlSvyD6UARWnjLt74KPeWNBgn
+5sEdG/DR+vd0mxf1Ww6IfsEBf/Ui8xjoYWS+ywLhSaLXEUazM3QIYfrmJit0OOF7
+25N0r2W0HlA1MjEgVGVzdGVyIDxwNTIxQGV4YW1wbGUub3JnPojTBBMTCgA4FiEE
+uhooZTLbeGRS8bHOyY752JOPJKEFAmrs+10CGwMFCwkIBwIGFQoJCAsCBBYCAwEC
+HgECF4AACgkQyY752JOPJKHOyQII2dGfyuzIFNr9hNtqpziQB+kmjCn08ucKTugL
+LOAiI0NoHgtwXmH0aKwqjDrvhb7lOlxfGjR0VLTrL+XqhnrEztcCCQEb2iYTFv6o
+M71Y9PM5nAuqToyuJNljdqNzBP40fN/JIf4P0SAnuEg6reW02Lxx0KSeysrTLmjC
+HMYB13dk7uECBw==
+=yjOD
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    signed: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+iMoEARMKAC8WIQS6GihlMtt4ZFLxsc7JjvnYk48koQUCauz7YxEccDUyMUBleGFt
+cGxlLm9yZwAKCRDJjvnYk48koVmiAgdxPJvUgHPAQ4M6fRc/va8OsOF1DhwlatXf
+DuOfpzVMcRgxQahO2jjzvTEzVHzLGol9dwRxgVw9dTEe3FuA8RaMhAIJARW+gA9s
+dv+pBWs5kSlGaV6GuDCg7FkLoKAGddcFXC6mMrjX6EOFi+N570ovbvh8lQmeb5KW
+JTIqRUyLhjv4ZXz1
+=ebpZ
+-----END PGP SIGNATURE-----
+`,
+  },
+  /** Made on 2026-11-05 with the same GnuPG. */
+  brainpoolP256r1: {
+    fingerprint: "535E4C039999854156DF3D9C29E510947B76F5B1",
+    publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mFMEauz7XRMJKyQDAwIIAQEHAgMEAd8Q8JlaBIP7IfcmpuCUtiLesvpOMo96P6Zv
+GSVvYmo9RmX7H3el1D0Qb/2eokeE/HIUebFWsExaoQOngz7a3LQgQlAyNTYgVGVz
+dGVyIDxicDI1NkBleGFtcGxlLm9yZz6IkAQTEwgAOBYhBFNeTAOZmYVBVt89nCnl
+EJR7dvWxBQJq7PtdAhsDBQsJCAcCBhUKCQgLAgQWAgMBAh4BAheAAAoJECnlEJR7
+dvWxg+cA/1dMjV1Q5mq1+Dx8yNjeNeaILx7qAxjpjzfOp/KljrIfAPwMjYlbnm12
+s/RVyn4YR1LmRL+QVNTaktp0U4//dsIuOw==
+=tPw6
+-----END PGP PUBLIC KEY BLOCK-----
+`,
+    signed: `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
+
+Ten words of puzzle text.   
+- - a dash line
+- -----BEGIN looks like armor
+	Tabbed, with trailing tab	
+Last line
+
+-----BEGIN PGP SIGNATURE-----
+
+iIgEARMIADAWIQRTXkwDmZmFQVbfPZwp5RCUe3b1sQUCauz7YxIcYnAyNTZAZXhh
+bXBsZS5vcmcACgkQKeUQlHt29bEglAD/VJgRSZrTJVFyfA1bOdOoy3Q6uUnWKDHt
+CFQ5uYNMpp0A/RvoTJFAvPN0A8AzMrnVtzQnW9Pxy53bOFOU5jt51JZz
+=OfHc
 -----END PGP SIGNATURE-----
 `,
   },

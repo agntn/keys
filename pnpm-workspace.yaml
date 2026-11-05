@@ -16,7 +16,7 @@ catalog:
 catalogs:
   deps:
     "@agntn/ciphers": 0.5.2
-    "@agntn/curves": 0.2.1
+    "@agntn/curves": 0.2.2
     "@agntn/encodings": 0.2.0
     "@agntn/hashes": 0.7.2
     "@agntn/tools": 0.2.4

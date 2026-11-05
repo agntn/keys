@@ -19,6 +19,9 @@ const {
   dsa,
   secp256k1,
   p256,
+  p384,
+  p521,
+  brainpoolP256r1,
   expired,
   renewed,
   rfc9580,
@@ -140,6 +143,16 @@ function signaturePacket(body: Uint8Array): Uint8Array {
   ]);
 }
 
+/* Flips the last byte of a signature, the low end of s, so only the math can catch it. */
+function breakValue(bytes: Uint8Array): Uint8Array {
+  const [packet] = readPackets(bytes);
+  if (packet === undefined) throw new Error("No signature packet");
+  const body = packet.body.slice();
+  const last = body.length - 1;
+  body[last] = (body[last] ?? 0) ^ 1;
+  return signaturePacket(body);
+}
+
 /* Flips the last unhashed byte of the subkey binding, where GnuPG keeps the back signature. */
 function breakBackSignature(armored: string): string {
   const packets = packetsOf(armored);
@@ -162,6 +175,9 @@ describe("OpenPGP cleartext verification", () => {
     ["RSA 3072", rsa, "RSA 3072", "SHA512"],
     ["RSA 3072 SHA-224", sha224, "RSA 3072", "SHA224"],
     ["ECDSA secp256k1", secp256k1, "ECDSA secp256k1", "SHA256"],
+    ["ECDSA NIST P-256", p256, "ECDSA NIST P-256", "SHA256"],
+    ["ECDSA NIST P-384", p384, "ECDSA NIST P-384", "SHA384"],
+    ["ECDSA NIST P-521", p521, "ECDSA NIST P-521", "SHA512"],
   ])("verifies a GnuPG %s signature", (_, vector, algorithm, hash) => {
     const verdict = verify(vector.signed, { publicKey: vector.publicKey });
     expect(verdict).toMatchObject({
@@ -241,10 +257,28 @@ describe("OpenPGP cleartext verification", () => {
     });
   });
 
-  it("asks DSA for a hash as long as q, and the curves for 256 bits", () => {
+  it.each([
+    ["P-256", p256],
+    ["P-384", p384],
+    ["P-521", p521],
+    ["secp256k1", secp256k1],
+  ])("calls a GnuPG ECDSA %s signature invalid once s is off by one bit", (_, vector) => {
+    const broken = withSignatures(vector.signed, breakValue(signatureBytes(vector.signed)));
+    expect(verify(broken, { publicKey: vector.publicKey })).toMatchObject({
+      state: "invalid",
+      reason: "The signature doesn't verify against this key",
+    });
+  });
+
+  it("asks DSA for a hash as long as q, and the curves for their size, 512 bits on P-521", () => {
     const dsaKey = { kind: "dsa", p: 23n, q: (1n << 223n) + 1n, g: 2n, y: 2n, bits: 2048 } as const;
     expect(minimumDigestBits(dsaKey)).toBe(224);
     expect(minimumDigestBits({ kind: "eddsa", point: new Uint8Array(32) })).toBe(256);
+    const point = new Uint8Array(65);
+    expect(minimumDigestBits({ kind: "ecdsa", curve: "secp256k1", point })).toBe(256);
+    expect(minimumDigestBits({ kind: "ecdsa", curve: "NIST P-256", point })).toBe(256);
+    expect(minimumDigestBits({ kind: "ecdsa", curve: "NIST P-384", point })).toBe(384);
+    expect(minimumDigestBits({ kind: "ecdsa", curve: "NIST P-521", point })).toBe(512);
     expect(minimumDigestBits({ kind: "rsa", n: 1n, e: 3n, bits: 3072 })).toBe(0);
   });
 
@@ -487,8 +521,8 @@ describe("OpenPGP cleartext verification", () => {
     expect(() => verify(unknown, { publicKey: rsa.publicKey })).toThrow(
       "OpenPGP signatures over hash 13 aren't supported yet",
     );
-    expect(() => verify(p256.signed, { publicKey: p256.publicKey })).toThrow(
-      "ECDSA NIST P-256 signatures aren't supported yet",
+    expect(() => verify(brainpoolP256r1.signed, { publicKey: brainpoolP256r1.publicKey })).toThrow(
+      "ECDSA brainpoolP256r1 signatures aren't supported yet",
     );
   });
 
