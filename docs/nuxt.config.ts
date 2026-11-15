@@ -23,6 +23,7 @@ const libraryEntries = [
   "@agntn/curves/brainpoolp384r1",
   "@agntn/curves/brainpoolp512r1",
   "@agntn/curves/ed25519",
+  "@agntn/curves/ed448",
   "@agntn/curves/p256",
   "@agntn/curves/p384",
   "@agntn/curves/p521",

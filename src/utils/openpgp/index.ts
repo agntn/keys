@@ -154,6 +154,7 @@ function describeKey(key: PublicKey): string {
   if (material.kind === "rsa" || material.kind === "dsa") return `${name} ${material.bits}`;
   if (material.kind === "ecdsa") return `${name} ${material.curve}`;
   if (material.kind === "eddsa") return key.algorithm === 22 ? `${name} Ed25519Legacy` : name;
+  if (material.kind === "ed448") return name;
   const detail = material.curve ?? material.bits;
   return detail === undefined ? name : `${name} ${detail}`;
 }
