@@ -34,7 +34,7 @@ import {
   optionalString,
   stringArray,
 } from "./arguments.ts";
-import { type ToolResult, content } from "./results.ts";
+import { type ToolResult, content, escapeToolText } from "./results.ts";
 
 /** What a result says when a phrase has one of Coleman's lengths but not one of BIP39's own. */
 export const NONSTANDARD_LENGTH_WARNING =
@@ -226,12 +226,7 @@ export async function generateBip39Mnemonic(
  * @returns {string} The text in double quotes.
  */
 function quoteEntropyText(text: string): string {
-  const escaped = text.replaceAll(/[\p{Cc}\p{Cf}\p{Co}\p{Cn}\p{Zl}\p{Zp}"\\]/gu, (character) =>
-    character === '"' || character === "\\"
-      ? `\\${character}`
-      : `\\u{${character.codePointAt(0)?.toString(16) ?? ""}}`,
-  );
-  return `"${escaped}"`;
+  return `"${escapeToolText(text).replaceAll('"', '\\"')}"`;
 }
 
 function describeEntropyPattern(pattern: EntropyPattern, length: number): string {

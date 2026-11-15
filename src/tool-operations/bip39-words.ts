@@ -22,7 +22,7 @@ import {
 } from "../utils/bip39/index.ts";
 import { integerArray, stringArray, optionalName } from "./arguments.ts";
 import { parseBIP39Language, normalizedMnemonic } from "./bip39.ts";
-import { type ToolResult, content } from "./results.ts";
+import { type ToolResult, content, escapeToolText } from "./results.ts";
 
 /** Result of a BIP39 index lookup. */
 export interface BIP39IndexLookupDetails {
@@ -143,8 +143,8 @@ export async function lookupBip39Words(
 ): Promise<ToolResult<BIP39WordLookupDetails>> {
   const words = stringArray(wordsValue, "BIP39 lookup words");
   assertLookupSize(words.length, "words");
-  if (words.some((word) => !BIP39_WORD_PATTERN.test(word))) {
-    throw new TypeError("BIP39 lookup words must contain letters and combining marks only");
+  if (words.some((word) => word.trim() === "")) {
+    throw new TypeError("BIP39 lookup words must not be blank");
   }
   const language = parseBIP39Language(languageValue);
   const found = await lookupBIP39Words(words, language);
@@ -177,7 +177,7 @@ export async function lookupBip39Words(
           if (lookup.zeroBasedIndex !== null) {
             return `${lookup.word}: ${lookup.zeroBasedIndex}, ${lookup.oneBasedIndex}`;
           }
-          if (lookup.prefixOf === undefined) return `${lookup.word}: not in BIP39`;
+          if (lookup.prefixOf === undefined) return `${escapeToolText(lookup.word)}: not in BIP39`;
           const matches = lookup.prefixOf.map(
             (match) => `${match.word} (${match.zeroBasedIndex}, ${match.oneBasedIndex})`,
           );
