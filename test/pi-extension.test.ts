@@ -1056,9 +1056,35 @@ describe("keys Pi extension", () => {
     await expect(skipSchema(tool)("call-3", { words: tooManyWords })).rejects.toThrow(
       "Provide between 1 and 100 words",
     );
-    await expect(skipSchema(tool)("call-4", { words: ["two words"] })).rejects.toThrow(
-      "must contain letters and combining marks only",
+    const stray = await skipSchema(tool)("call-4", { words: ["two words"] });
+    expect(stray.details).toEqual({
+      language: "english",
+      lookups: [{ word: "two words", zeroBasedIndex: null, oneBasedIndex: null }],
+    });
+    await expect(skipSchema(tool)("call-5", { words: ["zoo", " "] })).rejects.toThrow(
+      "BIP39 lookup words must not be blank",
     );
+  });
+
+  it("reports a word with punctuation as missing and still looks up the rest", async () => {
+    const tool = (await registerTools()).get("keys_bip39_words_lookup");
+    if (!tool) throw new Error("keys_bip39_words_lookup was not registered");
+
+    const result = await tool.execute("call-1", { words: ["camera", "you've", "picnic", "abo."] });
+    const text = result.content.map((part) => part.text ?? "").join("\n");
+
+    expect(text).toBe(
+      "Language: english\nIndices: zero-based, one-based\ncamera: 261, 262\nyou've: not in BIP39\npicnic: 1313, 1314\nabo.: not in BIP39",
+    );
+    expect(result.details).toEqual({
+      language: "english",
+      lookups: [
+        { word: "camera", zeroBasedIndex: 261, oneBasedIndex: 262 },
+        { word: "you've", zeroBasedIndex: null, oneBasedIndex: null },
+        { word: "picnic", zeroBasedIndex: 1313, oneBasedIndex: 1314 },
+        { word: "abo.", zeroBasedIndex: null, oneBasedIndex: null },
+      ],
+    });
   });
 
   it("looks up words from an explicit BIP39 language", async () => {

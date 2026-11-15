@@ -143,8 +143,8 @@ export async function lookupBip39Words(
 ): Promise<ToolResult<BIP39WordLookupDetails>> {
   const words = stringArray(wordsValue, "BIP39 lookup words");
   assertLookupSize(words.length, "words");
-  if (words.some((word) => !BIP39_WORD_PATTERN.test(word))) {
-    throw new TypeError("BIP39 lookup words must contain letters and combining marks only");
+  if (words.some((word) => word.trim() === "")) {
+    throw new TypeError("BIP39 lookup words must not be blank");
   }
   const language = parseBIP39Language(languageValue);
   const found = await lookupBIP39Words(words, language);
