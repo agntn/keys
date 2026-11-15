@@ -1,4 +1,7 @@
 import { isPrime } from "@agntn/curves";
+import { verify as verifyBrainpoolP256 } from "@agntn/curves/brainpoolp256r1";
+import { verify as verifyBrainpoolP384 } from "@agntn/curves/brainpoolp384r1";
+import { verify as verifyBrainpoolP512 } from "@agntn/curves/brainpoolp512r1";
 import { type VerifyOptions, verify as verifyP256 } from "@agntn/curves/p256";
 import { verify as verifyP384 } from "@agntn/curves/p384";
 import { verify as verifyP521 } from "@agntn/curves/p521";
@@ -157,6 +160,9 @@ const ECDSA_CURVES = {
   "NIST P-256": { size: 32, minimumDigestBits: 256, verify: sec1(verifyP256) },
   "NIST P-384": { size: 48, minimumDigestBits: 384, verify: sec1(verifyP384) },
   "NIST P-521": { size: 66, minimumDigestBits: 512, verify: sec1(verifyP521) },
+  brainpoolP256r1: { size: 32, minimumDigestBits: 256, verify: sec1(verifyBrainpoolP256) },
+  brainpoolP384r1: { size: 48, minimumDigestBits: 384, verify: sec1(verifyBrainpoolP384) },
+  brainpoolP512r1: { size: 64, minimumDigestBits: 512, verify: sec1(verifyBrainpoolP512) },
   secp256k1: {
     size: 32,
     minimumDigestBits: 256,
@@ -347,7 +353,7 @@ function readDsa(reader: Reader): KeyMaterial {
 }
 
 /**
- * Reads an ECDSA key. The NIST curves and secp256k1 get checked, the rest stays a name.
+ * Reads an ECDSA key. NIST, Brainpool and secp256k1 get checked, the rest stays a name.
  * @param reader - Reader at the material
  * @returns {KeyMaterial} ECDSA material, or a named curve this module can't check
  */

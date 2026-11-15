@@ -22,6 +22,9 @@ const {
   p384,
   p521,
   brainpoolP256r1,
+  brainpoolP384r1,
+  brainpoolP512r1,
+  ed448,
   expired,
   renewed,
   rfc9580,
@@ -178,6 +181,9 @@ describe("OpenPGP cleartext verification", () => {
     ["ECDSA NIST P-256", p256, "ECDSA NIST P-256", "SHA256"],
     ["ECDSA NIST P-384", p384, "ECDSA NIST P-384", "SHA384"],
     ["ECDSA NIST P-521", p521, "ECDSA NIST P-521", "SHA512"],
+    ["ECDSA brainpoolP256r1", brainpoolP256r1, "ECDSA brainpoolP256r1", "SHA256"],
+    ["ECDSA brainpoolP384r1", brainpoolP384r1, "ECDSA brainpoolP384r1", "SHA384"],
+    ["ECDSA brainpoolP512r1", brainpoolP512r1, "ECDSA brainpoolP512r1", "SHA512"],
   ])("verifies a GnuPG %s signature", (_, vector, algorithm, hash) => {
     const verdict = verify(vector.signed, { publicKey: vector.publicKey });
     expect(verdict).toMatchObject({
@@ -261,6 +267,9 @@ describe("OpenPGP cleartext verification", () => {
     ["P-256", p256],
     ["P-384", p384],
     ["P-521", p521],
+    ["brainpoolP256r1", brainpoolP256r1],
+    ["brainpoolP384r1", brainpoolP384r1],
+    ["brainpoolP512r1", brainpoolP512r1],
     ["secp256k1", secp256k1],
   ])("calls a GnuPG ECDSA %s signature invalid once s is off by one bit", (_, vector) => {
     const broken = withSignatures(vector.signed, breakValue(signatureBytes(vector.signed)));
@@ -279,6 +288,9 @@ describe("OpenPGP cleartext verification", () => {
     expect(minimumDigestBits({ kind: "ecdsa", curve: "NIST P-256", point })).toBe(256);
     expect(minimumDigestBits({ kind: "ecdsa", curve: "NIST P-384", point })).toBe(384);
     expect(minimumDigestBits({ kind: "ecdsa", curve: "NIST P-521", point })).toBe(512);
+    expect(minimumDigestBits({ kind: "ecdsa", curve: "brainpoolP256r1", point })).toBe(256);
+    expect(minimumDigestBits({ kind: "ecdsa", curve: "brainpoolP384r1", point })).toBe(384);
+    expect(minimumDigestBits({ kind: "ecdsa", curve: "brainpoolP512r1", point })).toBe(512);
     expect(minimumDigestBits({ kind: "rsa", n: 1n, e: 3n, bits: 3072 })).toBe(0);
   });
 
@@ -521,8 +533,8 @@ describe("OpenPGP cleartext verification", () => {
     expect(() => verify(unknown, { publicKey: rsa.publicKey })).toThrow(
       "OpenPGP signatures over hash 13 aren't supported yet",
     );
-    expect(() => verify(brainpoolP256r1.signed, { publicKey: brainpoolP256r1.publicKey })).toThrow(
-      "ECDSA brainpoolP256r1 signatures aren't supported yet",
+    expect(() => verify(ed448.signed, { publicKey: ed448.publicKey })).toThrow(
+      "Ed448 signatures aren't supported yet",
     );
   });
 
