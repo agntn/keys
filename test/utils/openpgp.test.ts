@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { base64 } from "@agntn/encodings/base64";
+import { hex } from "@agntn/encodings/hex";
 import {
   checkMath,
   hashAlgorithm,
@@ -95,7 +96,7 @@ function mpiOf(value: bigint): number[] {
 function signatureBytes(message: string): Uint8Array {
   const lines = message.split("\n");
   const start = lines.indexOf("-----BEGIN PGP SIGNATURE-----") + 2;
-  const end = lines.findIndex((line) => line.startsWith("="));
+  const end = lines.findIndex((line) => line.startsWith("=") || line.startsWith("-----END"));
   return base64.decode(lines.slice(start, end).join(""));
 }
 
@@ -103,9 +104,10 @@ function signatureBytes(message: string): Uint8Array {
 function withSignatures(message: string, bytes: Uint8Array): string {
   const lines = message.split("\n");
   const start = lines.indexOf("-----BEGIN PGP SIGNATURE-----") + 2;
-  const end = lines.findIndex((line) => line.startsWith("="));
+  const end = lines.findIndex((line) => line.startsWith("=") || line.startsWith("-----END"));
   const data = base64.encode(bytes).match(/.{1,64}/gu) ?? [];
-  return [...lines.slice(0, start), ...data, ...lines.slice(end + 1)].join("\n");
+  const tail = lines[end]?.startsWith("=") === true ? end + 1 : end;
+  return [...lines.slice(0, start), ...data, ...lines.slice(tail)].join("\n");
 }
 
 /* Moves the creation time of a v4 signature back by some seconds, which breaks it. */
@@ -121,6 +123,32 @@ function backdate(bytes: Uint8Array, seconds: number): Uint8Array {
     return signaturePacket(body);
   }
   throw new Error("No creation time");
+}
+
+/* Drops the issuer subpackets of a v4 signature, so it gets tried against every key. */
+function anonymize(bytes: Uint8Array): Uint8Array {
+  const [packet] = readPackets(bytes);
+  if (packet === undefined) throw new Error("No signature packet");
+  const { body } = packet;
+  const keep = (from: number, to: number): number[] => {
+    const kept: number[] = [];
+    for (let offset = from; offset < to; offset += (body[offset] ?? 0) + 1) {
+      const type = (body[offset + 1] ?? 0) & 0x7f;
+      if (type !== 16 && type !== 33)
+        kept.push(...body.slice(offset, offset + (body[offset] ?? 0) + 1));
+    }
+    return [kept.length >> 8, kept.length & 0xff, ...kept];
+  };
+  const hashedEnd = 6 + (((body[4] ?? 0) << 8) | (body[5] ?? 0));
+  const unhashedEnd = hashedEnd + 2 + (((body[hashedEnd] ?? 0) << 8) | (body[hashedEnd + 1] ?? 0));
+  return signaturePacket(
+    Uint8Array.from([
+      ...body.slice(0, 4),
+      ...keep(6, hashedEnd),
+      ...keep(hashedEnd + 2, unhashedEnd),
+      ...body.slice(unhashedEnd),
+    ]),
+  );
 }
 
 /* Swaps the hash ID of a signature, so the math can't even start. */
@@ -264,6 +292,36 @@ describe("OpenPGP cleartext verification", () => {
   });
 
   it.each([
+    ["SHA-512", ed448.signed, "SHA512"],
+    ["SHA3-512", ed448.signedSha3_512, "SHA3-512"],
+  ])("verifies a version 6 Ed448 signature over %s", (_, signed, hash) => {
+    expect(verify(signed, { publicKey: ed448.publicKey })).toMatchObject({
+      state: "valid",
+      primaryFingerprint: ed448.fingerprint,
+      signingFingerprint: ed448.fingerprint,
+      algorithm: "Ed448",
+      hash,
+      version: 6,
+    });
+  });
+
+  it("calls Ed448 over SHA-384 invalid, since RFC 9580 wants 512 bits there", () => {
+    expect(verify(ed448.signedSha384, { publicKey: ed448.publicKey })).toMatchObject({
+      state: "invalid",
+      hash: "SHA384",
+      reason: "SHA384 is too short for this key, RFC 9580 asks for at least 512 bits",
+    });
+  });
+
+  it("calls an Ed448 signature invalid once S is off by one bit", () => {
+    const broken = withSignatures(ed448.signed, breakValue(signatureBytes(ed448.signed)));
+    expect(verify(broken, { publicKey: ed448.publicKey })).toMatchObject({
+      state: "invalid",
+      reason: "The signature doesn't verify against this key",
+    });
+  });
+
+  it.each([
     ["P-256", p256],
     ["P-384", p384],
     ["P-521", p521],
@@ -283,6 +341,7 @@ describe("OpenPGP cleartext verification", () => {
     const dsaKey = { kind: "dsa", p: 23n, q: (1n << 223n) + 1n, g: 2n, y: 2n, bits: 2048 } as const;
     expect(minimumDigestBits(dsaKey)).toBe(224);
     expect(minimumDigestBits({ kind: "eddsa", point: new Uint8Array(32) })).toBe(256);
+    expect(minimumDigestBits({ kind: "ed448", point: new Uint8Array(57) })).toBe(512);
     const point = new Uint8Array(65);
     expect(minimumDigestBits({ kind: "ecdsa", curve: "secp256k1", point })).toBe(256);
     expect(minimumDigestBits({ kind: "ecdsa", curve: "NIST P-256", point })).toBe(256);
@@ -533,9 +592,17 @@ describe("OpenPGP cleartext verification", () => {
     expect(() => verify(unknown, { publicKey: rsa.publicKey })).toThrow(
       "OpenPGP signatures over hash 13 aren't supported yet",
     );
-    expect(() => verify(ed448.signed, { publicKey: ed448.publicKey })).toThrow(
-      "Ed448 signatures aren't supported yet",
+    const [primary, ...rest] = packetsOf(p256.publicKey);
+    if (primary === undefined) throw new Error("No primary key");
+    const unknownCurve = hex.decode(
+      hex.encode(primary.body).replace("2a8648ce3d030107", "2a8648ce3d030199"),
     );
+    const anonymous = withSignatures(p256.signed, anonymize(signatureBytes(p256.signed)));
+    expect(() =>
+      verify(anonymous, {
+        publicKey: armorKey([{ tag: primary.tag, body: unknownCurve }, ...rest]),
+      }),
+    ).toThrow("ECDSA curve 2a8648ce3d030199 signatures aren't supported yet");
   });
 
   it("warns about a revoked key without changing the verdict", () => {

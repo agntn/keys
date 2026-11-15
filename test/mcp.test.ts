@@ -572,10 +572,10 @@ describe("keys MCP server", () => {
       [{ message: signed, publicKey: openpgpVectors.p256.publicKey }, `Signed by ${subkey}`],
       [
         {
-          message: openpgpVectors.ed448.signed,
+          message: openpgpVectors.ed448.signedSha384,
           publicKey: openpgpVectors.ed448.publicKey,
         },
-        "Ed448 signatures aren't supported yet",
+        "SHA384 is too short for this key, RFC 9580 asks for at least 512 bits",
       ],
       [
         { message: signed, publicKey: publicKey.replaceAll("PUBLIC", "PRIVATE") },

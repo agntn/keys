@@ -2,6 +2,7 @@ import { isPrime } from "@agntn/curves";
 import { verify as verifyBrainpoolP256 } from "@agntn/curves/brainpoolp256r1";
 import { verify as verifyBrainpoolP384 } from "@agntn/curves/brainpoolp384r1";
 import { verify as verifyBrainpoolP512 } from "@agntn/curves/brainpoolp512r1";
+import { verify as verifyEd448 } from "@agntn/curves/ed448";
 import { type VerifyOptions, verify as verifyP256 } from "@agntn/curves/p256";
 import { verify as verifyP384 } from "@agntn/curves/p384";
 import { verify as verifyP521 } from "@agntn/curves/p521";
@@ -49,6 +50,7 @@ export type KeyMaterial =
     }
   | { readonly kind: "ecdsa"; readonly curve: EcdsaCurveName; readonly point: Uint8Array }
   | { readonly kind: "eddsa"; readonly point: Uint8Array }
+  | { readonly kind: "ed448"; readonly point: Uint8Array }
   | { readonly kind: "none"; readonly curve?: string; readonly bits?: number };
 
 const HASHES: Readonly<Record<number, HashAlgorithm>> = {
@@ -398,6 +400,7 @@ const MATERIAL_READERS: Readonly<Record<number, (reader: Reader) => KeyMaterial>
   19: readEcdsa,
   22: readEdDsaLegacy,
   27: (reader) => ({ kind: "eddsa", point: reader.read(32) }),
+  28: (reader) => ({ kind: "ed448", point: reader.read(57) }),
 };
 
 /**
@@ -528,6 +531,25 @@ function verifyEdDsa(
 }
 
 /**
+ * Checks an Ed448 signature over the digest with an empty context, RFC 9580 §12.7.
+ * @param key - Ed448 material
+ * @param reader - Reader at the signature
+ * @param digest - The hash
+ * @returns {boolean} Whether it matches
+ */
+function verifyEd448Signature(
+  key: Extract<KeyMaterial, { kind: "ed448" }>,
+  reader: Reader,
+  digest: Uint8Array,
+): boolean {
+  if (digest.length < 64) return false;
+  return verifyEd448(reader.read(114).toHex(), {
+    message: digest.toHex(),
+    publicKey: key.point.toHex(),
+  });
+}
+
+/**
  * Shortest hash RFC 9580 §5.2.3 lets a key sign with: the bits of `q` for DSA, the curve's for ECC.
  * @param key - The signer's material
  * @returns {number} Digest bits, 0 where any hash goes
@@ -540,6 +562,8 @@ export function minimumDigestBits(key: KeyMaterial): number {
       return ECDSA_CURVES[key.curve].minimumDigestBits;
     case "eddsa":
       return 256;
+    case "ed448":
+      return 512;
     default:
       return 0;
   }
@@ -595,6 +619,8 @@ function mathOf(
       return verifyEcdsa(key, reader, digest);
     case "eddsa":
       return verifyEdDsa(key, reader, digest, algorithm === 22);
+    case "ed448":
+      return verifyEd448Signature(key, reader, digest);
     default:
       return false;
   }
