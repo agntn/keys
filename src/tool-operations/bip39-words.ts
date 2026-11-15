@@ -22,7 +22,7 @@ import {
 } from "../utils/bip39/index.ts";
 import { integerArray, stringArray, optionalName } from "./arguments.ts";
 import { parseBIP39Language, normalizedMnemonic } from "./bip39.ts";
-import { type ToolResult, content } from "./results.ts";
+import { type ToolResult, content, escapeToolText } from "./results.ts";
 
 /** Result of a BIP39 index lookup. */
 export interface BIP39IndexLookupDetails {
@@ -177,7 +177,7 @@ export async function lookupBip39Words(
           if (lookup.zeroBasedIndex !== null) {
             return `${lookup.word}: ${lookup.zeroBasedIndex}, ${lookup.oneBasedIndex}`;
           }
-          if (lookup.prefixOf === undefined) return `${lookup.word}: not in BIP39`;
+          if (lookup.prefixOf === undefined) return `${escapeToolText(lookup.word)}: not in BIP39`;
           const matches = lookup.prefixOf.map(
             (match) => `${match.word} (${match.zeroBasedIndex}, ${match.oneBasedIndex})`,
           );
