@@ -1,4 +1,4 @@
-/** The key tools, declared once for MCP, Pi and OMP. The executors load on the first call. */
+/** The key tools, declared once for MCP, Pi, OMP and the AI SDK. The executors load on the first call. */
 
 import { defineTool, type ToolDefinition } from "@agntn/tools";
 import {
@@ -727,7 +727,7 @@ export const bip44GenerateTool = defineTool({
 });
 
 /** Every key tool in listing order. */
-export const keysTools: readonly ToolDefinition[] = [
+export const keysTools = [
   electrumWalletDeriveTool,
   brainwalletDeriveTool,
   bip39SeedDeriveTool,
@@ -768,7 +768,7 @@ export const keysTools: readonly ToolDefinition[] = [
   transactionSignerRecoverTool,
   bip44ParseTool,
   bip44GenerateTool,
-];
+] as const satisfies readonly ToolDefinition[];
 
 /**
  * Shortens a message for a status line.

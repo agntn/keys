@@ -16,7 +16,7 @@ const TAGLINE =
 /** The same three readouts as the hero, counted from the library like the hero counts them. */
 const METRICS = [
   { label: "Chains", value: String(CHAINS.length), unit: "", note: "two curves", accent: false },
-  { label: "Tools", value: String(TOOL_COUNT), unit: "", note: "MCP · Pi · OMP", accent: false },
+  { label: "Tools", value: String(TOOL_COUNT), unit: "", note: "MCP · Pi · OMP · AI SDK", accent: false },
   { label: "Network", value: "0", unit: "calls", note: "in process", accent: true },
 ];
 

@@ -126,6 +126,10 @@
       "types": "./dist/utils/wif/index.d.mts",
       "default": "./dist/utils/wif/index.mjs"
     },
+    "./ai": {
+      "types": "./dist/ai.d.mts",
+      "default": "./dist/ai.mjs"
+    },
     "./mcp": {
       "types": "./dist/mcp.d.mts",
       "default": "./dist/mcp.mjs"
@@ -175,6 +179,7 @@
     "@oh-my-pi/pi-coding-agent": "catalog:dev",
     "@types/node": "catalog:dev",
     "@vitest/coverage-v8": "catalog:dev",
+    "ai": "catalog:dev",
     "jiti": "catalog:dev",
     "obuild": "catalog:dev",
     "tsx": "catalog:dev",
@@ -183,6 +188,14 @@
     "vite": "catalog:",
     "vite-plus": "catalog:",
     "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "ai": ">=7.0.0 <8"
+  },
+  "peerDependenciesMeta": {
+    "ai": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=26"

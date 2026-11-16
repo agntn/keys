@@ -91,8 +91,8 @@ const address = computed(
     </div>
 
     <footer class="console-footer console-footer-plain">
-      <span aria-label="Supported hosts: MCP, Pi and OMP, no network"
-        >MCP · Pi · OMP / no network</span
+      <span aria-label="Supported hosts: MCP, Pi, OMP and AI SDK, no network"
+        >MCP · Pi · OMP · AI SDK / no network</span
       >
       <span class="console-meta">keys mcp · stdio</span>
     </footer>

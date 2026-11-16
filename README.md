@@ -29,7 +29,7 @@ The docs live at [keys.agntn.dev](https://keys.agntn.dev), keyspace explorer inc
 - 🧩 **Puzzle mnemonics are welcome.** Bad checksum, missing word, wrong order, a typo. There's a function for each.
 - ✍️ **Signatures the way wallets write them.** Core's `signmessage`, ethers, Keplr, polkadot.js, `monero-wallet-cli` and more, each on the chain it belongs to.
 - 🔌 **One chain at a time.** `blockchains.solana()()` imports Solana and nothing else. A Bitcoin tool never pays for Cardano.
-- 🤖 **Tools for your agent.** MCP over stdio or HTTP, plus Pi and OMP extensions. Same code behind all of them.
+- 🤖 **Tools for your agent.** MCP over stdio or HTTP, Pi, OMP and the AI SDK. Same keyring behind all four.
 
 ## 📦 Install
 
@@ -265,6 +265,29 @@ This mnemonic is saved in the transcript. Never use it for real funds.
 ```
 
 That last line is not decoration. Keys, seeds and signatures cross the model's context as plain text and stay in the transcript. The [HTTP server](https://keys.agntn.dev/guide#remote-mcp) adds a Cloudflare worker on the way. Public puzzle material and throwaway keys only.
+
+### AI SDK
+
+Running your own `generateText` loop? The tools come along.
+
+```bash
+pnpm add @agntn/keys ai @ai-sdk/anthropic
+```
+
+```ts
+import { anthropic } from "@ai-sdk/anthropic";
+import { keysAiTools } from "@agntn/keys/ai";
+import { generateText, isStepCount } from "ai";
+
+const { text } = await generateText({
+  model: anthropic("claude-sonnet-5-5"),
+  tools: keysAiTools,
+  stopWhen: isStepCount(5),
+  prompt: "Is 1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2 a valid Bitcoin address?",
+});
+```
+
+Four tools ask before they mint or sign: `keys_wallet_generate`, `keys_bip39_generate`, `keys_message_sign` and `keys_bip322_sign`. The rest run straight away. Want one through anyway? Say so in `toolApproval`. Details in the [guide](https://keys.agntn.dev/guide#ai-sdk).
 
 ## 🚫 What this does not do
 

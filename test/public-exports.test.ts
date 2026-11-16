@@ -19,6 +19,7 @@ import {
   brainwalletVectors,
   storeVectors,
   arweaveVectors,
+  bitcoinTestVectors,
   openpgpVectors,
   electrumVectors,
   wifTestVectors,
@@ -40,6 +41,7 @@ import { blockchains as sourceChains } from "../src/_blockchains.ts";
 import { ELECTRUM_LEGACY_WORDS } from "../src/utils/electrum/legacy.ts";
 
 const EXPORTS = [
+  ["@agntn/keys/ai", "/dist/ai.mjs"],
   ["@agntn/keys/arweave", "/dist/utils/arweave/index.mjs"],
   ["@agntn/keys/bip32", "/dist/utils/bip32/index.mjs"],
   ["@agntn/keys/bip322", "/dist/utils/bip322/index.mjs"],
@@ -323,6 +325,19 @@ describe("Public Arweave exports", () => {
     expect(arweave.getAddress({ kty: "RSA", n })).toBe(address);
     expect(arweave.validateAddress(address)).toBe(true);
     expect(new Set(Object.keys(arweave))).toEqual(new Set(["getAddress", "validateAddress"]));
+  });
+});
+
+describe("Public AI SDK exports", () => {
+  it("validates an address through the built map, and exports nothing else", async () => {
+    const ai = await import("@agntn/keys/ai");
+    const address = bitcoinTestVectors.addresses.p2pkh.mainnet;
+    const output: unknown = await ai.keysAiTools.keys_address_validate.execute?.(
+      { chain: "bitcoin", address },
+      { toolCallId: "packed", messages: [], context: {} },
+    );
+    expect((output as { text: string }).text).toContain("is a valid bitcoin address");
+    expect(Object.keys(ai)).toEqual(["keysAiTools"]);
   });
 });
 
