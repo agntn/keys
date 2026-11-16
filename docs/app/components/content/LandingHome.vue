@@ -123,7 +123,7 @@ const { hex, decimal, rows, pipeline, hd, ready, paused, tick, changedBytes, ste
     >
       Everything the library does is exposed as an MCP tool with the same parameters. Point an
       agent at it and it derives, validates and signs without touching the network. The Pi and OMP
-      extensions run the same executors.
+      extensions and the AI SDK tools run the same executors. Different doors, same keys.
       <template #visual>
         <LandingToolCall :rows="rows" :public-key="pipeline.publicKey" :tick="tick" />
       </template>

@@ -39,7 +39,7 @@ const { copied, copy } = useCopied();
         Key generation, address derivation and message signing for
         {{ spellOut(CHAINS.length).toLowerCase() }} blockchains, typed and
         built on noble, scure and our own hashes. One interface in TypeScript, the same tools
-        over MCP, Pi and OMP, and nothing ever leaves the process.
+        over MCP, Pi, OMP and the AI SDK, and nothing ever leaves the process.
       </p>
 
       <dl class="hero-metrics">
@@ -51,7 +51,7 @@ const { copied, copy } = useCopied();
         <div>
           <dt>Tools</dt>
           <dd>{{ TOOL_COUNT }}</dd>
-          <dd class="hero-metric-sub">MCP · Pi · OMP</dd>
+          <dd class="hero-metric-sub">MCP · Pi · OMP · AI SDK</dd>
         </div>
         <div>
           <dt>Network</dt>
