@@ -134,7 +134,7 @@ function childIndex(options: Bip85Arguments): number | undefined {
 function password(application: "base64" | "base85"): Run {
   const derive = application === "base64" ? deriveBase64Password : deriveBase85Password;
   return (rootKey, options) => {
-    const length = requiredCount(options.length, { name: "Length", maximum: 86, application });
+    const length = requiredCount(options.length, { name: "Length", application });
     const child = derive(rootKey, { length, index: childIndex(options) });
     return { ...child, line: ["Password", child.password], extra: { password: child.password } };
   };
