@@ -39,6 +39,7 @@ import {
   MAX_BIP38_ADDRESS_LENGTH,
   MAX_BIP38_PASSPHRASE_LENGTH,
   MAX_EXTENDED_KEY_LENGTH,
+  BIP85_APPLICATIONS,
   MAX_KEYSTORE_LENGTH,
   MAX_ARWEAVE_KEY_LENGTH,
   MAX_OPENPGP_LENGTH,
@@ -754,6 +755,46 @@ export const RECOVER_BIP32_PARENT_PARAMETERS = Type.Object(
       Type.Boolean({
         description:
           "Also return the parent xprv when the child belongs to it, so it enters the transcript. Default: false",
+      }),
+    ),
+  },
+  { additionalProperties: false },
+);
+
+/** Shared MCP and Pi schema for BIP85 child entropy from a master key. */
+export const DERIVE_BIP85_PARAMETERS = Type.Object(
+  {
+    rootKey: Type.String({
+      description:
+        "Master extended private key at depth 0: xprv, or tprv on testnet. Public or disposable only",
+      minLength: 1,
+      maxLength: MAX_EXTENDED_KEY_LENGTH,
+      pattern: "^[1-9A-HJ-NP-Za-km-z]+$",
+    }),
+    application: Type.String({
+      enum: BIP85_APPLICATIONS,
+      description:
+        "What to derive: bip39 a mnemonic (application 39), wif a Bitcoin Core hdseed (2), xprv a child master key (32), hex raw bytes (128169)",
+    }),
+    index: Type.Optional(
+      Type.Integer({
+        minimum: 0,
+        maximum: 0x7fffffff,
+        description: "Child index, the last level of the path. Default: 0",
+      }),
+    ),
+    words: Type.Optional(
+      Type.Integer({
+        enum: TOOL_MNEMONIC_WORD_COUNTS,
+        description: "bip39 only: word count, 12, 15, 18, 21 or 24. Default: 12",
+      }),
+    ),
+    language: BIP39_LANGUAGE_PARAMETER,
+    bytes: Type.Optional(
+      Type.Integer({
+        minimum: 16,
+        maximum: 64,
+        description: "hex only: how many bytes to keep, 16 to 64. Default: 64",
       }),
     ),
   },

@@ -41,6 +41,7 @@ import {
   slip132Vectors,
   bip38Vectors,
   bip32ParentVector,
+  bip85Vectors,
   hdScanVectors,
   slip10WalletVectors,
   brainwalletInput,
@@ -1290,6 +1291,61 @@ describe("keys MCP server", () => {
       expect(text(failed.content)).toContain(message);
       expect(text(failed.content)).not.toContain(child.privateKey);
       expect(text(failed.content)).not.toContain(child.xprv.slice(4, 40));
+    }
+  });
+
+  it("derives BIP85 children through MCP, one application per call", async () => {
+    const client = await connectTestClient();
+    const { root, mnemonics, wif, xprv, hex } = bip85Vectors;
+    const [twelve] = mnemonics;
+
+    const mnemonic = await client.callTool({
+      name: "keys_bip85_derive",
+      arguments: { rootKey: root, application: "bip39" },
+    });
+    expect(mnemonic.isError).not.toBe(true);
+    expect(text(mnemonic.content)).toBe(
+      [
+        "Application: bip39",
+        `Path: ${twelve.path}`,
+        `Entropy: ${twelve.entropy}`,
+        `Mnemonic: ${twelve.mnemonic}`,
+        "This secret is saved in the transcript. Never use it for real funds.",
+      ].join("\n"),
+    );
+
+    const seed = await client.callTool({
+      name: "keys_bip85_derive",
+      arguments: { rootKey: root, application: "wif" },
+    });
+    expect(text(seed.content)).toContain(`WIF: ${wif.wif}`);
+    const child = await client.callTool({
+      name: "keys_bip85_derive",
+      arguments: { rootKey: root, application: "xprv" },
+    });
+    expect(text(child.content)).toContain(`Extended private key: ${xprv.extendedPrivateKey}`);
+    const raw = await client.callTool({
+      name: "keys_bip85_derive",
+      arguments: { rootKey: root, application: "hex", bytes: 64 },
+    });
+    expect(text(raw.content).split("\n").slice(0, 3)).toEqual([
+      "Application: hex",
+      `Path: ${hex.path}`,
+      `Entropy: ${hex.entropy}`,
+    ]);
+
+    for (const [args, message] of [
+      [{ rootKey: root, application: "nostr" }, "Invalid arguments at /application"],
+      [{ rootKey: root, application: "wif", words: 12 }, "words belongs to the bip39 application"],
+      [{ rootKey: root, application: "bip39", bytes: 32 }, "bytes belongs to the hex application"],
+      [{ rootKey: root, application: "hex", bytes: 15 }, "Invalid arguments at /bytes"],
+      [{ rootKey: bip32ParentVector.xpub, application: "wif" }, "not an xpub"],
+      [{ rootKey: bip32ParentVector.child.xprv, application: "wif" }, "not depth 1"],
+    ] as const) {
+      const failed = await client.callTool({ name: "keys_bip85_derive", arguments: args });
+      expect(failed.isError).toBe(true);
+      expect(text(failed.content)).toContain(message);
+      expect(text(failed.content)).not.toContain(root.slice(4, 40));
     }
   });
 

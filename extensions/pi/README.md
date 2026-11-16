@@ -26,6 +26,7 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 | `keys_hd_wallet_scan`                 | Find which common wallet path takes a mnemonic to an address            |
 | `keys_xpub_wallet_derive`             | Derive public key + address from an xpub, ypub or zpub and a path       |
 | `keys_bip32_parent_recover`           | Recover a parent from its xpub and one leaked normal child key          |
+| `keys_bip85_derive`                   | Derive a BIP85 child mnemonic, WIF, xprv or hex from a master xprv      |
 | `keys_bip39_generate`                 | Generate a disposable English BIP39 mnemonic                            |
 | `keys_bip39_inspect`                  | Validate a BIP39 mnemonic and read what its entropy looks like          |
 | `keys_bip39_entropy_encode`           | Encode hexadecimal entropy as an English BIP39 mnemonic                 |

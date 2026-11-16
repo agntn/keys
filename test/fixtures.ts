@@ -1862,6 +1862,62 @@ export const bip32ParentVector = {
     "xprv9wSp6B7kry3Vj9m1zSnLvN3xH8RdsPP1Mh7fAaR7aRLcQMKTR2vidYEeEg2mUCTAwCd6vnxVrcjfy2kRgVsFawNzmjuHc2YmYRmagcEPdU9",
 } as const;
 
+/** BIP85 2.1.0 test vectors from one master key, bitcoin/bips bip-0085.mediawiki. */
+export const bip85Vectors = {
+  root: "xprv9s21ZrQH143K2LBWUUQRFXhucrQqBpKdRRxNVq2zBqsx8HVqFk2uYo8kmbaLLHRdqtQpUm98uKfu3vca1LqdGhUtyoFnCNkfmXRyPXLjbKb",
+  cases: [
+    {
+      path: "m/83696968'/0'/0'",
+      entropy:
+        "efecfbccffea313214232d29e71563d941229afb4338c21f9517c41aaa0d16f00b83d2a09ef747e7a64e8e2bd5a14869e693da66ce94ac2da570ab7ee48618f7",
+    },
+    {
+      path: "m/83696968'/0'/1'",
+      entropy:
+        "70c6e3e8ebee8dc4c0dbba66076819bb8c09672527c4277ca8729532ad711872218f826919f6b67218adde99018a6df9095ab2b58d803b5b93ec9802085a690e",
+    },
+  ],
+  mnemonics: [
+    {
+      words: 12,
+      path: "m/83696968'/39'/0'/12'/0'",
+      entropy: "6250b68daf746d12a24d58b4787a714b",
+      mnemonic: "girl mad pet galaxy egg matter matrix prison refuse sense ordinary nose",
+    },
+    {
+      words: 18,
+      path: "m/83696968'/39'/0'/18'/0'",
+      entropy: "938033ed8b12698449d4bbca3c853c66b293ea1b1ce9d9dc",
+      mnemonic:
+        "near account window bike charge season chef number sketch tomorrow excuse sniff circle vital hockey outdoor supply token",
+    },
+    {
+      words: 24,
+      path: "m/83696968'/39'/0'/24'/0'",
+      entropy: "ae131e2312cdc61331542efe0d1077bac5ea803adf24b313a4f0e48e9c51f37f",
+      mnemonic:
+        "puppy ocean match cereal symbol another shed magic wrap hammer bulb intact gadget divorce twin tonight reason outdoor destroy simple truth cigar social volcano",
+    },
+  ],
+  wif: {
+    path: "m/83696968'/2'/0'",
+    entropy: "7040bb53104f27367f317558e78a994ada7296c6fde36a364e5baf206e502bb1",
+    wif: "Kzyv4uF39d4Jrw2W7UryTHwZr1zQVNk4dAFyqE6BuMrMh1Za7uhp",
+  },
+  xprv: {
+    path: "m/83696968'/32'/0'",
+    /** The key half, the last 32 bytes; BIP85 prints it as the derived entropy. */
+    privateKey: "ead0b33988a616cf6a497f1c169d9e92562604e38305ccd3fc96f2252c177682",
+    extendedPrivateKey:
+      "xprv9s21ZrQH143K2srSbCSg4m4kLvPMzcWydgmKEnMmoZUurYuBuYG46c6P71UGXMzmriLzCCBvKQWBUv3vPB3m1SATMhp3uEjXHJ42jFg7myX",
+  },
+  hex: {
+    path: "m/83696968'/128169'/64'/0'",
+    entropy:
+      "492db4698cf3b73a5a24998aa3e9d7fa96275d85724a91e71aa2d645442f878555d078fd1f1f67e368976f04137b1f7a0d19232136ca50c44614af72b5582a5c",
+  },
+} as const;
+
 /**
  * BIP38 test vectors (bitcoin/bips bip-0038.mediawiki): the header of each key, read without its
  * passphrase, and the passphrase and WIF the spec gives. `address` is the one the spec lists; the

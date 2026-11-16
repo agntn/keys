@@ -6,6 +6,7 @@ import { Value } from "typebox/value";
 import { describe, expect, it } from "vite-plus/test";
 import {
   bip32ParentVector,
+  bip85Vectors,
   hdScanVectors,
   bip39TestVectors,
   bip39WordOrderVector,
@@ -178,6 +179,37 @@ describe("keys Pi extension", () => {
       [{ ...args, extendedKey: "x".repeat(129) }, "Extended key is too long"],
     ] as const) {
       await expect(skipSchema(tool)("parent", bad)).rejects.toThrow(message);
+    }
+  });
+  it("derives a BIP85 child with the shared executor and checks its arguments without the schema", async () => {
+    const tool = (await registerTools()).get("keys_bip85_derive");
+    if (!tool) throw new Error("Missing BIP85 tool");
+    const { root, mnemonics } = bip85Vectors;
+    const [, eighteen] = mnemonics;
+    const args = { rootKey: root, application: "bip39", words: 18 };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    expect(Value.Check(tool.parameters, { ...args, words: 13 })).toBe(false);
+    await expect(tool.execute("bip85", args)).resolves.toMatchObject({
+      details: {
+        application: "bip39",
+        path: eighteen.path,
+        entropy: eighteen.entropy,
+        mnemonic: eighteen.mnemonic,
+      },
+    });
+    await expect(
+      skipSchema(tool)("bip85", { rootKey: root, application: "wif", words: 0, bytes: 0 }),
+    ).resolves.toMatchObject({ details: { wif: bip85Vectors.wif.wif } });
+    for (const [bad, message] of [
+      [{ ...args, words: 13 }, "BIP85 mnemonics have 12, 15, 18, 21 or 24 words"],
+      [{ ...args, words: "12" }, "Words must be an integer between 0 and 24"],
+      [{ ...args, application: "rsa" }, "Application must be one of bip39, wif, xprv, hex"],
+      [{ ...args, language: "klingon" }, "Unknown BIP39 language"],
+      [{ rootKey: root, application: "hex", bytes: 1.5 }, "Bytes must be an integer"],
+      [{ rootKey: "x".repeat(129), application: "wif" }, "Root key is too long"],
+      [{ rootKey: 7, application: "wif" }, "Root key must be a string"],
+    ] as const) {
+      await expect(skipSchema(tool)("bip85", bad)).rejects.toThrow(message);
     }
   });
   it("recovers an EVM transaction signer with the shared executor", async () => {

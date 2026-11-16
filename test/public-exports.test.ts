@@ -13,6 +13,7 @@ import type { ElectrumSeedType } from "@agntn/keys/electrum";
 import type { PublicKeyEncodingOptions } from "@agntn/keys/secp256k1";
 import {
   bip32ParentVector,
+  bip85Vectors,
   bip38Vectors,
   bip322Vectors,
   brainwalletInput,
@@ -46,6 +47,7 @@ const EXPORTS = [
   ["@agntn/keys/bip32", "/dist/utils/bip32/index.mjs"],
   ["@agntn/keys/bip322", "/dist/utils/bip322/index.mjs"],
   ["@agntn/keys/bip38", "/dist/utils/bip38/index.mjs"],
+  ["@agntn/keys/bip85", "/dist/utils/bip85/index.mjs"],
   ["@agntn/keys/bip39", "/dist/utils/bip39/index.mjs"],
   ["@agntn/keys/brainwallet", "/dist/utils/brainwallet/index.mjs"],
   ["@agntn/keys/curve", "/dist/utils/curve/index.mjs"],
@@ -328,6 +330,28 @@ describe("Public Arweave exports", () => {
   });
 });
 
+describe("Public BIP85 exports", () => {
+  it("derives every application from the built package, and nothing else", async () => {
+    const bip85 = await import("@agntn/keys/bip85");
+    const { root, cases, mnemonics, wif, xprv, hex: raw } = bip85Vectors;
+    expect(hex.encode(bip85.deriveEntropy(root, cases[0].path))).toBe(cases[0].entropy);
+    expect((await bip85.deriveMnemonic(root, { words: 24 })).mnemonic).toBe(mnemonics[2].mnemonic);
+    expect(bip85.deriveWif(root).wif).toBe(wif.wif);
+    expect(bip85.deriveXprv(root).extendedPrivateKey).toBe(xprv.extendedPrivateKey);
+    expect(hex.encode(bip85.deriveHex(root).entropy)).toBe(raw.entropy);
+    expect(new Set(Object.keys(bip85))).toEqual(
+      new Set([
+        "BIP85_PURPOSE",
+        "deriveEntropy",
+        "deriveHex",
+        "deriveMnemonic",
+        "deriveWif",
+        "deriveXprv",
+      ]),
+    );
+  });
+});
+
 describe("Public AI SDK exports", () => {
   it("validates an address through the built map, and exports nothing else", async () => {
     const ai = await import("@agntn/keys/ai");
@@ -531,6 +555,7 @@ describe("Consumer bundles", () => {
     ["getAddress", "@agntn/keys/arweave"],
     ["verify", "@agntn/keys/openpgp"],
     ["decrypt", "@agntn/keys/bip38"],
+    ["deriveWif", "@agntn/keys/bip85"],
     ["verify", "@agntn/keys/bip322"],
     ["extractSignatures", "@agntn/keys/transaction"],
     ["recoverSigner", "@agntn/keys/transaction"],
