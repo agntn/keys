@@ -316,11 +316,11 @@ export const SIGNATURE_SCHEMA_PATTERN = "^[0-9A-Fa-f]{128}(?:[0-9A-Fa-f]{2})?$";
 /** JSON Schema pattern for a DER secp256k1 signature, the form XRPL signs messages in. */
 export const DER_SIGNATURE_SCHEMA_PATTERN = "^30(?:[0-9A-Fa-f]{2}){7,71}$";
 
-/** JSON Schema pattern for Core's base64 signature: 65 bytes are 87 characters and one `=`. */
-export const CORE_SIGNATURE_SCHEMA_PATTERN = "^[A-Za-z0-9+/]{87}=$";
+/** JSON Schema pattern for Core's base64 signature: 87 characters, then a `=` that copies often drop. */
+export const CORE_SIGNATURE_SCHEMA_PATTERN = "^[A-Za-z0-9+/]{87}=?$";
 
 /** JSON Schema pattern for what the recover tool reads: `r||s||v` hex or Core's base64. */
-export const RECOVERABLE_SIGNATURE_SCHEMA_PATTERN = "^(?:[0-9A-Fa-f]{130}|[A-Za-z0-9+/]{87}=)$";
+export const RECOVERABLE_SIGNATURE_SCHEMA_PATTERN = "^(?:[0-9A-Fa-f]{130}|[A-Za-z0-9+/]{87}=?)$";
 
 /** JSON Schema pattern for a 32-byte digest as hex without 0x. */
 export const DIGEST_SCHEMA_PATTERN = "^[0-9A-Fa-f]{64}$";
@@ -333,7 +333,7 @@ export const MONERO_SIGNING_KEYS = ["spend", "view"] as const;
 
 /** JSON Schema pattern for what the verify tool reads: hex as above, Core's base64, SigV2. */
 export const MESSAGE_SIGNATURE_SCHEMA_PATTERN =
-  "^(?:[0-9A-Fa-f]{128}(?:[0-9A-Fa-f]{2})?|30(?:[0-9A-Fa-f]{2}){7,71}|[A-Za-z0-9+/]{87}=|SigV[12][1-9A-HJ-NP-Za-km-z]{88})$";
+  "^(?:[0-9A-Fa-f]{128}(?:[0-9A-Fa-f]{2})?|30(?:[0-9A-Fa-f]{2}){7,71}|[A-Za-z0-9+/]{87}=?|SigV[12][1-9A-HJ-NP-Za-km-z]{88})$";
 
 /** Address types `keys_bip322_sign` writes for. */
 export const BIP322_SIGNING_TYPES = ["legacy", "p2sh", "segwit", "taproot"] as const;

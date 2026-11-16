@@ -2185,6 +2185,32 @@ describe("keys MCP server", () => {
     );
   });
 
+  it("reads Core's signature that lost its trailing = in a copy", async () => {
+    const client = await connectTestClient();
+    const { message, compactSignature, address } = bitcoinMessageVectors;
+    const signature = compactSignature.slice(0, -1);
+    expect(signature).toHaveLength(87);
+
+    const recovered = await client.callTool({
+      name: "keys_message_recover",
+      arguments: { chain: "bitcoin", network: "testnet", message, signature, address },
+    });
+    expect(recovered.isError).not.toBe(true);
+    expect(text(recovered.content)).toContain("Given address: match (legacy)");
+
+    const verified = await client.callTool({
+      name: "keys_message_verify",
+      arguments: {
+        chain: "bitcoin",
+        network: "testnet",
+        message,
+        signature,
+        publicKey: bitcoinGoldTestVectors.signed.publicKey,
+      },
+    });
+    expect(text(verified.content)).toBe("Signature is valid");
+  });
+
   it("matches a SegWit address signed under Electrum's P2PKH header, in any case", async () => {
     const client = await connectTestClient();
     const { message, signatures } = bip137MessageVectors;
