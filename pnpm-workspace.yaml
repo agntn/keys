@@ -18,7 +18,7 @@ catalogs:
     "@agntn/ciphers": 0.5.2
     "@agntn/curves": 0.2.2
     "@agntn/encodings": 0.2.0
-    "@agntn/hashes": 0.7.2
+    "@agntn/hashes": 0.7.3
     "@agntn/tools": 0.3.0
     "@modelcontextprotocol/sdk": 1.32.2
     "@modelcontextprotocol/server": 2.4.0
