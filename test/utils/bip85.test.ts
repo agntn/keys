@@ -2,11 +2,16 @@ import { describe, expect, it } from "vite-plus/test";
 import { hex } from "@agntn/encodings/hex";
 import { HDKey } from "@scure/bip32";
 import {
+  deriveBase64Password,
+  deriveBase85Password,
+  deriveDice,
   deriveEntropy,
   deriveHex,
   deriveMnemonic,
+  deriveNostr,
   deriveWif,
   deriveXprv,
+  drng,
 } from "../../src/utils/bip85/index.ts";
 import { decode as decodeWIF } from "../../src/utils/wif/index.ts";
 import { bip32ParentVector, bip85Vectors } from "../fixtures.ts";
@@ -137,5 +142,121 @@ describe("BIP85 applications", () => {
     ],
   ])("refuses %s outside the BIP85 tables", async (_, call, message) => {
     await expect((async () => await call())()).rejects.toThrow(message);
+  });
+});
+
+describe("BIP85 DRNG", () => {
+  const seed = hex.decode(bip85Vectors.cases[0].entropy);
+
+  it("reads the spec's 80 bytes, and a shorter read is their start", () => {
+    expect(hex.encode(drng(seed, 80))).toBe(bip85Vectors.drng);
+    expect(hex.encode(drng(seed, 7))).toBe(bip85Vectors.drng.slice(0, 14));
+    expect(drng(seed, 0)).toHaveLength(0);
+  });
+
+  it.each([
+    ["a short seed", () => drng(seed.slice(1), 8), "exactly 64 bytes"],
+    [
+      "a seed in hex",
+      /* @ts-expect-error text where the bytes go, as untyped callers pass it */
+      () => drng(bip85Vectors.cases[0].entropy, 8),
+      "exactly 64 bytes",
+    ],
+    ["a negative read", () => drng(seed, -1), "a whole number of bytes"],
+    ["half a byte", () => drng(seed, 1.5), "a whole number of bytes"],
+  ])("refuses %s", (_, call, message) => {
+    expect(call).toThrow(message);
+  });
+});
+
+describe("BIP85 passwords, dice and Nostr", () => {
+  it("cuts the base64 and base85 passwords off all 64 bytes", () => {
+    const { base64, base85 } = bip85Vectors;
+    const first = deriveBase64Password(root, { length: base64.length });
+    expect(first).toMatchObject({ path: base64.path, password: base64.password });
+    expect(hex.encode(first.entropy)).toBe(base64.entropy);
+    const second = deriveBase85Password(root, { length: base85.length });
+    expect(second).toMatchObject({ path: base85.path, password: base85.password });
+    expect(hex.encode(second.entropy)).toBe(base85.entropy);
+  });
+
+  it("fills the longest password of each alphabet without padding", () => {
+    const longest = deriveBase64Password(root, { length: 86, index: 3 });
+    expect(longest.path).toBe("m/83696968'/707764'/86'/3'");
+    expect(longest.password).toMatch(/^[A-Za-z0-9+/]{86}$/u);
+    expect(deriveBase85Password(root, { length: 80 }).password).toHaveLength(80);
+  });
+
+  it("rolls the spec's ten six-sided dice from zero", () => {
+    const { path, sides, entropy, rolls } = bip85Vectors.dice;
+    const child = deriveDice(root, { sides, rolls: rolls.length });
+    expect(child.path).toBe(path);
+    expect(hex.encode(child.entropy)).toBe(entropy);
+    expect(child.rolls).toEqual(rolls);
+  });
+
+  it("keeps the top bits of each trial and skips the ones past the die", () => {
+    const wide = deriveDice(root, { sides: 2 ** 29, rolls: 5 });
+    const stream = drng(wide.entropy, 20);
+    const words = [0, 4, 8, 12, 16].map((offset) =>
+      Number(BigInt(`0x${hex.encode(stream.slice(offset, offset + 4))}`) >> 3n),
+    );
+    expect(wide.rolls).toEqual(words);
+    const odd = deriveDice(root, { sides: 257, rolls: 300 });
+    expect(odd.rolls).toHaveLength(300);
+    expect(Math.max(...odd.rolls)).toBeLessThan(257);
+    const pairs = drng(odd.entropy, 1200);
+    const kept: number[] = [];
+    for (let offset = 0; kept.length < 300; offset += 2) {
+      const trial = ((pairs[offset] ?? 0) * 256 + (pairs[offset + 1] ?? 0)) >> 7;
+      if (trial < 257) kept.push(trial);
+    }
+    expect(odd.rolls).toEqual(kept);
+  });
+
+  it.each(bip85Vectors.nostr)(
+    "writes the nsec of identity $identity, account $index",
+    ({ identity, index, path, entropy, nsec }) => {
+      const child = deriveNostr(root, { identity, index });
+      expect(child).toMatchObject({ path, nsec });
+      expect(hex.encode(child.entropy)).toBe(entropy);
+    },
+  );
+
+  it("starts Nostr at identity 1, account 1", () => {
+    expect(deriveNostr(root).nsec).toBe(bip85Vectors.nostr[0].nsec);
+  });
+
+  it.each([
+    ["a short base64 password", () => deriveBase64Password(root, { length: 19 }), "20 to 86"],
+    ["a long base64 password", () => deriveBase64Password(root, { length: 87 }), "20 to 86"],
+    ["a short base85 password", () => deriveBase85Password(root, { length: 9 }), "10 to 80"],
+    ["a long base85 password", () => deriveBase85Password(root, { length: 81 }), "10 to 80"],
+    [
+      "a password without a length",
+      /* @ts-expect-error the length left out, as untyped callers do */
+      () => deriveBase64Password(root),
+      "20 to 86 characters",
+    ],
+    ["a one-sided die", () => deriveDice(root, { sides: 1, rolls: 1 }), "2 to 2147483647 sides"],
+    ["a die past a path level", () => deriveDice(root, { sides: 2 ** 31, rolls: 1 }), "sides"],
+    ["no rolls", () => deriveDice(root, { sides: 6, rolls: 0 }), "1 to 65536 times"],
+    ["too many rolls", () => deriveDice(root, { sides: 6, rolls: 65537 }), "1 to 65536 times"],
+    [
+      "sides as text",
+      /* @ts-expect-error text where the number goes */
+      () => deriveDice(root, { sides: "6", rolls: 1 }),
+      "2 to 2147483647 sides",
+    ],
+    ["the reserved identity", () => deriveNostr(root, { identity: 0 }), "A Nostr identity runs"],
+    ["the reserved account", () => deriveNostr(root, { index: 0 }), "A Nostr index runs from 1"],
+    [
+      "positional dice",
+      /* @ts-expect-error the sides where the options object goes */
+      () => deriveDice(root, 6),
+      "Pass the options as an object",
+    ],
+  ])("refuses %s", (_, call, message) => {
+    expect(call).toThrow(message);
   });
 });

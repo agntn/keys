@@ -1334,10 +1334,41 @@ describe("keys MCP server", () => {
       `Entropy: ${hex.entropy}`,
     ]);
 
+    const { base64, base85, dice, nostr } = bip85Vectors;
+    for (const [args, line] of [
+      [{ application: "base64", length: base64.length }, `Password: ${base64.password}`],
+      [{ application: "base85", length: base85.length }, `Password: ${base85.password}`],
+      [{ application: "dice", sides: dice.sides, rolls: 10 }, `Rolls: ${dice.rolls.join(",")}`],
+      [{ application: "nostr" }, `nsec: ${nostr[0].nsec}`],
+      [{ application: "nostr", identity: 2 }, `nsec: ${nostr[2].nsec}`],
+      [{ application: "nostr", index: 2 }, `nsec: ${nostr[1].nsec}`],
+    ] as const) {
+      const derived = await client.callTool({
+        name: "keys_bip85_derive",
+        arguments: { rootKey: root, ...args },
+      });
+      expect(derived.isError).not.toBe(true);
+      expect(text(derived.content).split("\n")[3]).toBe(line);
+    }
+
     for (const [args, message] of [
-      [{ rootKey: root, application: "nostr" }, "Invalid arguments at /application"],
+      [{ rootKey: root, application: "rsa" }, "Invalid arguments at /application"],
       [{ rootKey: root, application: "wif", words: 12 }, "words belongs to the bip39 application"],
       [{ rootKey: root, application: "bip39", bytes: 32 }, "bytes belongs to the hex application"],
+      [
+        { rootKey: root, application: "hex", length: 20 },
+        "length belongs to the base64 and base85 applications, not hex",
+      ],
+      [{ rootKey: root, application: "wif", sides: 6 }, "sides belongs to the dice application"],
+      [{ rootKey: root, application: "dice", identity: 1, sides: 6, rolls: 1 }, "identity belongs"],
+      [{ rootKey: root, application: "base64" }, "base64 needs length"],
+      [{ rootKey: root, application: "base85", length: 81 }, "10 to 80 characters"],
+      [{ rootKey: root, application: "dice", sides: 6 }, "dice needs rolls"],
+      [
+        { rootKey: root, application: "dice", sides: 6, rolls: 1025 },
+        "Invalid arguments at /rolls",
+      ],
+      [{ rootKey: root, application: "nostr", identity: 0 }, "Invalid arguments at /identity"],
       [{ rootKey: root, application: "hex", bytes: 15 }, "Invalid arguments at /bytes"],
       [{ rootKey: bip32ParentVector.xpub, application: "wif" }, "not an xpub"],
       [{ rootKey: bip32ParentVector.child.xprv, application: "wif" }, "not depth 1"],

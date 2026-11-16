@@ -1,8 +1,16 @@
-import { BIP85_APPLICATIONS, MAX_EXTENDED_KEY_LENGTH } from "../tool-parameters.ts";
+import {
+  BIP85_APPLICATIONS,
+  MAX_BIP85_TOOL_ROLLS,
+  MAX_EXTENDED_KEY_LENGTH,
+} from "../tool-parameters.ts";
 import {
   type BIP85Entropy,
+  deriveBase64Password,
+  deriveBase85Password,
+  deriveDice,
   deriveHex,
   deriveMnemonic,
+  deriveNostr,
   deriveWif,
   deriveXprv,
 } from "../utils/bip85/index.ts";
@@ -26,6 +34,10 @@ export interface Bip85Arguments {
   readonly words?: unknown;
   readonly language?: unknown;
   readonly bytes?: unknown;
+  readonly length?: unknown;
+  readonly sides?: unknown;
+  readonly rolls?: unknown;
+  readonly identity?: unknown;
 }
 
 /** The child secret, its entropy and path. */
@@ -36,30 +48,41 @@ export interface DerivedBip85Details {
   mnemonic?: string;
   wif?: string;
   extendedPrivateKey?: string;
+  password?: string;
+  rolls?: readonly number[];
+  nsec?: string;
 }
 
-/** Entropy, plus the line and field an application adds. */
+/** Entropy, plus the line and the field an application adds. */
 type Derived = BIP85Entropy & {
-  readonly line?: readonly [string, string, keyof DerivedBip85Details];
+  readonly line?: readonly [label: string, text: string];
+  readonly extra?: Partial<DerivedBip85Details>;
 };
 
+/** Options only some applications take, and which ones. */
+const OPTION_OWNERS = {
+  words: ["bip39"],
+  language: ["bip39"],
+  bytes: ["hex"],
+  length: ["base64", "base85"],
+  sides: ["dice"],
+  rolls: ["dice"],
+  identity: ["nostr"],
+} as const satisfies Partial<Record<keyof Bip85Arguments, readonly Application[]>>;
+
 /**
- * Refuses an option of another application. OMP's blank or 0 counts as left out.
- * @param value - Raw argument
- * @param argument - Its name and owning application
+ * Refuses the options of another application. OMP's blank or 0 counts as left out.
+ * @param options - Raw options
+ * @param application - Checked application
  * @returns {void} Nothing; it throws on a misplaced option
  */
-function refuseForeign(
-  value: unknown,
-  argument: {
-    readonly name: string;
-    readonly owner: Application;
-    readonly application: Application;
-  },
-): void {
-  const { name, owner, application } = argument;
-  if (!isUnsetCost(value) && application !== owner) {
-    throw new TypeError(`${name} belongs to the ${owner} application, not ${application}`);
+function refuseForeign(options: Bip85Arguments, application: Application): void {
+  for (const [name, owners] of Object.entries(OPTION_OWNERS)) {
+    const mine = owners.some((owner) => owner === application);
+    if (!mine && !isUnsetCost(Reflect.get(options, name))) {
+      const whose = `the ${owners.join(" and ")} application${owners.length > 1 ? "s" : ""}`;
+      throw new TypeError(`${name} belongs to ${whose}, not ${application}`);
+    }
   }
 }
 
@@ -74,40 +97,96 @@ function optionalCount(value: unknown, argument: IndexArgument): number | undefi
 }
 
 /**
- * Runs one application with the options it takes.
- * @param rootKey - Checked root key
- * @param application - Checked application
- * @param options - Raw options
- * @returns {Promise<Derived>} Entropy, path and the line to print
+ * Reads a count its application can't run without.
+ * @param value - Raw argument
+ * @param argument - Name, largest value and owning application
+ * @returns {number} The count
+ * @throws {TypeError} When it's left out
  */
-async function derive(
-  rootKey: string,
-  application: Application,
-  options: Bip85Arguments,
-): Promise<Derived> {
-  const index = optionalIndex(options.index, { name: "Index" });
-  if (application === "bip39") {
+function requiredCount(
+  value: unknown,
+  argument: IndexArgument & { readonly application: Application },
+): number {
+  const count = optionalCount(value, argument);
+  if (count === undefined) {
+    throw new TypeError(`${argument.application} needs ${argument.name.toLowerCase()}`);
+  }
+  return count;
+}
+
+/** One application run with the options it takes. */
+type Run = (rootKey: string, options: Bip85Arguments) => Derived | Promise<Derived>;
+
+/**
+ * Reads the child index every application but nostr ends its path with.
+ * @param options - Raw options
+ * @returns {number | undefined} The index, undefined for 0
+ */
+function childIndex(options: Bip85Arguments): number | undefined {
+  return optionalIndex(options.index, { name: "Index" });
+}
+
+/**
+ * Runs one of the two password applications.
+ * @param application - base64 or base85
+ * @returns {Run} The run that reads length and index
+ */
+function password(application: "base64" | "base85"): Run {
+  const derive = application === "base64" ? deriveBase64Password : deriveBase85Password;
+  return (rootKey, options) => {
+    const length = requiredCount(options.length, { name: "Length", maximum: 86, application });
+    const child = derive(rootKey, { length, index: childIndex(options) });
+    return { ...child, line: ["Password", child.password], extra: { password: child.password } };
+  };
+}
+
+/** How each application reads its options and what it prints. */
+const RUNS: Readonly<Record<Application, Run>> = {
+  bip39: async (rootKey, options) => {
     const words = optionalCount(options.words, { name: "Words", maximum: 24 });
     const language = parseBIP39Language(options.language);
-    const child = await deriveMnemonic(rootKey, { index, words, language });
-    return { ...child, line: ["Mnemonic", child.mnemonic, "mnemonic"] };
-  }
-  if (application === "wif") {
-    const child = deriveWif(rootKey, { index });
-    return { ...child, line: ["WIF", child.wif, "wif"] };
-  }
-  if (application === "xprv") {
-    const child = deriveXprv(rootKey, { index });
+    const child = await deriveMnemonic(rootKey, { index: childIndex(options), words, language });
+    return { ...child, line: ["Mnemonic", child.mnemonic], extra: { mnemonic: child.mnemonic } };
+  },
+  wif: (rootKey, options) => {
+    const child = deriveWif(rootKey, { index: childIndex(options) });
+    return { ...child, line: ["WIF", child.wif], extra: { wif: child.wif } };
+  },
+  xprv: (rootKey, options) => {
+    const child = deriveXprv(rootKey, { index: childIndex(options) });
+    const { extendedPrivateKey } = child;
     return {
       ...child,
-      line: ["Extended private key", child.extendedPrivateKey, "extendedPrivateKey"],
+      line: ["Extended private key", extendedPrivateKey],
+      extra: { extendedPrivateKey },
     };
-  }
-  return deriveHex(rootKey, {
-    index,
-    bytes: optionalCount(options.bytes, { name: "Bytes", maximum: 64 }),
-  });
-}
+  },
+  hex: (rootKey, options) =>
+    deriveHex(rootKey, {
+      index: childIndex(options),
+      bytes: optionalCount(options.bytes, { name: "Bytes", maximum: 64 }),
+    }),
+  base64: password("base64"),
+  base85: password("base85"),
+  dice: (rootKey, options) => {
+    const application = "dice";
+    const sides = requiredCount(options.sides, { name: "Sides", application });
+    const rolls = requiredCount(options.rolls, {
+      name: "Rolls",
+      maximum: MAX_BIP85_TOOL_ROLLS,
+      application,
+    });
+    const child = deriveDice(rootKey, { sides, rolls, index: childIndex(options) });
+    return { ...child, line: ["Rolls", child.rolls.join(",")], extra: { rolls: child.rolls } };
+  },
+  nostr: (rootKey, options) => {
+    const child = deriveNostr(rootKey, {
+      identity: optionalCount(options.identity, { name: "Identity" }),
+      index: optionalCount(options.index, { name: "Index" }),
+    });
+    return { ...child, line: ["nsec", child.nsec], extra: { nsec: child.nsec } };
+  },
+};
 
 /**
  * Derives one BIP85 child from a master key.
@@ -125,17 +204,16 @@ export async function deriveBip85(
     name: "Application",
     allowed: BIP85_APPLICATIONS,
   });
-  refuseForeign(options.words, { name: "words", owner: "bip39", application });
-  refuseForeign(options.language, { name: "language", owner: "bip39", application });
-  refuseForeign(options.bytes, { name: "bytes", owner: "hex", application });
-  const { path, entropy, line } = await derive(rootKey, application, options);
-  const details: DerivedBip85Details = { application, path, entropy: entropy.toHex() };
+  refuseForeign(options, application);
+  const { path, entropy, line, extra } = await RUNS[application](rootKey, options);
+  const details: DerivedBip85Details = {
+    application,
+    path,
+    entropy: entropy.toHex(),
+    ...extra,
+  };
   const lines = [`Application: ${application}`, `Path: ${path}`, `Entropy: ${details.entropy}`];
-  if (line !== undefined) {
-    const [label, value, field] = line;
-    lines.push(`${label}: ${value}`);
-    Object.assign(details, { [field]: value });
-  }
+  if (line !== undefined) lines.push(line.join(": "));
   lines.push("This secret is saved in the transcript. Never use it for real funds.");
   return { content: content(lines.join("\n")), details };
 }

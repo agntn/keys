@@ -332,11 +332,12 @@ export const bip85DeriveTool = defineTool({
   name: "keys_bip85_derive",
   title: "Derive BIP85 Child",
   description:
-    "Derive BIP85 child entropy from a master xprv or tprv: a BIP39 mnemonic in any of the ten word lists, a WIF for a Bitcoin Core hdseed, a child xprv or 16 to 64 raw bytes, one application per call. Returns the path, the entropy the application kept and the child secret itself, so the root key and the result both enter the transcript. Use only public or disposable keys.",
-  snippet: "Use when one master key has to give a separate seed, WIF or xprv to another wallet.",
+    "Derive BIP85 child entropy from a master xprv or tprv: a BIP39 mnemonic in any of the ten word lists, a WIF for a Bitcoin Core hdseed, a child xprv, 16 to 64 raw bytes, a base64 or base85 password, dice rolls or a Nostr nsec, one application per call. Returns the path, the entropy the application kept and the child secret itself, so the root key and the result both enter the transcript. Use only public or disposable keys.",
+  snippet: "Use when one master key has to give a separate seed, WIF, xprv, password, PIN or nsec.",
   guidelines: [
-    "Provide the master xprv (tprv on testnet) and the application: bip39, wif, xprv or hex",
-    "bip39 takes words and language, hex takes bytes, every application takes index",
+    "Provide the master xprv (tprv on testnet) and the application: bip39, wif, xprv, hex, base64, base85, dice or nostr",
+    "bip39 takes words and language, hex bytes, base64 and base85 length, dice sides and rolls, nostr identity; every application takes index",
+    "Dice count from 0: add 1 to each roll for a die that starts at 1, or use sides 10 for PIN digits",
     "A child that BIP85 can't make a key from says so; take the next index",
     "The child secret is saved in the transcript, like the root key",
   ],

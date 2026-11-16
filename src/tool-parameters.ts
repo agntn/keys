@@ -91,7 +91,19 @@ export const MAX_BIP38_PASSPHRASE_LENGTH = 4096;
 export const MAX_EXTENDED_KEY_LENGTH = 128;
 
 /** BIP85 applications the tools derive, by the name the tools take. */
-export const BIP85_APPLICATIONS = ["bip39", "wif", "xprv", "hex"] as const;
+export const BIP85_APPLICATIONS = [
+  "bip39",
+  "wif",
+  "xprv",
+  "hex",
+  "base64",
+  "base85",
+  "dice",
+  "nostr",
+] as const;
+
+/** Most dice rolls one tool call prints. */
+export const MAX_BIP85_TOOL_ROLLS = 1024;
 
 /** Maximum WIF length; Decred's two byte prefix makes the longest one 53 characters. */
 export const MAX_WIF_LENGTH = 54;
