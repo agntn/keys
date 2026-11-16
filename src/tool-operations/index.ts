@@ -11,6 +11,8 @@ export { generateWallet, deriveWallet } from "./wallet.ts";
 export type { GeneratedWalletDetails, DerivedWalletDetails } from "./wallet.ts";
 export { deriveHdWallet, deriveXpubWallet, recoverBip32Parent } from "./hd.ts";
 export type { DerivedXpubWalletDetails, RecoveredParentDetails } from "./hd.ts";
+export { deriveBip85 } from "./bip85.ts";
+export type { DerivedBip85Details } from "./bip85.ts";
 export { scanHdWallet } from "./hd-scan.ts";
 export type { ScannedWalletDetails } from "./hd-scan.ts";
 export { deriveElectrumWallet } from "./electrum.ts";

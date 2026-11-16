@@ -7,6 +7,7 @@ import {
   BIP322_SIGN_PARAMETERS,
   BIP322_VERIFY_PARAMETERS,
   CONVERT_PUBLIC_KEY_PARAMETERS,
+  DERIVE_BIP85_PARAMETERS,
   INSPECT_OPENPGP_PARAMETERS,
   VERIFY_OPENPGP_PARAMETERS,
   DECRYPT_STORE_PARAMETERS,
@@ -325,6 +326,24 @@ export const bip32ParentRecoverTool = defineTool({
   input: RECOVER_BIP32_PARENT_PARAMETERS,
   execute: async ({ extendedKey, ...options }) =>
     (await loadOperations()).recoverBip32Parent(extendedKey, options),
+});
+
+export const bip85DeriveTool = defineTool({
+  name: "keys_bip85_derive",
+  title: "Derive BIP85 Child",
+  description:
+    "Derive BIP85 child entropy from a master xprv or tprv: a BIP39 mnemonic in any of the ten word lists, a WIF for a Bitcoin Core hdseed, a child xprv or 16 to 64 raw bytes, one application per call. Returns the path, the entropy the application kept and the child secret itself, so the root key and the result both enter the transcript. Use only public or disposable keys.",
+  snippet: "Use when one master key has to give a separate seed, WIF or xprv to another wallet.",
+  guidelines: [
+    "Provide the master xprv (tprv on testnet) and the application: bip39, wif, xprv or hex",
+    "bip39 takes words and language, hex takes bytes, every application takes index",
+    "A child that BIP85 can't make a key from says so; take the next index",
+    "The child secret is saved in the transcript, like the root key",
+  ],
+  effect: "read",
+  input: DERIVE_BIP85_PARAMETERS,
+  execute: async ({ rootKey, ...options }) =>
+    (await loadOperations()).deriveBip85(rootKey, options),
 });
 
 export const bip39GenerateTool = defineTool({
@@ -745,6 +764,7 @@ export const keysTools = [
   hdWalletScanTool,
   xpubWalletDeriveTool,
   bip32ParentRecoverTool,
+  bip85DeriveTool,
   bip39GenerateTool,
   bip39InspectTool,
   bip39EntropyEncodeTool,

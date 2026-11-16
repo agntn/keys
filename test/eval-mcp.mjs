@@ -18,6 +18,7 @@ import {
   brainwalletVectors,
   storeVectors,
   arweaveVectors,
+  bip85Vectors,
   openpgpVectors,
   evmRecoverTestVectors,
   bip39WordOrderVector,
@@ -195,6 +196,12 @@ try {
     "keys_bip32_parent_recover",
     { extendedKey: bip32ParentVector.xpub, child: bip32ParentVector.child.xprv },
     new RegExp(`Parent: recovered\\nFingerprint: ${bip32ParentVector.fingerprint}$`),
+  );
+
+  await call(
+    "keys_bip85_derive",
+    { rootKey: bip85Vectors.root, application: "wif" },
+    new RegExp(`\nWIF: ${bip85Vectors.wif.wif}\n`),
   );
 
   await call(
