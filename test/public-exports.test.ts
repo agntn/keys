@@ -412,14 +412,31 @@ describe("Public derivation exports", () => {
     ).toBe(vector.address);
   });
 
-  it("keeps Electrum out of the root entry and its normalizer private", async () => {
+  it("keeps Electrum out of the root entry", async () => {
     const root = await import("@agntn/keys");
     expect(root).not.toHaveProperty("deriveElectrumSeed");
     expect(root).not.toHaveProperty("inspectElectrumMnemonic");
+    expect(root).not.toHaveProperty("normalize");
     const electrum = await import("@agntn/keys/electrum");
     expect(new Set(Object.keys(electrum))).toEqual(
-      new Set(["deriveOldMasterPublicKey", "deriveOldPublicKey", "deriveSeed", "inspect"]),
+      new Set([
+        "deriveOldMasterPublicKey",
+        "deriveOldPublicKey",
+        "deriveSeed",
+        "inspect",
+        "normalize",
+      ]),
     );
+  });
+
+  it("exports Electrum normalization from the built package", async () => {
+    const { deriveSeed, normalize } = await import("@agntn/keys/electrum");
+    const { mnemonic, seed } = electrumVectors[0];
+    const typed = `  ${mnemonic.toUpperCase().replaceAll(" ", "\t")}  `;
+    expect(normalize(typed)).toBe(mnemonic);
+    expect(Buffer.from(deriveSeed(typed).seed).toString("hex")).toBe(seed);
+    expect(normalize("\u6F22 \u5B57")).toBe("\u6F22\u5B57");
+    expect(() => normalize("\uD800")).toThrow(TypeError);
   });
 
   it("exports checksum diagnostics and the explicit HD override from the built package", async () => {
