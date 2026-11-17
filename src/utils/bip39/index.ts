@@ -3,6 +3,7 @@ import * as bip39 from "@scure/bip39";
 import * as english from "@scure/bip39/wordlists/english.js";
 import { BIP39_WORD_COUNTS, decodeColeman, encodeColeman, isWordCount } from "./coleman.ts";
 import { isBIP39Language, type BIP39Language } from "./languages.ts";
+import { normalizeWord } from "./scan.ts";
 import { assertOptions } from "../options.ts";
 
 export { BIP39_LANGUAGES, isBIP39Language } from "./languages.ts";
@@ -11,6 +12,8 @@ export { countWordOrders, orderWords } from "./order.ts";
 export type { WordOrderOptions } from "./order.ts";
 export { repairWords, suggestWords } from "./repair.ts";
 export type { WordRepair, WordRepairOptions, WordSuggestion, WordSuggestions } from "./repair.ts";
+export { scanText } from "./scan.ts";
+export type { TextMatch, TextScanOptions } from "./scan.ts";
 
 // Get English wordlist
 const wordlist = english.wordlist;
@@ -114,7 +117,7 @@ export async function lookupWords(
 ): Promise<readonly BIP39WordLookup[]> {
   const selectedWordlist = await loadWordlist(language);
   return words.map((word) => {
-    const normalizedWord = word.normalize("NFKD").toLowerCase().normalize("NFKD");
+    const normalizedWord = normalizeWord(word);
     const zeroBasedIndex = selectedWordlist.indexOf(normalizedWord);
     return {
       word: normalizedWord,
@@ -138,7 +141,7 @@ export async function lookupPrefixes(
 ): Promise<readonly BIP39PrefixLookup[]> {
   const selectedWordlist = await loadWordlist(language);
   return prefixes.map((input) => {
-    const prefix = input.normalize("NFKD").toLowerCase().normalize("NFKD");
+    const prefix = normalizeWord(input);
     const exact = selectedWordlist.indexOf(prefix);
     if (exact !== -1) return { prefix, matches: [{ word: prefix, zeroBasedIndex: exact }] };
     if ((prefix.match(/\p{L}/gu) ?? []).length < MIN_PREFIX_LENGTH) return { prefix, matches: [] };

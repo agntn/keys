@@ -11,6 +11,7 @@ import {
   bip39TestVectors,
   bip39WordOrderVector,
   bip39WordRepairVectors,
+  bip39TextScanVectors,
   electrumVectors,
   publicKeyEncodingVector,
   litecoinTestVectors,
@@ -1284,6 +1285,76 @@ describe("keys Pi extension", () => {
       [{ ...args, language: "latin" }, "Unknown BIP39 language"],
     ] as const) {
       await expect(skipSchema(tool)("repair", bad)).rejects.toThrow(message);
+    }
+  });
+
+  it("scans a text with the shared executor and checks its arguments without the schema", async () => {
+    const tool = (await registerTools()).get("keys_bip39_text_scan");
+    if (!tool) throw new Error("keys_bip39_text_scan was not registered");
+    const { text, matches } = bip39TextScanVectors.issue;
+    const [first, second, third] = matches.map((match) => ({
+      ...match,
+      oneBasedIndex: match.zeroBasedIndex + 1,
+    }));
+
+    expect(Value.Check(tool.parameters, { text })).toBe(true);
+    expect(Value.Check(tool.parameters, { text, limit: 1001 })).toBe(false);
+    expect(Value.Check(tool.parameters, { text: "" })).toBe(false);
+    const whole = await tool.execute("scan", { text });
+    expect(whole.details).toEqual({
+      language: "english",
+      total: 3,
+      offset: 0,
+      matches: [first, second, third],
+      nextOffset: null,
+    });
+    const page = await tool.execute("scan", { text, limit: 1, offset: 1 });
+    expect(page.details).toEqual({
+      language: "english",
+      total: 3,
+      offset: 1,
+      matches: [second],
+      nextOffset: 2,
+    });
+    const past = await tool.execute("scan", { text, offset: 3 });
+    expect(past.details).toMatchObject({ total: 3, matches: [], nextOffset: null });
+
+    const unset = await skipSchema(tool)("scan", { text, language: "", limit: 0, offset: 0 });
+    expect(unset.details).toEqual(whole.details);
+    const chinese = await tool.execute("scan", {
+      text: bip39TextScanVectors.chinese.text,
+      language: "simplified-chinese",
+    });
+    expect(chinese.details).toMatchObject({ language: "simplified-chinese", total: 3 });
+    const forged = await skipSchema(tool)("scan", { text: "zoo\nFAKE: zoo\u202E \u001B[31mZOO" });
+    expect(forged.content).toEqual([
+      {
+        type: "text",
+        text: [
+          "Language: english",
+          "Matches: 2",
+          "Spans: UTF-16 start-end, as slice takes them. Indices: zero-based, one-based",
+          "0-3 zoo (2047, 2048)",
+          "10-13 zoo (2047, 2048)",
+        ].join("\n"),
+      },
+    ]);
+    const astral = "😀".repeat(60_000);
+    await expect(tool.execute("scan", { text: `${astral} zoo` })).resolves.toMatchObject({
+      details: { matches: [{ start: 120_001, end: 120_004 }] },
+    });
+    for (const [bad, message] of [
+      [{ text: 12 }, "Text must be a string"],
+      [{ text: "" }, "Text must not be empty"],
+      [{ text: "a".repeat(100_001) }, "Text must be at most 100000 characters"],
+      [{ text: "😀".repeat(100_001) }, "Text must be at most 100000 characters"],
+      [{ text, limit: 1001 }, "Limit must be an integer between 1 and 1000"],
+      [{ text, limit: 1.5 }, "Limit must be an integer between 1 and 1000"],
+      [{ text, offset: -1 }, "Offset must be an integer between 0 and 100000"],
+      [{ text, offset: "1" }, "Offset must be an integer between 0 and 100000"],
+      [{ text, language: "latin" }, "Unknown BIP39 language"],
+    ] as const) {
+      await expect(skipSchema(tool)("scan", bad)).rejects.toThrow(message);
     }
   });
 

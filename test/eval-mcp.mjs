@@ -23,6 +23,7 @@ import {
   evmRecoverTestVectors,
   bip39WordOrderVector,
   bip39WordRepairVectors,
+  bip39TextScanVectors,
   bip322Vectors,
   reusedNonceVector,
   knownNonceVectors,
@@ -352,6 +353,11 @@ try {
     "keys_bip39_words_repair",
     { mnemonic: bip39WordRepairVectors.typo.written },
     new RegExp(`1 edit: ${bip39WordRepairVectors.typo.mnemonic}\\n`),
+  );
+  await call(
+    "keys_bip39_text_scan",
+    { text: bip39TextScanVectors.issue.text },
+    /^Language: english\nMatches: 3\n.*\n0-7 ABANDON: abandon \(0, 1\)\n15-22 ability \(1, 2\)\n23-30 abandon \(0, 1\)$/,
   );
   await call(
     "keys_bip39_word_recover",

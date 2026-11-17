@@ -167,6 +167,18 @@ describe("keys usage paths", () => {
     expect(refused.stderr).toMatch(/^Invalid arguments at --private-key: [^\n]*\n$/u);
   });
 
+  it("keys takes the text to scan as a bare word", async () => {
+    const run = await runBin(["bip39-text-scan", "Legal WINNER", "--limit", "1"]);
+
+    expect(run).toMatchObject({ code: 0, stderr: "" });
+    expect(run.stdout.split("\n").slice(1, 5)).toEqual([
+      "Matches: 2, listing 1 from 0",
+      "Spans: UTF-16 start-end, as slice takes them. Indices: zero-based, one-based",
+      "0-5 Legal: legal (1019, 1020)",
+      "Next offset: 1",
+    ]);
+  });
+
   it("keys mcp loads the server stack once it runs and the executors on the first call", async () => {
     const { code, packages } = await runBin(["mcp"]);
     expect(code).toBe(0);

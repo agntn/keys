@@ -106,6 +106,26 @@ export const bip39WordRepairVectors = {
   },
 };
 
+/** The sentence from #372 with offsets counted by hand, and the first three Chinese list words. */
+export const bip39TextScanVectors = {
+  issue: {
+    text: "ABANDON, zzzzz ability abandon.",
+    matches: [
+      { match: "ABANDON", word: "abandon", zeroBasedIndex: 0, start: 0, end: 7 },
+      { match: "ability", word: "ability", zeroBasedIndex: 1, start: 15, end: 22 },
+      { match: "abandon", word: "abandon", zeroBasedIndex: 0, start: 23, end: 30 },
+    ],
+  },
+  chinese: {
+    text: "的一x是",
+    spans: [
+      [0, 1, 0],
+      [1, 2, 1],
+      [3, 4, 2],
+    ],
+  },
+};
+
 /** Wallets bip_utils 2.9.3 derives from the BIP39 reference mnemonic at each chain's own path. */
 export const slip10WalletVectors = [
   {
