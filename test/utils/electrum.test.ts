@@ -134,25 +134,32 @@ describe("Old Electrum seeds", () => {
     },
   );
 
-  it("decodes words to the hex seed Electrum stores, and opens both forms", () => {
+  it("decodes words to the hex seed Electrum stores", () => {
     const [vector] = electrumOldVectors;
     expect(decodeLegacyWords(vector.mnemonic.split(" "))).toBe(vector.hexSeed);
-    expect(hex.encode(deriveOldMasterPublicKey(vector.hexSeed))).toBe(vector.masterPublicKey);
-    expect(hex.encode(deriveOldMasterPublicKey(` ${vector.mnemonic.toUpperCase()}\n`))).toBe(
-      vector.masterPublicKey,
-    );
-    expect(hex.encode(deriveOldMasterPublicKey(vector.hexSeed.toUpperCase()))).toBe(
-      vector.masterPublicKey,
-    );
   });
 
-  it("defaults to the first receiving address and takes a blank path as none", async () => {
+  it.each([
+    { form: "the hex seed", seed: electrumOldVectors[0].hexSeed },
+    { form: "shouted words", seed: ` ${electrumOldVectors[0].mnemonic.toUpperCase()}\n` },
+    { form: "uppercase hex", seed: electrumOldVectors[0].hexSeed.toUpperCase() },
+  ])("opens $form", ({ seed }) => {
+    expect(hex.encode(deriveOldMasterPublicKey(seed))).toBe(electrumOldVectors[0].masterPublicKey);
+  });
+
+  it.each([
+    { name: "no path", path: undefined },
+    { name: "an empty path", path: "" },
+    { name: "a blank path", path: "  " },
+  ])("defaults to the first receiving address with $name", async ({ path }) => {
+    const [vector] = electrumOldVectors;
+    const wallet = await deriveElectrumWallet(vector.mnemonic, { path });
+    expect(wallet.details.address).toBe(vector.children[0].address);
+  });
+
+  it("writes the first receiving key as a testnet address", async () => {
     const [vector] = electrumOldVectors;
     const [first] = vector.children;
-    for (const path of [undefined, "", "  "]) {
-      const wallet = await deriveElectrumWallet(vector.mnemonic, { path });
-      expect(wallet.details.address).toBe(first.address);
-    }
     const testnet = await deriveElectrumWallet(vector.mnemonic, {
       passphrase: "",
       network: "testnet",
