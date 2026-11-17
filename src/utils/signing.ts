@@ -1,8 +1,7 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { ed25519 } from "@noble/curves/ed25519.js";
-import { equalBytes } from "@noble/curves/utils.js";
 import { sha256 } from "@agntn/hashes";
-import { concatBytes } from "./bytes.ts";
+import { concatBytes, equalBytes } from "./bytes.ts";
 import { assertSignOptions, assertVerifyOptions } from "./options.ts";
 import { decodeKeyPrivate } from "./secp256k1/decode.ts";
 import { signBytes, verifyBytes as verifySr25519 } from "./sr25519.ts";

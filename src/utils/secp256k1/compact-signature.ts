@@ -1,7 +1,6 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { equalBytes } from "@noble/curves/utils.js";
 import type { MessageSigner } from "../../types.ts";
-import { concatBytes } from "../bytes.ts";
+import { concatBytes, equalBytes } from "../bytes.ts";
 import { decodeKeyPrivate, decodePublicPoint } from "./decode.ts";
 
 /** Header byte plus 32 bytes each of `r` and `s`. */

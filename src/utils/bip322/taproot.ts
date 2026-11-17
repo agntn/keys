@@ -1,7 +1,6 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { equalBytes } from "@noble/curves/utils.js";
 import { taggedHash } from "../address.ts";
-import { concatBytes } from "../bytes.ts";
+import { concatBytes, equalBytes } from "../bytes.ts";
 import { varBytes } from "../transaction/transaction.ts";
 
 /** First byte BIP341 reserves for an annex, the last of two or more witness items. */

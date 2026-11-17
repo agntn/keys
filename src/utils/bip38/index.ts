@@ -1,9 +1,8 @@
 import { ecb } from "@agntn/ciphers/aes";
 import { scrypt, sha256 } from "@agntn/hashes";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { equalBytes } from "@noble/curves/utils.js";
 import { generateAddressLegacy } from "../address.ts";
-import { concatBytes } from "../bytes.ts";
+import { concatBytes, equalBytes } from "../bytes.ts";
 import { decodeBase58Check } from "../encoding.ts";
 import { encode as encodeWIF } from "../wif/index.ts";
 

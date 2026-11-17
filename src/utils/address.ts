@@ -1,5 +1,6 @@
 import { ripemd160, sha256 } from "@agntn/hashes";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { bytesToNumberBE } from "./bytes.ts";
 import { encodeBase58Check, validateBase58Check } from "./encoding.ts";
 import { decodePublicPoint } from "./secp256k1/decode.ts";
 import { segwit } from "@agntn/encodings/bech32";
@@ -11,10 +12,6 @@ import { segwit } from "@agntn/encodings/bech32";
  */
 export function hash160(data: Uint8Array): Uint8Array {
   return ripemd160(sha256(data));
-}
-
-function bytesToNumberBE(bytes: Uint8Array): bigint {
-  return BigInt(`0x${bytes.toHex()}`);
 }
 
 /**

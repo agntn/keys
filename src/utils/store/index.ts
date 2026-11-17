@@ -1,8 +1,7 @@
 import { ecb } from "@agntn/ciphers/aes";
 import { Sha256Hasher, keccak256, pbkdf2, scrypt } from "@agntn/hashes";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { equalBytes, randomBytes } from "@noble/curves/utils.js";
-import { concatBytes } from "../bytes.ts";
+import { concatBytes, equalBytes, randomBytes } from "../bytes.ts";
 import { generateAddress, toChecksumAddress } from "../evm-address.ts";
 import { assertEncryptOptions } from "../options.ts";
 

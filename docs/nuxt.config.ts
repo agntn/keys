@@ -39,7 +39,6 @@ const libraryEntries = [
   "@agntn/hashes",
   "@noble/curves/ed25519.js",
   "@noble/curves/secp256k1.js",
-  "@noble/curves/utils.js",
   "@scure/bip32",
   "@scure/bip39",
   "@scure/bip39/wordlists/czech.js",

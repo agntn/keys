@@ -1,7 +1,6 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { blake256 } from "@agntn/hashes";
-import { concatBytes } from "../bytes.ts";
-import { equalBytes } from "@noble/curves/utils.js";
+import { concatBytes, equalBytes } from "../bytes.ts";
 import { base58 } from "@agntn/encodings/base58";
 import { decodeBase58Check, encodeBase58Check } from "../encoding.ts";
 

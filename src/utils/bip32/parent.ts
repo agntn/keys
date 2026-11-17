@@ -1,8 +1,7 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { equalBytes } from "@noble/curves/utils.js";
 import { HDKey } from "@scure/bip32";
 import { Sha512Hasher, hmac } from "@agntn/hashes";
-import { concatBytes } from "../bytes.ts";
+import { concatBytes, equalBytes } from "../bytes.ts";
 import { KEY_OFFSET, decodeExtendedKey, extendedKeyVersion } from "../extended-key.ts";
 import { HARDENED_OFFSET } from "../hd-index.ts";
 import { assertOptions } from "../options.ts";
