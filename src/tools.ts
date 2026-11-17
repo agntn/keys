@@ -35,6 +35,7 @@ import {
   LOOKUP_BIP39_WORDS_PARAMETERS,
   ORDER_BIP39_WORDS_PARAMETERS,
   REPAIR_BIP39_WORDS_PARAMETERS,
+  SCAN_BIP39_TEXT_PARAMETERS,
   RECOVER_MESSAGE_PARAMETERS,
   RECOVER_MNEMONIC_WORD_PARAMETERS,
   RECOVER_SECP256K1_KNOWN_NONCE_PARAMETERS,
@@ -517,6 +518,27 @@ export const bip39WordsRepairTool = defineTool({
     (await loadOperations()).repairBip39Words(mnemonic, options),
 });
 
+export const bip39TextScanTool = defineTool({
+  name: "keys_bip39_text_scan",
+  title: "Scan Text for BIP39 Words",
+  description:
+    "Find every word of one official BIP39 list in a text, in reading order, repeats included. Each match comes with its zero-based and one-based index and its UTF-16 start and end in the text as given, so text.slice(start, end) is the match. Whole words only, in any case and Unicode form: a word is a run of letters and combining marks, so abandonment holds no abandon, while zoo's and zoo2 hold zoo. The Chinese lists are read character by character. The answer counts every match and lists limit of them from offset.",
+  snippet:
+    "Use to pull the BIP39 words out of a poem, a letter or a page, with where each one sits.",
+  guidelines: [
+    "Pass the text exactly as copied: start and end count UTF-16 code units of what you pass",
+    "More matches than limit? The answer ends with the offset of the next page",
+    "Japanese words match only where the text sets them apart, as a mnemonic does",
+    "It finds words and stops there: keys_bip39_words_lookup expands abbreviations, keys_bip39_inspect checks a phrase",
+    "keys_bip39_text_scan accepts an explicit BIP39 language; omission means english, not automatic detection",
+    "Use only public or disposable text because tool arguments are saved in the transcript",
+  ],
+  effect: "read",
+  cli: { positional: ["text"], stdin: ["text"] },
+  input: SCAN_BIP39_TEXT_PARAMETERS,
+  execute: async ({ text, ...options }) => (await loadOperations()).scanBip39Text(text, options),
+});
+
 export const addressGetTool = defineTool({
   name: "keys_address_get",
   title: "Get Address",
@@ -794,6 +816,7 @@ export const keysTools = [
   bip39WordRecoverTool,
   bip39WordsOrderTool,
   bip39WordsRepairTool,
+  bip39TextScanTool,
   addressGetTool,
   addressValidateTool,
   scriptAddressGetTool,

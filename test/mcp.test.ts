@@ -34,6 +34,7 @@ import {
   localizedMnemonicVectors,
   bip39WordOrderVector,
   bip39WordRepairVectors,
+  bip39TextScanVectors,
   bip39EntropyWalletVector,
   invalidChecksumPuzzle,
   slip132PrivateKey,
@@ -1146,6 +1147,55 @@ describe("keys MCP server", () => {
       expect(rejected.isError).toBe(true);
       expect(text(rejected.content)).toContain(reason);
       expect(text(rejected.content)).not.toContain("winnr");
+    }
+  });
+
+  it("scans a text for list words and pages through the matches", async () => {
+    const client = await connectTestClient();
+    const { text: source } = bip39TextScanVectors.issue;
+
+    const result = await client.callTool({
+      name: "keys_bip39_text_scan",
+      arguments: { text: source },
+    });
+    expect(result.isError).not.toBe(true);
+    expect(text(result.content).split("\n")).toEqual([
+      "Language: english",
+      "Matches: 3",
+      "Spans: UTF-16 start-end, as slice takes them. Indices: zero-based, one-based",
+      "0-7 ABANDON: abandon (0, 1)",
+      "15-22 ability (1, 2)",
+      "23-30 abandon (0, 1)",
+    ]);
+
+    const page = await client.callTool({
+      name: "keys_bip39_text_scan",
+      arguments: { text: source, limit: 1, offset: 1 },
+    });
+    expect(text(page.content).split("\n")).toEqual([
+      "Language: english",
+      "Matches: 3, listing 1 from 1",
+      "Spans: UTF-16 start-end, as slice takes them. Indices: zero-based, one-based",
+      "15-22 ability (1, 2)",
+      "Next offset: 2",
+    ]);
+
+    const none = await client.callTool({
+      name: "keys_bip39_text_scan",
+      arguments: { text: "\u001B[31mforged\nzzzzz" },
+    });
+    expect(text(none.content)).toBe("Language: english\nMatches: 0");
+
+    for (const [args, reason] of [
+      [{ text: "" }, "Invalid arguments at /text"],
+      [{ text: source, limit: 1001 }, "Invalid arguments at /limit"],
+      [{ text: source, offset: -1 }, "Invalid arguments at /offset"],
+      [{ text: source, language: "latin" }, "Invalid arguments at /language"],
+      [{ text: source, prefix: true }, 'unknown property "prefix"'],
+    ] as const) {
+      const rejected = await client.callTool({ name: "keys_bip39_text_scan", arguments: args });
+      expect(rejected.isError).toBe(true);
+      expect(text(rejected.content)).toContain(reason);
     }
   });
 

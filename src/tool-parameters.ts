@@ -32,6 +32,7 @@ export const TOOL_NAMES = [
   "keys_bip39_word_recover",
   "keys_bip39_words_order",
   "keys_bip39_words_repair",
+  "keys_bip39_text_scan",
   "keys_address_get",
   "keys_address_validate",
   "keys_script_address_get",
@@ -254,6 +255,15 @@ export const MAX_BIP39_REPAIR_DISTANCE = 3;
 
 /** Edits `keys_bip39_words_repair` allows when the caller sets no limit. */
 export const DEFAULT_BIP39_REPAIR_DISTANCE = 2;
+
+/** Longest text `keys_bip39_text_scan` reads, in characters. */
+export const MAX_BIP39_SCAN_LENGTH = 100_000;
+
+/** Most matches one `keys_bip39_text_scan` call lists. */
+export const MAX_BIP39_SCAN_MATCHES = 1000;
+
+/** Matches `keys_bip39_text_scan` lists when the caller sets no limit. */
+export const DEFAULT_BIP39_SCAN_MATCHES = 100;
 
 /** Most caller texts one inspection hashes against the entropy. */
 export const MAX_ENTROPY_PREIMAGES = 100;

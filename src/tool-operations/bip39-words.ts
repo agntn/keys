@@ -7,6 +7,9 @@ import {
   DEFAULT_BIP39_REPAIR_DISTANCE,
   MAX_BIP39_REPAIR_DISTANCE,
   MAX_BIP39_REPAIR_WORDS,
+  MAX_BIP39_SCAN_LENGTH,
+  MAX_BIP39_SCAN_MATCHES,
+  DEFAULT_BIP39_SCAN_MATCHES,
 } from "../tool-parameters.ts";
 import {
   lookupIndices as lookupBIP39Indices,
@@ -19,8 +22,16 @@ import {
   suggestWords,
   repairWords,
   getMnemonicWordCandidates,
+  scanText,
 } from "../utils/bip39/index.ts";
-import { integerArray, stringArray, optionalName } from "./arguments.ts";
+import {
+  integerArray,
+  stringArray,
+  optionalName,
+  optionalIndex,
+  requiredString,
+  isUnsetCost,
+} from "./arguments.ts";
 import { parseBIP39Language, normalizedMnemonic } from "./bip39.ts";
 import { type ToolResult, content, escapeToolText } from "./results.ts";
 
@@ -66,6 +77,25 @@ export interface BIP39WordRepairDetails {
   checked: number;
   valid: number;
   repairs: Array<{ mnemonic: string; distance: number }>;
+}
+
+/** A list word found in a text: both index conventions and its UTF-16 span. */
+export interface BIP39TextMatch extends BIP39IndexedWord {
+  /** The word as the text writes it. */
+  match: string;
+  start: number;
+  end: number;
+}
+
+/** Result of a BIP39 text scan. */
+export interface BIP39TextScanDetails {
+  language: string;
+  /** Matches in the whole text, listed or not. */
+  total: number;
+  offset: number;
+  matches: BIP39TextMatch[];
+  /** Offset of the next page, null on the last one. */
+  nextOffset: number | null;
 }
 
 /** Candidate words for one missing mnemonic position. */
@@ -429,5 +459,98 @@ export async function recoverMnemonicWord(
       `Language: ${language}\nPosition: ${position}\nCandidates (${candidates.length}): ${candidates.length === 0 ? "none" : candidates.join(", ")}`,
     ),
     details: { language, position, candidates },
+  };
+}
+
+/**
+ * Reads how many matches to list; unset or OMP's 0 gives the default.
+ * @param value - Raw limit argument.
+ * @returns {number} An integer from 1 to the listing cap.
+ */
+function scanLimit(value: unknown): number {
+  if (isUnsetCost(value)) return DEFAULT_BIP39_SCAN_MATCHES;
+  if (
+    typeof value !== "number" ||
+    !Number.isInteger(value) ||
+    value < 1 ||
+    value > MAX_BIP39_SCAN_MATCHES
+  ) {
+    throw new RangeError(`Limit must be an integer between 1 and ${MAX_BIP39_SCAN_MATCHES}`);
+  }
+  return value;
+}
+
+/**
+ * Reads the text to scan, its length counted in code points.
+ * @param value - Raw text argument.
+ * @returns {string} The text unchanged.
+ */
+function scanTextArgument(value: unknown): string {
+  const text = requiredString(value, "Text");
+  if (text === "") throw new TypeError("Text must not be empty");
+  const tooLong =
+    text.length > 2 * MAX_BIP39_SCAN_LENGTH ||
+    (text.length > MAX_BIP39_SCAN_LENGTH && Array.from(text).length > MAX_BIP39_SCAN_LENGTH);
+  if (tooLong) {
+    throw new RangeError(`Text must be at most ${MAX_BIP39_SCAN_LENGTH} characters`);
+  }
+  return text;
+}
+
+/**
+ * Writes one match as a line of the scan text.
+ * @param found - A match of the scan.
+ * @returns {string} One line of the scan text.
+ */
+function scanLine(found: Readonly<BIP39TextMatch>): string {
+  const { match, word, start, end, zeroBasedIndex, oneBasedIndex } = found;
+  const written = match.normalize("NFKD") === word ? match : `${match}: ${word}`;
+  return `${start}-${end} ${written} (${zeroBasedIndex}, ${oneBasedIndex})`;
+}
+
+/** Text scan arguments besides the text, raw until the executor checks them. */
+export interface Bip39TextScanArguments {
+  readonly language?: unknown;
+  /** How many matches to list. */
+  readonly limit?: unknown;
+  /** Matches to skip. */
+  readonly offset?: unknown;
+}
+
+/**
+ * Find the words of one BIP39 list in a text, each with its span.
+ * @param textValue - Text to scan.
+ * @param options - Official BIP39 language key, limit and offset, each optional.
+ * @returns {Promise<ToolResult<BIP39TextScanDetails>>} Match count and one page of matches.
+ */
+export async function scanBip39Text(
+  textValue: unknown,
+  options: Bip39TextScanArguments = {},
+): Promise<ToolResult<BIP39TextScanDetails>> {
+  const text = scanTextArgument(textValue);
+  const language = parseBIP39Language(optionalName(options.language, "BIP39 language"));
+  const limit = scanLimit(options.limit);
+  const offset =
+    optionalIndex(options.offset, { name: "Offset", maximum: MAX_BIP39_SCAN_LENGTH }) ?? 0;
+  const found = scanText(text, { wordlist: await loadBIP39Wordlist(language) });
+  const matches = found
+    .slice(offset, offset + limit)
+    .map((entry) => ({ ...entry, oneBasedIndex: entry.zeroBasedIndex + 1 }));
+  const listed = offset + matches.length;
+  const nextOffset = listed < found.length ? listed : null;
+  const paged = matches.length < found.length;
+  return {
+    content: content(
+      [
+        `Language: ${language}`,
+        `Matches: ${found.length}${paged ? `, listing ${matches.length} from ${offset}` : ""}`,
+        ...(matches.length === 0
+          ? []
+          : ["Spans: UTF-16 start-end, as slice takes them. Indices: zero-based, one-based"]),
+        ...matches.map((entry) => scanLine(entry)),
+        ...(nextOffset === null ? [] : [`Next offset: ${nextOffset}`]),
+      ].join("\n"),
+    ),
+    details: { language, total: found.length, offset, matches, nextOffset },
   };
 }

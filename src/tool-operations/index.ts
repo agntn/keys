@@ -37,6 +37,7 @@ export {
   orderBip39Words,
   repairBip39Words,
   recoverMnemonicWord,
+  scanBip39Text,
 } from "./bip39-words.ts";
 export type {
   BIP39IndexLookupDetails,
@@ -44,6 +45,8 @@ export type {
   BIP39WordLookupDetails,
   BIP39WordOrderDetails,
   BIP39WordRepairDetails,
+  BIP39TextMatch,
+  BIP39TextScanDetails,
   MnemonicRecoveryDetails,
 } from "./bip39-words.ts";
 export { getAddress, validateAddress } from "./address.ts";

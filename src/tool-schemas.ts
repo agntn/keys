@@ -10,6 +10,9 @@ import {
   MAX_BIP39_PHRASE_LENGTH,
   DEFAULT_BIP39_PHRASES_SHOWN,
   MAX_BIP39_REPAIR_DISTANCE,
+  MAX_BIP39_SCAN_LENGTH,
+  MAX_BIP39_SCAN_MATCHES,
+  DEFAULT_BIP39_SCAN_MATCHES,
   DEFAULT_BIP39_REPAIR_DISTANCE,
   MAX_ENTROPY_PREIMAGES,
   MAX_ENTROPY_PREIMAGE_LENGTH,
@@ -990,6 +993,32 @@ export const REPAIR_BIP39_WORDS_PARAMETERS = Type.Object(
         description: `Most repaired phrases to list, from 1 to ${MAX_BIP39_PHRASES_SHOWN}. Default: ${DEFAULT_BIP39_PHRASES_SHOWN}`,
         minimum: 1,
         maximum: MAX_BIP39_PHRASES_SHOWN,
+      }),
+    ),
+  },
+  { additionalProperties: false },
+);
+
+export const SCAN_BIP39_TEXT_PARAMETERS = Type.Object(
+  {
+    text: Type.String({
+      description: "Text to scan, exactly as copied",
+      minLength: 1,
+      maxLength: MAX_BIP39_SCAN_LENGTH,
+    }),
+    language: BIP39_LANGUAGE_PARAMETER,
+    limit: Type.Optional(
+      Type.Integer({
+        description: `Most matches to list, from 1 to ${MAX_BIP39_SCAN_MATCHES}. Default: ${DEFAULT_BIP39_SCAN_MATCHES}`,
+        minimum: 1,
+        maximum: MAX_BIP39_SCAN_MATCHES,
+      }),
+    ),
+    offset: Type.Optional(
+      Type.Integer({
+        description: "Matches to skip, the next offset a call reported. Default: 0",
+        minimum: 0,
+        maximum: MAX_BIP39_SCAN_LENGTH,
       }),
     ),
   },

@@ -29,6 +29,7 @@ import {
   bip39TestVectors,
   bip39WordOrderVector,
   bip39WordRepairVectors,
+  bip39TextScanVectors,
   publicKeyEncodingVector,
   secp256k1MathVectors,
   secp256k1TestVectors,
@@ -464,6 +465,12 @@ describe("Public derivation exports", () => {
     expect(repairWords(written)[0]).toEqual({ words: mnemonic.split(" "), distance: 1 });
   });
 
+  it("scans a text for list words from the built package", async () => {
+    const { scanText } = await import("@agntn/keys/bip39");
+    const { text, matches } = bip39TextScanVectors.issue;
+    expect(scanText(text)).toEqual(matches);
+  });
+
   it("drops the family from BIP39 export names", async () => {
     const bip39 = await import("@agntn/keys/bip39");
     for (const name of [
@@ -476,6 +483,7 @@ describe("Public derivation exports", () => {
       "countWordOrders",
       "repairWords",
       "suggestWords",
+      "scanText",
     ])
       expect(bip39).toHaveProperty(name);
     for (const name of [
