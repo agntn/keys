@@ -38,6 +38,7 @@ import {
   arweaveVectors,
   openpgpVectors,
   reusedNonceVector,
+  knownNonceVectors,
   transactionVectors,
   evmTransactionVectors,
   descriptorVectors,
@@ -283,6 +284,31 @@ describe("keys Pi extension", () => {
       [{ signatures, publicKey: "zz" }, "Public key must be SEC1 or x-only hex"],
     ] as const) {
       await expect(skipSchema(nonce)("nonce", bad)).rejects.toThrow(message);
+    }
+    const known = tools.get("keys_secp256k1_known_nonce_recover");
+    if (!known) throw new Error("Missing known nonce tool");
+    const { asSigned } = knownNonceVectors;
+    const signature = { r: asSigned.r, s: asSigned.s, z: asSigned.z };
+    await expect(
+      skipSchema(known)("known", { signature, nonce: asSigned.nonce, publicKey: "" }),
+    ).resolves.toMatchObject({
+      details: {
+        matched: false,
+        candidates: [{ publicKey: asSigned.publicKey, flipped: false }, {}],
+      },
+    });
+    for (const [bad, message] of [
+      [
+        { signature: [signature], nonce: asSigned.nonce },
+        "signature must be an object with r, s, z",
+      ],
+      [{ signature: { ...signature, k: "1" }, nonce: asSigned.nonce }, "takes only r, s, z"],
+      [{ signature: { ...signature, s: "0x1" }, nonce: asSigned.nonce }, "signature.s must be"],
+      [{ signature }, "nonce must be a string"],
+      [{ signature, nonce: "0x1" }, "nonce must be 1 to 64 hex digits without 0x"],
+      [{ signature, nonce: asSigned.nonce, publicKey: "zz" }, "Public key must be SEC1 hex"],
+    ] as const) {
+      await expect(skipSchema(known)("known", bad)).rejects.toThrow(message);
     }
     const { transaction, spent } = transactionVectors.reusedNonce2012;
     await expect(extract.execute("tx", { transaction, index: 0, spent })).resolves.toMatchObject({

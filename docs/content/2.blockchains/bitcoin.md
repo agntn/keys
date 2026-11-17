@@ -141,6 +141,31 @@ recoverReusedNonce([first, second]); // { privateKey, nonce, publicKey: "03dbd0c
 
 Schnorr leaks the same way. Pass `type: "schnorr"` and the x-only key. The key comes back only after both signatures verify under it, so no lucky false positives. Agents get `keys_transaction_signatures_extract` and `keys_secp256k1_nonce_recover`. The second one names the public key and keeps the private one to itself.
 
+## Recovering a key from a known nonce
+
+One ECDSA signature and its nonce reveal the private key. Unlike nonce reuse above, you don't need two signatures. But which key signed it? Without the public key, you'll get two valid candidates. Pass it whenever you have it.
+
+```js
+import { recoverKnownNonce } from "@agntn/keys/secp256k1";
+
+const signature = {
+  r: "934b1ea10a4b3c1757e2b0c017d0b6143ce3c9a7e6a4a49860d7a6ab210ee3d8",
+  s: "2442ce9d2b916064108014783e923ec36b49743e2ffa1c4496f01a512aafd9e5",
+  z: "a0dc65ffca799873cbea0ac274015b9526505daaaed385155425f7337704883e", // SHA-256 of "Satoshi Nakamoto"
+};
+const nonce = "8f8a276c19f4149656b280621e358cce24f5f52542772691ee69063b74f15d15";
+
+recoverKnownNonce(signature, { nonce });
+// [{ publicKey: "0354d588...", flipped: false }, { publicKey: "0279be66...", flipped: true }], private keys included
+
+const publicKey = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+recoverKnownNonce(signature, { nonce, publicKey }); // one entry, privateKey "00...01"
+```
+
+This is btcd's published RFC 6979 test vector. Key 1 signed as "Satoshi Nakamoto" and btcd lowered `s`. So key 1 is the `flipped: true` entry. The other key fits too, but never signed anything. No alibi, though.
+
+`extractSignatures` returns the signature in the right format. Pass k as hex, big endian. A wrong nonce is refused before any algebra, and one with its bytes reversed never gets a second try. This covers ECDSA, not Schnorr. Agents get `keys_secp256k1_known_nonce_recover`. It names public keys without exposing private keys.
+
 ## Multisig and other scripts
 
 One key, one address. Easy. But a 2-of-2? Or a bounty that publishes its `redeemScript`? Those pay to a script, not a key. `@agntn/keys/script` builds the script and hashes it into an address:

@@ -290,6 +290,28 @@ export const RECOVER_SECP256K1_NONCE_PARAMETERS = Type.Object(
   { additionalProperties: false },
 );
 
+export const RECOVER_SECP256K1_KNOWN_NONCE_PARAMETERS = Type.Object(
+  {
+    signature: Type.Object(
+      {
+        r: nonceScalar("r as hex without 0x"),
+        s: nonceScalar("s as hex without 0x, as the signature carries it"),
+        z: nonceScalar("The digest the signature signs as hex without 0x"),
+      },
+      { additionalProperties: false, description: "The one ECDSA signature" },
+    ),
+    nonce: nonceScalar("The nonce k as hex without 0x, big endian, 1 to n - 1"),
+    publicKey: Type.Optional(
+      Type.String({
+        pattern: SEC1_PUBLIC_KEY_SCHEMA_PATTERN,
+        description:
+          "The signer's key as SEC1 hex. Without it the answer lists both keys the signature fits",
+      }),
+    ),
+  },
+  { additionalProperties: false },
+);
+
 export const EXTRACT_TRANSACTION_SIGNATURES_PARAMETERS = Type.Object(
   {
     transaction: Type.String({

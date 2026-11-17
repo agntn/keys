@@ -10,6 +10,7 @@ export const TOOL_NAMES = [
   "keys_bip39_seed_derive",
   "keys_secp256k1_public_key_convert",
   "keys_secp256k1_nonce_recover",
+  "keys_secp256k1_known_nonce_recover",
   "keys_wif_encode",
   "keys_wif_decode",
   "keys_bip38_inspect",

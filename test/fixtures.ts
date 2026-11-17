@@ -2986,6 +2986,29 @@ export const reusedNonceVector = {
   },
 } as const;
 
+/**
+ * RFC 6979 vectors of btcd's TestRFC6979 (btcec/ecdsa/signature_test.go at 8c40eb7): key, nonce
+ * and low-s signature. z is SHA-256 of "sample" and of "Satoshi Nakamoto", whose s btcd flipped.
+ */
+export const knownNonceVectors = {
+  asSigned: {
+    privateKey: "cca9fbcc1b41e5a95d369eaa6ddcff73b61a4efaa279cfc6567e8daa39cbaf50",
+    publicKey: "0391f1ed66d63e12df118095ae010152f6cf65ffee656831f3000c28c4421d8e5b",
+    nonce: "2df40ca70e639d89528a6b670d9d48d9165fdc0febc0974056bdce192b8e16a3",
+    r: "af340daf02cc15c8d5d08d7735dfe6b98a474ed373bdb5fbecf7571be52b3842",
+    s: "5009fb27f37034a9b24b707b7c6b79ca23ddef9e25f7282e8a797efe53a8f124",
+    z: "af2bdbe1aa9b6ec1e2ade1d694f41fc71a831d0268e9891562113d8a62add1bf",
+  },
+  flipped: {
+    privateKey: "0000000000000000000000000000000000000000000000000000000000000001",
+    publicKey: "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+    nonce: "8f8a276c19f4149656b280621e358cce24f5f52542772691ee69063b74f15d15",
+    r: "934b1ea10a4b3c1757e2b0c017d0b6143ce3c9a7e6a4a49860d7a6ab210ee3d8",
+    s: "2442ce9d2b916064108014783e923ec36b49743e2ffa1c4496f01a512aafd9e5",
+    z: "a0dc65ffca799873cbea0ac274015b9526505daaaed385155425f7337704883e",
+  },
+} as const;
+
 /** BIP 381 to 387 descriptors with scripts at indices 0 to 2; Core v31.1 checksums, addresses. */
 export const descriptorVectors = {
   generator: "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",

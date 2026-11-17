@@ -25,6 +25,7 @@ import {
   bip39WordRepairVectors,
   bip322Vectors,
   reusedNonceVector,
+  knownNonceVectors,
   transactionVectors,
   evmTransactionVectors,
   descriptorVectors,
@@ -117,6 +118,20 @@ try {
       ],
     },
     /^Recovered the private key of 03f973a0b8\S+: both signatures verify under it\.\nThe key stays out/,
+  );
+
+  await call(
+    "keys_secp256k1_known_nonce_recover",
+    {
+      signature: {
+        r: knownNonceVectors.flipped.r,
+        s: knownNonceVectors.flipped.s,
+        z: knownNonceVectors.flipped.z,
+      },
+      nonce: knownNonceVectors.flipped.nonce,
+      publicKey: knownNonceVectors.flipped.publicKey,
+    },
+    /^Recovered the private key of 0279be667e\S+, which matches publicKey: the nonce signed n - s/,
   );
 
   await call(

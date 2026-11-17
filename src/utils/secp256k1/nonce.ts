@@ -1,3 +1,10 @@
+import {
+  invertScalar,
+  multiplyGenerator,
+  multiplyScalars,
+  secp256k1 as curve,
+  subtractScalars,
+} from "@agntn/curves/secp256k1";
 import { sha256 } from "@agntn/hashes";
 import { schnorr, secp256k1 } from "@noble/curves/secp256k1.js";
 import { concatBytes } from "../bytes.ts";
@@ -223,6 +230,113 @@ function recoverSchnorr(pair: Readonly<Pair>, publicKey: string): RecoveredNonce
     nonce: Fn.toBytes(nonce).toHex(),
     publicKey,
   };
+}
+
+/** Options for `recoverKnownNonce`. */
+export interface KnownNonceOptions {
+  /** The nonce k as hex, big endian, up to 64 digits. */
+  readonly nonce: string;
+  /** The key the result must match, which also settles how s reads. */
+  readonly publicKey?: string;
+}
+
+/** One key a known nonce gives, under one reading of s. */
+export interface KnownNonceKey {
+  readonly privateKey: string;
+  /** The nonce that signs s as given under this key: k, or n minus k when flipped. */
+  readonly nonce: string;
+  /** Compressed SEC1 hex. */
+  readonly publicKey: string;
+  /** Whether k signed n minus s, as when a wallet lowered s afterwards. */
+  readonly flipped: boolean;
+}
+
+/** One signature as numbers, with the nonce the caller knows. */
+interface KnownNumbers extends EcdsaSignature {
+  readonly k: bigint;
+}
+
+const KNOWN_USAGE = "recoverKnownNonce(signature, { nonce, publicKey })";
+
+/**
+ * Refuses a call without one signature object and an options object.
+ * @param signature - What the caller passed as the signature
+ * @param options - What the caller passed as options
+ * @throws {TypeError} When either has the wrong shape
+ */
+function assertKnownCall(signature: unknown, options: unknown): void {
+  const loose = typeof signature !== "object" || signature === null || Array.isArray(signature);
+  if (loose || options === undefined) {
+    throw new TypeError(`Pass one signature and the nonce in the options: ${KNOWN_USAGE}`);
+  }
+  assertOptions(options, KNOWN_USAGE);
+}
+
+/**
+ * Reads r, s and the nonce from 1 to n minus 1, and checks that the nonce's point has r as its x.
+ * @param signature - The signature with its digest
+ * @param nonce - k as hex, read as written
+ * @returns {KnownNumbers} The numbers
+ * @throws {RangeError} When a scalar is out of range or the nonce gives another r
+ */
+function readKnown(signature: Readonly<NonceSignature>, nonce: unknown): KnownNumbers {
+  const r = readHex(signature.r, "r");
+  const s = readHex(signature.s, "s");
+  const z = readHex(signature.z, "z");
+  const k = readHex(nonce, "nonce");
+  if (![r, s, k].every((value) => value > 0n && value < curve.n)) {
+    throw new RangeError("r, s and nonce must run from 1 to the curve order minus 1");
+  }
+  if (BigInt(`0x${multiplyGenerator(k).slice(2)}`) % curve.n !== r) {
+    throw new RangeError("The nonce does not give r, so it is not the nonce of this signature");
+  }
+  return { r, s, z, k };
+}
+
+/**
+ * Solves d = (s k - z) / r for s as given, and for s negated with n minus k.
+ * @param numbers - r, s, the digest z and the nonce k
+ * @returns {KnownNonceKey[]} The keys the signature verifies under, s as given first
+ */
+function knownNonceKeys(numbers: KnownNumbers): KnownNonceKey[] {
+  const { r, s, z, k } = numbers;
+  const inverse = invertScalar(r);
+  return [false, true].flatMap((flipped) => {
+    const nonce = subtractScalars(flipped ? 0n : k, flipped ? k : 0n);
+    const privateKey = multiplyScalars(
+      subtractScalars(multiplyScalars(s, nonce), z % curve.n),
+      inverse,
+    );
+    if (/^0+$/u.test(privateKey)) return [];
+    const publicKey = multiplyGenerator(privateKey);
+    if (!verifiesEcdsa(Uint8Array.fromHex(publicKey), numbers)) return [];
+    return [{ privateKey, nonce, publicKey, flipped }];
+  });
+}
+
+/**
+ * Recovers the key behind one ECDSA signature whose nonce is known.
+ * @param signature - r, s and the digest z
+ * @param options - The nonce, and the key the result must match
+ * @returns {readonly KnownNonceKey[]} One key with a public key to match, else up to two
+ * @throws {TypeError} When the call has another shape, a value is no hex or the type is schnorr
+ * @throws {RangeError} When a scalar is out of range, the nonce gives another r or no key matches
+ */
+export function recoverKnownNonce(
+  signature: Readonly<NonceSignature>,
+  options: Readonly<KnownNonceOptions>,
+): readonly KnownNonceKey[] {
+  assertKnownCall(signature, options);
+  if ((signature.type ?? "ecdsa") !== "ecdsa") {
+    throw new TypeError("recoverKnownNonce solves ECDSA only");
+  }
+  const expected = expectedKey([options.publicKey, signature.publicKey], false);
+  const keys = knownNonceKeys(readKnown(signature, options.nonce));
+  const matching = keys.filter((key) => expected === undefined || key.publicKey === expected);
+  if (matching.length === 0) {
+    throw new RangeError("Neither key the nonce gives matches publicKey");
+  }
+  return matching;
 }
 
 /**
