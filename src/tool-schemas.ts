@@ -40,6 +40,7 @@ import {
   MAX_BIP38_PASSPHRASE_LENGTH,
   MAX_EXTENDED_KEY_LENGTH,
   BIP85_APPLICATIONS,
+  MAX_BIP85_TOOL_ROLLS,
   MAX_KEYSTORE_LENGTH,
   MAX_ARWEAVE_KEY_LENGTH,
   MAX_OPENPGP_LENGTH,
@@ -774,13 +775,14 @@ export const DERIVE_BIP85_PARAMETERS = Type.Object(
     application: Type.String({
       enum: BIP85_APPLICATIONS,
       description:
-        "What to derive: bip39 a mnemonic (application 39), wif a Bitcoin Core hdseed (2), xprv a child master key (32), hex raw bytes (128169)",
+        "What to derive: bip39 a mnemonic (application 39), wif a Bitcoin Core hdseed (2), xprv a child master key (32), hex raw bytes (128169), base64 or base85 a password (707764, 707785), dice rolls (89101), nostr an nsec (128002)",
     }),
     index: Type.Optional(
       Type.Integer({
         minimum: 0,
         maximum: 0x7fffffff,
-        description: "Child index, the last level of the path. Default: 0",
+        description:
+          "Child index, the last level of the path. Default: 0. nostr counts accounts from 1 and reads 0 as 1",
       }),
     ),
     words: Type.Optional(
@@ -795,6 +797,35 @@ export const DERIVE_BIP85_PARAMETERS = Type.Object(
         minimum: 16,
         maximum: 64,
         description: "hex only: how many bytes to keep, 16 to 64. Default: 64",
+      }),
+    ),
+    length: Type.Optional(
+      Type.Integer({
+        minimum: 10,
+        maximum: 86,
+        description:
+          "base64 and base85 only, required there: characters, 20 to 86 for base64, 10 to 80 for base85",
+      }),
+    ),
+    sides: Type.Optional(
+      Type.Integer({
+        minimum: 2,
+        maximum: 0x7fffffff,
+        description: "dice only, required there: sides of the die, 2 to 2147483647",
+      }),
+    ),
+    rolls: Type.Optional(
+      Type.Integer({
+        minimum: 1,
+        maximum: MAX_BIP85_TOOL_ROLLS,
+        description: `dice only, required there: how many rolls, 1 to ${MAX_BIP85_TOOL_ROLLS}`,
+      }),
+    ),
+    identity: Type.Optional(
+      Type.Integer({
+        minimum: 1,
+        maximum: 0x7fffffff,
+        description: "nostr only: key namespace, from 1. Default: 1",
       }),
     ),
   },

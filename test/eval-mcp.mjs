@@ -205,6 +205,12 @@ try {
   );
 
   await call(
+    "keys_bip85_derive",
+    { rootKey: bip85Vectors.root, application: "dice", sides: 6, rolls: 10 },
+    new RegExp(`\nRolls: ${bip85Vectors.dice.rolls.join(",")}\n`),
+  );
+
+  await call(
     "keys_electrum_wallet_derive",
     {
       mnemonic: electrumVectors[0].mnemonic,

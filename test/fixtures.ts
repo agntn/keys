@@ -1916,6 +1916,52 @@ export const bip85Vectors = {
     entropy:
       "492db4698cf3b73a5a24998aa3e9d7fa96275d85724a91e71aa2d645442f878555d078fd1f1f67e368976f04137b1f7a0d19232136ca50c44614af72b5582a5c",
   },
+  /** 80 bytes of the DRNG seeded with the entropy of the first case. */
+  drng: "b78b1ee6b345eae6836c2d53d33c64cdaf9a696487be81b03e822dc84b3f1cd883d7559e53d175f243e4c349e822a957bbff9224bc5dde9492ef54e8a439f6bc8c7355b87a925a37ee405a7502991111",
+  base64: {
+    path: "m/83696968'/707764'/21'/0'",
+    length: 21,
+    entropy:
+      "74a2e87a9ba0cdd549bdd2f9ea880d554c6c355b08ed25088cfa88f3f1c4f74632b652fd4a8f5fda43074c6f6964a3753b08bb5210c8f5e75c07a4c2a20bf6e9",
+    password: "dKLoepugzdVJvdL56ogNV",
+  },
+  base85: {
+    path: "m/83696968'/707785'/12'/0'",
+    length: 12,
+    entropy:
+      "f7cfe56f63dca2490f65fcbf9ee63dcd85d18f751b6b5e1c1b8733af6459c904a75e82b4a22efff9b9e69de2144b293aa8714319a054b6cb55826a8e51425209",
+    password: "_s`{TW89)i4`",
+  },
+  dice: {
+    path: "m/83696968'/89101'/6'/10'/0'",
+    sides: 6,
+    entropy:
+      "5e41f8f5d5d9ac09a20b8a5797a3172b28c806aead00d27e36609e2dd116a59176a738804236586f668da8a51b90c708a4226d7f92259c69f64c51124b6f6cd2",
+    rolls: [1, 0, 0, 2, 0, 1, 5, 5, 2, 4],
+  },
+  nostr: [
+    {
+      identity: 1,
+      index: 1,
+      path: "m/83696968'/128002'/1'/1'",
+      entropy: "ff6eb0fcdf1ef87a2a06b0d7884d495b486d0faa210e9f80f23fd649d6e114d2",
+      nsec: "nsec1lahtplxlrmu852sxkrtcsn2ftdyx6ra2yy8flq8j8ltyn4hpznfq23uvqz",
+    },
+    {
+      identity: 1,
+      index: 2,
+      path: "m/83696968'/128002'/1'/2'",
+      entropy: "917628689652288f6983c8a01db516d0697d5198dcf9de9010597f5e322fba6e",
+      nsec: "nsec1j9mzs6yk2g5g76vrezspmdgk6p5h65vcmnuaayqst9l4uv30hfhqje0jyh",
+    },
+    {
+      identity: 2,
+      index: 1,
+      path: "m/83696968'/128002'/2'/1'",
+      entropy: "fa2e784291b1fd347ba3624672e3090cb2cee34b8567180336e3aa290d02715b",
+      nsec: "nsec1lgh8ss53k87ng7arvfr89ccfpjevac6ts4n3sqekuw4zjrgzw9dsq3uelh",
+    },
+  ],
 } as const;
 
 /**

@@ -1,4 +1,7 @@
-import { Sha512Hasher, hmac } from "@agntn/hashes";
+import { base64 } from "@agntn/encodings/base64";
+import { base85 } from "@agntn/encodings/base85";
+import { bech32 } from "@agntn/encodings/bech32";
+import { Sha512Hasher, hmac, shake256 } from "@agntn/hashes";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { HDKey } from "@scure/bip32";
 import { entropyToMnemonic, loadWordlist } from "../bip39/index.ts";
@@ -45,6 +48,12 @@ const LANGUAGE_CODES: Readonly<Record<BIP39Language, number>> = {
 
 /** Entropy bytes for each word count of application 39. */
 const WORD_BYTES: Readonly<Record<number, number>> = { 12: 16, 15: 20, 18: 24, 21: 28, 24: 32 };
+
+/** Most rolls one call returns, far below what the spec allows. */
+const MAX_ROLLS = 65536;
+
+/** Largest number a hardened path level holds. */
+const MAX_LEVEL = 0x7fffffff;
 
 /** A checked root key and its network. */
 interface Root {
@@ -296,4 +305,228 @@ export function deriveHex(root: string | HDKey, options: BIP85HexOptions = {}): 
   }
   const path = `m/${BIP85_PURPOSE}'/128169'/${bytes}'/${childIndex(options.index)}'`;
   return { path, entropy: entropyAt(readRoot(root).key, path).slice(0, bytes) };
+}
+
+/**
+ * BIP85-DRNG-SHAKE256, for applications that want more than 64 bytes.
+ * @param entropy - The 64 bytes `deriveEntropy` returns
+ * @param bytes - How many bytes of the stream to read
+ * @returns {Uint8Array} The leading bytes of the stream
+ * @throws {RangeError} For a seed that isn't 64 bytes, or a count that isn't a whole number
+ * @example
+ * drng(deriveEntropy(xprv, "m/83696968'/0'/0'"), 80).toHex(); // 'b78b1ee6b345eae6...'
+ */
+export function drng(entropy: Uint8Array, bytes: number): Uint8Array {
+  if (!(entropy instanceof Uint8Array) || entropy.length !== 64) {
+    throw new RangeError("The BIP85 DRNG is seeded with exactly 64 bytes of entropy");
+  }
+  if (!Number.isSafeInteger(bytes) || bytes < 0) {
+    throw new RangeError("The BIP85 DRNG reads a whole number of bytes");
+  }
+  return shake256(entropy, bytes);
+}
+
+/**
+ * Reads a number an application writes into its path.
+ * @param value - Caller's number
+ * @param range - Smallest and largest value, and the error for anything else
+ * @returns {number} The number
+ * @throws {RangeError} Outside the range
+ */
+function levelIn(
+  value: unknown,
+  range: { readonly from: number; readonly to: number; readonly message: string },
+): number {
+  if (typeof value !== "number" || !Number.isSafeInteger(value)) {
+    throw new RangeError(range.message);
+  }
+  if (value < range.from || value > range.to) throw new RangeError(range.message);
+  return value;
+}
+
+/** How long a password comes out. */
+export interface BIP85PasswordOptions extends BIP85IndexOptions {
+  /** Characters to keep: 20 to 86 for base64, 10 to 80 for base85. */
+  readonly length: number;
+}
+
+/** A child password, application 707764 or 707785. */
+export interface BIP85Password extends BIP85Entropy {
+  readonly password: string;
+}
+
+/** One password application: its number, its lengths and its alphabet. */
+interface PasswordFormat {
+  readonly name: string;
+  readonly application: number;
+  readonly from: number;
+  readonly to: number;
+  readonly encode: (entropy: Uint8Array) => string;
+}
+
+/**
+ * Encodes all 64 bytes and keeps the leading characters.
+ * @param root - Master xprv or tprv, or a depth 0 node
+ * @param options - Length and index
+ * @param format - Which password application
+ * @returns {BIP85Password} The password, its 64 bytes of entropy and the path
+ * @throws {RangeError} For a length the application doesn't take, or a bad index
+ */
+function passwordOf(
+  root: string | HDKey,
+  options: BIP85PasswordOptions,
+  format: PasswordFormat,
+): BIP85Password {
+  const { name, application, from, to } = format;
+  assertOptions(options, `derive${name}Password(root, { length, index })`);
+  const { length, index } = { ...options };
+  const message = `A BIP85 ${name.toLowerCase()} password has ${from} to ${to} characters`;
+  const kept = levelIn(length, { from, to, message });
+  const path = `m/${BIP85_PURPOSE}'/${application}'/${kept}'/${childIndex(index)}'`;
+  const entropy = entropyAt(readRoot(root).key, path);
+  return { path, entropy, password: format.encode(entropy).slice(0, kept) };
+}
+
+/**
+ * A base64 password, application 707764: `m/83696968'/707764'/{length}'/{index}'`.
+ * @param root - Master xprv or tprv, or a depth 0 node
+ * @param options - Length, 20 to 86, and index
+ * @returns {BIP85Password} The password, its 64 bytes of entropy and the path
+ * @throws {RangeError} For a length outside 20 to 86, or a bad index
+ * @example
+ * deriveBase64Password(xprv, { length: 21 }).password; // 'dKLoepugzdVJvdL56ogNV'
+ */
+export function deriveBase64Password(
+  root: string | HDKey,
+  options: BIP85PasswordOptions,
+): BIP85Password {
+  return passwordOf(root, options, {
+    name: "Base64",
+    application: 707764,
+    from: 20,
+    to: 86,
+    encode: (entropy) => base64.encode(entropy),
+  });
+}
+
+/**
+ * A base85 password in RFC 1924's alphabet, application 707785.
+ * @param root - Master xprv or tprv, or a depth 0 node
+ * @param options - Length, 10 to 80, and index
+ * @returns {BIP85Password} The password, its 64 bytes of entropy and the path
+ * @throws {RangeError} For a length outside 10 to 80, or a bad index
+ * @example
+ * deriveBase85Password(xprv, { length: 12 }).password; // '_s`{TW89)i4`'
+ */
+export function deriveBase85Password(
+  root: string | HDKey,
+  options: BIP85PasswordOptions,
+): BIP85Password {
+  return passwordOf(root, options, {
+    name: "Base85",
+    application: 707785,
+    from: 10,
+    to: 80,
+    encode: (entropy) => base85.encode(entropy),
+  });
+}
+
+/** The die and how often it's thrown. */
+export interface BIP85DiceOptions extends BIP85IndexOptions {
+  /** Sides of the die, 2 to 2147483647. */
+  readonly sides: number;
+  /** How many rolls, 1 to 65536. */
+  readonly rolls: number;
+}
+
+/** Dice rolls, application 89101. */
+export interface BIP85Dice extends BIP85Entropy {
+  /** Each roll from 0 to `sides - 1`, as the spec counts them. */
+  readonly rolls: readonly number[];
+}
+
+/**
+ * Throws the die on the DRNG, skipping every trial at or past the number of sides.
+ * @param entropy - 64 bytes of BIP85 entropy
+ * @param sides - Sides of the die
+ * @param count - How many rolls to keep
+ * @returns {number[]} The rolls
+ */
+function roll(entropy: Uint8Array, sides: number, count: number): number[] {
+  const bits = 32 - Math.clz32(sides - 1);
+  const width = Math.ceil(bits / 8);
+  const excess = 2 ** (8 * width - bits);
+  const rolls: number[] = [];
+  let stream = drng(entropy, width * count);
+  for (let offset = 0; rolls.length < count; offset += width) {
+    if (offset === stream.length) stream = drng(entropy, stream.length * 2);
+    const read = stream.subarray(offset, offset + width).reduce((sum, byte) => sum * 256 + byte, 0);
+    const trial = Math.floor(read / excess);
+    if (trial < sides) rolls.push(trial);
+  }
+  return rolls;
+}
+
+/**
+ * Dice rolls, application 89101: `m/83696968'/89101'/{sides}'/{rolls}'/{index}'`.
+ * @param root - Master xprv or tprv, or a depth 0 node
+ * @param options - Sides, rolls and index
+ * @returns {BIP85Dice} The rolls from 0, their 64 bytes of entropy and the path
+ * @throws {RangeError} For sides or rolls outside their range, or a bad index
+ * @example
+ * deriveDice(xprv, { sides: 6, rolls: 10 }).rolls; // [1, 0, 0, 2, 0, 1, 5, 5, 2, 4]
+ */
+export function deriveDice(root: string | HDKey, options: BIP85DiceOptions): BIP85Dice {
+  assertOptions(options, "deriveDice(root, { sides, rolls, index })");
+  const { sides, rolls, index } = { ...options };
+  const faces = levelIn(sides, {
+    from: 2,
+    to: MAX_LEVEL,
+    message: `BIP85 dice have 2 to ${MAX_LEVEL} sides`,
+  });
+  const count = levelIn(rolls, {
+    from: 1,
+    to: MAX_ROLLS,
+    message: `BIP85 dice roll 1 to ${MAX_ROLLS} times a call`,
+  });
+  const path = `m/${BIP85_PURPOSE}'/89101'/${faces}'/${count}'/${childIndex(index)}'`;
+  const entropy = entropyAt(readRoot(root).key, path);
+  return { path, entropy, rolls: roll(entropy, faces, count) };
+}
+
+/** Which Nostr key to derive. */
+export interface BIP85NostrOptions {
+  /** Key namespace, from 1. Default: 1 */
+  readonly identity?: number;
+  /** Account within the identity, the last level of the path, from 1. Default: 1 */
+  readonly index?: number;
+}
+
+/** A Nostr secret key, application 128002. */
+export interface BIP85Nostr extends BIP85Entropy {
+  /** The key in bech32, as NIP-19 writes it. */
+  readonly nsec: string;
+}
+
+/**
+ * A Nostr secret key, application 128002: `m/83696968'/128002'/{identity}'/{index}'`.
+ * @param root - Master xprv or tprv, or a depth 0 node
+ * @param options - Identity and account index, both from 1
+ * @returns {BIP85Nostr} The nsec, its 32 bytes of entropy and the path
+ * @throws {RangeError} For an identity or index of 0, which BIP85 reserves, or a bad one
+ * @example
+ * deriveNostr(xprv).nsec; // 'nsec1lahtplxlrmu852sxkrtcsn2ftdyx6ra2yy8flq8j8ltyn4hpznfq23uvqz'
+ */
+export function deriveNostr(root: string | HDKey, options: BIP85NostrOptions = {}): BIP85Nostr {
+  assertOptions(options, "deriveNostr(root, { identity, index })");
+  const { identity = 1, index = 1 } = options;
+  const level = (value: number, name: string): number =>
+    levelIn(value, {
+      from: 1,
+      to: MAX_LEVEL,
+      message: `A Nostr ${name} runs from 1 to ${MAX_LEVEL}; BIP85 keeps 0 for later`,
+    });
+  const path = `m/${BIP85_PURPOSE}'/128002'/${level(identity, "identity")}'/${level(index, "index")}'`;
+  const entropy = secretKey(entropyAt(readRoot(root).key, path), path);
+  return { path, entropy, nsec: bech32.encode("nsec", entropy) };
 }

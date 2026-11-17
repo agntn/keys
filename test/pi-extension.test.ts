@@ -200,10 +200,24 @@ describe("keys Pi extension", () => {
     await expect(
       skipSchema(tool)("bip85", { rootKey: root, application: "wif", words: 0, bytes: 0 }),
     ).resolves.toMatchObject({ details: { wif: bip85Vectors.wif.wif } });
+    await expect(
+      skipSchema(tool)("bip85", { rootKey: root, application: "nostr", index: 0, identity: 0 }),
+    ).resolves.toMatchObject({ details: { nsec: bip85Vectors.nostr[0].nsec } });
+    await expect(
+      skipSchema(tool)("bip85", { rootKey: root, application: "dice", sides: 6, rolls: 10 }),
+    ).resolves.toMatchObject({ details: { rolls: bip85Vectors.dice.rolls } });
     for (const [bad, message] of [
       [{ ...args, words: 13 }, "BIP85 mnemonics have 12, 15, 18, 21 or 24 words"],
       [{ ...args, words: "12" }, "Words must be an integer between 0 and 24"],
-      [{ ...args, application: "rsa" }, "Application must be one of bip39, wif, xprv, hex"],
+      [
+        { ...args, application: "rsa" },
+        "one of bip39, wif, xprv, hex, base64, base85, dice, nostr",
+      ],
+      [{ rootKey: root, application: "dice", sides: 6, rolls: 1025 }, "between 0 and 1024"],
+      [{ rootKey: root, application: "dice", sides: 0, rolls: 4 }, "dice needs sides"],
+      [{ rootKey: root, application: "base85", length: 0 }, "base85 needs length"],
+      [{ rootKey: root, application: "base85", length: 87 }, "base85 password has 10 to 80"],
+      [{ rootKey: root, application: "base64", length: 87 }, "base64 password has 20 to 86"],
       [{ ...args, language: "klingon" }, "Unknown BIP39 language"],
       [{ rootKey: root, application: "hex", bytes: 1.5 }, "Bytes must be an integer"],
       [{ rootKey: "x".repeat(129), application: "wif" }, "Root key is too long"],

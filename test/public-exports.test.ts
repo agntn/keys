@@ -339,14 +339,25 @@ describe("Public BIP85 exports", () => {
     expect(bip85.deriveWif(root).wif).toBe(wif.wif);
     expect(bip85.deriveXprv(root).extendedPrivateKey).toBe(xprv.extendedPrivateKey);
     expect(hex.encode(bip85.deriveHex(root).entropy)).toBe(raw.entropy);
+    const { base64, base85, dice, nostr } = bip85Vectors;
+    expect(bip85.deriveBase64Password(root, { length: 21 }).password).toBe(base64.password);
+    expect(bip85.deriveBase85Password(root, { length: 12 }).password).toBe(base85.password);
+    expect(bip85.deriveDice(root, { sides: 6, rolls: 10 }).rolls).toEqual(dice.rolls);
+    expect(bip85.deriveNostr(root).nsec).toBe(nostr[0].nsec);
+    expect(hex.encode(bip85.drng(hex.decode(cases[0].entropy), 80))).toBe(bip85Vectors.drng);
     expect(new Set(Object.keys(bip85))).toEqual(
       new Set([
         "BIP85_PURPOSE",
+        "deriveBase64Password",
+        "deriveBase85Password",
+        "deriveDice",
         "deriveEntropy",
         "deriveHex",
         "deriveMnemonic",
+        "deriveNostr",
         "deriveWif",
         "deriveXprv",
+        "drng",
       ]),
     );
   });
