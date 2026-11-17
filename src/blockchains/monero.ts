@@ -11,10 +11,9 @@ import {
 import { base58 } from "@agntn/encodings/base58";
 import { keccak256 } from "@agntn/hashes";
 import { ed25519 } from "@noble/curves/ed25519.js";
-import { bytesToNumberLE, equalBytes } from "@noble/curves/utils.js";
 import { AbstractBlockchain } from "../blockchain.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
-import { concatBytes } from "../utils/bytes.ts";
+import { bytesToNumberLE, concatBytes, equalBytes } from "../utils/bytes.ts";
 import { decodeMoneroSeed } from "../utils/monero-seed.ts";
 import { assertSignOptions, assertVerifyOptions } from "../utils/options.ts";
 import { assertNoRecoveryByte } from "../utils/signing.ts";

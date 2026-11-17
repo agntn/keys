@@ -1,7 +1,7 @@
 import { rlp, type RlpInput, type RlpItem } from "@agntn/encodings/rlp";
 import { keccak256 } from "@agntn/hashes";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { concatBytes } from "../bytes.ts";
+import { bytesToNumberBE, concatBytes } from "../bytes.ts";
 import { generateAddress } from "../evm-address.ts";
 
 /** A signed transaction as `eth_getTransactionByHash` returns it, quantities and data as 0x hex. */
@@ -92,15 +92,6 @@ const UNSUPPORTED_TYPES: Readonly<Record<string, string>> = {
 };
 
 /**
- * Reads an RLP integer.
- * @param bytes - Big endian bytes, empty for 0
- * @returns {bigint} The integer
- */
-function toBigInt(bytes: Uint8Array): bigint {
-  return bytes.length === 0 ? 0n : BigInt(`0x${bytes.toHex()}`);
-}
-
-/**
  * Writes an integer as 64 hex digits.
  * @param value - The integer
  * @returns {string} Zero padded hex
@@ -165,7 +156,7 @@ function bytesField(item: ReadItem | undefined, position: number): Uint8Array {
 function scalarField(item: ReadItem | undefined, position: number): bigint {
   const bytes = bytesField(item, position);
   if (bytes.length > 32) throw new RangeError(`Transaction field ${position} exceeds 32 bytes`);
-  return toBigInt(bytes);
+  return bytesToNumberBE(bytes);
 }
 
 /**
@@ -218,11 +209,11 @@ function rlpPayload(type: 0 | 1 | 2, body: Uint8Array): SignedPayload {
   const items = decodeList(body);
   const fields = payloadFields(items, type);
   const at = fields.length;
-  const v = toBigInt(bytesField(items[at], at));
+  const v = bytesToNumberBE(bytesField(items[at], at));
   const { chainId, recovery } =
     type === 0
       ? splitLegacyV(v)
-      : { chainId: toBigInt(bytesField(items[0], 0)), recovery: parity(v) };
+      : { chainId: bytesToNumberBE(bytesField(items[0], 0)), recovery: parity(v) };
   const r = scalarField(items[at + 1], at + 1);
   return { type, fields, chainId, recovery, r, s: scalarField(items[at + 2], at + 2) };
 }

@@ -17,11 +17,10 @@ import {
   sha384,
   sha512,
 } from "@agntn/hashes";
-import { invert, pow } from "@noble/curves/abstract/modular.js";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { bytesToNumberBE, equalBytes, numberToBytesBE } from "@noble/curves/utils.js";
-import { concatBytes } from "../bytes.ts";
+import { bytesToNumberBE, concatBytes, equalBytes, numberToBytesBE } from "../bytes.ts";
+import { invert, pow } from "../modular.ts";
 import { type Reader, createReader } from "./packets.ts";
 
 /** One hash from RFC 9580 Table 23 that this module can compute. */

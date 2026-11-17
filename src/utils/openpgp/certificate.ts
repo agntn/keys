@@ -1,5 +1,4 @@
-import { equalBytes } from "@noble/curves/utils.js";
-import { concatBytes } from "../bytes.ts";
+import { concatBytes, equalBytes } from "../bytes.ts";
 import { checkMath, hashAlgorithm, minimumDigestBits } from "./algorithms.ts";
 import {
   type Certificate,

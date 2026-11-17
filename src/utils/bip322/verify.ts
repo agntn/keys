@@ -1,6 +1,5 @@
 import { sha256 } from "@agntn/hashes";
 import { schnorr } from "@noble/curves/secp256k1.js";
-import { equalBytes } from "@noble/curves/utils.js";
 import { Bitcoin } from "../../blockchains/bitcoin.ts";
 import { hash160 } from "../address.ts";
 import { assertOptions } from "../options.ts";
@@ -32,6 +31,7 @@ import {
   type TransactionInput,
   type TransactionOutput,
 } from "../transaction/transaction.ts";
+import { equalBytes } from "../bytes.ts";
 
 /** What a verifier concludes: BIP322's valid, invalid and inconclusive. */
 export type BIP322State = "valid" | "invalid" | "inconclusive";
