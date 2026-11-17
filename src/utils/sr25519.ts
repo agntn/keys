@@ -16,7 +16,7 @@ export function readSecret(keyPrivate: string): string {
   if (keyPrivate.length === MINI_SECRET_DIGITS) return expandSeed(keyPrivate);
   if (keyPrivate.length === SECRET_DIGITS) return keyPrivate.toLowerCase();
   throw new RangeError(
-    "An sr25519 private key is a 32-byte mini secret or the 64-byte secret of a derived account",
+    "An sr25519 private key is a 32-byte mini secret or the 64-byte secret past a /soft junction",
   );
 }
 

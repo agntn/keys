@@ -46,7 +46,7 @@ export function hexArgument(value: unknown, argument: HexArgument): string {
 }
 
 /**
- * Reads a hex private key, on polkadot also the 64-byte sr25519 secret of a derived account.
+ * Reads a hex private key, on polkadot also the 64-byte sr25519 secret past a /soft junction.
  * @param value - Argument as the host passed it.
  * @param chain - Name of the chain the key belongs to.
  * @returns {string} The key as given.
@@ -63,7 +63,7 @@ export function chainPrivateKey(value: unknown, chain: string): string {
   return hexArgument(value, {
     name: "Private key",
     pattern: SIGNING_KEY_HEX,
-    shape: "64 hex characters, or 128 for the sr25519 secret of a derived account,",
+    shape: "64 hex characters, or 128 for the sr25519 secret past a /soft junction,",
   });
 }
 

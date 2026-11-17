@@ -1,4 +1,4 @@
-import { deriveHard, deriveSoft, expandSeed } from "@agntn/curves/sr25519";
+import { deriveHard, deriveHardSeed, deriveSoft, expandSeed } from "@agntn/curves/sr25519";
 import { Sha512Hasher, blake2b, pbkdf2 } from "@agntn/hashes";
 import { concatBytes } from "./bytes.ts";
 
@@ -140,17 +140,22 @@ export function deriveEd25519(seed: Uint8Array, junctions: readonly Junction[]):
 }
 
 /**
- * Walks sr25519 junctions like subkey: the mini secret at the root, the 64-byte secret below it.
+ * Walks sr25519 junctions like subkey, which keeps a seed until the first soft step.
  * @param seed - The 32-byte mini secret
  * @param junctions - Junctions from `parseJunctions`
- * @returns {string} The mini secret at the root, the child's 64-byte secret below it, as hex
+ * @returns {string} A mini secret on hard paths, the 64-byte secret past a soft step, as hex
  */
 export function deriveSr25519(seed: Uint8Array, junctions: readonly Junction[]): string {
-  if (junctions.length === 0) return seed.toHex();
-  return junctions.reduce((secret, { chainCode: code, soft }) => {
+  const firstSoft = junctions.findIndex(({ soft }) => soft);
+  const hardSteps = firstSoft === -1 ? junctions.length : firstSoft;
+  const mini = junctions
+    .slice(0, hardSteps)
+    .reduce((parent, { chainCode: code }) => deriveHardSeed(parent, code.toHex()), seed.toHex());
+  if (firstSoft === -1) return mini;
+  return junctions.slice(hardSteps).reduce((secret, { chainCode: code, soft }) => {
     const chain = code.toHex();
     return soft
       ? deriveSoft(secret, chain, { random: SOFT_NONCE_RANDOM })
       : deriveHard(secret, chain);
-  }, expandSeed(seed.toHex()));
+  }, expandSeed(mini));
 }
