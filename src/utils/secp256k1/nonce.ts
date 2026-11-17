@@ -1,3 +1,10 @@
+import {
+  invertScalar,
+  multiplyGenerator,
+  multiplyScalars,
+  secp256k1 as curve,
+  subtractScalars,
+} from "@agntn/curves/secp256k1";
 import { sha256 } from "@agntn/hashes";
 import { schnorr, secp256k1 } from "@noble/curves/secp256k1.js";
 import { concatBytes } from "../bytes.ts";
@@ -277,10 +284,10 @@ function readKnown(signature: Readonly<NonceSignature>, nonce: unknown): KnownNu
   const s = readHex(signature.s, "s");
   const z = readHex(signature.z, "z");
   const k = readHex(nonce, "nonce");
-  if (![r, s, k].every((value) => Fn.isValidNot0(value))) {
+  if (![r, s, k].every((value) => value > 0n && value < curve.n)) {
     throw new RangeError("r, s and nonce must run from 1 to the curve order minus 1");
   }
-  if (Fn.create(Point.BASE.multiply(k).x) !== r) {
+  if (BigInt(`0x${multiplyGenerator(k).slice(2)}`) % curve.n !== r) {
     throw new RangeError("The nonce does not give r, so it is not the nonce of this signature");
   }
   return { r, s, z, k };
@@ -293,20 +300,17 @@ function readKnown(signature: Readonly<NonceSignature>, nonce: unknown): KnownNu
  */
 function knownNonceKeys(numbers: KnownNumbers): KnownNonceKey[] {
   const { r, s, z, k } = numbers;
+  const inverse = invertScalar(r);
   return [false, true].flatMap((flipped) => {
-    const nonce = flipped ? Fn.neg(k) : k;
-    const privateKey = Fn.div(Fn.sub(Fn.mul(s, nonce), Fn.create(z)), r);
-    if (Fn.is0(privateKey)) return [];
-    const key = Point.BASE.multiply(privateKey).toBytes(true);
-    if (!verifiesEcdsa(key, numbers)) return [];
-    return [
-      {
-        privateKey: Fn.toBytes(privateKey).toHex(),
-        nonce: Fn.toBytes(nonce).toHex(),
-        publicKey: key.toHex(),
-        flipped,
-      },
-    ];
+    const nonce = subtractScalars(flipped ? 0n : k, flipped ? k : 0n);
+    const privateKey = multiplyScalars(
+      subtractScalars(multiplyScalars(s, nonce), z % curve.n),
+      inverse,
+    );
+    if (/^0+$/u.test(privateKey)) return [];
+    const publicKey = multiplyGenerator(privateKey);
+    if (!verifiesEcdsa(Uint8Array.fromHex(publicKey), numbers)) return [];
+    return [{ privateKey, nonce, publicKey, flipped }];
   });
 }
 
