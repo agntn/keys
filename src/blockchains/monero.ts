@@ -30,8 +30,8 @@ import type {
   WalletOptions,
 } from "../types.ts";
 
-/** Spend keys and signatures multiply here in constant time, which curves won't promise. */
-const { Point } = ed25519;
+/** Scalars mod l only. Curves multiplies every point, spend key included. */
+const { Fn } = ed25519.Point;
 
 /** Network bytes of the three address kinds, one set per network Monero runs. */
 interface AddressPrefixes {
@@ -101,7 +101,7 @@ function reduceScalar(bytes: Uint8Array): bigint {
 function randomScalar(): bigint {
   for (;;) {
     const draw = bytesToNumberLE(ed25519.utils.randomSecretKey());
-    const scalar = Point.Fn.create(draw);
+    const scalar = Fn.create(draw);
     if (draw < DRAW_LIMIT && scalar !== 0n) return scalar;
   }
 }
@@ -121,12 +121,21 @@ function spendScalar(keyPrivate: string): bigint {
 }
 
 /**
+ * A secret times G as 32 bytes, in the same steps for any scalar.
+ * @param secret - A scalar from 1 to l minus 1
+ * @returns {Uint8Array} The public key
+ */
+function timesG(secret: bigint): Uint8Array {
+  return Uint8Array.fromHex(multiplyGenerator(secret));
+}
+
+/**
  * The private view key a deterministic wallet derives: keccak256 of the spend key, mod l.
  * @param spend - The private spend key
  * @returns {bigint} The private view key
  */
 function viewScalar(spend: bigint): bigint {
-  return reduceScalar(keccak256(Point.Fn.toBytes(spend)));
+  return reduceScalar(keccak256(Fn.toBytes(spend)));
 }
 
 /**
@@ -234,10 +243,10 @@ function subaddressScalar(viewKey: Uint8Array, at: SubaddressIndex): bigint {
  */
 function addressSecrets(spend: bigint, at: SubaddressIndex): readonly [bigint, bigint] {
   const view = viewScalar(spend);
-  const m = subaddressScalar(Point.Fn.toBytes(view), at);
+  const m = subaddressScalar(Fn.toBytes(view), at);
   if (at.account === 0 && at.index === 0) return [spend, view];
-  const subSpend = Point.Fn.add(spend, m);
-  return [subSpend, Point.Fn.mul(view, subSpend)];
+  const subSpend = Fn.add(spend, m);
+  return [subSpend, Fn.mul(view, subSpend)];
 }
 
 /**
@@ -336,9 +345,9 @@ function schnorrSign(
   const { key, secret } = signer;
   for (;;) {
     const nonce = randomScalar();
-    const c = challenge(hash, { key, commitment: Point.BASE.multiply(nonce).toBytes() });
-    const r = Point.Fn.sub(nonce, Point.Fn.mul(c, secret));
-    if (c !== 0n && r !== 0n) return concatBytes(Point.Fn.toBytes(c), Point.Fn.toBytes(r));
+    const c = challenge(hash, { key, commitment: timesG(nonce) });
+    const r = Fn.sub(nonce, Fn.mul(c, secret));
+    if (c !== 0n && r !== 0n) return concatBytes(Fn.toBytes(c), Fn.toBytes(r));
   }
 }
 
@@ -435,7 +444,7 @@ export class Monero extends AbstractBlockchain {
    * @returns {string} The private spend key as hex
    */
   override generateKeyPrivate(): string {
-    return Point.Fn.toBytes(randomScalar()).toHex();
+    return Fn.toBytes(randomScalar()).toHex();
   }
 
   /**
@@ -446,10 +455,7 @@ export class Monero extends AbstractBlockchain {
    */
   override getKeyPublic(keyPrivate: string, _options?: KeyOptions): string {
     const spend = spendScalar(keyPrivate);
-    return concatBytes(
-      Point.BASE.multiply(spend).toBytes(),
-      Point.BASE.multiply(viewScalar(spend)).toBytes(),
-    ).toHex();
+    return multiplyGenerator(spend) + multiplyGenerator(viewScalar(spend));
   }
 
   /**
@@ -458,7 +464,7 @@ export class Monero extends AbstractBlockchain {
    * @returns {string} The private view key as hex
    */
   getViewKey(keyPrivate: string): string {
-    return Point.Fn.toBytes(viewScalar(spendScalar(keyPrivate))).toHex();
+    return Fn.toBytes(viewScalar(spendScalar(keyPrivate))).toHex();
   }
 
   /**
@@ -470,7 +476,7 @@ export class Monero extends AbstractBlockchain {
   override deriveWallet(keyPrivate: string, options: WalletOptions = {}): Wallet {
     const { addressType, ...keyOptions } = options;
     refuseWalletAddressType(addressType);
-    const spend = Point.Fn.toBytes(spendScalar(keyPrivate)).toHex();
+    const spend = Fn.toBytes(spendScalar(keyPrivate)).toHex();
     return super.deriveWallet(spend, keyOptions);
   }
 
@@ -636,8 +642,8 @@ export class Monero extends AbstractBlockchain {
     assertNoRecoveryByte(signingOptions, "Monero signs SigV2, with no recovery byte");
     const mode = signingMode(signingOptions.signingKey);
     const [spend, view] = addressSecrets(spendScalar(privateKey), { account, index: addressIndex });
-    const spendKey = Point.BASE.multiply(spend).toBytes();
-    const viewKey = Point.BASE.multiply(view).toBytes();
+    const spendKey = timesG(spend);
+    const viewKey = timesG(view);
     const hash = messageHash(messageBytes(message), { spend: spendKey, view: viewKey, mode });
     const signature =
       mode === SIGNING_MODES.view

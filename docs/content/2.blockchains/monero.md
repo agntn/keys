@@ -158,6 +158,6 @@ On `chain: "monero"` the `privateKey` of `keys_wallet_derive` takes the seed wor
 
 `src/blockchains/monero.ts`, with the seed words in `src/utils/monero-seed.ts`.
 
-Point math comes from `@agntn/curves`: `check_address`, subaddresses, the view key check and every verify. The spend key gets multiplied on `@noble/curves` instead, and so does every signature. Why? Noble does that in constant time, and curves openly doesn't.
+Every Monero point multiplication runs through `@agntn/curves`, the spend key's included. Same steps for every scalar. Is that a timing guarantee? It isn't: JavaScript engines promise nothing about bigint timing. `@noble/curves` gets the small job: sums mod l and random bytes.
 
 keccak256 and CRC-32 come from `@agntn/hashes`. base58 comes from `@agntn/encodings`, Monero's blocks of eleven characters and all.
