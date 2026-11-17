@@ -32,6 +32,7 @@ import type { ElectrumSeed } from "../../types.ts";
 import { assertOptions } from "../options.ts";
 
 export type { ElectrumSeed };
+export { normalizeElectrumText as normalize };
 
 /**
  * Starts the SHA-512 state that Electrum's HMAC and PBKDF2 run on.

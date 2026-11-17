@@ -9,6 +9,7 @@ const guide = readFileSync(
 );
 const section = guide.split("## Electrum is a different scheme")[1];
 const example = section?.match(/```js\n([\s\S]*?)```/u)?.[1];
+const normalizeExample = section?.match(/```js\n([^`]*?normalize\([^`]*?)```/u)?.[1];
 const oldExample = section
   ?.split("### What about seeds from before Electrum 2.0?")[1]
   ?.match(/```js\n([\s\S]*?)```/u)?.[1];
@@ -45,6 +46,15 @@ describe("Electrum wallet documentation", () => {
     expect(run(script, "wallet.address, wallet.addressType")).toBe(
       `${vector.address} ${addressType}`,
     );
+  });
+
+  it("prints what the normalize example says", () => {
+    if (!normalizeExample) throw new Error("Missing normalize example");
+    expect(run(normalizeExample, 'JSON.stringify([unique, normalize("\u6F22 \u5B57")])')).toBe(
+      '[["cafe test"],"\u6F22\u5B57"]',
+    );
+    expect(normalizeExample).toContain('unique; // ["cafe test"]');
+    expect(normalizeExample).toContain('normalize("\u6F22 \u5B57"); // "\u6F22\u5B57"');
   });
 
   it("derives the old seed example", () => {

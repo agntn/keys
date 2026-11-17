@@ -5,6 +5,7 @@ import {
   deriveOldPublicKey,
   deriveSeed,
   inspect,
+  normalize,
 } from "../../src/utils/electrum/index.ts";
 import { decodeLegacyWords } from "../../src/utils/electrum/legacy.ts";
 import { normalizeElectrumText } from "../../src/utils/electrum/normalize.ts";
@@ -41,6 +42,28 @@ describe("Electrum seed derivation", () => {
     expect(normalizeElectrumText("眼 \u{20000} 悲")).toBe("眼\u{20000}悲");
     expect(normalizeElectrumText("a\u0085b\u001Cc")).toBe("a b c");
     expect(normalizeElectrumText("\uFEFFa\uFEFF")).toBe("\uFEFFa\uFEFF");
+  });
+
+  it.each([
+    ["  CAF\u00C9\tTest  ", "cafe test"],
+    ["cafe test", "cafe test"],
+    ["\u6F22 \u5B57", "\u6F22\u5B57"],
+    ["a\u2003b\u3000c\u001Fd", "a b c d"],
+    ["\u30AB \u30BF a \uD55C \uAE00", "\u30AB\u30BF a \u1112\u1161\u11AB\u1100\u1173\u11AF"],
+    ["a\u034F\uFE0F e\u0301 \u0903", "a\u034F\uFE0F e \u0903"],
+  ])("normalizes %j the same on a second pass", (text, expected) => {
+    expect(normalize(text)).toBe(expected);
+    expect(normalize(expected)).toBe(expected);
+    expect(normalize).toBe(normalizeElectrumText);
+  });
+
+  it("refuses text the normalizer can't read", () => {
+    const refusal = "Electrum text must be well-formed Unicode of at most 4096 characters";
+    expect(normalize("\u{1F511}".repeat(4096))).toHaveLength(8192);
+    expect(() => normalize("a".repeat(4097))).toThrow(new TypeError(refusal));
+    expect(() => normalize("seed \uD83D")).toThrow(new TypeError(refusal));
+    /* @ts-expect-error a number is wrong on purpose */
+    expect(() => normalize(1)).toThrow(new TypeError(refusal));
   });
 
   it.each([
