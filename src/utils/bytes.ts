@@ -14,7 +14,7 @@ export function concatBytes(...parts: readonly Uint8Array[]): Uint8Array<ArrayBu
 }
 
 /**
- * Compares byte arrays without an early exit.
+ * Compares bytes without an early exit, once the lengths match.
  * @param a - One array
  * @param b - The other
  * @returns {boolean} Whether both hold the same bytes
