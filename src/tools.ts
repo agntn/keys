@@ -37,6 +37,7 @@ import {
   REPAIR_BIP39_WORDS_PARAMETERS,
   RECOVER_MESSAGE_PARAMETERS,
   RECOVER_MNEMONIC_WORD_PARAMETERS,
+  RECOVER_SECP256K1_KNOWN_NONCE_PARAMETERS,
   RECOVER_SECP256K1_NONCE_PARAMETERS,
   SIGN_MESSAGE_PARAMETERS,
   VALIDATE_ADDRESS_PARAMETERS,
@@ -116,6 +117,24 @@ export const secp256k1NonceRecoverTool = defineTool({
   input: RECOVER_SECP256K1_NONCE_PARAMETERS,
   execute: async ({ signatures, ...options }) =>
     (await loadOperations()).recoverSecp256k1Nonce(signatures, options),
+});
+
+export const secp256k1KnownNonceRecoverTool = defineTool({
+  name: "keys_secp256k1_known_nonce_recover",
+  title: "Recover Known Nonce Key",
+  description:
+    "Recover the private key behind one secp256k1 ECDSA signature whose nonce k is known: a leaked, guessed or weak k. Checks that k gives r first. The signature alone fits two keys, one if k signed s as given and one if s was flipped to the other half afterwards, so the answer lists both public keys unless publicKey picks one. The private key stays out of the answer; recoverKnownNonce from @agntn/keys/secp256k1 returns it.",
+  snippet:
+    "Use when the nonce of a signature is known or guessable, to learn which key falls out of it.",
+  guidelines: [
+    "Pass r, s and z of the signature; keys_transaction_signatures_extract reads them from a transaction",
+    "Pass publicKey whenever it is known: without it two keys fit and only an address or key tells them apart",
+    "A nonce that does not give r is refused; k with its bytes reversed fails that way, it is never tried the other way round",
+  ],
+  effect: "read",
+  input: RECOVER_SECP256K1_KNOWN_NONCE_PARAMETERS,
+  execute: async ({ signature, ...options }) =>
+    (await loadOperations()).recoverSecp256k1KnownNonce(signature, options),
 });
 
 export const wifEncodeTool = defineTool({
@@ -753,6 +772,7 @@ export const keysTools = [
   bip39SeedDeriveTool,
   secp256k1PublicKeyConvertTool,
   secp256k1NonceRecoverTool,
+  secp256k1KnownNonceRecoverTool,
   wifEncodeTool,
   wifDecodeTool,
   bip38InspectTool,

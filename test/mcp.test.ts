@@ -53,6 +53,7 @@ import {
   openpgpVectors,
   bip322Vectors,
   reusedNonceVector,
+  knownNonceVectors,
   transactionVectors,
   evmTransactionVectors,
   descriptorVectors,
@@ -2684,6 +2685,63 @@ describe("keys MCP server", () => {
       });
       expect(failed.isError).toBe(true);
       expect(text(failed.content)).toContain(error);
+    }
+  });
+
+  it("recovers a known nonce key through MCP and names public keys alone", async () => {
+    const client = await connectTestClient();
+    const { asSigned, flipped } = knownNonceVectors;
+    const signature = { r: asSigned.r, s: asSigned.s, z: asSigned.z };
+    const open = await client.callTool({
+      name: "keys_secp256k1_known_nonce_recover",
+      arguments: { signature, nonce: asSigned.nonce },
+    });
+    expect(open.isError).not.toBe(true);
+    expect(text(open.content)).toBe(
+      [
+        "The nonce gives r. The signature verifies under:",
+        `${asSigned.publicKey} if the nonce signed s as given`,
+        "02e542fcc8f5539fcb3f6f7ff22c16419c9f84824903db3b3d6cf36f77ddfd8afe if the nonce signed n - s and s was flipped afterwards",
+        "Pass publicKey to settle which one signed.",
+        "The key stays out of this answer; recoverKnownNonce from @agntn/keys/secp256k1 returns it.",
+      ].join("\n"),
+    );
+    expect(JSON.stringify(open)).not.toContain(asSigned.privateKey);
+
+    const settled = await client.callTool({
+      name: "keys_secp256k1_known_nonce_recover",
+      arguments: {
+        signature: { r: flipped.r, s: flipped.s, z: flipped.z },
+        nonce: flipped.nonce,
+        publicKey: flipped.publicKey,
+      },
+    });
+    expect(text(settled.content)).toBe(
+      [
+        `Recovered the private key of ${flipped.publicKey}, which matches publicKey: the nonce signed n - s and s was flipped afterwards.`,
+        "The key stays out of this answer; recoverKnownNonce from @agntn/keys/secp256k1 returns it.",
+      ].join("\n"),
+    );
+
+    for (const [args, error] of [
+      [{ signature, nonce: flipped.nonce }, "The nonce does not give r"],
+      [{ signature, nonce: "0" }, "from 1 to the curve order minus 1"],
+      [
+        { signature, nonce: asSigned.nonce, publicKey: flipped.publicKey },
+        "Neither key the nonce gives matches publicKey",
+      ],
+      [{ signature }, "must have required properties nonce"],
+      [{ signature: { ...signature, k: "1" }, nonce: asSigned.nonce }, "Invalid arguments"],
+      [{ signature, nonce: `0x${asSigned.nonce}` }, "Invalid arguments at /nonce"],
+      [{ signature, nonce: asSigned.nonce, publicKey: "00".repeat(32) }, "Invalid arguments"],
+    ] as const) {
+      const failed = await client.callTool({
+        name: "keys_secp256k1_known_nonce_recover",
+        arguments: args,
+      });
+      expect(failed.isError).toBe(true);
+      expect(text(failed.content)).toContain(error);
+      expect(text(failed.content)).not.toContain(asSigned.nonce);
     }
   });
 

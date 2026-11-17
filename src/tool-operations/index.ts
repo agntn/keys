@@ -64,8 +64,16 @@ export { parseBip44Path, generateBip44Path } from "./bip44.ts";
 export type { BIP44PathDetails } from "./bip44.ts";
 export { encodeWif, decodeWif } from "./wif.ts";
 export type { EncodedWIFDetails } from "./wif.ts";
-export { convertPublicKey, recoverSecp256k1Nonce } from "./secp256k1.ts";
-export type { ConvertedPublicKeyDetails, RecoveredNonceDetails } from "./secp256k1.ts";
+export {
+  convertPublicKey,
+  recoverSecp256k1KnownNonce,
+  recoverSecp256k1Nonce,
+} from "./secp256k1.ts";
+export type {
+  ConvertedPublicKeyDetails,
+  KnownNonceDetails,
+  RecoveredNonceDetails,
+} from "./secp256k1.ts";
 export { extractTransactionSignatures, recoverTransactionSigner } from "./transaction.ts";
 export type { TransactionSignaturesDetails, TransactionSignerDetails } from "./transaction.ts";
 export { inspectBip38, decryptBip38 } from "./bip38.ts";

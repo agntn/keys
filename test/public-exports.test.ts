@@ -156,6 +156,7 @@ describe("Public secp256k1 exports", () => {
         "liftX",
         "isOnCurve",
         "recoverReusedNonce",
+        "recoverKnownNonce",
       ]),
     );
   });
