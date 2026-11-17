@@ -8,6 +8,7 @@ import {
 } from "../fixtures";
 import Polkadot from "../../src/blockchains/polkadot";
 import { useBlockchain } from "../../src/blockchain";
+import { readSecret } from "../../src/utils/sr25519";
 import { blockchains } from "../../src/_blockchains";
 import {
   deriveHdWallet,
@@ -226,7 +227,7 @@ describe("Polkadot", () => {
         expect(blockchain.getKeyPublic(wallet.keys.private)).toBe(publicKey);
         expect(kusama.deriveHDWallet(mnemonic, { path }).address).toBe(kusamaAddress);
         expect(generic.deriveHDWallet(mnemonic, { path }).address).toBe(genericAddress);
-        if (path !== "m") expect(wallet.keys.private.slice(0, 64)).toBe(keyHalf);
+        expect(readSecret(wallet.keys.private).slice(0, 64)).toBe(keyHalf);
       },
     );
 
@@ -254,10 +255,21 @@ describe("Polkadot", () => {
       }
     });
 
-    it("hands out the whole 64-byte secret below the root", () => {
+    it("keeps a mini secret down hard paths, the secret seed subkey prints", () => {
       const wallet = blockchain.deriveHDWallet(mnemonic, { path: "//polkadot//0" });
-      expect(wallet.keys.private).toBe(sr.hardSecret);
+      expect(wallet.keys.private).toBe(sr.hardSeed);
+      expect(readSecret(wallet.keys.private)).toBe(sr.hardSecret);
+      const alice = generic.deriveHDWallet(sr.alice.mnemonic, { path: "//Alice" });
+      expect(alice.keys).toEqual({ private: sr.alice.seed, public: sr.alice.publicKey });
+      expect(alice.address).toBe(sr.alice.address);
     });
+
+    it.each(["/0", "//polkadot/0", "/soft//hard"])(
+      "hands out the 64-byte secret from the first soft step of %s",
+      (path) => {
+        expect(blockchain.deriveHDWallet(mnemonic, { path }).keys.private).toHaveLength(128);
+      },
+    );
 
     it("lands a soft path on one secret every time, which signs for its account", () => {
       const [path, publicKey] = sr.wallets[6];
@@ -369,7 +381,7 @@ describe("Polkadot", () => {
       await expect(deriveHdWallet("bitcoin", { mnemonic, path: "//0" })).rejects.toThrow("m/84'");
     });
 
-    it("derive a wallet from the 64-byte secret of a derived account", async () => {
+    it("derive a wallet from the 64-byte secret of an account", async () => {
       const [, [, publicKey, , address]] = sr.wallets;
       const { details } = await deriveWallet("polkadot", { privateKey: sr.hardSecret });
       expect(details.publicKey).toBe(publicKey);

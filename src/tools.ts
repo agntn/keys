@@ -230,7 +230,7 @@ export const walletDeriveTool = defineTool({
     "Bitcoin Gold address types: legacy, p2sh, segwit, p2wsh",
     "For Sui and xrpl, use ed25519 or secp256k1 as the address type",
     "TON address types are wallet contracts: v4r2 (default), v5r1 or v3r2, non-bounceable UQ... as wallets show them, or with -bounceable for the EQ... form of the same account",
-    "On polkadot the key is an sr25519 mini secret, or the 128-character secret keys_hd_wallet_derive gives below the root; addressType ed25519 reads 64 characters as an ed25519 seed",
+    "On polkadot the key is an sr25519 mini secret, or the 128-character secret of an account past a /soft junction; addressType ed25519 reads 64 characters as an ed25519 seed",
     "Pass compressed: false for an old key on the Bitcoin family, whose legacy address hashes the uncompressed public key",
   ],
   effect: "read",

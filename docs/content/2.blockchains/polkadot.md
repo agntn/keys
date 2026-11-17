@@ -85,7 +85,9 @@ They're the sr25519 party trick. A soft child's public key follows from its pare
 
 ### What's the private key?
 
-At the root it's the 32-byte mini secret, what subkey calls the secret seed. Below it you get 64 bytes, the key and then the nonce schnorrkel signs with. Both go straight back into `deriveWallet` and `signMessage`.
+At the root and on `//hard` paths, it's the 32-byte mini secret. That's 64 hex characters, matching the "Secret seed" from `subkey inspect`. Nice, you can put them side by side.
+
+The first `/soft` junction leaves the seed behind. From there, it's 64 bytes: the key, then the nonce schnorrkel signs with. A later `//hard` junction keeps it at 64 bytes. Both forms go straight back into `deriveWallet` and `signMessage`.
 
 polkadot.js rolls a fresh nonce on every soft step, so that second half never repeats there. Here it's pinned, and the same path gives the same secret twice. The key half and the address match polkadot.js either way.
 
@@ -118,7 +120,7 @@ Sign the same message twice on sr25519 and you get two different signatures. Tha
 
 On `chain: "polkadot"` the `prefix` argument is the SS58 number as text, `"2"` for Kusama. `keys_hd_wallet_derive` takes junctions or `m` as its path, and `passphrase` is the URI password.
 
-`addressType` picks the curve on `keys_wallet_generate`, `keys_wallet_derive`, `keys_hd_wallet_derive` and `keys_message_sign`, sr25519 when you leave it out. The 128 hex characters a derived account hands back go right into `privateKey` again.
+`addressType` picks the curve on `keys_wallet_generate`, `keys_wallet_derive`, `keys_hd_wallet_derive` and `keys_message_sign`, sr25519 when you leave it out. Whatever the derived account hands back goes into `privateKey`: 64 hex characters on hard paths, 128 past a soft junction.
 
 ## Where it lives
 

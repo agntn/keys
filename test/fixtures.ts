@@ -831,6 +831,15 @@ export const polkadotSr25519TestVectors = {
   /** The whole 64-byte secret at `//polkadot//0`, hard all the way down. */
   hardSecret:
     "401e9149591f46c69e017aa11c9b934b4de4e193c2c0fc0e9ae6692fc32064741fde894a2d3ce875619c3e49cc78e0e23da60d4f2dcc0e1d2f24de00426e9f00",
+  /** Its mini secret, by schnorrkel 0.11.5 `hard_derive_mini_secret_key` folded as sp-core does. */
+  hardSeed: "02fee3fe0acebc6a64313cb4df1e3bf62daf42e16375d5d5398c396c7316474d",
+  /** `subkey inspect` of the dev phrase at `//Alice`, as the Substrate docs print it. */
+  alice: {
+    mnemonic: "bottom drive obey lake curtain smoke basket hold race lonely fit walk",
+    seed: "e5be9a5092b81bca64be81d212e7f2f9eba183bb7a90954f7b76361f6edb5c0a",
+    publicKey: "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d",
+    address: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+  },
   passphrasePublicKey: "baa4036a6b212012c67b91fd47c2e3e64b65bbd538969544c71b2f905227374c",
   /** `ed25519TestVectors.privateKey` read as a mini secret: `sr25519PairFromSeed`. */
   key: {
