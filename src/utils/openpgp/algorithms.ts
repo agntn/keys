@@ -1,4 +1,4 @@
-import { isPrime } from "@agntn/curves";
+import { invert, isPrime, power } from "@agntn/curves";
 import { verify as verifyBrainpoolP256 } from "@agntn/curves/brainpoolp256r1";
 import { verify as verifyBrainpoolP384 } from "@agntn/curves/brainpoolp384r1";
 import { verify as verifyBrainpoolP512 } from "@agntn/curves/brainpoolp512r1";
@@ -20,7 +20,6 @@ import {
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToNumberBE, concatBytes, equalBytes, numberToBytesBE } from "../bytes.ts";
-import { invert, pow } from "../modular.ts";
 import { type Reader, createReader } from "./packets.ts";
 
 /** One hash from RFC 9580 Table 23 that this module can compute. */
@@ -329,7 +328,8 @@ function checkDsaGroup(
   rest: { readonly q: bigint; readonly g: bigint; readonly y: bigint },
 ): void {
   const { q, g, y } = rest;
-  const inGroup = (value: bigint): boolean => value > 1n && value < p && pow(value, q, p) === 1n;
+  const inGroup = (value: bigint): boolean =>
+    value > 1n && value < p && power(value, q, { modulus: p }) === 1n;
   const sized = p.toString(2).length >= MIN_DSA_BITS && DSA_SUBGROUP_BITS.has(q.toString(2).length);
   if (!sized || (p - 1n) % q !== 0n || !isPrime(q) || !inGroup(g) || !inGroup(y)) {
     throw new TypeError("OpenPGP DSA key has broken group parameters");
@@ -452,7 +452,7 @@ function verifyRsa(
   const expected = pkcs1(digest, hash.prefix, length);
   return (
     expected !== undefined &&
-    equalBytes(numberToBytesBE(pow(signature, key.e, key.n), length), expected)
+    equalBytes(numberToBytesBE(power(signature, key.e, { modulus: key.n }), length), expected)
   );
 }
 
@@ -474,7 +474,10 @@ function verifyDsa(
   if (r <= 0n || s <= 0n || r >= key.q || s >= key.q || digest.length * 8 < qBits) return false;
   const z = bytesToNumberBE(digest) >> BigInt(digest.length * 8 - qBits);
   const w = invert(s, key.q);
-  const v = (pow(key.g, (z * w) % key.q, key.p) * pow(key.y, (r * w) % key.q, key.p)) % key.p;
+  const v =
+    (power(key.g, (z * w) % key.q, { modulus: key.p }) *
+      power(key.y, (r * w) % key.q, { modulus: key.p })) %
+    key.p;
   return v % key.q === r;
 }
 
