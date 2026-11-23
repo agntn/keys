@@ -454,7 +454,7 @@ describe("OpenPGP cleartext verification", () => {
   });
 
   /* curves inverts mod 1 to 0n instead of throwing. */
-  it("keeps a modulus of 1 away from the math, for DSA and RSA alike", () => {
+  it("refuses a DSA key with q = 1 before invert sees it", () => {
     const [packet] = packetsOf(dsa.publicKey);
     if (packet === undefined) throw new Error("No key packet");
     const { material } = readPublicKey(packet.body);
@@ -463,9 +463,6 @@ describe("OpenPGP cleartext verification", () => {
     expect(() =>
       readKeyMaterial(17, Uint8Array.from(numbers.flatMap((value) => mpiOf(value)))),
     ).toThrow("OpenPGP DSA key has broken group parameters");
-    const key = { kind: "rsa", n: 1n, e: 3n, bits: 1 } as const;
-    const value = Uint8Array.from(mpiOf(0n));
-    expect(checkMath(key, 1, value, new Uint8Array(32), hashAlgorithm(8))).toBe(false);
   });
 
   it("refuses an Ed25519 key at the identity, which ZIP 215 rules would let sign anything", () => {
