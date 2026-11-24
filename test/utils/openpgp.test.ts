@@ -453,6 +453,18 @@ describe("OpenPGP cleartext verification", () => {
     ).toThrow("OpenPGP DSA key has broken group parameters");
   });
 
+  /* curves inverts mod 1 to 0n instead of throwing. */
+  it("refuses a DSA key with q = 1 before invert sees it", () => {
+    const [packet] = packetsOf(dsa.publicKey);
+    if (packet === undefined) throw new Error("No key packet");
+    const { material } = readPublicKey(packet.body);
+    if (material.kind !== "dsa") throw new Error("Not a DSA key");
+    const numbers = [material.p, 1n, material.g, material.y];
+    expect(() =>
+      readKeyMaterial(17, Uint8Array.from(numbers.flatMap((value) => mpiOf(value)))),
+    ).toThrow("OpenPGP DSA key has broken group parameters");
+  });
+
   it("refuses an Ed25519 key at the identity, which ZIP 215 rules would let sign anything", () => {
     const identity = Uint8Array.from([1, ...Array.from({ length: 31 }, () => 0)]);
     const value = Uint8Array.from([...identity, ...Array.from({ length: 32 }, () => 0)]);
