@@ -278,9 +278,16 @@ describe("Public transaction exports", () => {
     if (a === undefined || b === undefined) throw new Error("missing signature");
     expect(recoverReusedNonce([a, b]).publicKey).toMatch(/^0[23]dbd0c615/u);
     expect(new Set(Object.keys(transaction))).toEqual(
-      new Set(["extractSignatures", "recoverSigner"]),
+      new Set(["decode", "extractSignatures", "recoverSigner"]),
     );
     expect(await import("@agntn/keys")).not.toHaveProperty("extractSignatures");
+  });
+
+  it("reads the outputs of a SegWit transaction from the built package", async () => {
+    const { decode } = await import("@agntn/keys/transaction");
+    const [first] = decode(transactionVectors.p2wpkh.transaction).outputs;
+    expect(first?.value).toBe(112_340_000n);
+    expect(await import("@agntn/keys")).not.toHaveProperty("decode");
   });
 
   it("recovers an EVM transaction signer from the built package", async () => {
@@ -594,6 +601,7 @@ describe("Consumer bundles", () => {
     ["decrypt", "@agntn/keys/bip38"],
     ["deriveWif", "@agntn/keys/bip85"],
     ["verify", "@agntn/keys/bip322"],
+    ["decode", "@agntn/keys/transaction"],
     ["extractSignatures", "@agntn/keys/transaction"],
     ["recoverSigner", "@agntn/keys/transaction"],
     ["multisig", "@agntn/keys/script"],
