@@ -37,13 +37,13 @@ function servesSource(): boolean {
 
 /**
  * Serves the live `createMcpServer` over stdio, so an edit costs a restart, not a build.
- * @returns {Promise<void>} Once the server is connected.
+ * @returns {Promise<void>} Once the server listens.
  */
 async function serveSource(): Promise<void> {
   const module: unknown = await import(sourceMcp.href);
   if (!isMcpModule(module)) throw new TypeError("The MCP module has no createMcpServer");
-  const { StdioServerTransport } = await import("@modelcontextprotocol/server/stdio");
-  await module.createMcpServer().connect(new StdioServerTransport());
+  const { serveStdio } = await import("@agntn/tools/stdio");
+  serveStdio(() => module.createMcpServer());
 }
 
 /**
