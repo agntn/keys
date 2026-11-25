@@ -13,6 +13,8 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { commandName } from "@agntn/tools/cli";
+import { Client } from "@modelcontextprotocol/client";
+import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { beforeAll, describe, expect, it } from "vite-plus/test";
 import { keysTools } from "../src/tools.ts";
 
@@ -237,6 +239,62 @@ describe("keys usage paths", () => {
       expect(run.modules).toContain(`${copiedSource}/mcp.ts`);
     } finally {
       rmSync(copy, { recursive: true, force: true });
+    }
+  });
+});
+
+/* Connects to `keys mcp`, where `dist: false` lets the checkout serve `src/`. */
+async function connect(
+  dist: boolean,
+  mode: "legacy" | Readonly<{ pin: "2026-07-28" }>,
+): Promise<Client> {
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(
+      (entry): entry is [string, string] =>
+        entry[0] !== "KEYS_DIST" && entry[0] !== "NODE_OPTIONS" && entry[1] !== undefined,
+    ),
+  );
+  const client = new Client(
+    { name: "keys-test", version: "1.0.0" },
+    { versionNegotiation: { mode } },
+  );
+  await client.connect(
+    new StdioClientTransport({
+      command: process.execPath,
+      args: [bin, "mcp"],
+      env: dist ? { ...env, KEYS_DIST: "1" } : env,
+      stderr: "ignore",
+    }),
+  );
+  return client;
+}
+
+describe("keys mcp protocol versions", () => {
+  const builds = [
+    { from: "source", dist: false },
+    { from: "bundle", dist: true },
+  ];
+  const toolNames = keysTools.map((tool) => tool.name);
+
+  it.each(builds)("lets a client pinned to 2026 listen, from the $from", async ({ dist }) => {
+    const client = await connect(dist, { pin: "2026-07-28" });
+    try {
+      expect(client.getNegotiatedProtocolVersion()).toBe("2026-07-28");
+      const subscription = await client.listen({ toolsListChanged: true });
+      expect((await client.listTools()).tools.map((tool) => tool.name)).toEqual(toolNames);
+      await subscription.close();
+    } finally {
+      await client.close();
+    }
+  });
+
+  it.each(builds)("still opens a 2025 client with initialize, from the $from", async ({ dist }) => {
+    const client = await connect(dist, "legacy");
+    try {
+      expect(client.getNegotiatedProtocolVersion()).toMatch(/^2025-/u);
+      expect((await client.listTools()).tools.map((tool) => tool.name)).toEqual(toolNames);
+    } finally {
+      await client.close();
     }
   });
 });
