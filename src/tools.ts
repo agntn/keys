@@ -1,6 +1,6 @@
 /** The key tools, declared once for MCP, Pi, OMP and the AI SDK. The executors load on the first call. */
 
-import { defineTool, type ToolDefinition } from "@agntn/tools";
+import { defineTool, lazy, type ToolDefinition } from "@agntn/tools";
 import {
   BIP44_GENERATE_PARAMETERS,
   BIP44_PARSE_PARAMETERS,
@@ -47,17 +47,8 @@ import {
   WIF_ENCODE_PARAMETERS,
 } from "./tool-schemas.ts";
 import { MAX_BIP39_CHECKSUM_SEARCH, MAX_BIP39_REPAIR_WORDS } from "./tool-parameters.ts";
-let operations: Promise<typeof import("./tool-operations/index.ts")> | undefined;
-
-/**
- * Loads the shared executors once.
- *
- * @returns {Promise<typeof import("./tool-operations/index.ts")>} The executors.
- */
-function loadOperations(): Promise<typeof import("./tool-operations/index.ts")> {
-  operations ??= import("./tool-operations/index.ts");
-  return operations;
-}
+/** Loads the shared executors once, and a call cancelled meanwhile never gets them. */
+const loadOperations = /* @__PURE__ */ lazy(() => import("./tool-operations/index.ts"));
 
 export const electrumWalletDeriveTool = defineTool({
   name: "keys_electrum_wallet_derive",
@@ -66,8 +57,8 @@ export const electrumWalletDeriveTool = defineTool({
     "Derive a Bitcoin public key and address from a complete Electrum phrase. Standard and SegWit seeds take an exact path; old (pre-2.0) seeds take change and index and also return the master public key, with uncompressed P2PKH addresses. Rejects 2FA seeds. Inputs enter the transcript; use only public or disposable material, never real wallet secrets.",
   effect: "read",
   input: DERIVE_ELECTRUM_WALLET_PARAMETERS,
-  execute: async ({ mnemonic, ...options }) =>
-    (await loadOperations()).deriveElectrumWallet(mnemonic, options),
+  execute: async ({ mnemonic, ...options }, { signal }) =>
+    (await loadOperations(signal)).deriveElectrumWallet(mnemonic, options),
 });
 
 export const brainwalletDeriveTool = defineTool({
@@ -77,7 +68,7 @@ export const brainwalletDeriveTool = defineTool({
     "Derive the public key and address of a brainwallet from its full recipe: scrypt or PBKDF2 over the passphrase and salt, then SHA-256 of the output bytes or of their hex text, plain SHA-256 or keccak256 of the passphrase alone, or WarpWallet (scrypt XOR PBKDF2 at fixed costs). Bitcoin P2PKH by default, or an Ethereum address. Given a target address, reports whether it matches. The private key is never returned; the passphrase enters the transcript, so use only public or disposable material.",
   effect: "read",
   input: DERIVE_BRAINWALLET_PARAMETERS,
-  execute: async (params) => (await loadOperations()).deriveBrainwallet(params),
+  execute: async (params, { signal }) => (await loadOperations(signal)).deriveBrainwallet(params),
 });
 
 export const bip39SeedDeriveTool = defineTool({
@@ -87,8 +78,8 @@ export const bip39SeedDeriveTool = defineTool({
     "Derive a 64-byte BIP39 seed from a valid mnemonic and optional passphrase; coleman also takes the 3 to 768 word phrases Ian Coleman's tool writes, and rounds runs PBKDF2 at a count other than 2048. Not a BIP32 master key. Inputs and seed enter the transcript; use only public or disposable material, never keys controlling real funds.",
   effect: "read",
   input: DERIVE_BIP39_SEED_PARAMETERS,
-  execute: async ({ mnemonic, ...options }) =>
-    (await loadOperations()).deriveBip39Seed(mnemonic, options),
+  execute: async ({ mnemonic, ...options }, { signal }) =>
+    (await loadOperations(signal)).deriveBip39Seed(mnemonic, options),
 });
 
 export const secp256k1PublicKeyConvertTool = defineTool({
@@ -98,8 +89,8 @@ export const secp256k1PublicKeyConvertTool = defineTool({
     "Convert a secp256k1 public key between compressed and uncompressed SEC1 hex. No private key required. Rejects hybrid and x-only encodings.",
   effect: "read",
   input: CONVERT_PUBLIC_KEY_PARAMETERS,
-  execute: async (params) =>
-    (await loadOperations()).convertPublicKey(params.publicKey, params.compressed),
+  execute: async (params, { signal }) =>
+    (await loadOperations(signal)).convertPublicKey(params.publicKey, params.compressed),
 });
 
 export const secp256k1NonceRecoverTool = defineTool({
@@ -116,8 +107,8 @@ export const secp256k1NonceRecoverTool = defineTool({
   ],
   effect: "read",
   input: RECOVER_SECP256K1_NONCE_PARAMETERS,
-  execute: async ({ signatures, ...options }) =>
-    (await loadOperations()).recoverSecp256k1Nonce(signatures, options),
+  execute: async ({ signatures, ...options }, { signal }) =>
+    (await loadOperations(signal)).recoverSecp256k1Nonce(signatures, options),
 });
 
 export const secp256k1KnownNonceRecoverTool = defineTool({
@@ -134,8 +125,8 @@ export const secp256k1KnownNonceRecoverTool = defineTool({
   ],
   effect: "read",
   input: RECOVER_SECP256K1_KNOWN_NONCE_PARAMETERS,
-  execute: async ({ signature, ...options }) =>
-    (await loadOperations()).recoverSecp256k1KnownNonce(signature, options),
+  execute: async ({ signature, ...options }, { signal }) =>
+    (await loadOperations(signal)).recoverSecp256k1KnownNonce(signature, options),
 });
 
 export const wifEncodeTool = defineTool({
@@ -145,7 +136,8 @@ export const wifEncodeTool = defineTool({
     "Encode a disposable private key as Bitcoin, Litecoin, Dash, Decred or Dogecoin ECDSA WIF. WIF is not encryption; inputs and results enter the transcript. Never use keys controlling real funds.",
   effect: "read",
   input: WIF_ENCODE_PARAMETERS,
-  execute: async ({ chain, ...options }) => (await loadOperations()).encodeWif(chain, options),
+  execute: async ({ chain, ...options }, { signal }) =>
+    (await loadOperations(signal)).encodeWif(chain, options),
 });
 
 export const wifDecodeTool = defineTool({
@@ -155,7 +147,8 @@ export const wifDecodeTool = defineTool({
     "Decode public or disposable Bitcoin, Litecoin, Dash, Decred or Dogecoin ECDSA WIF into a hex private key and wallet options. Specify the expected chain and network; Bitcoin, Litecoin and Dash testnet WIFs overlap. Both forms enter the transcript.",
   effect: "read",
   input: WIF_DECODE_PARAMETERS,
-  execute: async ({ chain, ...options }) => (await loadOperations()).decodeWif(chain, options),
+  execute: async ({ chain, ...options }, { signal }) =>
+    (await loadOperations(signal)).decodeWif(chain, options),
 });
 
 export const bip38InspectTool = defineTool({
@@ -165,8 +158,8 @@ export const bip38InspectTool = defineTool({
     "Read a BIP38 encrypted private key (6P...) without its passphrase: EC multiply or not, compression, lot and sequence, owner entropy, and the stored address hash. Given an address, reports whether its hash matches. Nothing is decrypted.",
   effect: "read",
   input: INSPECT_BIP38_PARAMETERS,
-  execute: async (params) =>
-    (await loadOperations()).inspectBip38(params.encryptedKey, params.address),
+  execute: async (params, { signal }) =>
+    (await loadOperations(signal)).inspectBip38(params.encryptedKey, params.address),
 });
 
 export const bip38DecryptTool = defineTool({
@@ -176,8 +169,8 @@ export const bip38DecryptTool = defineTool({
     "Open a BIP38 encrypted private key (6P...) with its passphrase, EC multiply or not. Reports the mode, compression, lot and sequence, whether the passphrase is right and, when it is, the Bitcoin public key and P2PKH address. The WIF comes back only with revealKey: true. The passphrase enters the transcript, so use only public or disposable material.",
   effect: "read",
   input: DECRYPT_BIP38_PARAMETERS,
-  execute: async ({ encryptedKey, ...options }) =>
-    (await loadOperations()).decryptBip38(encryptedKey, options),
+  execute: async ({ encryptedKey, ...options }, { signal }) =>
+    (await loadOperations(signal)).decryptBip38(encryptedKey, options),
 });
 
 export const storeDecryptTool = defineTool({
@@ -191,8 +184,8 @@ export const storeDecryptTool = defineTool({
       "Open a version 3 Web3 Secret Storage keystore (geth, ethers, Foundry, MyEtherWallet) with its password.",
   },
   input: DECRYPT_STORE_PARAMETERS,
-  execute: async (params) =>
-    (await loadOperations()).decryptStore(params.keystore, params.password),
+  execute: async (params, { signal }) =>
+    (await loadOperations(signal)).decryptStore(params.keystore, params.password),
 });
 
 export const arweaveAddressGetTool = defineTool({
@@ -202,7 +195,8 @@ export const arweaveAddressGetTool = defineTool({
     "Derive an Arweave address from a keyfile (RSA JWK) or just its modulus n: base64url of SHA-256 over n. Given a target address, reports whether it matches. Only n is read, but a whole keyfile still enters the transcript, so pass n when the key is real.",
   effect: "read",
   input: GET_ARWEAVE_ADDRESS_PARAMETERS,
-  execute: async (params) => (await loadOperations()).getArweaveAddress(params.key, params.target),
+  execute: async (params, { signal }) =>
+    (await loadOperations(signal)).getArweaveAddress(params.key, params.target),
 });
 
 export const walletGenerateTool = defineTool({
@@ -231,7 +225,8 @@ export const walletGenerateTool = defineTool({
   effect: "write",
   idempotent: false,
   input: GENERATE_WALLET_PARAMETERS,
-  execute: async ({ chain, ...options }) => (await loadOperations()).generateWallet(chain, options),
+  execute: async ({ chain, ...options }, { signal }) =>
+    (await loadOperations(signal)).generateWallet(chain, options),
 });
 
 export const walletDeriveTool = defineTool({
@@ -255,7 +250,8 @@ export const walletDeriveTool = defineTool({
   ],
   effect: "read",
   input: DERIVE_WALLET_PARAMETERS,
-  execute: async ({ chain, ...options }) => (await loadOperations()).deriveWallet(chain, options),
+  execute: async ({ chain, ...options }, { signal }) =>
+    (await loadOperations(signal)).deriveWallet(chain, options),
 });
 
 export const hdWalletDeriveTool = defineTool({
@@ -285,7 +281,8 @@ export const hdWalletDeriveTool = defineTool({
   ],
   effect: "read",
   input: DERIVE_HD_WALLET_PARAMETERS,
-  execute: async ({ chain, ...options }) => (await loadOperations()).deriveHdWallet(chain, options),
+  execute: async ({ chain, ...options }, { signal }) =>
+    (await loadOperations(signal)).deriveHdWallet(chain, options),
 });
 
 export const hdWalletScanTool = defineTool({
@@ -308,7 +305,8 @@ export const hdWalletScanTool = defineTool({
   ],
   effect: "read",
   input: SCAN_HD_WALLET_PARAMETERS,
-  execute: async ({ chain, ...options }) => (await loadOperations()).scanHdWallet(chain, options),
+  execute: async ({ chain, ...options }, { signal }) =>
+    (await loadOperations(signal)).scanHdWallet(chain, options),
 });
 
 export const xpubWalletDeriveTool = defineTool({
@@ -326,8 +324,8 @@ export const xpubWalletDeriveTool = defineTool({
   ],
   effect: "read",
   input: DERIVE_XPUB_WALLET_PARAMETERS,
-  execute: async ({ chain, ...options }) =>
-    (await loadOperations()).deriveXpubWallet(chain, options),
+  execute: async ({ chain, ...options }, { signal }) =>
+    (await loadOperations(signal)).deriveXpubWallet(chain, options),
 });
 
 export const bip32ParentRecoverTool = defineTool({
@@ -344,8 +342,8 @@ export const bip32ParentRecoverTool = defineTool({
   ],
   effect: "read",
   input: RECOVER_BIP32_PARENT_PARAMETERS,
-  execute: async ({ extendedKey, ...options }) =>
-    (await loadOperations()).recoverBip32Parent(extendedKey, options),
+  execute: async ({ extendedKey, ...options }, { signal }) =>
+    (await loadOperations(signal)).recoverBip32Parent(extendedKey, options),
 });
 
 export const bip85DeriveTool = defineTool({
@@ -363,8 +361,8 @@ export const bip85DeriveTool = defineTool({
   ],
   effect: "read",
   input: DERIVE_BIP85_PARAMETERS,
-  execute: async ({ rootKey, ...options }) =>
-    (await loadOperations()).deriveBip85(rootKey, options),
+  execute: async ({ rootKey, ...options }, { signal }) =>
+    (await loadOperations(signal)).deriveBip85(rootKey, options),
 });
 
 export const bip39GenerateTool = defineTool({
@@ -381,8 +379,8 @@ export const bip39GenerateTool = defineTool({
   effect: "write",
   idempotent: false,
   input: GENERATE_MNEMONIC_PARAMETERS,
-  execute: async (params) =>
-    (await loadOperations()).generateBip39Mnemonic(params.words, params.language),
+  execute: async (params, { signal }) =>
+    (await loadOperations(signal)).generateBip39Mnemonic(params.words, params.language),
 });
 
 export const bip39InspectTool = defineTool({
@@ -403,8 +401,8 @@ export const bip39InspectTool = defineTool({
   ],
   effect: "read",
   input: INSPECT_MNEMONIC_PARAMETERS,
-  execute: async ({ mnemonic, ...options }) =>
-    (await loadOperations()).inspectMnemonic(mnemonic, options),
+  execute: async ({ mnemonic, ...options }, { signal }) =>
+    (await loadOperations(signal)).inspectMnemonic(mnemonic, options),
 });
 
 export const bip39EntropyEncodeTool = defineTool({
@@ -421,8 +419,8 @@ export const bip39EntropyEncodeTool = defineTool({
   ],
   effect: "read",
   input: ENCODE_BIP39_ENTROPY_PARAMETERS,
-  execute: async ({ entropy, ...options }) =>
-    (await loadOperations()).encodeBip39Entropy(entropy, options),
+  execute: async ({ entropy, ...options }, { signal }) =>
+    (await loadOperations(signal)).encodeBip39Entropy(entropy, options),
 });
 
 export const bip39IndicesLookupTool = defineTool({
@@ -439,8 +437,8 @@ export const bip39IndicesLookupTool = defineTool({
   ],
   effect: "read",
   input: LOOKUP_BIP39_INDICES_PARAMETERS,
-  execute: async ({ indices, ...options }) =>
-    (await loadOperations()).lookupBip39Indices(indices, options),
+  execute: async ({ indices, ...options }, { signal }) =>
+    (await loadOperations(signal)).lookupBip39Indices(indices, options),
 });
 
 export const bip39WordsLookupTool = defineTool({
@@ -458,8 +456,8 @@ export const bip39WordsLookupTool = defineTool({
   ],
   effect: "read",
   input: LOOKUP_BIP39_WORDS_PARAMETERS,
-  execute: async (params) =>
-    (await loadOperations()).lookupBip39Words(params.words, params.language),
+  execute: async (params, { signal }) =>
+    (await loadOperations(signal)).lookupBip39Words(params.words, params.language),
 });
 
 export const bip39WordRecoverTool = defineTool({
@@ -478,8 +476,8 @@ export const bip39WordRecoverTool = defineTool({
   ],
   effect: "read",
   input: RECOVER_MNEMONIC_WORD_PARAMETERS,
-  execute: async (params) =>
-    (await loadOperations()).recoverMnemonicWord(params.mnemonic, params.language),
+  execute: async (params, { signal }) =>
+    (await loadOperations(signal)).recoverMnemonicWord(params.mnemonic, params.language),
 });
 
 export const bip39WordsOrderTool = defineTool({
@@ -496,8 +494,8 @@ export const bip39WordsOrderTool = defineTool({
   ],
   effect: "read",
   input: ORDER_BIP39_WORDS_PARAMETERS,
-  execute: async ({ words, ...options }) =>
-    (await loadOperations()).orderBip39Words(words, options),
+  execute: async ({ words, ...options }, { signal }) =>
+    (await loadOperations(signal)).orderBip39Words(words, options),
 });
 
 export const bip39WordsRepairTool = defineTool({
@@ -514,8 +512,8 @@ export const bip39WordsRepairTool = defineTool({
   ],
   effect: "read",
   input: REPAIR_BIP39_WORDS_PARAMETERS,
-  execute: async ({ mnemonic, ...options }) =>
-    (await loadOperations()).repairBip39Words(mnemonic, options),
+  execute: async ({ mnemonic, ...options }, { signal }) =>
+    (await loadOperations(signal)).repairBip39Words(mnemonic, options),
 });
 
 export const bip39TextScanTool = defineTool({
@@ -536,7 +534,8 @@ export const bip39TextScanTool = defineTool({
   effect: "read",
   cli: { positional: ["text"], stdin: ["text"] },
   input: SCAN_BIP39_TEXT_PARAMETERS,
-  execute: async ({ text, ...options }) => (await loadOperations()).scanBip39Text(text, options),
+  execute: async ({ text, ...options }, { signal }) =>
+    (await loadOperations(signal)).scanBip39Text(text, options),
 });
 
 export const addressGetTool = defineTool({
@@ -554,7 +553,8 @@ export const addressGetTool = defineTool({
   ],
   effect: "read",
   input: GET_ADDRESS_PARAMETERS,
-  execute: async ({ chain, ...options }) => (await loadOperations()).getAddress(chain, options),
+  execute: async ({ chain, ...options }, { signal }) =>
+    (await loadOperations(signal)).getAddress(chain, options),
 });
 
 export const addressValidateTool = defineTool({
@@ -574,8 +574,8 @@ export const addressValidateTool = defineTool({
   ],
   effect: "read",
   input: VALIDATE_ADDRESS_PARAMETERS,
-  execute: async ({ chain, ...options }) =>
-    (await loadOperations()).validateAddress(chain, options),
+  execute: async ({ chain, ...options }, { signal }) =>
+    (await loadOperations(signal)).validateAddress(chain, options),
 });
 
 export const scriptAddressGetTool = defineTool({
@@ -591,8 +591,8 @@ export const scriptAddressGetTool = defineTool({
   ],
   effect: "read",
   input: GET_SCRIPT_ADDRESS_PARAMETERS,
-  execute: async ({ script, ...options }) =>
-    (await loadOperations()).getScriptAddress(script, options),
+  execute: async ({ script, ...options }, { signal }) =>
+    (await loadOperations(signal)).getScriptAddress(script, options),
 });
 
 export const descriptorDeriveTool = defineTool({
@@ -609,8 +609,8 @@ export const descriptorDeriveTool = defineTool({
   ],
   effect: "read",
   input: DERIVE_DESCRIPTOR_PARAMETERS,
-  execute: async ({ descriptor, ...options }) =>
-    (await loadOperations()).deriveDescriptor(descriptor, options),
+  execute: async ({ descriptor, ...options }, { signal }) =>
+    (await loadOperations(signal)).deriveDescriptor(descriptor, options),
 });
 
 export const messageSignTool = defineTool({
@@ -636,7 +636,8 @@ export const messageSignTool = defineTool({
   effect: "write",
   idempotent: true,
   input: SIGN_MESSAGE_PARAMETERS,
-  execute: async ({ chain, ...options }) => (await loadOperations()).signMessage(chain, options),
+  execute: async ({ chain, ...options }, { signal }) =>
+    (await loadOperations(signal)).signMessage(chain, options),
 });
 
 export const messageVerifyTool = defineTool({
@@ -654,7 +655,8 @@ export const messageVerifyTool = defineTool({
   ],
   effect: "read",
   input: VERIFY_MESSAGE_PARAMETERS,
-  execute: async ({ chain, ...options }) => (await loadOperations()).verifyMessage(chain, options),
+  execute: async ({ chain, ...options }, { signal }) =>
+    (await loadOperations(signal)).verifyMessage(chain, options),
 });
 
 export const messageRecoverTool = defineTool({
@@ -671,8 +673,8 @@ export const messageRecoverTool = defineTool({
   ],
   effect: "read",
   input: RECOVER_MESSAGE_PARAMETERS,
-  execute: async ({ chain, ...options }) =>
-    (await loadOperations()).recoverMessageSigner(chain, options),
+  execute: async ({ chain, ...options }, { signal }) =>
+    (await loadOperations(signal)).recoverMessageSigner(chain, options),
 });
 
 export const bip322SignTool = defineTool({
@@ -683,7 +685,8 @@ export const bip322SignTool = defineTool({
   effect: "write",
   idempotent: true,
   input: BIP322_SIGN_PARAMETERS,
-  execute: async ({ message, ...options }) => (await loadOperations()).signBip322(message, options),
+  execute: async ({ message, ...options }, { signal }) =>
+    (await loadOperations(signal)).signBip322(message, options),
 });
 
 export const bip322VerifyTool = defineTool({
@@ -693,8 +696,8 @@ export const bip322VerifyTool = defineTool({
     "Verify a BIP322 signature of a message by a Bitcoin address, the proof SegWit and Taproot wallets give: simple (smp) and full (ful) for P2WPKH, P2TR key path, P2SH-P2WPKH and P2PKH, and signmessage's legacy base64 for P2PKH. Answers valid, invalid or inconclusive with the reason; P2WSH, Taproot script paths and other P2SH scripts get their hash commitments checked, then come back inconclusive, as does proof of funds. A valid one names the key it checked against.",
   effect: "read",
   input: BIP322_VERIFY_PARAMETERS,
-  execute: async ({ address, ...options }) =>
-    (await loadOperations()).verifyBip322(address, options),
+  execute: async ({ address, ...options }, { signal }) =>
+    (await loadOperations(signal)).verifyBip322(address, options),
 });
 
 export const openpgpInspectTool = defineTool({
@@ -704,7 +707,8 @@ export const openpgpInspectTool = defineTool({
     "Read an ASCII-armored OpenPGP public key block or cleartext signed message, versions 4 and 6, without a keyring or keyserver. A key block gives full fingerprints, algorithms, flags, expiry, revocation, the user IDs the key certifies and its subkeys with their bindings checked. A signed message gives the exact text the signature covers and who each signature claims to be from, unverified: use keys_openpgp_verify for the verdict.",
   effect: "read",
   input: INSPECT_OPENPGP_PARAMETERS,
-  execute: async (params) => (await loadOperations()).inspectOpenpgp(params.armor),
+  execute: async (params, { signal }) =>
+    (await loadOperations(signal)).inspectOpenpgp(params.armor),
 });
 
 export const openpgpVerifyTool = defineTool({
@@ -714,8 +718,8 @@ export const openpgpVerifyTool = defineTool({
     "Verify an OpenPGP cleartext signed message (-----BEGIN PGP SIGNED MESSAGE-----) against the signer's armored public key block: RSA, Ed25519 (v4 legacy and v6), Ed448 and ECDSA on secp256k1, P-256, P-384, P-521 and brainpoolP256r1, P384r1 and P512r1, over SHA-224, SHA-256, SHA-384, SHA-512, SHA3-256 or SHA3-512. Answers valid, invalid with the reason, or inconclusive when the math holds over MD5, SHA-1 or RIPEMD-160, or on DSA or RSA under 2048 bits, all retired by RFC 9580. A signing subkey counts only with a valid binding and back signature. Identity is a separate answer: pass the full fingerprint you trust to get match or mismatch. Revocation, expiry and text outside the signed block come back as warnings. Nothing gets fetched or imported.",
   effect: "read",
   input: VERIFY_OPENPGP_PARAMETERS,
-  execute: async ({ message, ...options }) =>
-    (await loadOperations()).verifyOpenpgp(message, options),
+  execute: async ({ message, ...options }, { signal }) =>
+    (await loadOperations(signal)).verifyOpenpgp(message, options),
 });
 
 export const transactionSignaturesExtractTool = defineTool({
@@ -733,8 +737,8 @@ export const transactionSignaturesExtractTool = defineTool({
   ],
   effect: "read",
   input: EXTRACT_TRANSACTION_SIGNATURES_PARAMETERS,
-  execute: async ({ transaction, ...options }) =>
-    (await loadOperations()).extractTransactionSignatures(transaction, options),
+  execute: async ({ transaction, ...options }, { signal }) =>
+    (await loadOperations(signal)).extractTransactionSignatures(transaction, options),
 });
 
 export const transactionSignerRecoverTool = defineTool({
@@ -751,7 +755,8 @@ export const transactionSignerRecoverTool = defineTool({
   ],
   effect: "read",
   input: RECOVER_TRANSACTION_SIGNER_PARAMETERS,
-  execute: async (params) => (await loadOperations()).recoverTransactionSigner(params.transaction),
+  execute: async (params, { signal }) =>
+    (await loadOperations(signal)).recoverTransactionSigner(params.transaction),
 });
 
 export const bip44ParseTool = defineTool({
@@ -764,7 +769,7 @@ export const bip44ParseTool = defineTool({
   guidelines: ["Hardened levels take ' or h, as in m/44'/0'/0'/0/0 or m/44h/0h/0h/0/0"],
   effect: "read",
   input: BIP44_PARSE_PARAMETERS,
-  execute: async (params) => (await loadOperations()).parseBip44Path(params.path),
+  execute: async (params, { signal }) => (await loadOperations(signal)).parseBip44Path(params.path),
 });
 
 export const bip44GenerateTool = defineTool({
@@ -783,8 +788,8 @@ export const bip44GenerateTool = defineTool({
   ],
   effect: "read",
   input: BIP44_GENERATE_PARAMETERS,
-  execute: async ({ chain, ...options }) =>
-    (await loadOperations()).generateBip44Path(chain, options),
+  execute: async ({ chain, ...options }, { signal }) =>
+    (await loadOperations(signal)).generateBip44Path(chain, options),
 });
 
 /** Every key tool in listing order. */
