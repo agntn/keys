@@ -357,6 +357,11 @@ export const solanaProgramAddressVectors = {
   ],
   /** Fifteen seeds of 32 bytes, seed i filled with byte i. */
   full: { address: "8arXiGZsqDfL6sNBdtpkdSKKtTYiRX7qweoMZG49D41n", bump: 255 },
+  /** helloWorld with bump 0, off the curve though the canonical bump is 255. */
+  zeroBump: {
+    seeds: [{ text: "helloWorld" }],
+    address: "7zMT2HzjBwWhRpYUgZ8ngN3Yajmyk5ij4h2BMZCJttwP",
+  },
   /** Bump 255 puts these seeds on the curve, which web3.js refuses too. */
   onCurve: { seeds: [{ text: "vault" }, { hex: "0000" }], bump: 255 },
   rust: [

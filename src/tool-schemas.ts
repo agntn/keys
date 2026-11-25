@@ -72,6 +72,7 @@ import {
   MAX_SCRIPT_HEX_LENGTH,
   SEC1_PUBLIC_KEY_SCHEMA_PATTERN,
   SOLANA_ADDRESS_SCHEMA_PATTERN,
+  BUMP_SCHEMA_PATTERN,
   U64_SCHEMA_PATTERN,
 } from "./tool-parameters.ts";
 import { MAX_MULTISIG_KEYS } from "./utils/script/limits.ts";
@@ -1347,10 +1348,10 @@ export const GET_SOLANA_PROGRAM_ADDRESS_PARAMETERS = Type.Object(
       },
     ),
     bump: Type.Optional(
-      Type.Integer({
-        minimum: 1,
-        maximum: 255,
-        description: "A known bump, appended as the last seed. Default: the canonical one",
+      Type.String({
+        pattern: BUMP_SCHEMA_PATTERN,
+        description:
+          "A known bump from 0 to 255 as decimal text, appended as the last seed. Default: the canonical one",
       }),
     ),
   },

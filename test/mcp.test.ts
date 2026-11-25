@@ -2026,7 +2026,7 @@ describe("keys MCP server", () => {
 
   it("derives Solana program and token addresses through MCP", async () => {
     const client = await connectTestClient();
-    const { programId, found, onCurve, token } = solanaProgramAddressVectors;
+    const { programId, found, onCurve, zeroBump, token } = solanaProgramAddressVectors;
     for (const { seeds, address, bump } of found) {
       const searched = await client.callTool({
         name: "keys_solana_program_address_get",
@@ -2035,10 +2035,15 @@ describe("keys MCP server", () => {
       expect(text(searched.content)).toBe(`Address: ${address}\nBump: ${bump} (canonical)`);
       const given = await client.callTool({
         name: "keys_solana_program_address_get",
-        arguments: { programId, seeds, bump },
+        arguments: { programId, seeds, bump: String(bump) },
       });
       expect(text(given.content)).toBe(`Address: ${address}\nBump: ${bump}`);
     }
+    const zero = await client.callTool({
+      name: "keys_solana_program_address_get",
+      arguments: { programId, seeds: zeroBump.seeds, bump: "0" },
+    });
+    expect(text(zero.content)).toBe(`Address: ${zeroBump.address}\nBump: 0`);
 
     const ata = await client.callTool({
       name: "keys_solana_token_address_get",
@@ -2056,7 +2061,9 @@ describe("keys MCP server", () => {
     expect(text(ata2022.content)).toBe(`Address: ${token.token2022}`);
 
     for (const [args, message] of [
-      [{ programId, seeds: onCurve.seeds, bump: onCurve.bump }, "ed25519 curve"],
+      [{ programId, seeds: onCurve.seeds, bump: String(onCurve.bump) }, "ed25519 curve"],
+      [{ programId, seeds: [], bump: "256" }, "Invalid arguments at /bump"],
+      [{ programId, seeds: [], bump: 0 }, "Invalid arguments at /bump"],
       [{ programId, seeds: [{ text: "a".repeat(33) }] }, "Invalid arguments at /seeds/0/text"],
       [{ programId, seeds: [{ text: "żółw".repeat(5) }] }, "Seed 0 is 35 bytes"],
       [{ programId, seeds: [{ text: "a", hex: "00" }] }, "takes exactly one of"],

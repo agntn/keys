@@ -720,9 +720,19 @@ describe("keys Pi extension", () => {
       content: [{ type: "text", text: `Address: ${address}\nBump: ${bump} (canonical)` }],
       details: { chain: "solana", programId, address, bump, canonical: true },
     });
-    await expect(skipSchema(tool)("pda", { ...args, bump: 0 })).resolves.toMatchObject({
+    await expect(skipSchema(tool)("pda", { ...args, bump: " " })).resolves.toMatchObject({
       details: { canonical: true },
     });
+    const { zeroBump } = solanaProgramAddressVectors;
+    await expect(
+      skipSchema(tool)("pda", { programId, seeds: zeroBump.seeds, bump: "0" }),
+    ).resolves.toMatchObject({ details: { address: zeroBump.address, bump: 0, canonical: false } });
+    await expect(skipSchema(tool)("pda", { ...args, bump: 0 })).rejects.toThrow(
+      "bump must be a string",
+    );
+    await expect(skipSchema(tool)("pda", { ...args, bump: "0255" })).rejects.toThrow(
+      "bump must be decimal text from 0 to 255",
+    );
     await expect(skipSchema(tool)("pda", { programId, seeds: "helloWorld" })).rejects.toThrow(
       "seeds must be an array",
     );

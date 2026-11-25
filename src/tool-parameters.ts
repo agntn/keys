@@ -427,5 +427,8 @@ export const MAX_DESCRIPTOR_ADDRESSES = 100;
 /** JSON Schema pattern for a Solana address: base58, the length 32 bytes can take. */
 export const SOLANA_ADDRESS_SCHEMA_PATTERN = "^[1-9A-HJ-NP-Za-km-z]{32,44}$";
 
+/** JSON Schema pattern for a PDA bump, 0 to 255 in decimal: OMP sends 0 for a number left out. */
+export const BUMP_SCHEMA_PATTERN = "^(?:0|[1-9][0-9]?|1[0-9]{2}|2[0-4][0-9]|25[0-5])$";
+
 /** JSON Schema pattern for a u64 in decimal; the executor checks the upper bound. */
 export const U64_SCHEMA_PATTERN = "^(?:0|[1-9][0-9]{0,19})$";

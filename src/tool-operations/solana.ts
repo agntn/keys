@@ -8,6 +8,7 @@ import {
   findProgramAddress,
   getAssociatedTokenAddress,
 } from "../utils/solana-pda.ts";
+import { BUMP_SCHEMA_PATTERN } from "../tool-parameters.ts";
 import {
   HEX_BYTES,
   boundedArray,
@@ -39,6 +40,8 @@ export interface SolanaTokenAddressDetails {
 const SEED_KINDS = ["text", "hex", "address", "u64"] as const;
 
 const U64_MAX = 2n ** 64n - 1n;
+
+const BUMP = new RegExp(BUMP_SCHEMA_PATTERN, "u");
 
 /**
  * Writes a decimal u64 as Rust's `to_le_bytes` does.
@@ -82,16 +85,15 @@ function seedBytes(value: unknown, index: number): Uint8Array {
 }
 
 /**
- * Reads an optional bump; OMP sends 0 for one left out, and 0 is never a canonical bump anyway.
+ * Reads an optional bump given as decimal text, blank meaning left out.
  * @param value - Raw bump
  * @returns {number | undefined} The bump
  */
 function optionalBump(value: unknown): number | undefined {
-  if (value === undefined || value === 0) return undefined;
-  if (typeof value !== "number" || !Number.isInteger(value) || value < 1 || value > 255) {
-    throw new RangeError("bump must be an integer from 1 to 255");
-  }
-  return value;
+  const text = optionalName(value, "bump");
+  if (text === undefined) return undefined;
+  if (!BUMP.test(text)) throw new RangeError("bump must be decimal text from 0 to 255");
+  return Number(text);
 }
 
 /** Program address arguments besides the program, raw until the executor checks them. */
