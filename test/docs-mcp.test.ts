@@ -1,10 +1,11 @@
-import type { ToolkitTool } from "@agntn/tools/toolkit";
+import type { ToolkitTool, serverCardHook } from "@agntn/tools/toolkit";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { callTool, toolListings } from "../src/mcp.ts";
+import { serverInfo } from "../src/server-info.ts";
 
 /** The toolkit's entry drags in Nitro, so the handler gets its options back and two page tools. */
 vi.mock(
@@ -51,7 +52,48 @@ async function docsClient(): Promise<Client> {
   return client;
 }
 
+type CardHook = ReturnType<typeof serverCardHook>;
+
+/**
+ * What `server/plugins/server-card.ts` hooks onto the card, `defineNitroPlugin` stubbed.
+ *
+ * @returns {Promise<CardHook>} The one hook the plugin registers.
+ */
+async function cardHook(): Promise<CardHook> {
+  const hooks: CardHook[] = [];
+  vi.stubGlobal("defineNitroPlugin", (plugin: (app: unknown) => void) => plugin);
+  const loaded: unknown = await import("../docs/server/plugins/server-card.ts");
+  const { default: plugin } = loaded as { default: (app: unknown) => void };
+  plugin({
+    hooks: {
+      hook: (name: string, hook: CardHook) =>
+        name === "agent-discovery:mcp-server-card" && hooks.push(hook),
+    },
+  });
+  vi.unstubAllGlobals();
+  if (hooks.length !== 1) throw new TypeError("the plugin should hook the card once");
+  return hooks[0]!;
+}
+
 describe("docs MCP tools", () => {
+  it("puts every key tool and the pitch on the discovery card", async () => {
+    const card: Record<string, unknown> = {
+      serverInfo: { name: "@agntn/keys", homepage: "https://keys.agntn.dev" },
+      tools: [{ name: "get-page" }, { name: "list-pages" }],
+    };
+    (await cardHook())(undefined, card);
+    expect((card.tools as { name: string }[]).map((tool) => tool.name)).toEqual([
+      "get-page",
+      "list-pages",
+      ...toolListings.map((tool) => tool.name),
+    ]);
+    expect(card.serverInfo).toMatchObject({
+      name: serverInfo.name,
+      description: serverInfo.description,
+      homepage: "https://keys.agntn.dev",
+    });
+  });
+
   it("serves every tool `keys mcp` lists after the Docus page tools", async () => {
     expect((await docsTools()).map((tool) => tool.name)).toEqual([
       "list-pages",
