@@ -85,6 +85,8 @@ export { decryptStore } from "./store.ts";
 export type { DecryptedStoreDetails } from "./store.ts";
 export { getArweaveAddress } from "./arweave.ts";
 export type { ArweaveAddressDetails } from "./arweave.ts";
+export { getSolanaProgramAddress, getSolanaTokenAddress } from "./solana.ts";
+export type { SolanaProgramAddressDetails, SolanaTokenAddressDetails } from "./solana.ts";
 export {
   MAX_BIP39_LOOKUP_ITEMS,
   BIP39_ENTROPY_BYTE_LENGTHS,

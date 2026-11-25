@@ -319,6 +319,65 @@ export const solanaTestVectors = {
   ],
 } as const;
 
+/**
+ * PDAs and ATAs from @solana/web3.js 1.99.0 and @solana/spl-token 0.4.15, matched by @solana/kit
+ * 8.6.0; `rust` holds the expected values of solana-address's own create_program_address test.
+ */
+export const solanaProgramAddressVectors = {
+  programId: "BPFLoaderUpgradeab1e11111111111111111111111",
+  found: [
+    {
+      seeds: [{ text: "helloWorld" }],
+      address: "BkJopytB5Ah8hxg8A9joeGLjQxPVNigk1D8JDj5JkPqq",
+      bump: 255,
+    },
+    {
+      seeds: [{ text: "helloWorld" }, { address: "B9Lf9z5BfNPT4d5KMeaBFx8x1G4CULZYR1jA2kmxRDka" }],
+      address: "68qXJFFrtaVPghLNwtMNt2U3yRKfj2CswagAhcqR72FA",
+      bump: 253,
+    },
+    {
+      seeds: [
+        { text: "escrow" },
+        { address: "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj" },
+        { u64: "42" },
+        { hex: "0700" },
+        { hex: "01" },
+        { hex: "ffffffff" },
+      ],
+      address: "BrQcc8JxM2yGYypeU885BmQ23CDeHgJXjBg4LTBoueGD",
+      bump: 252,
+    },
+    { seeds: [], address: "DNKLRoKoM7XxX2iW1PTnqo6iP6CPpVDBgeN9hrpu2R2R", bump: 253 },
+    {
+      seeds: [{ text: "vault" }, { hex: "0000" }],
+      address: "GHaK4eNegx4LxuSRMEuybwPkMVKdV97HtTSQMUDxwcn7",
+      bump: 252,
+    },
+  ],
+  /** Fifteen seeds of 32 bytes, seed i filled with byte i. */
+  full: { address: "8arXiGZsqDfL6sNBdtpkdSKKtTYiRX7qweoMZG49D41n", bump: 255 },
+  /** Bump 255 puts these seeds on the curve, which web3.js refuses too. */
+  onCurve: { seeds: [{ text: "vault" }, { hex: "0000" }], bump: 255 },
+  rust: [
+    { seeds: ["", "01"], address: "BwqrghZA2htAcqq8dzP1WDAhTXYTYWj7CHxF5j7TDBAe" },
+    { seeds: ["e29889", "00"], address: "13yWmRpaTR4r5nAktwLqMpRNr28tnVUZw26rTvPSSB19" },
+    {
+      seeds: ["54616c6b696e67", "537175697272656c73"],
+      address: "2fnQrngrQT4SeLcdToJAD96phoEjNL2man2kfRLCASVk",
+    },
+  ],
+  token: {
+    owner: "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+    mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    splToken: "FjCjyojZLVYVQ2dEdDKQx76msks96TdH9xqvc8BQ9UUx",
+    token2022: "AHWqw6UbnmBi5MtTdkijNmBFZtBRj5WYk6Jz9AHWVs6T",
+    /** The helloWorld PDA as owner, which spl-token takes only with allowOwnerOffCurve. */
+    pdaOwner: "BkJopytB5Ah8hxg8A9joeGLjQxPVNigk1D8JDj5JkPqq",
+    pdaOwned: "EZSkvnaLjYvQw4crJu2wb7gGAEDJoLXFvE14XVZU9Ae1",
+  },
+} as const;
+
 // Test messages
 export const testMessages = {
   simple: "Test message",

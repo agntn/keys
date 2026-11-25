@@ -71,8 +71,11 @@ import {
   MAX_DESCRIPTOR_LENGTH,
   MAX_SCRIPT_HEX_LENGTH,
   SEC1_PUBLIC_KEY_SCHEMA_PATTERN,
+  SOLANA_ADDRESS_SCHEMA_PATTERN,
+  U64_SCHEMA_PATTERN,
 } from "./tool-parameters.ts";
 import { MAX_MULTISIG_KEYS } from "./utils/script/limits.ts";
+import { MAX_PROGRAM_SEED_LENGTH, MAX_PROGRAM_SEEDS } from "./utils/solana-limits.ts";
 import { COSMOS_PREFIX_PATTERN } from "./utils/cosmos-prefix.ts";
 import { BIP39_LANGUAGES } from "./utils/bip39/languages.ts";
 
@@ -1299,6 +1302,70 @@ export const DERIVE_DESCRIPTOR_PARAMETERS = Type.Object(
       }),
     ),
     network: networkArgument,
+  },
+  { additionalProperties: false },
+);
+
+/**
+ * A Solana address, 32 bytes of base58.
+ * @param description - What the address is
+ * @returns {TString} The schema
+ */
+function solanaAddress(description: string): TString {
+  return Type.String({ pattern: SOLANA_ADDRESS_SCHEMA_PATTERN, description });
+}
+
+export const GET_SOLANA_PROGRAM_ADDRESS_PARAMETERS = Type.Object(
+  {
+    programId: solanaAddress("The program that owns the address, base58"),
+    seeds: Type.Array(
+      Type.Object(
+        {
+          text: Type.Optional(
+            Type.String({ maxLength: MAX_PROGRAM_SEED_LENGTH, description: "UTF-8 text" }),
+          ),
+          hex: Type.Optional(
+            Type.String({
+              maxLength: MAX_PROGRAM_SEED_LENGTH * 2,
+              pattern: HEX_BYTES_SCHEMA_PATTERN,
+              description: "Raw bytes as hex without 0x",
+            }),
+          ),
+          address: Type.Optional(solanaAddress("A wallet, mint or program, base58")),
+          u64: Type.Optional(
+            Type.String({
+              pattern: U64_SCHEMA_PATTERN,
+              description: "A decimal integer as 8 little-endian bytes, like to_le_bytes()",
+            }),
+          ),
+        },
+        { additionalProperties: false },
+      ),
+      {
+        maxItems: MAX_PROGRAM_SEEDS - 1,
+        description: `Seeds in program order, one of text, hex, address or u64 each, up to ${MAX_PROGRAM_SEED_LENGTH} bytes`,
+      },
+    ),
+    bump: Type.Optional(
+      Type.Integer({
+        minimum: 1,
+        maximum: 255,
+        description: "A known bump, appended as the last seed. Default: the canonical one",
+      }),
+    ),
+  },
+  { additionalProperties: false },
+);
+
+export const GET_SOLANA_TOKEN_ADDRESS_PARAMETERS = Type.Object(
+  {
+    owner: solanaAddress("The wallet that holds the tokens, base58"),
+    mint: solanaAddress("The token's mint, base58"),
+    tokenProgram: Type.Optional(
+      solanaAddress(
+        "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb for a Token-2022 mint. Default: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      ),
+    ),
   },
   { additionalProperties: false },
 );

@@ -15,6 +15,8 @@ import {
   DERIVE_BIP39_SEED_PARAMETERS,
   DERIVE_DESCRIPTOR_PARAMETERS,
   GET_SCRIPT_ADDRESS_PARAMETERS,
+  GET_SOLANA_PROGRAM_ADDRESS_PARAMETERS,
+  GET_SOLANA_TOKEN_ADDRESS_PARAMETERS,
   RECOVER_BIP32_PARENT_PARAMETERS,
   SCAN_HD_WALLET_PARAMETERS,
   DECRYPT_BIP38_PARAMETERS,
@@ -613,6 +615,37 @@ export const descriptorDeriveTool = defineTool({
     (await loadOperations(signal)).deriveDescriptor(descriptor, options),
 });
 
+export const solanaProgramAddressGetTool = defineTool({
+  name: "keys_solana_program_address_get",
+  title: "Get Solana Program Address",
+  description:
+    "Derive a Solana program derived address (PDA) from a program id and its seeds, offline. Without bump it searches from 255 down for the canonical bump, as find_program_address does; with bump it checks that one, as create_program_address does, and refuses seeds that land on the ed25519 curve. Each seed is text, hex, an address or a u64, up to 32 bytes.",
+  snippet: "Use to find the address a Solana program keeps an account at, and its bump.",
+  guidelines: [
+    "Give seeds in the order the program hashes them; a u64 goes in as to_le_bytes(), an i32 or u16 as hex",
+    "An associated token account is keys_solana_token_address_get, no seeds needed",
+  ],
+  effect: "read",
+  input: GET_SOLANA_PROGRAM_ADDRESS_PARAMETERS,
+  execute: async ({ programId, ...options }, { signal }) =>
+    (await loadOperations(signal)).getSolanaProgramAddress(programId, options),
+});
+
+export const solanaTokenAddressGetTool = defineTool({
+  name: "keys_solana_token_address_get",
+  title: "Get Solana Token Address",
+  description:
+    "Derive the associated token account (ATA) a wallet holds a mint in, offline, for SPL Token or Token-2022. An owner that is itself a program address works too.",
+  snippet: "Use to find which token account holds a wallet's USDC or any other SPL token.",
+  guidelines: [
+    "Pass tokenProgram TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb for a Token-2022 mint; the wrong program gives an address that never holds the token",
+  ],
+  effect: "read",
+  input: GET_SOLANA_TOKEN_ADDRESS_PARAMETERS,
+  execute: async ({ owner, ...options }, { signal }) =>
+    (await loadOperations(signal)).getSolanaTokenAddress(owner, options),
+});
+
 export const messageSignTool = defineTool({
   name: "keys_message_sign",
   title: "Sign Message",
@@ -826,6 +859,8 @@ export const keysTools = [
   addressValidateTool,
   scriptAddressGetTool,
   descriptorDeriveTool,
+  solanaProgramAddressGetTool,
+  solanaTokenAddressGetTool,
   messageSignTool,
   messageVerifyTool,
   messageRecoverTool,
@@ -874,6 +909,8 @@ export const callSummaries: Readonly<
   keys_descriptor_derive: (args) =>
     /^[a-z]+/u.exec(typeof args.descriptor === "string" ? args.descriptor : "")?.[0] ??
     "descriptor",
+  keys_solana_program_address_get: (args) =>
+    `${Array.isArray(args.seeds) ? args.seeds.length : 0} seeds`,
   keys_message_sign: (args) => preview(args.message),
   keys_message_verify: (args) => preview(args.message),
   keys_message_recover: (args) =>

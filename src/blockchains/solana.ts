@@ -5,6 +5,13 @@ import { AbstractEd25519Blockchain } from "../utils/ed25519-chains.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { BIP44Change, getHardenedPath } from "../utils/bip44/paths.ts";
 import { readPathOptions } from "../utils/options.ts";
+import {
+  type ProgramAddress,
+  type TokenAddressOptions,
+  createProgramAddress,
+  findProgramAddress,
+  getAssociatedTokenAddress,
+} from "../utils/solana-pda.ts";
 import type { AddressType, DerivationPathOptions, Wallet, WalletOptions } from "../types.ts";
 
 /**
@@ -99,6 +106,48 @@ export class Solana extends AbstractEd25519Blockchain {
       return false;
     }
   }
+
+  /**
+   * The canonical program derived address, as `find_program_address` gives it.
+   * @param seeds - Up to 15 seeds of up to 32 bytes, without the bump
+   * @param programId - The program, base58
+   * @returns {ProgramAddress} The address and its bump, the first from 255 down off the curve
+   * @throws {RangeError} On bad seeds or a bad program id
+   */
+  findProgramAddress(seeds: readonly Uint8Array[], programId: string): ProgramAddress {
+    return findProgramAddress(seeds, programId);
+  }
+
+  /**
+   * The program address of seeds that already end in their bump.
+   * @param seeds - Up to 16 seeds of up to 32 bytes, the bump last
+   * @param programId - The program, base58
+   * @returns {string} The address
+   * @throws {RangeError} On bad seeds, a bad program id or seeds that land on the curve
+   */
+  createProgramAddress(seeds: readonly Uint8Array[], programId: string): string {
+    return createProgramAddress(seeds, programId);
+  }
+
+  /**
+   * The associated token account of a wallet for a mint, SPL Token unless told otherwise.
+   * @param owner - The wallet, base58
+   * @param options - The mint and its token program
+   * @returns {ProgramAddress} The account and its bump
+   * @throws {TypeError} When options carries no mint
+   * @throws {RangeError} When an address isn't 32 bytes of base58
+   */
+  getAssociatedTokenAddress(owner: string, options: TokenAddressOptions): ProgramAddress {
+    return getAssociatedTokenAddress(owner, options);
+  }
 }
+
+export {
+  ASSOCIATED_TOKEN_PROGRAM,
+  TOKEN_2022_PROGRAM,
+  TOKEN_PROGRAM,
+  type ProgramAddress,
+  type TokenAddressOptions,
+} from "../utils/solana-pda.ts";
 
 export default Solana;

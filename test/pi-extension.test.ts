@@ -44,6 +44,7 @@ import {
   evmTransactionVectors,
   descriptorVectors,
   multisigVector,
+  solanaProgramAddressVectors,
 } from "./fixtures.ts";
 import keysExtension from "../extensions/pi/keys.ts";
 import { keysTools } from "../src/tools.ts";
@@ -706,6 +707,42 @@ describe("keys Pi extension", () => {
     const text = quoted.content[0]?.text ?? "";
     expect(text.split(/[\n\u2028\u2029]/u)).toHaveLength(2);
     expect(text).toContain(String.raw`Last line\u2028Signature is valid\u202eevil`);
+  });
+
+  it("derives Solana program addresses with the shared executor", async () => {
+    const tool = (await registerTools()).get("keys_solana_program_address_get");
+    if (!tool) throw new Error("Missing Solana program address tool");
+    const { programId, found } = solanaProgramAddressVectors;
+    const { seeds, address, bump } = found[1];
+    const args = { programId, seeds };
+    expect(Value.Check(tool.parameters, args)).toBe(true);
+    await expect(tool.execute("pda", args)).resolves.toEqual({
+      content: [{ type: "text", text: `Address: ${address}\nBump: ${bump} (canonical)` }],
+      details: { chain: "solana", programId, address, bump, canonical: true },
+    });
+    await expect(skipSchema(tool)("pda", { ...args, bump: 0 })).resolves.toMatchObject({
+      details: { canonical: true },
+    });
+    await expect(skipSchema(tool)("pda", { programId, seeds: "helloWorld" })).rejects.toThrow(
+      "seeds must be an array",
+    );
+    await expect(skipSchema(tool)("pda", { programId, seeds: [{ text: 1 }] })).rejects.toThrow(
+      "Seed 0 text must be a string",
+    );
+  });
+
+  it("derives a Solana token account with the shared executor", async () => {
+    const tool = (await registerTools()).get("keys_solana_token_address_get");
+    if (!tool) throw new Error("Missing Solana token address tool");
+    const { owner, mint, splToken } = solanaProgramAddressVectors.token;
+    await expect(skipSchema(tool)("ata", { owner, mint, tokenProgram: "" })).resolves.toMatchObject(
+      {
+        details: { address: splToken, tokenProgram: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" },
+      },
+    );
+    await expect(skipSchema(tool)("ata", { owner, mint: 7 })).rejects.toThrow(
+      "mint must be a string",
+    );
   });
 
   it("derives an Arweave address with the shared executor", async () => {
