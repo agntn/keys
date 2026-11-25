@@ -34,5 +34,5 @@
     "vue-tsc": "catalog:dev",
     "wrangler": "catalog:dev"
   },
-  "packageManager": "pnpm@12.11.2"
+  "packageManager": "pnpm@12.23.0"
 }
