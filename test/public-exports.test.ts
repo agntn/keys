@@ -278,7 +278,19 @@ describe("Public transaction exports", () => {
     if (a === undefined || b === undefined) throw new Error("missing signature");
     expect(recoverReusedNonce([a, b]).publicKey).toMatch(/^0[23]dbd0c615/u);
     expect(new Set(Object.keys(transaction))).toEqual(
-      new Set(["decode", "extractSignatures", "recoverSigner"]),
+      new Set([
+        "SIGHASH_ALL",
+        "SIGHASH_ANYONECANPAY",
+        "SIGHASH_DEFAULT",
+        "SIGHASH_NONE",
+        "SIGHASH_SINGLE",
+        "decode",
+        "extractSignatures",
+        "legacySighash",
+        "recoverSigner",
+        "segwitSighash",
+        "taprootSighash",
+      ]),
     );
     expect(await import("@agntn/keys")).not.toHaveProperty("extractSignatures");
   });
@@ -288,6 +300,62 @@ describe("Public transaction exports", () => {
     const [first] = decode(transactionVectors.p2wpkh.transaction).outputs;
     expect(first?.value).toBe(112_340_000n);
     expect(await import("@agntn/keys")).not.toHaveProperty("decode");
+  });
+
+  it("matches Core's legacy sighashes from the built package", async () => {
+    const { decode, legacySighash } = await import("@agntn/keys/transaction");
+    for (const row of Object.values(transactionVectors.legacy)) {
+      const digest = legacySighash(decode(row.transaction), {
+        index: row.index,
+        scriptCode: hex.decode(row.script),
+        hashType: row.hashType,
+      });
+      expect(hex.encode(Uint8Array.from(digest).reverse())).toBe(row.sighash);
+    }
+  });
+
+  it("matches BIP143 for P2WPKH and every hash type of the 6-of-6 from the built package", async () => {
+    const { decode, segwitSighash, SIGHASH_ALL } = await import("@agntn/keys/transaction");
+    const { p2wpkh, p2shP2wsh } = transactionVectors;
+    const witnessOutput = p2wpkh.spent[1];
+    if (witnessOutput === undefined) throw new Error("missing P2WPKH output");
+    const keyHash = hex.decode(witnessOutput.script).subarray(2);
+    const digest = segwitSighash(decode(p2wpkh.transaction), {
+      index: 1,
+      scriptCode: Uint8Array.of(0x76, 0xa9, 0x14, ...keyHash, 0x88, 0xac),
+      amount: BigInt(witnessOutput.value),
+      hashType: SIGHASH_ALL,
+    });
+    expect(hex.encode(digest)).toBe(p2wpkh.sighash);
+
+    const multisig = decode(p2shP2wsh.transaction);
+    const witnessScript = multisig.inputs[0]?.witness.at(-1) ?? new Uint8Array(0);
+    const digests = p2shP2wsh.signatures.map(([hashType]) =>
+      hex.encode(
+        segwitSighash(multisig, {
+          index: 0,
+          scriptCode: witnessScript,
+          amount: BigInt(p2shP2wsh.spent[0]?.value ?? 0),
+          hashType,
+        }),
+      ),
+    );
+    expect(digests).toEqual(p2shP2wsh.signatures.map(([, z]) => z));
+  });
+
+  it("matches every BIP341 key path input from the built package", async () => {
+    const { decode, taprootSighash } = await import("@agntn/keys/transaction");
+    const { taproot } = transactionVectors;
+    const unsigned = decode(taproot.unsigned);
+    const spent = taproot.spent.map((output) => ({
+      value: BigInt(output.value),
+      script: hex.decode(output.script),
+    }));
+    const digests = taproot.inputs.map((input) =>
+      hex.encode(taprootSighash(unsigned, { index: input.index, spent, hashType: input.hashType })),
+    );
+    expect(digests).toEqual(taproot.inputs.map((input) => input.sighash));
+    expect(await import("@agntn/keys")).not.toHaveProperty("taprootSighash");
   });
 
   it("recovers an EVM transaction signer from the built package", async () => {
@@ -604,6 +672,7 @@ describe("Consumer bundles", () => {
     ["decode", "@agntn/keys/transaction"],
     ["extractSignatures", "@agntn/keys/transaction"],
     ["recoverSigner", "@agntn/keys/transaction"],
+    ["taprootSighash", "@agntn/keys/transaction"],
     ["multisig", "@agntn/keys/script"],
     ["parse", "@agntn/keys/descriptor"],
   ])(
