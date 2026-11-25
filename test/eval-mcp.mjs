@@ -30,6 +30,7 @@ import {
   transactionVectors,
   evmTransactionVectors,
   descriptorVectors,
+  solanaProgramAddressVectors,
   multisigVector,
 } from "./fixtures.ts";
 import { serverInfo } from "../src/server-info.ts";
@@ -457,6 +458,19 @@ try {
     { descriptor: descriptorVectors.core[3].descriptor, index: 5 },
     new RegExp(`^Index 5: ${descriptorVectors.core[3].addresses[0]}$`, "m"),
   );
+  {
+    const { programId, found, token } = solanaProgramAddressVectors;
+    await call(
+      "keys_solana_program_address_get",
+      { programId, seeds: found[2].seeds },
+      new RegExp(`^Address: ${found[2].address}\nBump: 252 \\(canonical\\)$`),
+    );
+    await call(
+      "keys_solana_token_address_get",
+      { owner: token.owner, mint: token.mint },
+      new RegExp(`^Address: ${token.splToken}$`),
+    );
+  }
   await call("keys_bip44_parse", { path: "m/44h/60h/0h/0/3" }, /Address index: 3$/m);
   await call("keys_bip44_generate", { chain: "bitcoin", change: 1 }, /m\/44'\/0'\/0'\/1\/0/);
   await call("keys_bip44_generate", { chain: "solana" }, /Path: m\/44'\/501'\/0'\/0'$/m);

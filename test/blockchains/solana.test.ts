@@ -1,6 +1,13 @@
 import { expect, describe, it } from "vite-plus/test";
-import { bip39TestVectors, slip10WalletVectors, solanaTestVectors } from "../fixtures";
-import Solana from "../../src/blockchains/solana";
+import { base58 } from "@agntn/encodings/base58";
+import { hex } from "@agntn/encodings/hex";
+import {
+  bip39TestVectors,
+  slip10WalletVectors,
+  solanaProgramAddressVectors,
+  solanaTestVectors,
+} from "../fixtures";
+import Solana, { TOKEN_2022_PROGRAM } from "../../src/blockchains/solana";
 import { useBlockchain } from "../../src/blockchain";
 import type { Options } from "../../src/types";
 
@@ -157,6 +164,86 @@ describe("Solana Blockchain", () => {
       ["broken JSON", keypair.json.slice(0, -1)],
     ])("refuses %s", (_form, secret) => {
       expect(() => blockchain.deriveSeedWallet(secret)).toThrow("A Solana secret is 64 bytes");
+    });
+  });
+
+  describe("Program addresses", () => {
+    const solana = new Solana();
+    const { programId, found, full, onCurve, rust, token } = solanaProgramAddressVectors;
+
+    /* The bytes a tool seed object stands for, built here without the executor. */
+    const bytes = (seed: Readonly<Record<string, string>>): Uint8Array => {
+      if (seed.text !== undefined) return new TextEncoder().encode(seed.text);
+      if (seed.address !== undefined) return base58.decode(seed.address);
+      if (seed.u64 === undefined) return hex.decode(seed.hex ?? "");
+      const word = new Uint8Array(8);
+      new DataView(word.buffer).setBigUint64(0, BigInt(seed.u64), true);
+      return word;
+    };
+
+    it.each(found)("finds web3.js's canonical bump for $address", ({ seeds, address, bump }) => {
+      const given = seeds.map(bytes);
+      expect(solana.findProgramAddress(given, programId)).toEqual({ address, bump });
+      expect(solana.createProgramAddress([...given, Uint8Array.of(bump)], programId)).toBe(address);
+    });
+
+    it("takes fifteen seeds of 32 bytes and no more", () => {
+      const seeds = Array.from({ length: 15 }, (_, i) => new Uint8Array(32).fill(i));
+      expect(solana.findProgramAddress(seeds, programId)).toEqual(full);
+      expect(() => solana.findProgramAddress([...seeds, new Uint8Array()], programId)).toThrow(
+        "at most 15",
+      );
+      expect(() => solana.findProgramAddress([new Uint8Array(33)], programId)).toThrow(
+        "Seed 0 must be a Uint8Array of up to 32 bytes",
+      );
+    });
+
+    it.each(rust)("matches solana-address on $address", ({ seeds, address }) => {
+      expect(
+        solana.createProgramAddress(
+          seeds.map((seed) => hex.decode(seed)),
+          programId,
+        ),
+      ).toBe(address);
+    });
+
+    it("refuses a bump that lands on the curve", () => {
+      const seeds = [...onCurve.seeds.map(bytes), Uint8Array.of(onCurve.bump)];
+      expect(() => solana.createProgramAddress(seeds, programId)).toThrow("ed25519 curve");
+    });
+
+    it.each([
+      ["a string", "helloWorld"],
+      ["a string seed", ["helloWorld"]],
+      ["null", null],
+    ])("refuses %s as seeds from untyped callers", (_shape, seeds) => {
+      expect(() => solana.findProgramAddress(seeds as never, programId)).toThrow(RangeError);
+    });
+
+    it.each(["", "0OIl0OIl0OIl0OIl0OIl0OIl0OIl0OIl", "1111111111"])(
+      "refuses %j as a program id",
+      (id) => {
+        expect(() => solana.findProgramAddress([], id)).toThrow(
+          "programId must be a Solana address",
+        );
+      },
+    );
+
+    it("gives spl-token's associated token accounts for both token programs", () => {
+      const { owner, mint } = token;
+      expect(solana.getAssociatedTokenAddress(owner, { mint }).address).toBe(token.splToken);
+      expect(
+        solana.getAssociatedTokenAddress(owner, { mint, tokenProgram: TOKEN_2022_PROGRAM }).address,
+      ).toBe(token.token2022);
+      expect(solana.getAssociatedTokenAddress(token.pdaOwner, { mint }).address).toBe(
+        token.pdaOwned,
+      );
+    });
+
+    it("refuses the mint passed where the options go", () => {
+      expect(() => solana.getAssociatedTokenAddress(token.owner, token.mint as never)).toThrow(
+        "(owner, { mint })",
+      );
     });
   });
 

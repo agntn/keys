@@ -41,6 +41,8 @@ Pi coding agent extension exposing the [`@agntn/keys`](../../README.md) library 
 | `keys_address_validate`               | Check if an address is valid for a chain                                 |
 | `keys_script_address_get`             | P2SH, P2WSH and P2SH-P2WSH addresses of a script or a multisig           |
 | `keys_descriptor_derive`              | Addresses and checksum of a Bitcoin output descriptor                    |
+| `keys_solana_program_address_get`     | Get a Solana program address from seeds and a program ID                 |
+| `keys_solana_token_address_get`       | Get a Solana associated token address for an owner and mint              |
 | `keys_message_sign`                   | Sign a message with a private key (secp256k1/ed25519)                    |
 | `keys_message_verify`                 | Verify a signature against message + public key                          |
 | `keys_message_recover`                | Recover key + address from signmessage, personal_sign or EIP-712         |
