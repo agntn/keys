@@ -1,10 +1,44 @@
 import { base58 } from "@agntn/encodings/base58";
+import { equalBytes } from "../utils/bytes.ts";
 import { decodeKeyPublic } from "../utils/ed25519.ts";
 import { AbstractEd25519Blockchain } from "../utils/ed25519-chains.ts";
 import { BIP44 } from "../utils/bip44/index.ts";
 import { BIP44Change, getHardenedPath } from "../utils/bip44/paths.ts";
 import { readPathOptions } from "../utils/options.ts";
-import type { AddressType, DerivationPathOptions } from "../types.ts";
+import type { AddressType, DerivationPathOptions, Wallet, WalletOptions } from "../types.ts";
+
+/**
+ * Reads the 64 bytes of a Solana CLI keypair file.
+ * @param text - The file's contents
+ * @returns {Uint8Array} The bytes, undefined for anything else
+ */
+function readKeypairArray(text: string): Uint8Array | undefined {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+  if (!Array.isArray(parsed) || parsed.length !== 64) return undefined;
+  const bytes = parsed.filter(
+    (value): value is number => Number.isInteger(value) && value >= 0 && value <= 255,
+  );
+  return bytes.length === 64 ? Uint8Array.from(bytes) : undefined;
+}
+
+/**
+ * Reads a 64-byte Solana secret as base58, as Phantom exports it.
+ * @param text - The secret
+ * @returns {Uint8Array} The bytes, undefined for anything else
+ */
+function readKeypairBase58(text: string): Uint8Array | undefined {
+  try {
+    const bytes = base58.decode(text);
+    return bytes.length === 64 ? bytes : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 /** Solana blockchain implementation. */
 export class Solana extends AbstractEd25519Blockchain {
@@ -32,6 +66,30 @@ export class Solana extends AbstractEd25519Blockchain {
   override getAddress(keyPublic: string, type?: AddressType): string {
     this.refuseAddressType(type);
     return base58.encode(decodeKeyPublic(keyPublic, "Solana"));
+  }
+
+  /**
+   * Restores a wallet from `id.json` or Phantom's base58 export: the seed, then its public key.
+   * @param seed - The 64-byte secret as a JSON array or base58
+   * @param options - Key options of the wallet
+   * @returns {Wallet} The wallet, keyed by the 32-byte seed
+   * @throws {RangeError} On another shape, or a public half from another key
+   */
+  override deriveSeedWallet(seed: string, options?: WalletOptions): Wallet {
+    const text = seed.trim();
+    const bytes = text.startsWith("[") ? readKeypairArray(text) : readKeypairBase58(text);
+    if (bytes === undefined) {
+      throw new RangeError(
+        "A Solana secret is 64 bytes: a JSON array of numbers as in id.json, or base58",
+      );
+    }
+    const wallet = this.deriveWallet(bytes.subarray(0, 32).toHex(), options);
+    if (!equalBytes(Uint8Array.fromHex(wallet.keys.public), bytes.subarray(32))) {
+      throw new RangeError(
+        "The last 32 bytes of this Solana secret are not the public key its seed derives",
+      );
+    }
+    return wallet;
   }
 
   override validateAddress(address: string): boolean {

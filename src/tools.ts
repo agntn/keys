@@ -236,7 +236,7 @@ export const walletDeriveTool = defineTool({
     "Derive a public key and address from an existing private key. Use only public or disposable keys because tool arguments enter the transcript.",
   snippet: "Use to derive the public key and address for an existing burner private key.",
   guidelines: [
-    "Provide a chain name and private key as hex, or on xrpl a family seed (s... or sEd...), whose version picks the scheme",
+    "Provide a chain name and private key as hex, or on xrpl a family seed (s... or sEd...), whose version picks the scheme, or on solana the whole 64-byte secret as id.json or base58",
     "On monero pass the 25 English seed words as privateKey, or the private spend key as hex; the 24 key words work without the checksum word, but then each word has to be whole",
     "On ton pass the 24 words Tonkeeper and the TON wallets write as privateKey; BIP39 words go to keys_hd_wallet_derive instead",
     "On monero account and addressIndex pick the subaddress monero-wallet-cli lists there; the public key is then the subaddress pair",
