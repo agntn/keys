@@ -304,9 +304,11 @@ export const SIGNING_KEY_SCHEMA_PATTERN = "^(?:[0-9A-Fa-f]{64}){1,2}$";
 /** JSON Schema pattern for an XRPL family seed: `s...` for secp256k1, `sEd...` for ed25519. */
 export const FAMILY_SEED_SCHEMA_PATTERN = "^s[1-9A-HJ-NP-Za-km-z]{28,30}$";
 
+/** A 64-byte Solana secret, as id.json or base58, pasted with or without whitespace around it. */
+const SOLANA_SECRET = "\\s*(?:\\[[0-9,\\s]+\\]|[1-9A-HJ-NP-Za-km-z]{64,88})\\s*";
+
 /** JSON Schema pattern for a 64-byte Solana secret, as id.json or base58. */
-export const SOLANA_SECRET_SCHEMA_PATTERN =
-  "^(?:\\s*\\[[0-9,\\s]+\\]\\s*|[1-9A-HJ-NP-Za-km-z]{64,88})$";
+export const SOLANA_SECRET_SCHEMA_PATTERN = `^${SOLANA_SECRET}$`;
 
 /** Longest secret `keys_wallet_derive` reads, room for 25 seed words with loose spacing. */
 export const MAX_WALLET_SECRET_LENGTH = 1024;
@@ -325,8 +327,7 @@ export const MONERO_PAYMENT_ID_SCHEMA_PATTERN = "^[0-9A-Fa-f]{16}$";
  * secret, an XRPL family seed, Monero or TON seed words, or a 64-byte Solana secret as the
  * id.json array or base58.
  */
-export const WALLET_SECRET_SCHEMA_PATTERN =
-  "^(?:(?:[0-9A-Fa-f]{64}){1,2}|s[1-9A-HJ-NP-Za-km-z]{28,30}|\\s*[A-Za-z]+(?:\\s+[A-Za-z]+){23,24}\\s*|\\s*\\[[0-9,\\s]+\\]\\s*|[1-9A-HJ-NP-Za-km-z]{64,88})$";
+export const WALLET_SECRET_SCHEMA_PATTERN = `^(?:(?:[0-9A-Fa-f]{64}){1,2}|s[1-9A-HJ-NP-Za-km-z]{28,30}|\\s*[A-Za-z]+(?:\\s+[A-Za-z]+){23,24}\\s*|${SOLANA_SECRET})$`;
 
 /**
  * JSON Schema pattern for a 32-byte ed25519 key, XRPL's 33-byte `ED` form of one, or a compressed

@@ -2003,7 +2003,7 @@ describe("keys MCP server", () => {
   it("restores Solana from id.json and base58 secrets through MCP", async () => {
     const client = await connectTestClient();
     const { keypair } = solanaTestVectors;
-    for (const secret of [keypair.json, keypair.base58]) {
+    for (const secret of [keypair.json, keypair.base58, ` ${keypair.base58}\n`]) {
       const response = await client.callTool({
         name: "keys_wallet_derive",
         arguments: { chain: "solana", privateKey: secret },
