@@ -103,7 +103,7 @@ describe("XRPL", () => {
 
     it("leaves seed strings to the XRP Ledger", () => {
       expect(() => new Solana().deriveSeedWallet(vector.seeds.master.seed)).toThrow(
-        "solana has no seed string of its own",
+        "A Solana secret is 64 bytes",
       );
     });
   });

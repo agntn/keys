@@ -279,6 +279,18 @@ export const ethereumTestVectors = {
  * public key and address, `nacl.sign.detached` signatures the way wallet adapters sign messages.
  */
 export const solanaTestVectors = {
+  /** `Keypair.fromSeed` over bytes 1 to 32, @solana/web3.js 1.99.0. */
+  keypair: {
+    seed: "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
+    json: "[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,121,181,86,46,143,230,84,249,64,120,177,18,232,169,139,167,144,31,133,58,230,149,190,215,224,227,145,11,173,4,150,100]",
+    base58:
+      "2Ana1pUpv2ZbMVkwF5FXapYeBEjdxDatLn7nvJkhgTSdZd8hbDHTd21as7EAsg7ypityqfsw2pMQKJcVDVcAEsd",
+    publicKey: "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664",
+    address: "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+    /** Seed 1 to 32 beside another key's public half, which `fromSecretKey` refuses. */
+    mismatched:
+      "2Ana1pUpv2ZbMVkwF5FXapYeBEjdxDatLn7nvJkhgTSnQV3LRQndW62nHPq9Pg2aG6AAdDHsCpx9RA5NyDE9qdZ",
+  },
   privateKey: "0000000000000000000000000000000000000000000000000000000000000001",
   publicKey: "4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29",
   address: "6ASf5EcmmEHTgDJ4X4ZT5vT6iHVJBXPg5AN5YoTCpGWt",

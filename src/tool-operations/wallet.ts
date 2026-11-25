@@ -1,6 +1,10 @@
 import { blockchains } from "../_blockchains.ts";
 import type { AbstractBlockchain } from "../blockchain.ts";
-import { FAMILY_SEED_SCHEMA_PATTERN, MAX_WALLET_SECRET_LENGTH } from "../tool-parameters.ts";
+import {
+  FAMILY_SEED_SCHEMA_PATTERN,
+  MAX_WALLET_SECRET_LENGTH,
+  SOLANA_SECRET_SCHEMA_PATTERN,
+} from "../tool-parameters.ts";
 import type { KeyOptions, Wallet } from "../types.ts";
 import {
   SEED_WORDS,
@@ -44,6 +48,8 @@ export interface DerivedWalletDetails {
 }
 
 const FAMILY_SEED = new RegExp(FAMILY_SEED_SCHEMA_PATTERN, "u");
+
+const SOLANA_SECRET = new RegExp(SOLANA_SECRET_SCHEMA_PATTERN, "u");
 
 /** Chains whose wallets restore from seed words of their own rather than BIP39. */
 const SEED_WORD_CHAINS: ReadonlySet<string> = new Set(["monero", "ton"]);
@@ -113,7 +119,8 @@ interface SecretWalletRequest {
 }
 
 /**
- * Derives a wallet from an XRPL family seed, Monero or TON seed words, or a private key in hex.
+ * Derives a wallet from an XRPL family seed, Monero or TON seed words, a full Solana secret, or a
+ * private key in hex.
  * @param blockchain - The chain to derive on
  * @param request - The secret, key options and the address type the caller asked for
  * @returns {Wallet} The wallet
@@ -123,7 +130,9 @@ function secretWallet(
   request: SecretWalletRequest,
 ): Wallet {
   const { secret, options, addressType } = request;
-  if (FAMILY_SEED.test(secret) || SEED_WORDS.test(secret)) {
+  const solanaSecret =
+    blockchain.name === "solana" && !PRIVATE_KEY_HEX.test(secret) && SOLANA_SECRET.test(secret);
+  if (FAMILY_SEED.test(secret) || SEED_WORDS.test(secret) || solanaSecret) {
     return blockchain.deriveSeedWallet(secret, { ...options, addressType });
   }
   if (blockchain.name === "polkadot") {
@@ -135,7 +144,8 @@ function secretWallet(
   const keyPrivate = hexArgument(secret, {
     name: "Private key",
     pattern: PRIVATE_KEY_HEX,
-    shape: "64 hex characters, a family seed (s...) on xrpl or the seed words on monero and ton,",
+    shape:
+      "64 hex characters, a family seed (s...) on xrpl, the seed words on monero and ton, a 64-byte secret on solana,",
   });
   return blockchain.deriveWallet(keyPrivate, { ...options, addressType });
 }
@@ -167,7 +177,7 @@ async function moneroSubaddressWallet(
 
 /** Wallet tool arguments besides the chain, raw until the executor checks them. */
 export interface WalletArguments extends Omit<ChainArguments, "coinType">, SubaddressArguments {
-  /** Private key as hex, a family seed on xrpl or the seed words on monero and ton. */
+  /** Private key as hex, or the chain's own seed or secret. */
   readonly privateKey?: unknown;
   /** secp256k1 public key form, compressed by default. */
   readonly compressed?: unknown;

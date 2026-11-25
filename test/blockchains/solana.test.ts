@@ -128,6 +128,38 @@ describe("Solana Blockchain", () => {
     });
   });
 
+  describe("Secrets from wallets", () => {
+    const blockchain = useBlockchain(new Solana());
+    const { keypair } = solanaTestVectors;
+
+    it.each([
+      ["the id.json array", keypair.json],
+      ["the base58 export", keypair.base58],
+      ["a pretty printed id.json", `\n${keypair.json.replaceAll(",", ", ")}\n`],
+    ])("restores %s like Keypair.fromSecretKey", (_form, secret) => {
+      const wallet = blockchain.deriveSeedWallet(secret);
+      expect(wallet.keys.private).toBe(keypair.seed);
+      expect(wallet.keys.public).toBe(keypair.publicKey);
+      expect(wallet.address).toBe(keypair.address);
+    });
+
+    it("refuses a secret whose public half belongs to another key", () => {
+      expect(() => blockchain.deriveSeedWallet(keypair.mismatched)).toThrow(
+        "not the public key its seed derives",
+      );
+    });
+
+    it.each([
+      ["32 bytes of base58", keypair.address],
+      ["a short array", "[1,2,3]"],
+      ["a byte over 255", keypair.json.replace("[1,", "[256,")],
+      ["a fraction", keypair.json.replace("[1,", "[1.5,")],
+      ["broken JSON", keypair.json.slice(0, -1)],
+    ])("refuses %s", (_form, secret) => {
+      expect(() => blockchain.deriveSeedWallet(secret)).toThrow("A Solana secret is 64 bytes");
+    });
+  });
+
   describe("Message signing", () => {
     const blockchain = useBlockchain(new Solana());
     const vector = solanaTestVectors;

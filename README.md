@@ -221,7 +221,7 @@ Most of them need nothing past the loader. A few have opinions:
 
 - Cosmos takes a `prefix`, so `blockchains.cosmos({ prefix: "osmo" })()` writes Osmosis addresses.
 - Polkadot takes `ss58Prefix`, 2 for Kusama. It writes sr25519 like the wallets, until `addressType: "ed25519"` says otherwise.
-- Monero, TON and the XRP Ledger restore from their own seeds through `deriveSeedWallet`.
+- Monero, TON and the XRP Ledger restore from their own seeds through `deriveSeedWallet`. Solana uses the same method for the `id.json` that `solana-keygen` writes or Phantom's base58 secret.
 - TON writes one address per wallet contract, so `addressType` picks `v4r2`, `v5r1` or `v3r2`.
 - Decred and Cardano refuse `deriveHDWallet` on purpose.
 

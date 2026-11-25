@@ -59,6 +59,7 @@ import {
   evmTransactionVectors,
   descriptorVectors,
   multisigVector,
+  solanaTestVectors,
 } from "./fixtures.ts";
 import Bitcoin from "../src/blockchains/bitcoin.ts";
 import { callTool, createMcpServer, toolListings } from "../src/mcp.ts";
@@ -1999,6 +2000,29 @@ describe("keys MCP server", () => {
     expect(text(path.content)).toContain("m/44'/899'/0'/0/0");
   });
 
+  it("restores Solana from id.json and base58 secrets through MCP", async () => {
+    const client = await connectTestClient();
+    const { keypair } = solanaTestVectors;
+    for (const secret of [keypair.json, keypair.base58, ` ${keypair.base58}\n`]) {
+      const response = await client.callTool({
+        name: "keys_wallet_derive",
+        arguments: { chain: "solana", privateKey: secret },
+      });
+      expect(response.isError).not.toBe(true);
+      expect(text(response.content)).toContain(`Address: ${keypair.address}`);
+      expect(text(response.content)).not.toContain(keypair.seed);
+      expect(JSON.stringify(response.structuredContent ?? {})).not.toContain(keypair.seed);
+    }
+
+    const mismatched = await client.callTool({
+      name: "keys_wallet_derive",
+      arguments: { chain: "solana", privateKey: keypair.mismatched },
+    });
+    expect(mismatched.isError).toBe(true);
+    expect(text(mismatched.content)).toContain("not the public key its seed derives");
+    expect(text(mismatched.content)).not.toContain(keypair.mismatched);
+  });
+
   it("derives XRPL from family seeds and checks its DER signatures through MCP", async () => {
     const client = await connectTestClient();
     const { master, ed25519 } = xrplTestVectors.seeds;
@@ -2017,7 +2041,7 @@ describe("keys MCP server", () => {
       arguments: { chain: "solana", privateKey: master.seed },
     });
     expect(elsewhere.isError).toBe(true);
-    expect(text(elsewhere.content)).toContain("solana has no seed string of its own");
+    expect(text(elsewhere.content)).toContain("A Solana secret is 64 bytes");
 
     const { publicKey, address } = xrplTestVectors.ed25519;
     const typed = await client.callTool({
