@@ -1,7 +1,7 @@
 import { hex } from "@agntn/encodings/hex";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { describe, expect, it } from "vite-plus/test";
-import { extractSignatures } from "../../src/utils/transaction/index.ts";
+import { decode, extractSignatures } from "../../src/utils/transaction/index.ts";
 import { pushOf, scriptPushes } from "../../src/utils/transaction/script.ts";
 import { legacySighash, taprootSighash } from "../../src/utils/transaction/sighash.ts";
 import {
@@ -89,6 +89,35 @@ const withScriptSig = (scriptSig: string): string => {
   );
   return hex.encode(serializeTransaction({ ...unsigned2012, inputs }, false));
 };
+
+describe("decode", () => {
+  it("reads the one output of the 2012 transaction, the P2PKH both inputs spend", () => {
+    const { outputs, inputs, lockTime } = decode(reusedNonce2012.transaction);
+    expect(inputs).toHaveLength(2);
+    expect(lockTime).toBe(0);
+    expect(outputs.map(({ value, script }) => [value, hex.encode(script)])).toEqual([
+      [100_000n, reusedNonce2012.spent[0].script],
+    ]);
+  });
+
+  it("reads the outputs of the signed BIP143 P2WPKH example, witnesses and all", () => {
+    const { outputs, inputs, lockTime } = decode(p2wpkh.transaction);
+    expect(outputs.map(({ value, script }) => [value, hex.encode(script)])).toEqual([
+      [112_340_000n, "76a9148280b37df378db99f66f85c95a783a76ac7a6d5988ac"],
+      [223_450_000n, "76a9143bde42dbee7e4dbe6a21b2d50ce2f0167faa815988ac"],
+    ]);
+    expect(inputs[1]?.witness.map((item) => hex.encode(item))[1]).toBe(p2wpkh.publicKey);
+    expect(lockTime).toBe(17);
+  });
+
+  it("names what is wrong with input that is no transaction", () => {
+    expect(() => decode("0x00")).toThrow(TypeError);
+    expect(() => decode("0100")).toThrow("Transaction ends early");
+    expect(() => decode(`${reusedNonce2012.transaction}00`)).toThrow(
+      "Transaction has bytes past its end",
+    );
+  });
+});
 
 describe("pushOf", () => {
   it("pushes directly up to 75 bytes, then with the shortest OP_PUSHDATA", () => {

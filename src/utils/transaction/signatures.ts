@@ -5,7 +5,8 @@ import { assertOptions } from "../options.ts";
 import { pushOf, scriptOperations, scriptPushes } from "./script.ts";
 import { legacySighash, segwitSighash, taprootSighash } from "./sighash.ts";
 import {
-  decodeTransaction,
+  decode,
+  decodeHex,
   type Transaction,
   type TransactionInput,
   type TransactionOutput,
@@ -73,20 +74,6 @@ const ANNEX_TAG = 0x50;
 const MAX_SATOSHIS = 0xffff_ffff_ffff_ffffn;
 
 /**
- * Reads hex the caller passed.
- * @param value - Hex without 0x
- * @param name - What the error calls it
- * @returns {Uint8Array} The bytes
- * @throws {TypeError} When the value is no even-length hex
- */
-function decodeHex(value: unknown, name: string): Uint8Array {
-  if (typeof value !== "string" || !/^(?:[0-9a-f]{2})*$/iu.test(value)) {
-    throw new TypeError(`${name} must be hex without 0x`);
-  }
-  return Uint8Array.fromHex(value);
-}
-
-/**
  * Reads a spent output the caller passed.
  * @param output - Script hex and value in satoshis
  * @param position - Its place in the list, for the error
@@ -104,21 +91,6 @@ function readSpentOutput(output: Readonly<SpentOutput>, position: number): Trans
 }
 
 /**
- * Decodes the raw transaction, naming the encoding rule it breaks.
- * @param transaction - Raw transaction hex
- * @returns {Transaction} The transaction
- * @throws {RangeError} When the bytes are no transaction
- */
-function readTransaction(transaction: string): Transaction {
-  const bytes = decodeHex(transaction, "Transaction");
-  try {
-    return decodeTransaction(bytes);
-  } catch (error) {
-    throw new RangeError(`Transaction ${error instanceof Error ? error.message : "is unreadable"}`);
-  }
-}
-
-/**
  * Reads the transaction and picks the input and the output it spends.
  * @param transaction - Raw transaction hex
  * @param options - Input to read and the output it spends, or one per input in order
@@ -127,7 +99,7 @@ function readTransaction(transaction: string): Transaction {
  */
 function readSpend(transaction: string, options: SignatureExtractionOptions): Spend {
   const { index, spent } = options;
-  const decoded = readTransaction(transaction);
+  const decoded = decode(transaction);
   const input = Number.isSafeInteger(index) ? decoded.inputs[index] : undefined;
   if (input === undefined) {
     throw new RangeError(

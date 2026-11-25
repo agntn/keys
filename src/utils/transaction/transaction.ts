@@ -299,6 +299,36 @@ export function decodeTransaction(bytes: Uint8Array): Transaction {
 }
 
 /**
+ * Reads hex the caller passed.
+ * @param value - Hex without 0x
+ * @param name - What the error calls it
+ * @returns {Uint8Array} The bytes
+ * @throws {TypeError} When the value is no even-length hex
+ */
+export function decodeHex(value: unknown, name: string): Uint8Array {
+  if (typeof value !== "string" || !/^(?:[0-9a-f]{2})*$/iu.test(value)) {
+    throw new TypeError(`${name} must be hex without 0x`);
+  }
+  return Uint8Array.fromHex(value);
+}
+
+/**
+ * Reads a raw Bitcoin transaction, outputs in wire order with their exact satoshis.
+ * @param transaction - Raw transaction hex, with or without witnesses
+ * @returns {Transaction} The transaction, each `txid` in hash order, not explorer order
+ * @throws {TypeError} When the transaction is no even-length hex
+ * @throws {RangeError} When the bytes are no transaction, naming the encoding rule they break
+ */
+export function decode(transaction: string): Transaction {
+  const bytes = decodeHex(transaction, "Transaction");
+  try {
+    return decodeTransaction(bytes);
+  } catch (error) {
+    throw new RangeError(`Transaction ${error instanceof Error ? error.message : "is unreadable"}`);
+  }
+}
+
+/**
  * Reads a serialized witness stack, the body of a BIP322 simple signature.
  * @param bytes - The stack bytes
  * @returns {Uint8Array[]} The items
