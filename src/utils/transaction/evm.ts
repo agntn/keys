@@ -1,7 +1,7 @@
 import { rlp, type RlpInput, type RlpItem } from "@agntn/encodings/rlp";
 import { keccak256 } from "@agntn/hashes";
-import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { bytesToNumberBE, concatBytes } from "../bytes.ts";
+import { bytesToNumberBE, concatBytes, numberToBytesBE } from "../bytes.ts";
+import { recoverEcdsaKey } from "../secp256k1/public.ts";
 import { generateAddress } from "../evm-address.ts";
 
 /** A signed transaction as `eth_getTransactionByHash` returns it, quantities and data as 0x hex. */
@@ -413,9 +413,12 @@ function signedBytes(payload: Readonly<SignedPayload>): Uint8Array {
  */
 function recoverPublicKey(digest: Uint8Array, payload: Readonly<SignedPayload>): string {
   try {
-    return new secp256k1.Signature(payload.r, payload.s, payload.recovery)
-      .recoverPublicKey(digest)
-      .toHex(false);
+    const signature = concatBytes(numberToBytesBE(payload.r, 32), numberToBytesBE(payload.s, 32));
+    return recoverEcdsaKey(signature, {
+      digest,
+      recovery: payload.recovery,
+      compressed: false,
+    }).toHex();
   } catch {
     throw new RangeError("Signature recovers no public key");
   }

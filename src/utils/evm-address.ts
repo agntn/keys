@@ -1,5 +1,5 @@
 import { keccak256 } from "@agntn/hashes";
-import { decodePublicPoint } from "./secp256k1/decode.ts";
+import { decodePublicKey } from "./secp256k1/public.ts";
 
 /* EVM addresses apart from the chain classes, so a module that needs only an address skips them. */
 
@@ -11,7 +11,7 @@ import { decodePublicPoint } from "./secp256k1/decode.ts";
  * @returns {string} The EVM address (0x-prefixed with EIP-55 checksum)
  */
 export function generateAddress(keyPublic: string): string {
-  const publicKeyForHashing = decodePublicPoint(keyPublic).toBytes(false).slice(1);
+  const publicKeyForHashing = decodePublicKey(keyPublic, { compressed: false }).slice(1);
 
   // Apply Keccak-256 hash to the public key
   const keccakHash = keccak256(publicKeyForHashing);

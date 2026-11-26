@@ -20,7 +20,7 @@ import {
   signCompact,
   verifyCompact,
 } from "./secp256k1/compact-signature.ts";
-import { decodePublicPoint } from "./secp256k1/decode.ts";
+import { decodePublicKey } from "./secp256k1/public.ts";
 import { generateKeyPublic } from "./secp256k1/keys.ts";
 import {
   hasRecoveryByte,
@@ -412,7 +412,7 @@ export abstract class AbstractCashAddrBlockchain extends AbstractBitcoinMessageB
    */
   override getAddress(keyPublic: string, type = "legacy"): string {
     if (type !== "legacy") throw new RangeError(`${this.label} supports legacy P2PKH only`);
-    decodePublicPoint(keyPublic);
+    decodePublicKey(keyPublic);
     const bytesKeyPublic = Uint8Array.fromHex(keyPublic);
     return encodeCashAddr(hash160(bytesKeyPublic), { prefix: this.prefix, type: 0 });
   }

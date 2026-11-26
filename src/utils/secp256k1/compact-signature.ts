@@ -1,7 +1,8 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import type { MessageSigner } from "../../types.ts";
 import { concatBytes, equalBytes } from "../bytes.ts";
-import { decodeKeyPrivate, decodePublicPoint } from "./decode.ts";
+import { decodeKeyPrivate } from "./decode.ts";
+import { decodePublicKey, recoverEcdsaKey } from "./public.ts";
 
 /** Header byte plus 32 bytes each of `r` and `s`. */
 const SIGNATURE_LENGTH = 65;
@@ -89,17 +90,19 @@ export function recoverCompact(messageHash: Uint8Array, signature: string): Mess
     );
   }
   const compressed = header >= HEADER_BASE + HEADER_COMPRESSED;
-  let point: ReturnType<typeof secp256k1.Point.fromBytes>;
+  let publicKey: Uint8Array;
   try {
-    point = secp256k1.Signature.fromBytes(bytes.subarray(1), "compact")
-      .addRecoveryBit((header - HEADER_BASE) % HEADER_COMPRESSED)
-      .recoverPublicKey(messageHash);
+    publicKey = recoverEcdsaKey(bytes.subarray(1), {
+      digest: messageHash,
+      recovery: (header - HEADER_BASE) % HEADER_COMPRESSED,
+      compressed,
+    });
   } catch {
     throw new RangeError("Message signature recovers no public key");
   }
   const addressType =
     header >= HEADER_P2WPKH ? "segwit" : header >= HEADER_P2SH_P2WPKH ? "p2sh" : "legacy";
-  return { publicKey: point.toBytes(compressed).toHex(), addressType };
+  return { publicKey: publicKey.toHex(), addressType };
 }
 
 /**
@@ -112,10 +115,7 @@ export function recoverCompact(messageHash: Uint8Array, signature: string): Mess
 export function verifyCompact(messageHash: Uint8Array, check: CompactCheck): boolean {
   try {
     const signer = recoverCompact(messageHash, check.signature);
-    return equalBytes(
-      decodePublicPoint(signer.publicKey).toBytes(true),
-      decodePublicPoint(check.publicKey).toBytes(true),
-    );
+    return equalBytes(decodePublicKey(signer.publicKey), decodePublicKey(check.publicKey));
   } catch {
     return false;
   }

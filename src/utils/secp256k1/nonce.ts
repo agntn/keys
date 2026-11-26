@@ -9,6 +9,7 @@ import { sha256 } from "@agntn/hashes";
 import { schnorr, secp256k1 } from "@noble/curves/secp256k1.js";
 import { concatBytes } from "../bytes.ts";
 import { assertOptions } from "../options.ts";
+import { decodePublicKey, verifyEcdsaDigest, verifySchnorr } from "./public.ts";
 
 const { Point } = secp256k1;
 const { Fn, Fp } = Point;
@@ -123,8 +124,7 @@ function readPair(signatures: NonceSignaturePair, schnorr: boolean): Pair {
 function verifiesEcdsa(key: Uint8Array, numbers: EcdsaSignature): boolean {
   const { r, s, z } = numbers;
   const signature = concatBytes(Fn.toBytes(r), Fn.toBytes(s));
-  const options = { prehash: false, lowS: false, format: "compact" } as const;
-  return secp256k1.verify(signature, digestBytes(z), key, options);
+  return verifyEcdsaDigest(signature, { digest: digestBytes(z), publicKey: key, lowS: false });
 }
 
 /**
@@ -138,13 +138,8 @@ function readExpectedKey(value: unknown, xOnly: boolean): string | undefined {
   if (value === undefined) return undefined;
   const hex = typeof value === "string" ? value.toLowerCase() : "";
   try {
-    if (xOnly && hex.length === 64)
-      return Point.fromBytes(Uint8Array.fromHex(`02${hex}`))
-        .toBytes(true)
-        .subarray(1)
-        .toHex();
-    const point = Point.fromBytes(Uint8Array.fromHex(hex));
-    return xOnly ? point.toBytes(true).subarray(1).toHex() : point.toBytes(true).toHex();
+    const point = decodePublicKey(xOnly && hex.length === 64 ? `02${hex}` : hex);
+    return (xOnly ? point.subarray(1) : point).toHex();
   } catch {
     throw new TypeError("publicKey must be a SEC1 public key as hex, or x-only for Schnorr");
   }
@@ -220,7 +215,10 @@ function recoverSchnorr(pair: Readonly<Pair>, publicKey: string): RecoveredNonce
   const key = Fn.isValidNot0(privateKey) ? schnorr.getPublicKey(Fn.toBytes(privateKey)) : undefined;
   const signatures = s.map((each) => concatBytes(Fn.toBytes(r), Fn.toBytes(each)));
   const verified = signatures.every((signature, index) =>
-    schnorr.verify(signature, digestBytes(z[index] ?? 0n), Uint8Array.fromHex(publicKey)),
+    verifySchnorr(signature, {
+      message: digestBytes(z[index] ?? 0n),
+      publicKey: Uint8Array.fromHex(publicKey),
+    }),
   );
   if (key?.toHex() !== publicKey || !verified) {
     throw new RangeError("The key both signatures share does not match publicKey");

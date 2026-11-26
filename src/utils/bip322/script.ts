@@ -1,5 +1,5 @@
-import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { concatBytes } from "../bytes.ts";
+import { readStrictDer, verifyEcdsaDigest } from "../secp256k1/public.ts";
 
 const OP_PUSHDATA1 = 0x4c;
 const OP_PUSHDATA2 = 0x4d;
@@ -136,11 +136,8 @@ export function verifyEcdsa(
   check: { readonly digest: Uint8Array; readonly publicKey: Uint8Array },
 ): boolean {
   const { digest, publicKey } = check;
-  try {
-    return secp256k1.verify(der, digest, publicKey, { prehash: false, format: "der", lowS: true });
-  } catch {
-    return false;
-  }
+  const signature = readStrictDer(der);
+  return signature !== undefined && verifyEcdsaDigest(signature, { digest, publicKey, lowS: true });
 }
 
 /**

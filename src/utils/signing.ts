@@ -2,8 +2,10 @@ import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { sha256 } from "@agntn/hashes";
 import { concatBytes, equalBytes } from "./bytes.ts";
+import { verifyBytes as verifyEd25519Bytes } from "./ed25519.ts";
 import { assertSignOptions, assertVerifyOptions } from "./options.ts";
 import { decodeKeyPrivate } from "./secp256k1/decode.ts";
+import { decodePublicKey, recoverEcdsaKey, verifyEcdsaDigest } from "./secp256k1/public.ts";
 import { signBytes, verifyBytes as verifySr25519 } from "./sr25519.ts";
 import type { SignMessageOptions, SigningOptions, VerifyMessageOptions } from "../types.ts";
 
@@ -133,11 +135,11 @@ export function recoverSecp256k1Signer(messageHash: Uint8Array, signature: strin
   const recovery = recoveryBit(bytes[COMPACT_SIGNATURE_LENGTH]);
   if (recovery === undefined) throw new TypeError("Signature v must be 27, 28, 0 or 1");
   try {
-    return secp256k1.Signature.fromBytes(bytes.subarray(0, COMPACT_SIGNATURE_LENGTH), "compact")
-      .addRecoveryBit(recovery)
-      .recoverPublicKey(messageHash)
-      .toBytes(false)
-      .toHex();
+    return recoverEcdsaKey(bytes.subarray(0, COMPACT_SIGNATURE_LENGTH), {
+      digest: messageHash,
+      recovery,
+      compressed: false,
+    }).toHex();
   } catch {
     throw new RangeError("Signature recovers no public key");
   }
@@ -158,15 +160,12 @@ function verifyRecoveredSignature(signatureBytes: Uint8Array, check: SignatureCh
     return false;
   }
   const compact = signatureBytes.subarray(0, COMPACT_SIGNATURE_LENGTH);
-  if (!secp256k1.verify(compact, messageHash, keyPublicBytes, { prehash: false })) {
+  if (!verifyEcdsaDigest(compact, { digest: messageHash, publicKey: keyPublicBytes, lowS: true })) {
     return false;
   }
-  const recoveredKey = secp256k1.Signature.fromBytes(compact, "compact")
-    .addRecoveryBit(recovery)
-    .recoverPublicKey(messageHash);
   return equalBytes(
-    recoveredKey.toBytes(true),
-    secp256k1.Point.fromBytes(keyPublicBytes).toBytes(true),
+    recoverEcdsaKey(compact, { digest: messageHash, recovery }),
+    decodePublicKey(check.publicKey),
   );
 }
 
@@ -228,8 +227,8 @@ function verifySecp256k1(signature: string, check: SignatureCheck): boolean {
     if (signatureBytes.length === COMPACT_SIGNATURE_LENGTH + 1) {
       return verifyRecoveredSignature(signatureBytes, check);
     }
-    const keyPublicBytes = Uint8Array.fromHex(check.publicKey);
-    return secp256k1.verify(signatureBytes, check.message, keyPublicBytes, { prehash: false });
+    const publicKey = Uint8Array.fromHex(check.publicKey);
+    return verifyEcdsaDigest(signatureBytes, { digest: check.message, publicKey, lowS: true });
   } catch {
     return false;
   }
@@ -243,8 +242,10 @@ function verifySecp256k1(signature: string, check: SignatureCheck): boolean {
  */
 function verifyEd25519(signature: string, check: SignatureCheck): boolean {
   try {
-    const keyPublicBytes = Uint8Array.fromHex(check.publicKey);
-    return ed25519.verify(Uint8Array.fromHex(signature), check.message, keyPublicBytes);
+    return verifyEd25519Bytes(Uint8Array.fromHex(signature), {
+      message: check.message,
+      publicKey: Uint8Array.fromHex(check.publicKey),
+    });
   } catch {
     return false;
   }

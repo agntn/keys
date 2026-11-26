@@ -19,6 +19,7 @@ const libraryDependencies = [
 
 /** Every subpath src/ imports, dynamic ones too, so dev bundles them up front, not on demand. */
 const libraryEntries = [
+  "@agntn/curves/bip340",
   "@agntn/curves/brainpoolp256r1",
   "@agntn/curves/brainpoolp384r1",
   "@agntn/curves/brainpoolp512r1",

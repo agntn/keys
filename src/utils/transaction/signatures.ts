@@ -1,7 +1,8 @@
 import { ripemd160, sha256 } from "@agntn/hashes";
-import { schnorr, secp256k1 } from "@noble/curves/secp256k1.js";
-import { concatBytes } from "../bytes.ts";
+import { secp256k1 } from "@agntn/curves/secp256k1";
+import { concatBytes, numberToBytesBE } from "../bytes.ts";
 import { assertOptions } from "../options.ts";
+import { decodePublicKey, verifyEcdsaDigest, verifySchnorr } from "../secp256k1/public.ts";
 import { pushOf, scriptOperations, scriptPushes } from "./script.ts";
 import { legacySighash, segwitSighash, taprootSighash } from "./sighash.ts";
 import {
@@ -66,7 +67,24 @@ interface SighashRules {
   readonly segwit: boolean;
 }
 
-const { Fn } = secp256k1.Point;
+/**
+ * Write r or s as a signature carries it.
+ * @param scalar - r or s
+ * @returns {Uint8Array} 32 bytes, big endian
+ */
+function scalarBytes(scalar: bigint): Uint8Array {
+  return numberToBytesBE(scalar, 32);
+}
+
+/**
+ * Tell r or s from 1 to n minus 1.
+ * @param scalar - r or s
+ * @returns {boolean} Whether it's in range
+ */
+function isScalar(scalar: bigint): boolean {
+  return scalar > 0n && scalar < secp256k1.n;
+}
+
 const OP_CODESEPARATOR = 0xab;
 const OP_CHECKMULTISIG = 0xae;
 const OP_CHECKMULTISIGVERIFY = 0xaf;
@@ -126,7 +144,7 @@ function readDer(der: Uint8Array): [bigint, bigint] | undefined {
   const r = start === undefined ? undefined : readDerInteger(der, start);
   const s = r === undefined ? undefined : readDerInteger(der, r[1]);
   if (r === undefined || s === undefined) return undefined;
-  return Fn.isValidNot0(r[0]) && Fn.isValidNot0(s[0]) ? [r[0], s[0]] : undefined;
+  return isScalar(r[0]) && isScalar(s[0]) ? [r[0], s[0]] : undefined;
 }
 
 /**
@@ -186,7 +204,7 @@ function publicKeys(items: readonly Uint8Array[]): Uint8Array[] {
     if (seen.has(hex) || (item.length !== 33 && item.length !== 65)) return false;
     seen.add(hex);
     try {
-      secp256k1.Point.fromBytes(item);
+      decodePublicKey(hex);
       return true;
     } catch {
       return false;
@@ -206,9 +224,10 @@ function ecdsaSigner(
 ): string | undefined {
   const { r, s } = signature;
   const { digest, keys } = search;
-  const compact = concatBytes(Fn.toBytes(r), Fn.toBytes(s));
-  const options = { prehash: false, lowS: false, format: "compact" } as const;
-  return keys.find((key) => secp256k1.verify(compact, digest, key, options))?.toHex();
+  const compact = concatBytes(scalarBytes(r), scalarBytes(s));
+  return keys
+    .find((publicKey) => verifyEcdsaDigest(compact, { digest, publicKey, lowS: false }))
+    ?.toHex();
 }
 
 /**
@@ -297,8 +316,8 @@ function ecdsaSignatures(
     return [
       {
         type: "ecdsa",
-        r: Fn.toBytes(parts.r).toHex(),
-        s: Fn.toBytes(parts.s).toHex(),
+        r: scalarBytes(parts.r).toHex(),
+        s: scalarBytes(parts.s).toHex(),
         z: z.toHex(),
         hashType: parts.hashType,
         ...(publicKey === undefined ? {} : { publicKey }),
@@ -434,7 +453,7 @@ function taprootSignatures(spend: Readonly<Spend>, outputKey: Uint8Array): Input
   const hashType = taprootHashType(signature);
   const { transaction, index, spent } = spend;
   const z = taprootSighash(transaction, { index, spent, hashType, annex });
-  const verified = schnorr.verify(signature.subarray(0, 64), z, outputKey);
+  const verified = verifySchnorr(signature.subarray(0, 64), { message: z, publicKey: outputKey });
   return [
     {
       type: "schnorr",

@@ -25,8 +25,10 @@
  */
 
 import { Sha256Hasher, sha256 } from "@agntn/hashes";
+import { secp256k1 as curve } from "@agntn/curves/secp256k1";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { concatBytes } from "../bytes.ts";
+import { tweakPublicKey } from "../secp256k1/public.ts";
 import { decodeLegacyWords } from "./legacy.ts";
 
 const STRETCH_ROUNDS = 100_000;
@@ -75,7 +77,6 @@ export function oldChildPublicKey(
   const { change, index } = address;
   const label = new TextEncoder().encode(`${index}:${change}:`);
   const sequence = BigInt(`0x${sha256(sha256(concatBytes(label, masterPublicKey))).toHex()}`);
-  const { Point } = secp256k1;
-  const master = Point.fromBytes(concatBytes(Uint8Array.of(4), masterPublicKey));
-  return master.add(Point.BASE.multiply(Point.Fn.create(sequence))).toBytes(false);
+  const master = concatBytes(Uint8Array.of(4), masterPublicKey);
+  return tweakPublicKey(master, { tweak: sequence % curve.n, compressed: false });
 }
