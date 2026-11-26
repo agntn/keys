@@ -5,10 +5,14 @@ import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { hash160 } from "../utils/address.ts";
 import { concatBytes } from "../utils/bytes.ts";
 import { AbstractDualCurveBlockchain } from "../utils/dual-curve.ts";
-import { generateKeyPublic as getEd25519KeyPublic } from "../utils/ed25519.ts";
+import {
+  generateKeyPublic as getEd25519KeyPublic,
+  verifyBytes as verifyEd25519,
+} from "../utils/ed25519.ts";
 import { assertSignOptions, assertVerifyOptions, readPathOptions } from "../utils/options.ts";
 import { convertPublicKey } from "../utils/secp256k1/index.ts";
 import { decodeKeyPrivate } from "../utils/secp256k1/decode.ts";
+import { readStrictDer, verifyEcdsaDigest } from "../utils/secp256k1/public.ts";
 import { generateKeyPublic as getSecp256k1KeyPublic } from "../utils/secp256k1/keys.ts";
 import { assertNoRecoveryByte } from "../utils/signing.ts";
 import type {
@@ -298,13 +302,13 @@ export class XRPL extends AbstractDualCurveBlockchain {
     try {
       const signatureBytes = Uint8Array.fromHex(signature);
       if (curve === "ed25519") {
-        return ed25519.verify(signatureBytes, bytes, decodeEd25519Key(keyPublic).subarray(1));
+        const publicKey = decodeEd25519Key(keyPublic).subarray(1);
+        return verifyEd25519(signatureBytes, { message: bytes, publicKey });
       }
-      const keyBytes = Uint8Array.fromHex(convertPublicKey(keyPublic));
-      return secp256k1.verify(signatureBytes, sha512Half(bytes), keyBytes, {
-        prehash: false,
-        format: "der",
-      });
+      const compact = readStrictDer(signatureBytes);
+      if (compact === undefined) return false;
+      const publicKey = Uint8Array.fromHex(convertPublicKey(keyPublic));
+      return verifyEcdsaDigest(compact, { digest: sha512Half(bytes), publicKey, lowS: true });
     } catch {
       return false;
     }

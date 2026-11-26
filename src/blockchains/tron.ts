@@ -4,7 +4,7 @@ import { addSchemeByte } from "../utils/address.ts";
 import { encodeBase58Check, validateBase58Check } from "../utils/encoding.ts";
 import { hashWithPreamble } from "../utils/evm.ts";
 import { assertSignOptions, assertVerifyOptions } from "../utils/options.ts";
-import { decodePublicPoint } from "../utils/secp256k1/decode.ts";
+import { decodePublicKey } from "../utils/secp256k1/public.ts";
 import { generateKeyPublic } from "../utils/secp256k1/keys.ts";
 import { recoverSecp256k1Signer, signMessage, verifyMessage } from "../utils/signing.ts";
 import type {
@@ -42,7 +42,7 @@ export class Tron extends AbstractBlockchain {
 
   override getAddress(keyPublic: string, type?: AddressType): string {
     this.refuseAddressType(type);
-    const keyBytesForHashing = decodePublicPoint(keyPublic).toBytes(false).slice(1);
+    const keyBytesForHashing = decodePublicKey(keyPublic, { compressed: false }).slice(1);
 
     const addressBytes = keccak256(keyBytesForHashing).slice(-20);
     return encodeBase58Check(addSchemeByte(addressBytes, { schemeByte: ADDRESS_PREFIX_BYTE }));

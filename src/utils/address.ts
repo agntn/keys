@@ -1,8 +1,8 @@
 import { ripemd160, sha256 } from "@agntn/hashes";
-import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { secp256k1 as curve } from "@agntn/curves/secp256k1";
 import { bytesToNumberBE } from "./bytes.ts";
 import { encodeBase58Check, validateBase58Check } from "./encoding.ts";
-import { decodePublicPoint } from "./secp256k1/decode.ts";
+import { decodePublicKey, tweakPublicKey } from "./secp256k1/public.ts";
 import { segwit } from "@agntn/encodings/bech32";
 
 /**
@@ -29,26 +29,19 @@ export function taggedHash(tag: string, data: Uint8Array): Uint8Array {
   return sha256(input);
 }
 
-function xOnlyFromPublicKey(keyPublicBytes: Uint8Array): Uint8Array {
-  const point = secp256k1.Point.fromBytes(keyPublicBytes);
-  return point.toBytes(true).slice(1);
-}
-
 function generateTaprootProgram(keyPublicBytes: Uint8Array): Uint8Array {
-  const internalKey = xOnlyFromPublicKey(keyPublicBytes);
-  const internalPoint = secp256k1.Point.fromHex(new Uint8Array([0x02, ...internalKey]).toHex());
+  const internalKey = decodePublicKey(keyPublicBytes.toHex()).slice(1);
   const tweak = bytesToNumberBE(taggedHash("TapTweak", internalKey));
 
-  if (tweak >= secp256k1.Point.Fn.ORDER) {
+  if (tweak === 0n || tweak >= curve.n) {
     throw new Error("Invalid Taproot tweak");
   }
 
-  const outputPoint = internalPoint.add(secp256k1.Point.BASE.multiply(tweak));
-  if (outputPoint.is0()) {
+  try {
+    return tweakPublicKey(Uint8Array.of(0x02, ...internalKey), { tweak }).slice(1);
+  } catch {
     throw new Error("Invalid Taproot output point");
   }
-
-  return outputPoint.toBytes(true).slice(1);
 }
 
 /**
@@ -58,7 +51,7 @@ function generateTaprootProgram(keyPublicBytes: Uint8Array): Uint8Array {
  * @returns {Uint8Array} The public key bytes as given
  */
 function publicKeyBytes(keyPublic: string, compressedOnly = false): Uint8Array {
-  decodePublicPoint(keyPublic);
+  decodePublicKey(keyPublic);
   const bytesKeyPublic = Uint8Array.fromHex(keyPublic);
   if (compressedOnly && bytesKeyPublic.length !== 33) {
     throw new RangeError("SegWit v0 addresses take a compressed public key");

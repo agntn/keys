@@ -1,5 +1,4 @@
-import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { INVALID_PUBLIC_KEY } from "./decode.ts";
+import { decodePublicKey, INVALID_PUBLIC_KEY } from "./public.ts";
 
 /** SEC1 output encoding; this does not change the curve point. */
 export interface PublicKeyEncodingOptions {
@@ -18,18 +17,13 @@ export function convertPublicKey(
 ): string {
   const { compressed = true } = options;
   if (typeof compressed !== "boolean") throw new TypeError("Compressed must be a boolean");
-  try {
-    if (
-      typeof publicKey !== "string" ||
-      !/^(?:0[23][0-9a-f]{64}|04[0-9a-f]{128})$/iu.test(publicKey)
-    ) {
-      throw new Error("Invalid encoding");
-    }
-    const point = secp256k1.Point.fromBytes(Uint8Array.fromHex(publicKey));
-    return point.toBytes(compressed).toHex();
-  } catch {
+  if (
+    typeof publicKey !== "string" ||
+    !/^(?:0[23][0-9a-f]{64}|04[0-9a-f]{128})$/iu.test(publicKey)
+  ) {
     throw new Error(INVALID_PUBLIC_KEY);
   }
+  return decodePublicKey(publicKey, { compressed }).toHex();
 }
 
 export {

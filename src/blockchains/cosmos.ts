@@ -6,7 +6,7 @@ import { BIP44 } from "../utils/bip44/index.ts";
 import { COSMOS_PREFIX_PATTERN } from "../utils/cosmos-prefix.ts";
 import { HARDENED_OFFSET } from "../utils/hd-index.ts";
 import { assertSignOptions, assertVerifyOptions } from "../utils/options.ts";
-import { decodePublicPoint } from "../utils/secp256k1/decode.ts";
+import { decodePublicKey } from "../utils/secp256k1/public.ts";
 import { generateKeyPublic } from "../utils/secp256k1/keys.ts";
 import {
   assertNoRecoveryByte,
@@ -151,7 +151,7 @@ export class Cosmos extends AbstractBlockchain {
    */
   override getAddress(keyPublic: string, type?: AddressType): string {
     this.refuseAddressType(type);
-    const hash = hash160(decodePublicPoint(keyPublic).toBytes(true));
+    const hash = hash160(decodePublicKey(keyPublic));
     return bech32.encode(this.prefix, hash, MAX_BECH32_LENGTH);
   }
 

@@ -2,7 +2,7 @@ import { HDKey } from "@scure/bip32";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { decodeExtendedKey, extendedKeyVersion } from "../extended-key.ts";
 import { HARDENED_OFFSET } from "../hd-index.ts";
-import { decodePublicPoint } from "../secp256k1/decode.ts";
+import { decodePublicKey } from "../secp256k1/public.ts";
 import { decode as decodeWIF } from "../wif/index.ts";
 import type { ScriptNetwork } from "../script/script.ts";
 
@@ -98,12 +98,12 @@ function fitKey(key: Uint8Array, context: KeyContext): Uint8Array {
 function hexKey(text: string, context: KeyContext): Uint8Array {
   if (text.length === 64) {
     if (context !== "taproot") throw new RangeError("x-only keys belong in tr() only");
-    return decodePublicPoint(`02${text}`).toBytes(true).subarray(1);
+    return decodePublicKey(`02${text}`).subarray(1);
   }
   if (text.length !== 66 && text.length !== 130) {
     throw new RangeError("Hex key must be 66 characters, 130 uncompressed, or 64 x-only in tr()");
   }
-  decodePublicPoint(text);
+  decodePublicKey(text);
   return fitKey(Uint8Array.fromHex(text), context);
 }
 

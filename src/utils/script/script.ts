@@ -4,7 +4,7 @@ import { hash160 } from "../address.ts";
 import { concatBytes } from "../bytes.ts";
 import { encodeBase58Check } from "../encoding.ts";
 import { assertOptions } from "../options.ts";
-import { decodePublicPoint } from "../secp256k1/decode.ts";
+import { decodePublicKey } from "../secp256k1/public.ts";
 import { pushOf } from "../transaction/script.ts";
 import { MAX_MULTISIG_KEYS, MAX_P2SH_SCRIPT_SIZE, MAX_P2WSH_SCRIPT_SIZE } from "./limits.ts";
 
@@ -105,7 +105,7 @@ export function multisig(publicKeys: readonly string[], options: MultisigOptions
   assertOptions(options, "multisig(publicKeys, { threshold, sorted })");
   const { threshold } = options;
   const keys = publicKeys.map((key) => {
-    decodePublicPoint(key);
+    decodePublicKey(key);
     return Uint8Array.fromHex(key);
   });
   return multisigScript(threshold, options.sorted === true ? sortKeys(keys) : keys);

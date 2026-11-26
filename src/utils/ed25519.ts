@@ -1,4 +1,30 @@
+import { verify } from "@agntn/curves/ed25519";
 import { ed25519 } from "@noble/curves/ed25519.js";
+
+/** What an Ed25519 signature is checked against. */
+interface Ed25519Check {
+  readonly message: Uint8Array;
+  /** 32 bytes. */
+  readonly publicKey: Uint8Array;
+  /** ZIP 215's rules unless false, which wants RFC 8032 strict. */
+  readonly zip215?: boolean;
+}
+
+/**
+ * Check plain Ed25519 over the raw bytes.
+ * @param signature - 64 bytes, R then S
+ * @param check - Message, key and rules
+ * @returns {boolean} Whether the key signed it
+ * @throws {RangeError} When a length is off
+ */
+export function verifyBytes(signature: Uint8Array, check: Readonly<Ed25519Check>): boolean {
+  const { message, publicKey, zip215 } = check;
+  return verify(signature.toHex(), {
+    message: message.toHex(),
+    publicKey: publicKey.toHex(),
+    ...(zip215 === undefined ? {} : { zip215 }),
+  });
+}
 
 /**
  * Generates a public key from a private key using Ed25519 elliptic curve

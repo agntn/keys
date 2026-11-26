@@ -1,6 +1,7 @@
-import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { secp256k1 } from "@agntn/curves/secp256k1";
 import { taggedHash } from "../address.ts";
-import { concatBytes, equalBytes } from "../bytes.ts";
+import { bytesToNumberBE, concatBytes, equalBytes } from "../bytes.ts";
+import { tweakPublicKey } from "../secp256k1/public.ts";
 import { varBytes } from "../transaction/transaction.ts";
 
 /** First byte BIP341 reserves for an annex, the last of two or more witness items. */
@@ -75,10 +76,10 @@ function hasControlLength(control: Uint8Array): boolean {
  * @returns {Uint8Array | undefined} The compressed output key
  */
 export function tweakedKey(internal: Uint8Array, root: Uint8Array): Uint8Array | undefined {
+  const tweak = bytesToNumberBE(taggedHash("TapTweak", concatBytes(internal, root)));
+  if (tweak === 0n || tweak >= secp256k1.n) return undefined;
   try {
-    const point = secp256k1.Point.fromBytes(concatBytes(Uint8Array.of(2), internal));
-    const tweak = secp256k1.Point.Fn.fromBytes(taggedHash("TapTweak", concatBytes(internal, root)));
-    return point.add(secp256k1.Point.BASE.multiply(tweak)).toBytes(true);
+    return tweakPublicKey(concatBytes(Uint8Array.of(2), internal), { tweak });
   } catch {
     return undefined;
   }

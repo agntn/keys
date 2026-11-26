@@ -12,7 +12,8 @@ import {
   signCompact,
   verifyCompact,
 } from "../utils/secp256k1/compact-signature.ts";
-import { decodeKeyPrivate, decodePublicPoint } from "../utils/secp256k1/decode.ts";
+import { decodeKeyPrivate } from "../utils/secp256k1/decode.ts";
+import { decodePublicKey, verifyEcdsaDigest } from "../utils/secp256k1/public.ts";
 import { generateKeyPublic } from "../utils/secp256k1/keys.ts";
 import { hasRecoveryByte, readRecoveredFlag } from "../utils/signing.ts";
 import type {
@@ -93,7 +94,7 @@ export class Decred extends AbstractBlockchain {
 
   override getAddress(keyPublic: string, type = "legacy"): string {
     if (type !== "legacy") throw new RangeError("Decred supports legacy ECDSA P2PKH only");
-    decodePublicPoint(keyPublic);
+    decodePublicKey(keyPublic);
     return codec.encode(
       concatBytes(this.prefix, ripemd160(blake256(Uint8Array.fromHex(keyPublic)))),
     );
@@ -142,14 +143,11 @@ export class Decred extends AbstractBlockchain {
       return verifyCompact(hashMessage(message), { signature, publicKey: keyPublic });
     }
     try {
-      return secp256k1.verify(
-        Uint8Array.fromHex(signature),
-        hashMessage(message),
-        Uint8Array.fromHex(keyPublic),
-        {
-          prehash: false,
-        },
-      );
+      return verifyEcdsaDigest(Uint8Array.fromHex(signature), {
+        digest: hashMessage(message),
+        publicKey: Uint8Array.fromHex(keyPublic),
+        lowS: true,
+      });
     } catch {
       return false;
     }

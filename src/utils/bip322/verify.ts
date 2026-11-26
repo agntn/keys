@@ -1,5 +1,4 @@
 import { sha256 } from "@agntn/hashes";
-import { schnorr } from "@noble/curves/secp256k1.js";
 import { Bitcoin } from "../../blockchains/bitcoin.ts";
 import { hash160 } from "../address.ts";
 import { assertOptions } from "../options.ts";
@@ -32,6 +31,7 @@ import {
   type TransactionOutput,
 } from "../transaction/transaction.ts";
 import { equalBytes } from "../bytes.ts";
+import { verifySchnorr } from "../secp256k1/public.ts";
 
 /** What a verifier concludes: BIP322's valid, invalid and inconclusive. */
 export type BIP322State = "valid" | "invalid" | "inconclusive";
@@ -421,7 +421,8 @@ function checkTaproot(transaction: Readonly<Transaction>, challenge: Readonly<Ch
   if (hashType === undefined) return invalid("Signature must use SIGHASH_DEFAULT or SIGHASH_ALL");
   const spent = [{ value: 0n, script: challenge.script }];
   const digest = taprootSighash(transaction, { index: 0, spent, hashType });
-  if (!schnorr.verify(signature.subarray(0, 64), digest, challenge.program)) {
+  const check = { message: digest, publicKey: challenge.program };
+  if (!verifySchnorr(signature.subarray(0, 64), check)) {
     return invalid("Schnorr signature does not verify");
   }
   return { state: "valid", publicKey: challenge.program.toHex() };

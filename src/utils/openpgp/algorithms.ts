@@ -17,9 +17,9 @@ import {
   sha384,
   sha512,
 } from "@agntn/hashes";
-import { ed25519 } from "@noble/curves/ed25519.js";
-import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { bytesToNumberBE, concatBytes, equalBytes, numberToBytesBE } from "../bytes.ts";
+import { verifyBytes as verifyEd25519 } from "../ed25519.ts";
+import { verifyEcdsaDigest } from "../secp256k1/public.ts";
 import { type Reader, createReader } from "./packets.ts";
 
 /** One hash from RFC 9580 Table 23 that this module can compute. */
@@ -166,8 +166,8 @@ const ECDSA_CURVES = {
   secp256k1: {
     size: 32,
     minimumDigestBits: 256,
-    verify: (signature, digest, point) =>
-      secp256k1.verify(signature, digest, point, { prehash: false, lowS: false }),
+    verify: (signature, digest, publicKey) =>
+      verifyEcdsaDigest(signature, { digest, publicKey, lowS: false }),
   },
 } as const satisfies Readonly<Record<string, EcdsaCurve>>;
 
@@ -529,7 +529,7 @@ function verifyEdDsa(
   const signature = legacy
     ? concatBytes(pad(reader.mpi(), 32), pad(reader.mpi(), 32))
     : reader.read(64);
-  return ed25519.verify(signature, digest, key.point, { zip215: false });
+  return verifyEd25519(signature, { message: digest, publicKey: key.point, zip215: false });
 }
 
 /**
