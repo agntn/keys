@@ -33,7 +33,7 @@ function generateTaprootProgram(keyPublicBytes: Uint8Array): Uint8Array {
   const internalKey = decodePublicKey(keyPublicBytes.toHex()).slice(1);
   const tweak = bytesToNumberBE(taggedHash("TapTweak", internalKey));
 
-  if (tweak === 0n || tweak >= curve.n) {
+  if (tweak >= curve.n) {
     throw new Error("Invalid Taproot tweak");
   }
 

@@ -67,9 +67,9 @@ export function decodePublicKey(keyPublic: string, encoding: PointEncoding = {})
 }
 
 /**
- * Add tweak times G to a key, as Taproot and old Electrum do.
+ * Add tweak times G to a key, as Taproot and old Electrum do. Zero leaves it be, as BIP341 allows.
  * @param publicKey - SEC1 bytes
- * @param options - Tweak from 1 to n minus 1, and the output form
+ * @param options - Tweak from 0 to n minus 1, and the output form
  * @returns {Uint8Array} The tweaked key, compressed by default
  * @throws {RangeError} When the tweak is out of range or the sum is infinity
  */
@@ -78,7 +78,9 @@ export function tweakPublicKey(
   options: PointEncoding & { readonly tweak: bigint },
 ): Uint8Array {
   const { tweak, compressed } = options;
-  return Uint8Array.fromHex(addPoints(publicKey.toHex(), multiplyGenerator(tweak), { compressed }));
+  const key = publicKey.toHex();
+  if (tweak === 0n) return Uint8Array.fromHex(convertPoint(key, { compressed }));
+  return Uint8Array.fromHex(addPoints(key, multiplyGenerator(tweak), { compressed }));
 }
 
 /**

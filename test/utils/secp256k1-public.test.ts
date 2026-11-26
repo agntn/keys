@@ -4,7 +4,11 @@ import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { describe, expect, it } from "vite-plus/test";
 import XRPL from "../../src/blockchains/xrpl.ts";
 import { verifyMessage } from "../../src/utils/signing.ts";
-import { readStrictDer, verifyEcdsaDigest } from "../../src/utils/secp256k1/public.ts";
+import {
+  readStrictDer,
+  tweakPublicKey,
+  verifyEcdsaDigest,
+} from "../../src/utils/secp256k1/public.ts";
 import { secp256k1TestVectors } from "../fixtures.ts";
 
 const { privateKey, publicKeyCompressed } = secp256k1TestVectors;
@@ -33,6 +37,15 @@ describe("secp256k1 public input", () => {
     expect(verifyMessage(digest, { ...options, signature: hex.encode(low.toBytes()) })).toBe(true);
     expect(verifyMessage(digest, { ...options, signature: hex.encode(high.toBytes()) })).toBe(
       false,
+    );
+  });
+
+  it("leaves a key as it is under a zero tweak, which BIP341 allows", () => {
+    expect(tweakPublicKey(publicKey, { tweak: 0n })).toEqual(publicKey);
+    const uncompressed = secp256k1.Point.fromBytes(publicKey).toBytes(false);
+    expect(tweakPublicKey(publicKey, { tweak: 0n, compressed: false })).toEqual(uncompressed);
+    expect(() => tweakPublicKey(publicKey, { tweak: secp256k1.Point.Fn.ORDER })).toThrow(
+      RangeError,
     );
   });
 

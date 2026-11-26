@@ -77,7 +77,7 @@ function hasControlLength(control: Uint8Array): boolean {
  */
 export function tweakedKey(internal: Uint8Array, root: Uint8Array): Uint8Array | undefined {
   const tweak = bytesToNumberBE(taggedHash("TapTweak", concatBytes(internal, root)));
-  if (tweak === 0n || tweak >= secp256k1.n) return undefined;
+  if (tweak >= secp256k1.n) return undefined;
   try {
     return tweakPublicKey(concatBytes(Uint8Array.of(2), internal), { tweak });
   } catch {
