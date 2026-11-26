@@ -61,6 +61,12 @@ describe("brainwallet derive", () => {
     expect(hex.encode(once)).not.toBe(rounds.privateKey);
   });
 
+  it("pads SHA3-256 the FIPS 202 way, not as keccak256", () => {
+    const [, , keccak, sha3] = plainBrainwalletVectors;
+    expect(hex.encode(derive(keccak.passphrase, { kdf: "sha3_256" }))).not.toBe(keccak.privateKey);
+    expect(hex.encode(derive(sha3.passphrase, { kdf: "keccak256" }))).not.toBe(sha3.privateKey);
+  });
+
   it.each([0, 1.5, -1])("refuses %s rounds", (iterations) => {
     expect(() => derive(passphrase, { kdf: "sha256", iterations })).toThrow(/iterations/);
   });

@@ -71,7 +71,7 @@ export const brainwalletDeriveTool = defineTool({
   name: "keys_brainwallet_derive",
   title: "Derive Brainwallet",
   description:
-    "Derive the public key and address of a brainwallet from its full recipe: scrypt or PBKDF2 over the passphrase and salt, then SHA-256 of the output bytes or of their hex text, plain SHA-256 or keccak256 of the passphrase alone, or WarpWallet (scrypt XOR PBKDF2 at fixed costs). Bitcoin P2PKH by default, or an Ethereum address. Given a target address, reports whether it matches. The private key is never returned; the passphrase enters the transcript, so use only public or disposable material.",
+    "Derive the public key and address of a brainwallet from its full recipe: scrypt or PBKDF2 over the passphrase and salt, then SHA-256 of the output bytes or of their hex text, plain SHA-256, keccak256 or SHA3-256 of the passphrase alone, or WarpWallet (scrypt XOR PBKDF2 at fixed costs). Bitcoin P2PKH by default, or an Ethereum address. Given a target address, reports whether it matches. The private key is never returned; the passphrase enters the transcript, so use only public or disposable material.",
   effect: "read",
   input: DERIVE_BRAINWALLET_PARAMETERS,
   execute: async (params, { signal }) => (await loadOperations(signal)).deriveBrainwallet(params),

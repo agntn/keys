@@ -1,4 +1,12 @@
-import { Sha256Hasher, Sha512Hasher, keccak256, pbkdf2, scrypt, sha256 } from "@agntn/hashes";
+import {
+  Sha256Hasher,
+  Sha512Hasher,
+  keccak256,
+  pbkdf2,
+  scrypt,
+  sha256,
+  sha3_256,
+} from "@agntn/hashes";
 import { concatBytes } from "../bytes.ts";
 
 /** Key derivation a salted brainwallet runs the passphrase through, with its cost parameters. */
@@ -18,8 +26,8 @@ export type BrainwalletOptions = BrainwalletKDF & {
 
 /** Recipe of a plain brainwallet: the passphrase hashed straight into the key, no salt or KDF. */
 export interface PlainBrainwalletOptions {
-  /** sha256 for the brainwallet.org scheme, keccak256 for Ethereum brainwallets. */
-  readonly kdf: "sha256" | "keccak256";
+  /** sha256 for brainwallet.org, keccak256 for Ethereum, sha3_256 for FIPS 202, not keccak256. */
+  readonly kdf: "sha256" | "keccak256" | "sha3_256";
   /** How many times the digest runs, each round over the previous 32 bytes. Default: 1. */
   readonly iterations?: number;
 }
@@ -35,6 +43,9 @@ export interface WarpWalletOptions {
 export type BrainwalletRecipe = BrainwalletOptions | PlainBrainwalletOptions | WarpWalletOptions;
 
 const encoder = new TextEncoder();
+
+/** Digest each plain recipe runs, by its kdf. */
+const PLAIN_DIGESTS = { sha256, keccak256, sha3_256 } as const;
 
 /** scrypt cost WarpWallet runs, 256 MiB of memory. */
 const WARP_SCRYPT = { N: 2 ** 18, r: 8, p: 1 } as const;
@@ -53,7 +64,7 @@ function digestRounds(password: Uint8Array, options: PlainBrainwalletOptions): U
   if (!Number.isSafeInteger(iterations) || iterations < 1) {
     throw new RangeError("iterations must be a positive integer");
   }
-  const digest = options.kdf === "keccak256" ? keccak256 : sha256;
+  const digest = PLAIN_DIGESTS[options.kdf];
   let key = password;
   for (let round = 0; round < iterations; round++) key = digest(key);
   return key;
@@ -101,10 +112,10 @@ function warp(password: Uint8Array, salt: Uint8Array): Uint8Array {
 /**
  * Tells a plain recipe from a salted one by its digest.
  * @param options - Any recipe `derive` takes
- * @returns {boolean} True for sha256 and keccak256
+ * @returns {boolean} True for sha256, keccak256 and sha3_256
  */
 function isPlain(options: BrainwalletRecipe): options is PlainBrainwalletOptions {
-  return options.kdf === "sha256" || options.kdf === "keccak256";
+  return Object.hasOwn(PLAIN_DIGESTS, options.kdf);
 }
 
 /**
