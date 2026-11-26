@@ -17,7 +17,7 @@ catalogs:
   deps:
     "@agntn/ciphers": 0.5.2
     "@agntn/curves": 0.2.3
-    "@agntn/encodings": 0.2.0
+    "@agntn/encodings": 0.2.1
     "@agntn/hashes": 0.7.3
     "@agntn/tools": 0.4.0
     "@modelcontextprotocol/sdk": 1.32.2
