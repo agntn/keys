@@ -1,7 +1,6 @@
 import { Type, type TString } from "@agntn/tools";
 import {
   MAX_TRANSACTION_JSON_LENGTH,
-  TOOL_CHAINS,
   TOOL_ADDRESS_TYPES,
   SUI_ADDRESS_TYPES,
   MONERO_SIGNING_KEYS,
@@ -86,13 +85,13 @@ export const BIP39_LANGUAGE_PARAMETER = Type.Optional(
     enum: BIP39_LANGUAGES,
     minLength: 1,
     maxLength: 19,
-    description: "Official BIP39 language key. Default: english",
+    description: "BIP39 word list, never guessed. Default: english",
   }),
 );
 
 /** What Coleman's lengths are, shared by every tool that takes them. */
 const COLEMAN_DESCRIPTION =
-  "Also read Ian Coleman's lengths: any multiple of 3 words from 3 to 768, 3 words per 32 bits of entropy. Not BIP39, and wallet apps refuse such words.";
+  "Also read Ian Coleman's lengths, any multiple of 3 words from 3 to 768. Not BIP39; wallets refuse them.";
 
 export const COLEMAN_PARAMETER = Type.Optional(
   Type.Boolean({
@@ -548,23 +547,23 @@ export const DERIVE_BRAINWALLET_PARAMETERS = Type.Object(
   { additionalProperties: false },
 );
 
+/** No chain list: a wrong name gets the whole list back. */
 const chainArgument = Type.String({
-  description: `Blockchain name (${TOOL_CHAINS.join(", ")})`,
+  description: "Chain name, such as bitcoin; a wrong one lists them all",
   minLength: 1,
   maxLength: 32,
 });
 
 const networkArgument = Type.Optional(
   Type.String({
-    description: "Network (mainnet or testnet, also stagenet on monero). Default: mainnet",
+    description: "Default: mainnet; stagenet is monero only",
     enum: CHAIN_NETWORKS,
   }),
 );
 
 const prefixArgument = Type.Optional(
   Type.String({
-    description:
-      "cosmos: bech32 prefix of the chain, such as osmo. Default: cosmos. polkadot: SS58 network number, such as 2 for Kusama. Default: 0, 42 on testnet",
+    description: "cosmos bech32 prefix, default cosmos; polkadot SS58, default 0",
     pattern: COSMOS_PREFIX_PATTERN,
   }),
 );
@@ -580,7 +579,7 @@ const coinTypeArgument = Type.Optional(
 
 const addressTypeArgument = Type.Optional(
   Type.String({
-    description: "Chain-specific address type, such as segwit, taproot, stake, or secp256k1",
+    description: "Address type of the chain, such as segwit, taproot or stake",
     enum: TOOL_ADDRESS_TYPES,
   }),
 );

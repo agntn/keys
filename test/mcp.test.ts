@@ -3335,6 +3335,34 @@ describe("keys MCP server", () => {
     }
   });
 
+  it("keeps repeated parameter descriptions within 64 bytes", async () => {
+    const client = await connectTestClient();
+    const repeated = new Map<string, number>();
+
+    for (const tool of (await client.listTools()).tools) {
+      for (const [name, property] of Object.entries(tool.inputSchema.properties ?? {})) {
+        const { description } = property as { description?: unknown };
+        if (typeof description !== "string" || Buffer.byteLength(description) <= 64) continue;
+        const label = `${name}: ${description}`;
+        repeated.set(label, (repeated.get(label) ?? 0) + 1);
+      }
+    }
+
+    expect([...repeated].filter(([, count]) => count >= 5)).toEqual([]);
+  });
+
+  it("names every chain when the chain is wrong, since its description lists none", async () => {
+    const client = await connectTestClient();
+
+    const result = await client.callTool({
+      name: "keys_address_validate",
+      arguments: { chain: "bitcoim", address: "1" },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(text(result.content)).toContain(`Supported: ${TOOL_CHAINS.join(", ")}`);
+  });
+
   it("exports the listings and calls the server answers with", async () => {
     const client = await connectTestClient();
     const { privateKey, publicKeyCompressed } = secp256k1TestVectors;

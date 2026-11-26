@@ -48,7 +48,11 @@ import {
   WIF_DECODE_PARAMETERS,
   WIF_ENCODE_PARAMETERS,
 } from "./tool-schemas.ts";
-import { MAX_BIP39_CHECKSUM_SEARCH, MAX_BIP39_REPAIR_WORDS } from "./tool-parameters.ts";
+import {
+  MAX_BIP39_CHECKSUM_SEARCH,
+  MAX_BIP39_REPAIR_WORDS,
+  TOOL_CHAINS,
+} from "./tool-parameters.ts";
 /** Loads the shared executors once, and a call cancelled meanwhile never gets them. */
 const loadOperations = /* @__PURE__ */ lazy(() => import("./tool-operations/index.ts"));
 
@@ -99,14 +103,10 @@ export const secp256k1NonceRecoverTool = defineTool({
   name: "keys_secp256k1_nonce_recover",
   title: "Recover Reused Nonce Key",
   description:
-    "Recover the private key behind two secp256k1 signatures that reused a nonce: the same r over two different digests. ECDSA takes s low or high; schnorr is BIP340, as Taproot signs, and needs the x-only key. The answer names the public key both signatures verify under and whether it matches publicKey. The private key stays out of the answer; recoverReusedNonce from @agntn/keys/secp256k1 returns it.",
+    "Recover the private key behind two secp256k1 signatures that reused a nonce: the same r over two different digests. ECDSA takes s low or high; schnorr is BIP340, as Taproot signs, and needs the x-only key. The answer names the public key both signatures verify under and whether it matches publicKey. Same r over the same z leaks nothing and is refused. The private key stays out of the answer; recoverReusedNonce from @agntn/keys/secp256k1 returns it.",
   snippet:
     "Use when two signatures from one key share r, to learn whether the key falls out and which key it is.",
-  guidelines: [
-    "Pass r, s and z of each signature; keys_transaction_signatures_extract reads them from a transaction",
-    "Pass publicKey to check the result against a known key; schnorr needs it",
-    "Same r with the same z leaks nothing and is refused",
-  ],
+  guidelines: ["keys_transaction_signatures_extract reads r, s and z from a Bitcoin transaction"],
   effect: "read",
   input: RECOVER_SECP256K1_NONCE_PARAMETERS,
   execute: async ({ signatures, ...options }, { signal }) =>
@@ -117,14 +117,10 @@ export const secp256k1KnownNonceRecoverTool = defineTool({
   name: "keys_secp256k1_known_nonce_recover",
   title: "Recover Known Nonce Key",
   description:
-    "Recover the private key behind one secp256k1 ECDSA signature whose nonce k is known: a leaked, guessed or weak k. Checks that k gives r first. The signature alone fits two keys, one if k signed s as given and one if s was flipped to the other half afterwards, so the answer lists both public keys unless publicKey picks one. The private key stays out of the answer; recoverKnownNonce from @agntn/keys/secp256k1 returns it.",
+    "Recover the private key behind one secp256k1 ECDSA signature whose nonce k is known: a leaked, guessed or weak k. Checks that k gives r first and refuses it otherwise, never retrying k with its bytes reversed. The signature alone fits two keys, one if k signed s as given and one if s was flipped to the other half afterwards, so the answer lists both public keys unless publicKey picks one. The private key stays out of the answer; recoverKnownNonce from @agntn/keys/secp256k1 returns it.",
   snippet:
     "Use when the nonce of a signature is known or guessable, to learn which key falls out of it.",
-  guidelines: [
-    "Pass r, s and z of the signature; keys_transaction_signatures_extract reads them from a transaction",
-    "Pass publicKey whenever it is known: without it two keys fit and only an address or key tells them apart",
-    "A nonce that does not give r is refused; k with its bytes reversed fails that way, it is never tried the other way round",
-  ],
+  guidelines: ["keys_transaction_signatures_extract reads r, s and z from a Bitcoin transaction"],
   effect: "read",
   input: RECOVER_SECP256K1_KNOWN_NONCE_PARAMETERS,
   execute: async ({ signature, ...options }, { signal }) =>
@@ -208,8 +204,7 @@ export const walletGenerateTool = defineTool({
     "Generate a disposable private key, public key, and address for a supported blockchain. The plaintext private key enters the transcript, so never use the result for real funds.",
   snippet: "Use to create a new wallet with keys and address for Bitcoin, Ethereum, Solana, etc.",
   guidelines: [
-    "Provide a chain name (bitcoin, bitcoincash, bitcoingold, bitcoinsv, litecoin, dash, decred, dogecoin, zcash, ecash, ethereum, base, solana, stellar, aptos, tron, sui, cardano, xrpl, near, cosmos, polkadot, monero, ton)",
-    "Optionally specify network (mainnet/testnet, stagenet on monero) and address type",
+    `Chains: ${TOOL_CHAINS.join(", ")}`,
     "Bitcoin and Litecoin address types: legacy, p2sh, segwit, p2wsh, taproot",
     "Bitcoin Gold address types: legacy, p2sh, segwit, p2wsh; it never activated taproot",
     "Decred supports legacy ECDSA P2PKH addresses only",
@@ -222,7 +217,6 @@ export const walletGenerateTool = defineTool({
     "XRPL address types name the scheme: secp256k1 (default) or ed25519, whose public key starts with ED",
     "Polkadot address types name the scheme too: sr25519 (default, what the wallets make) or ed25519, both in the same SS58 format",
     "monero gives the private spend key, the public spend and view keys as one 64-byte hex, and the standard 4... address",
-    "Returns hex private key, hex public key, and address",
   ],
   effect: "write",
   idempotent: false,
@@ -238,17 +232,14 @@ export const walletDeriveTool = defineTool({
     "Derive a public key and address from an existing private key. Use only public or disposable keys because tool arguments enter the transcript.",
   snippet: "Use to derive the public key and address for an existing burner private key.",
   guidelines: [
-    "Provide a chain name and private key as hex, or on xrpl a family seed (s... or sEd...), whose version picks the scheme, or on solana the whole 64-byte secret as id.json or base58",
     "On monero pass the 25 English seed words as privateKey, or the private spend key as hex; the 24 key words work without the checksum word, but then each word has to be whole",
     "On ton pass the 24 words Tonkeeper and the TON wallets write as privateKey; BIP39 words go to keys_hd_wallet_derive instead",
     "On monero account and addressIndex pick the subaddress monero-wallet-cli lists there; the public key is then the subaddress pair",
-    "Optionally specify network and address type",
     "Bitcoin and Litecoin address types: legacy, p2sh, segwit, p2wsh, taproot",
-    "Bitcoin Gold address types: legacy, p2sh, segwit, p2wsh",
+    "Bitcoin Gold address types: legacy, p2sh, segwit, p2wsh; it never activated taproot",
     "For Sui and xrpl, use ed25519 or secp256k1 as the address type",
     "TON address types are wallet contracts: v4r2 (default), v5r1 or v3r2, non-bounceable UQ... as wallets show them, or with -bounceable for the EQ... form of the same account",
     "On polkadot the key is an sr25519 mini secret, or the 128-character secret of an account past a /soft junction; addressType ed25519 reads 64 characters as an ed25519 seed",
-    "Pass compressed: false for an old key on the Bitcoin family, whose legacy address hashes the uncompressed public key",
   ],
   effect: "read",
   input: DERIVE_WALLET_PARAMETERS,
@@ -260,25 +251,16 @@ export const hdWalletDeriveTool = defineTool({
   name: "keys_hd_wallet_derive",
   title: "Derive HD Wallet",
   description:
-    "Derive a public key and address from BIP39 words or their entropy and a path. Use allowInvalidChecksum for public puzzle candidates that fail only the checksum. Words are not repaired. Inputs enter the transcript, so use only public or disposable material.",
+    "Derive a public key and address from BIP39 words or their entropy and a path. Use allowInvalidChecksum for public puzzle candidates that fail only the checksum. Words are not repaired. Decred, Cardano and Monero are refused; Monero restores from its own 25 words in keys_wallet_derive. Inputs enter the transcript, so use only public or disposable material.",
   snippet: "Use to see which address a public puzzle mnemonic reaches on a given derivation path.",
   guidelines: [
-    "Provide a chain, a BIP39 mnemonic or its hex entropy, and a full derivation path",
     "Pass entropy directly instead of calling keys_bip39_entropy_encode first",
-    "keys_hd_wallet_derive accepts an explicit BIP39 language; omission means english, not automatic detection",
     "Common paths: Bitcoin m/44'/0'/0'/0/0 (legacy), m/49'/0'/0'/0/0 (p2sh), m/84'/0'/0'/0/0 (segwit), m/86'/0'/0'/0/0 (taproot); Bitcoin Cash m/44'/145'/0'/0/0; Bitcoin Gold m/44'/156'/0'/0/0 or m/84'/156'/0'/0/0 (segwit); Bitcoin SV m/44'/236'/0'/0/0, or m/44'/0'/0'/0/0 for ElectrumSV; Dash m/44'/5'/0'/0/0; Dogecoin m/44'/3'/0'/0/0; Zcash m/44'/133'/0'/0/0; eCash m/44'/899'/0'/0/0, or m/44'/1899'/0'/0/0 for Cashtab and m/44'/145'/0'/0/0 for wallets from before the split; Ethereum m/44'/60'/0'/0/0; Solana m/44'/501'/0'/0'; Stellar m/44'/148'/0'; Aptos m/44'/637'/0'/0'/0'; Sui m/44'/784'/0'/0'/0'; XRPL m/44'/144'/0'/0/0, secp256k1 only; NEAR m/44'/397'/0'; TON m/44'/607'/0' (Trust Wallet), or m/44'/607'/0'/0'/0'/0' for Ledger; Cosmos m/44'/118'/0'/0/0 on the Hub, the chain's own coin type elsewhere, such as m/44'/330'/0'/0/0 on Terra; Polkadot m for the root key or junctions such as //polkadot//0 and /0",
     "polkadot derives like subkey and polkadot.js, from the BIP39 entropy rather than the seed, on sr25519 like the wallets; addressType ed25519 gives the other account of the same words, which walks hard //junctions only",
     "Bitcoin, Bitcoin Gold and Litecoin pick the address type from the path purpose unless addressType is set",
-    "Optionally pass a BIP39 passphrase, a network, or an address type",
-    "For public puzzles, allowInvalidChecksum=true accepts a checksum failure with a warning, but still requires words from the selected list and BIP39 word counts",
-    "coleman=true also takes the 3 to 768 word phrases Ian Coleman's tool writes, 3 words per 32 bits, with a warning; polkadot refuses it",
-    "Never repair words just to satisfy the checksum. A bad checksum does not rule out a puzzle candidate",
+    "Never repair words just to satisfy the checksum",
     "Whitespace is collapsed and BIP39 NFKD normalization still applies, not raw text hashing",
-    "Decred HD derivation is not supported because it differs from standard BIP32",
-    "Cardano is not supported because CIP-1852 derives from entropy, not from the BIP39 seed",
-    "monero is not supported because its wallets restore from their own 25 seed words: pass them to keys_wallet_derive",
     "ton takes BIP39 words here; the 24 words Tonkeeper writes are TON's own scheme and go to keys_wallet_derive",
-    "Use only public or disposable mnemonics because tool arguments are saved in the transcript",
     "Returns the path, public key, and address, never the mnemonic or private key",
   ],
   effect: "read",
@@ -295,14 +277,12 @@ export const hdWalletScanTool = defineTool({
   snippet: "Use when a puzzle mnemonic should reach an address but the wallet path is unknown.",
   guidelines: [
     "Provide a chain, the mnemonic and the target address; the address must belong to that chain and network",
-    "accounts and indices widen the walk, default 3 accounts and 20 indices; Ledger Live, Solana, Stellar, Aptos, Sui, NEAR and TON walk their account level with indices",
+    "Ledger Live, Solana, Stellar, Aptos, Sui, NEAR and TON walk their account level with indices",
     "On bitcoin a phrase that is a native Electrum seed is also walked on its Electrum paths; old seeds report change/index",
     "A miss lists every scheme tried and every seed family skipped, with the reason. It rules out those paths only, not the mnemonic",
     "Pass the passphrase the wallet used; it is a different wallet with any other one",
-    "coleman=true also scans the 3 to 768 word phrases Ian Coleman's tool writes, with a warning",
     "On ton both schemes write v4r2, the contract Trust Wallet and Ledger deploy, and any form of the target address matches; TON's own 24 words go to keys_wallet_derive",
     "On cosmos the path walks the coin type prefix stands for, 330 for terra; coinType overrides it",
-    "Decred and Cardano are refused, as in keys_hd_wallet_derive",
     "Returns public keys and addresses, never the mnemonic or a private key",
   ],
   effect: "read",
@@ -319,10 +299,7 @@ export const xpubWalletDeriveTool = defineTool({
   snippet: "Use to list the addresses behind a published xpub, ypub or zpub without any secret.",
   guidelines: [
     "Provide a chain, the extended public key, and normal levels below it: m/0/i for receiving addresses, m/1/i for change",
-    "secp256k1 BIP32 chains only; hardened levels and extended private keys are refused",
     "Bitcoin, Bitcoin Gold and Litecoin write SegWit for a zpub and P2SH for a ypub unless addressType is set",
-    "Many wallets export a BIP84 or BIP49 account as xpub; pass addressType segwit or p2sh for those",
-    "The key reveals every address of its account and is saved in the transcript",
   ],
   effect: "read",
   input: DERIVE_XPUB_WALLET_PARAMETERS,
@@ -336,12 +313,6 @@ export const bip32ParentRecoverTool = defineTool({
   description:
     "Recover a parent private key from its extended public key and the private key of one normal child, the known BIP32 weakness: any child at a non-hardened index gives away the parent and every sibling. The child goes in as an xprv, which carries its index, or as a WIF or hex key with index. Reports whether the child belongs to the xpub and the parent fingerprint; the parent xprv comes back only with revealKey: true. Hardened children are refused. The child key enters the transcript, so use only public or disposable material.",
   snippet: "Use when a puzzle leaks a child private key next to the parent xpub.",
-  guidelines: [
-    "Provide the parent xpub and the child key: an xprv, or a WIF or hex key with its index",
-    "Only normal children work; a hardened index is refused",
-    "A child that does not belong to the xpub is reported, not an error",
-    "The parent xprv comes back only with revealKey: true and is saved in the transcript",
-  ],
   effect: "read",
   input: RECOVER_BIP32_PARENT_PARAMETERS,
   execute: async ({ extendedKey, ...options }, { signal }) =>
@@ -355,11 +326,7 @@ export const bip85DeriveTool = defineTool({
     "Derive BIP85 child entropy from a master xprv or tprv: a BIP39 mnemonic in any of the ten word lists, a WIF for a Bitcoin Core hdseed, a child xprv, 16 to 64 raw bytes, a base64 or base85 password, dice rolls or a Nostr nsec, one application per call. Returns the path, the entropy the application kept and the child secret itself, so the root key and the result both enter the transcript. Use only public or disposable keys.",
   snippet: "Use when one master key has to give a separate seed, WIF, xprv, password, PIN or nsec.",
   guidelines: [
-    "Provide the master xprv (tprv on testnet) and the application: bip39, wif, xprv, hex, base64, base85, dice or nostr",
-    "bip39 takes words and language, hex bytes, base64 and base85 length, dice sides and rolls, nostr identity; every application takes index",
     "Dice count from 0: add 1 to each roll for a die that starts at 1, or use sides 10 for PIN digits",
-    "A child that BIP85 can't make a key from says so; take the next index",
-    "The child secret is saved in the transcript, like the root key",
   ],
   effect: "read",
   input: DERIVE_BIP85_PARAMETERS,
@@ -373,11 +340,6 @@ export const bip39GenerateTool = defineTool({
   description:
     "Generate a random BIP39 mnemonic for tests or disposable wallets. The result enters the transcript. Never use it for real funds.",
   snippet: "Use when a test needs a fresh BIP39 mnemonic rather than supplied entropy.",
-  guidelines: [
-    "keys_bip39_generate accepts an explicit BIP39 language; omission means english, not automatic detection",
-    "Choose 12, 15, 18, 21 or 24 words. Default: 12",
-    "The result is saved in the transcript. Never use it for real funds",
-  ],
   effect: "write",
   idempotent: false,
   input: GENERATE_MNEMONIC_PARAMETERS,
@@ -392,13 +354,10 @@ export const bip39InspectTool = defineTool({
     "Inspect BIP39 word count, dictionary membership and checksum separately. Recover entropy only when valid, and read it as text, as a byte pattern and as an MD5, SHA-1 or SHA-256 digest of a known or given text. A bad checksum does not rule out a puzzle candidate. The phrase enters the transcript, so use only public or disposable candidates.",
   snippet: "Use to check mnemonic candidates from public crypto puzzles.",
   guidelines: [
-    "keys_bip39_inspect accepts an explicit BIP39 language; omission means english, not automatic detection",
-    "Provide a BIP39 mnemonic",
-    "Use only public or disposable candidates because tool arguments are saved in the transcript",
     "Returns wordCountValid, wordlistValid and checksumValid separately, with entropy only for valid mnemonics",
     "checksumValid is null when word count or dictionary membership prevents checking it",
     "Pass preimages with candidate answers: each is hashed as its exact UTF-8 bytes, digests cut to the entropy length. A built-in list of common words is always checked",
-    "A checksum failure is not proof that a puzzle candidate is wrong. keys_hd_wallet_derive accepts allowInvalidChecksum=true explicitly",
+    "keys_hd_wallet_derive takes a phrase that fails only the checksum with allowInvalidChecksum=true",
     "A phrase from Ian Coleman's tool with 3, 6, 9 or more than 24 words fails the word count; pass coleman=true to read it, and standardLength says whether BIP39 itself would",
   ],
   effect: "read",
@@ -413,12 +372,6 @@ export const bip39EntropyEncodeTool = defineTool({
   description:
     "Encode 16, 20, 24, 28, or 32 bytes of hexadecimal entropy as a BIP39 mnemonic, or with coleman any multiple of 4 bytes up to 1024, as Ian Coleman's tool spells raw entropy. Both forms enter the transcript, so use only public or disposable material.",
   snippet: "Use to turn public puzzle entropy into BIP39 words.",
-  guidelines: [
-    "keys_bip39_entropy_encode accepts an explicit BIP39 language; omission means english, not automatic detection",
-    "Provide 16, 20, 24, 28, or 32 bytes as hexadecimal text; coleman=true takes any multiple of 4 bytes up to 1024, 3 words per 4 bytes, with a warning",
-    "Use only public or disposable entropy because tool arguments are saved in the transcript",
-    "Returns the canonical mnemonic with its word count",
-  ],
   effect: "read",
   input: ENCODE_BIP39_ENTROPY_PARAMETERS,
   execute: async ({ entropy, ...options }, { signal }) =>
@@ -433,8 +386,6 @@ export const bip39IndicesLookupTool = defineTool({
   snippet: "Use to map public puzzle indices to BIP39 words.",
   guidelines: [
     "Provide up to 100 integer positions",
-    "Set index base to match the puzzle convention. Default: 0",
-    "Choose an official BIP39 language when the puzzle is not English",
     "Returns words in the same order as the supplied positions",
   ],
   effect: "read",
@@ -451,10 +402,7 @@ export const bip39WordsLookupTool = defineTool({
   snippet: "Use to map public puzzle words to their BIP39 indices.",
   guidelines: [
     "Provide up to 100 public or disposable words",
-    "Choose an official BIP39 language when the puzzle is not English",
-    "Returns both zero-based and one-based indices because puzzle conventions differ",
     "Words are matched case-insensitively with Unicode NFKD normalization",
-    "A word not in the list with three or more letters is read as an abbreviation and lists every word it starts, so abou gives about",
   ],
   effect: "read",
   input: LOOKUP_BIP39_WORDS_PARAMETERS,
@@ -466,14 +414,10 @@ export const bip39WordRecoverTool = defineTool({
   name: "keys_bip39_word_recover",
   title: "Recover Mnemonic Word",
   description:
-    "List the BIP39 words that make the checksum valid for one missing position. Use this filter only when canonical BIP39 generation is established, not for puzzles that may have invalid checksums. Inputs enter the transcript, so use only public or disposable candidates.",
+    "List the BIP39 words that make the checksum valid for one missing position. Every other word has to be in the list, or the call names the one that isn't. Use this filter only when canonical BIP39 generation is established, not for puzzles that may have invalid checksums. Inputs enter the transcript, so use only public or disposable candidates.",
   snippet: "Use to narrow one missing word in a public BIP39 puzzle candidate.",
   guidelines: [
     "Replace exactly one word with ? in a mnemonic containing 12, 15, 18, 21, or 24 words",
-    "keys_bip39_word_recover accepts an explicit BIP39 language; omission means english, not automatic detection",
-    "Every other word must be in the selected list, so a typo is refused by position instead of returning no candidates",
-    "Use checksum candidates only when the puzzle proves canonical BIP39 generation",
-    "Use only public or disposable candidates because tool arguments are saved in the transcript",
     "Returns candidate words, not wallets or target matches",
   ],
   effect: "read",
@@ -491,8 +435,7 @@ export const bip39WordsOrderTool = defineTool({
     "words holds each word whose position is unknown; a word that appears twice goes in twice",
     "template is the phrase with known words in place and one ? per loose word; leave it out when no position is known",
     "Nine open positions fit one call; about 1 in 16 orders of a twelve word phrase passes",
-    "Returns phrases, not wallets: derive each one to find the order that opens the target address",
-    "keys_bip39_words_order accepts an explicit BIP39 language; omission means english, not automatic detection",
+    "Returns phrases, not wallets: derive each one to find the one that opens the target address",
   ],
   effect: "read",
   input: ORDER_BIP39_WORDS_PARAMETERS,
@@ -509,8 +452,7 @@ export const bip39WordsRepairTool = defineTool({
     "Pass the phrase as written; words outside the list are found by themselves",
     "Each typo, swap of two neighbouring letters or OCR mix-up (rn and m, vv and w, cl and d) counts as one edit",
     "The answer counts the combinations up front, then lists repaired phrases with the edits each took",
-    "Returns phrases, not wallets: derive each one to find the phrase that opens the target address",
-    "keys_bip39_words_repair accepts an explicit BIP39 language; omission means english, not automatic detection",
+    "Returns phrases, not wallets: derive each one to find the one that opens the target address",
   ],
   effect: "read",
   input: REPAIR_BIP39_WORDS_PARAMETERS,
@@ -522,7 +464,7 @@ export const bip39TextScanTool = defineTool({
   name: "keys_bip39_text_scan",
   title: "Scan Text for BIP39 Words",
   description:
-    "Find every word of one official BIP39 list in a text, in reading order, repeats included. Each match comes with its zero-based and one-based index and its UTF-16 start and end in the text as given, so text.slice(start, end) is the match. Whole words only, in any case and Unicode form: a word is a run of letters and combining marks, so abandonment holds no abandon, while zoo's and zoo2 hold zoo. The Chinese lists are read character by character. The answer counts every match and lists limit of them from offset.",
+    "Find every word of one official BIP39 list in a text, in reading order, repeats included. Each match comes with its zero-based and one-based index and its UTF-16 start and end in the text as given, so text.slice(start, end) is the match. Whole words only, in any case and Unicode form: a word is a run of letters and combining marks, so abandonment holds no abandon, while zoo's and zoo2 hold zoo. The Chinese lists are read character by character. The answer counts every match and lists limit of them from offset. The text enters the transcript, so use only public or disposable text.",
   snippet:
     "Use to pull the BIP39 words out of a poem, a letter or a page, with where each one sits.",
   guidelines: [
@@ -530,8 +472,6 @@ export const bip39TextScanTool = defineTool({
     "More matches than limit? The answer ends with the offset of the next page",
     "Japanese words match only where the text sets them apart, as a mnemonic does",
     "It finds words and stops there: keys_bip39_words_lookup expands abbreviations, keys_bip39_inspect checks a phrase",
-    "keys_bip39_text_scan accepts an explicit BIP39 language; omission means english, not automatic detection",
-    "Use only public or disposable text because tool arguments are saved in the transcript",
   ],
   effect: "read",
   cli: { positional: ["text"], stdin: ["text"] },
@@ -546,12 +486,10 @@ export const addressGetTool = defineTool({
   description: "Derive a blockchain address from a public key.",
   snippet: "Use to get an address from a public key for any supported blockchain.",
   guidelines: [
-    "Provide chain, public key (hex), and optionally address type",
     "On near the address is the implicit account, the key itself in hex; the key may come as ed25519: and base58",
     "On polkadot the 32-byte sr25519 or ed25519 key becomes an SS58 address under prefix: 0 Polkadot, 2 Kusama, 42 any Substrate chain",
     "On ton the address belongs to a wallet contract, so each of v4r2 (default), v5r1 and v3r2 gives another one; -bounceable writes EQ... where wallets show UQ...",
     "On monero the key is 64 bytes of hex, the public spend key and then the public view key, as keys_wallet_derive prints it; addressType subaddress writes a subaddress pair, paymentId an integrated address",
-    "Returns the derived address",
   ],
   effect: "read",
   input: GET_ADDRESS_PARAMETERS,
@@ -565,8 +503,6 @@ export const addressValidateTool = defineTool({
   description: "Check whether an address matches one blockchain's format rules.",
   snippet: "Use to verify an address is valid for a given blockchain.",
   guidelines: [
-    "Provide chain and address to validate",
-    "Returns true/false",
     "Zcash checks transparent t1, t3 and tex1 addresses; shielded and unified ones come back invalid",
     "NEAR checks implicit accounts; named ones like alice.near come back invalid, since no key derives them",
     "cosmos checks the prefix too: osmo1... is invalid unless prefix is osmo",
@@ -601,13 +537,12 @@ export const descriptorDeriveTool = defineTool({
   name: "keys_descriptor_derive",
   title: "Derive Descriptor Addresses",
   description:
-    "Derive Bitcoin addresses from an output descriptor as Core writes it: pkh, wpkh, sh(wpkh), sh and wsh over pk, pkh, multi and sortedmulti, and tr with a script tree of pk, pkh, multi_a and sortedmulti_a leaves. Checks the #checksum when the descriptor carries one and gives it either way. Keys are hex, WIF, xpub or xprv with key origins, derivation steps and a final /* for a range. A WIF or xprv enters the transcript, so use only public or disposable keys.",
+    "Derive Bitcoin addresses from an output descriptor as Core writes it: pkh, wpkh, sh(wpkh), sh and wsh over pk, pkh, multi and sortedmulti, and tr with a script tree of pk, pkh, multi_a and sortedmulti_a leaves. Checks the #checksum when the descriptor carries one and gives it either way. Keys are hex, WIF, xpub or xprv with key origins, derivation steps and a final /* for a range; hardened steps after an xpub need the xprv. Bare pk(), multi(), raw(), addr() and multipath <0;1> steps are refused. A WIF or xprv enters the transcript, so use only public or disposable keys.",
   snippet:
     "Use to turn a wallet's descriptor into its addresses or to get a descriptor's checksum.",
   guidelines: [
     "A descriptor ending in /* is ranged: index picks the first child and count how many, 100 at most",
-    "Hardened steps after an xpub need the xprv; bare pk(), multi(), raw() and addr() are refused",
-    "Multipath <0;1> steps are not read; write one descriptor per branch",
+    "Write a multipath <0;1> descriptor as one descriptor per branch",
   ],
   effect: "read",
   input: DERIVE_DESCRIPTOR_PARAMETERS,
@@ -653,7 +588,6 @@ export const messageSignTool = defineTool({
     "Sign a message with a blockchain private key. Ask for recovered on Ethereum, base or tron when the signature goes to ethers, viem or TronWeb, which need v to recover the signer, and on the Bitcoin family or decred for the base64 signmessage prints. The key, message, and signature enter the transcript, so use only public or disposable material.",
   snippet: "Use to sign a message with a private key for any supported blockchain.",
   guidelines: [
-    "Provide chain, message text, and private key (hex)",
     "Returns the signature as hex, as base64 with recovered on the Bitcoin family and decred, and as SigV2 on monero",
     "Bitcoin, Bitcoin Gold, Dash, Dogecoin, eCash, Litecoin and Zcash each use their own message preamble; Bitcoin Cash and Bitcoin SV sign with Bitcoin's",
     "Ethereum/Base use EIP-191 prefix",
@@ -663,8 +597,6 @@ export const messageSignTool = defineTool({
     "polkadot signs the message wrapped in <Bytes>, as the polkadot.js extension does in signRaw: sr25519 by default, with a random nonce so no two signatures match, ed25519 given addressType ed25519",
     "monero signs SigV2 like monero-wallet-cli sign, with the spend key or, given signingKey view, the view key",
     "On monero account and addressIndex sign as that subaddress, like sign <account>,<index>; verify it against the subaddress pair",
-    "Pass recovered on Ethereum, Base or TRON for 65-byte r||s||v, what ethers and TronWeb need",
-    "Pass recovered on the Bitcoin family or decred for signmessage's base64, which a wallet verifies against an address",
   ],
   effect: "write",
   idempotent: true,
@@ -680,11 +612,9 @@ export const messageVerifyTool = defineTool({
     "Verify a message signature against a blockchain public key. To check a signature against an address instead, use keys_message_recover.",
   snippet: "Use to verify that a signature is valid for a given message and public key.",
   guidelines: [
-    "Provide chain, original message, signature (hex, signmessage's base64 on the Bitcoin family and decred, SigV2 or SigV1 on monero), and public key (hex)",
     "On monero either key of the address passes, as monero-wallet-cli verify accepts both",
     "On xrpl the key picks the curve: ED... or 32 bytes is ed25519, SEC1 is secp256k1 with a DER signature",
     "On polkadot a signature over the <Bytes> wrapped message passes, and so does one over the raw message, sr25519 or ed25519",
-    "Returns true if signature is valid, false otherwise",
   ],
   effect: "read",
   input: VERIFY_MESSAGE_PARAMETERS,
@@ -700,8 +630,6 @@ export const messageRecoverTool = defineTool({
   snippet:
     "Use to check a signmessage, personal_sign or EIP-712 signature against an address, or to learn the public key behind it.",
   guidelines: [
-    "Provide chain, the base64 or r||s||v signature, the address it claims, and exactly one of message, typedData and digest",
-    "typedData is the eth_signTypedData_v4 JSON; digest is the 32-byte hash a contract passes to ecrecover",
     "Under a P2PKH header a compressed key matches its legacy, p2sh and segwit addresses, since Electrum signs SegWit that way; a BIP137 header names one type",
   ],
   effect: "read",
@@ -764,7 +692,6 @@ export const transactionSignaturesExtractTool = defineTool({
     "Use to get r, s and z of a transaction input, for example to check two inputs for a reused r.",
   guidelines: [
     "Pass the raw signed transaction hex, the input index and the output it spends; an explorer gives the scriptPubKey and value",
-    "A Taproot input needs the spent output of every input in order, unless it signs with ANYONECANPAY",
     "Signatures from before BIP66 with loose DER are read too",
     "Two signatures with the same r go to keys_secp256k1_nonce_recover",
   ],
@@ -813,9 +740,6 @@ export const bip44GenerateTool = defineTool({
   snippet:
     "Use to generate the path a chain's wallets use: BIP44 on secp256k1 chains, every level hardened on ed25519 chains, CIP-1852 with roles on Cardano, the scheme picking the shape on Sui.",
   guidelines: [
-    "account, change and addressIndex default to 0; addressType picks the Sui scheme, ed25519 by default",
-    "Stellar paths end at the account and Solana paths at the change branch; a deeper index on those chains is an error",
-    "Cardano reads change as the CIP-1852 role: 0 external, 1 internal, 2 staking, up to 5",
     "On testnet the UTXO chains and Decred take coin type 1, the one testnet wallets write",
     "On cosmos the coin type follows prefix, 330 for terra and 529 for secret; coinType covers a chain the table misses",
   ],
