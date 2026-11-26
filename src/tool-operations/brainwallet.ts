@@ -159,9 +159,9 @@ function brainwalletRecipe(args: Readonly<Record<string, unknown>>): {
   const passphrase = brainwalletText(args["passphrase"], "Passphrase");
   const kdf = oneOf(args["kdf"], {
     name: "kdf",
-    allowed: ["scrypt", "pbkdf2", "sha256", "keccak256", "warpwallet"],
+    allowed: ["scrypt", "pbkdf2", "sha256", "keccak256", "sha3_256", "warpwallet"],
   });
-  if (kdf === "sha256" || kdf === "keccak256") {
+  if (kdf === "sha256" || kdf === "keccak256" || kdf === "sha3_256") {
     return { passphrase, options: plainBrainwalletRecipe(kdf, args) };
   }
   if (kdf === "warpwallet") return { passphrase, options: warpWalletRecipe(args) };

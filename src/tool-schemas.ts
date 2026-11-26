@@ -468,9 +468,9 @@ export const DERIVE_BRAINWALLET_PARAMETERS = Type.Object(
       }),
     ),
     kdf: Type.String({
-      enum: ["scrypt", "pbkdf2", "sha256", "keccak256", "warpwallet"],
+      enum: ["scrypt", "pbkdf2", "sha256", "keccak256", "sha3_256", "warpwallet"],
       description:
-        "scrypt takes N, r and p; pbkdf2 takes iterations and digest. sha256 (brainwallet.org) and keccak256 hash the passphrase straight into the key, with no salt. warpwallet takes only the salt and fixes its own costs",
+        "scrypt takes N, r and p; pbkdf2 takes iterations and digest. sha256 (brainwallet.org), keccak256 and sha3_256 (FIPS 202, not keccak256) hash the passphrase straight into the key, with no salt. warpwallet takes only the salt and fixes its own costs",
     }),
     N: Type.Optional(
       Type.Integer({
@@ -498,7 +498,7 @@ export const DERIVE_BRAINWALLET_PARAMETERS = Type.Object(
         minimum: 1,
         maximum: KDF_COST_LIMITS.iterations,
         description:
-          "pbkdf2: required iteration count. sha256 and keccak256: how many times the digest runs, default 1",
+          "pbkdf2: required iteration count. sha256, keccak256 and sha3_256: how many times the digest runs, default 1",
       }),
     ),
     digest: Type.Optional(

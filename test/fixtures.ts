@@ -2176,7 +2176,10 @@ export const brainwalletVectors = [
   },
 ] as const;
 
-/** Plain brainwallets, `rushwallet/1` first. Keys by `@agntn/hashes`, addresses by `keys mcp`. */
+/**
+ * Plain brainwallets, `rushwallet/1` first. Keys by `@agntn/hashes`, addresses by `keys mcp`.
+ * SHA3 `abc` is the FIPS 202 vector, its address from `@agntn/curves` and `@agntn/encodings`.
+ */
 export const plainBrainwalletVectors = [
   {
     passphrase: "5784623964023 578462396402",
@@ -2205,6 +2208,15 @@ export const plainBrainwalletVectors = [
     privateKey: "80c6781db380d4b92b845801b889b1f04ea93433fac5b19c9d0be7edb0b6e5e7",
     publicKey: "0248877131c564fe7001a1e8c3abc13a2cc30144b4bfc9527e38a09fab0577bac2",
     address: "0x98f5895db6EA91E06A60A875662ea0a626944866",
+  },
+  {
+    passphrase: "abc",
+    recipe: { kdf: "sha3_256" },
+    chain: "bitcoin",
+    compressed: true,
+    privateKey: "3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532",
+    publicKey: "03a93aa47d0154a9726b3c30df4ec2cd6e9a990183d1ebdc5981f297f95b359a1a",
+    address: "14maSzk1vRMdAgz6GTPmzsyZTQYSu5SoS9",
   },
 ] as const;
 

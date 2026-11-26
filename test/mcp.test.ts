@@ -853,6 +853,7 @@ describe("keys MCP server", () => {
       [{ passphrase, kdf: "scrypt", N: 1024, r: 8, p: 1, compressed: false }, "needs a salt"],
       [{ ...base, kdf: "sha256" }, "sha256 does not take salt, saltEncoding, hashed"],
       [{ passphrase, kdf: "keccak256", N: 1024, compressed: false }, "keccak256 does not take N"],
+      [{ ...base, kdf: "sha3_256" }, "sha3_256 does not take salt, saltEncoding, hashed"],
       [{ ...base, kdf: "warpwallet", N: 1024 }, "warpwallet does not take hashed, N"],
       [{ passphrase, kdf: "warpwallet", compressed: false }, "warpwallet needs a salt"],
       [{ passphrase, kdf: "sha256", chain: "ethereum", compressed: true }, "ethereum does not"],
