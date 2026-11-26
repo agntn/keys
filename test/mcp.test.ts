@@ -39,6 +39,7 @@ import {
   invalidChecksumPuzzle,
   slip132PrivateKey,
   secp256k1TestVectors,
+  ed25519TestVectors,
   slip132Vectors,
   bip38Vectors,
   bip32ParentVector,
@@ -3349,6 +3350,27 @@ describe("keys MCP server", () => {
     }
 
     expect([...repeated].filter(([, count]) => count >= 5)).toEqual([]);
+  });
+
+  it("gives the polkadot testnet default the prefix description names", async () => {
+    const client = await connectTestClient();
+    const listed = (await client.listTools()).tools.find(
+      (tool) => tool.name === "keys_address_get",
+    );
+    const publicKey = ed25519TestVectors.publicKey;
+    const address = async (prefix?: string) =>
+      text(
+        (
+          await client.callTool({
+            name: "keys_address_get",
+            arguments: { chain: "polkadot", network: "testnet", publicKey, prefix },
+          })
+        ).content,
+      );
+
+    expect(JSON.stringify(listed?.inputSchema.properties?.prefix)).toContain("42 on testnet");
+    expect(await address()).toBe(await address("42"));
+    expect(await address()).not.toBe(await address("0"));
   });
 
   it("names every chain when the chain is wrong, since its description lists none", async () => {

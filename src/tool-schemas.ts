@@ -563,7 +563,7 @@ const networkArgument = Type.Optional(
 
 const prefixArgument = Type.Optional(
   Type.String({
-    description: "cosmos bech32 prefix, default cosmos; polkadot SS58, default 0",
+    description: "cosmos bech32, default cosmos; polkadot SS58, 0 (42 on testnet)",
     pattern: COSMOS_PREFIX_PATTERN,
   }),
 );
