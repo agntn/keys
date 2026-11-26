@@ -2496,6 +2496,14 @@ export const hdScanVectors = {
     address: "bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr",
     path: "m/86'/0'/0'/0/0",
   },
+  /** Ledger's root Solana address of the reference mnemonic, from qntx/kobe's vectors. */
+  solanaRoot: { address: "D2PPQSYFe83nDzk96FqGumVU8JA7J8vj2Rhjc2oXzEi5", path: "m/44'/501'" },
+  /** bip32 2.0.5 and tweetnacl 1.0.3 in incognitochain/incognito-extension-2.0's Sollet test. */
+  sollet: {
+    mnemonic: "iron language purpose cargo access peanut insane pencil still burst sing nurse",
+    address: "FTTRznSXjgQg8CxfvsgxbKCNTYCZ3m6kNVTxaXyj2zNC",
+    path: "m/501'/0'/0/0",
+  },
 } as const;
 
 /** Entropy that means something. Digests from coreutils `md5sum`, `sha1sum` and `sha256sum`. */

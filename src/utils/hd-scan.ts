@@ -10,6 +10,8 @@ export interface ScanScheme {
   readonly path: string;
   /** Address type the wallet writes, or the Sui signature scheme. */
   readonly addressType?: AddressType;
+  /** Curve the path walks when it isn't the chain's, like Sollet feeding a BIP32 key to ed25519. */
+  readonly curve?: "secp256k1";
 }
 
 /** How far the scan walks each placeholder. */
@@ -131,6 +133,8 @@ const CHAIN_SCHEMES: Readonly<Record<string, readonly ScanScheme[]>> = {
   solana: [
     { name: "bip44", path: "m/44'/501'/{index}'/0'" },
     { name: "bip44-account", path: "m/44'/501'/{index}'" },
+    { name: "ledger-root", path: "m/44'/501'" },
+    { name: "sollet", path: "m/501'/{index}'/0/0", curve: "secp256k1" },
   ],
   stellar: [{ name: "sep5", path: "m/44'/148'/{index}'" }],
   aptos: [{ name: "bip44", path: "m/44'/637'/{index}'/0'/0'" }],

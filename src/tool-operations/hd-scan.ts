@@ -154,6 +154,7 @@ function bip39ScanSource(
     ed25519: nodeWalker(getSLIP10MasterKey(seed)),
   };
   const curveOf = (scheme: ScanScheme): keyof typeof walkers => {
+    if (scheme.curve !== undefined) return scheme.curve;
     if (scheme.addressType === "ed25519" || scheme.addressType === "secp256k1") {
       return scheme.addressType;
     }

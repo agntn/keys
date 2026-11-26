@@ -1593,6 +1593,13 @@ describe("keys MCP server", () => {
     expect(await scan({ chain: "solana", mnemonic: reference, address: solana.address })).toContain(
       `Path: ${solana.path}`,
     );
+    const { solanaRoot, sollet } = hdScanVectors;
+    expect(
+      await scan({ chain: "solana", mnemonic: reference, address: solanaRoot.address }),
+    ).toContain(`Match: ledger-root, 41 addresses checked\nPath: ${solanaRoot.path}`);
+    expect(
+      await scan({ chain: "solana", mnemonic: sollet.mnemonic, address: sollet.address }),
+    ).toContain(`Match: sollet, 42 addresses checked\nPath: ${sollet.path}`);
     for (const [path, scheme] of [
       ["m/44'/60'/3'/0/0", "ledger-live"],
       ["m/44'/60'/0'/4", "ledger-legacy"],
@@ -1634,7 +1641,7 @@ describe("keys MCP server", () => {
     ).toContain("Warning: BIP39 checksum is invalid.");
   }, 15_000);
 
-  /* On testnet only the `-testnet` schemes write anything mainnet does not already cover. */
+  /* Only `-testnet` schemes add paths on testnet; a scheme on a foreign curve has no derive. */
   it.each(TOOL_CHAINS.filter((chain) => scanSchemes(chain, { network: "mainnet" }) !== undefined))(
     "reaches the address keys_hd_wallet_derive gives on every %s scheme",
     async (chain) => {
@@ -1643,6 +1650,7 @@ describe("keys MCP server", () => {
       const schemes = TOOL_NETWORKS.flatMap((network) =>
         (scanSchemes(chain, { network }) ?? [])
           .filter((scheme) => network === "mainnet" || scheme.name.endsWith("-testnet"))
+          .filter((scheme) => scheme.curve === undefined)
           .map((scheme) => ({ network, scheme })),
       );
       for (const { network, scheme } of schemes) {
