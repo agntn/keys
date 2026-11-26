@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
+import * as brainpool384 from "@agntn/curves/brainpoolp384r1";
+import * as brainpool512 from "@agntn/curves/brainpoolp512r1";
+import * as nist384 from "@agntn/curves/p384";
+import * as nist521 from "@agntn/curves/p521";
 import { base64 } from "@agntn/encodings/base64";
 import { hex } from "@agntn/encodings/hex";
+import { sha1, sha256, sha384, sha512 } from "@agntn/hashes";
 import {
   checkMath,
   hashAlgorithm,
@@ -201,6 +206,141 @@ function breakBackSignature(armored: string): string {
   );
 }
 
+/* What the floor tests need from a curve subpath. */
+type FloorCurveModule = Pick<typeof nist384, "multiplyGenerator" | "sign" | "verify">;
+
+/* A disposable ECDSA key on a curve whose hash floor sits above 256 bits. */
+interface FloorCurve {
+  readonly oid: string;
+  readonly publicKey: string;
+  readonly sign: (digest: string, hash: FloorHash) => string;
+  readonly holds: (signature: string, digest: string) => boolean;
+}
+
+/* A hash a floor test signs over: its OpenPGP ID, its digest and its RFC 6979 name. */
+interface FloorHash {
+  readonly id: number;
+  readonly digest: (data: Uint8Array) => Uint8Array;
+  readonly nonce: "sha256" | "sha384" | "sha512";
+}
+
+const FLOOR_HASHES = {
+  SHA256: { id: 8, digest: sha256, nonce: "sha256" },
+  SHA384: { id: 9, digest: sha384, nonce: "sha384" },
+  SHA512: { id: 10, digest: sha512, nonce: "sha512" },
+} as const satisfies Record<string, FloorHash>;
+
+/* Nobody funds this key, and it fits under every curve order here. */
+const FLOOR_SECRET = BigInt(`0x${"5eed".repeat(16)}`);
+
+const FLOOR_TIME = 1_700_000_000;
+
+/* The curve OID from RFC 9580 Table 19, and the key the floor tests sign with. */
+function floorCurve(oid: string, curve: FloorCurveModule): FloorCurve {
+  const publicKey = curve.multiplyGenerator(FLOOR_SECRET, { compressed: false });
+  return {
+    oid,
+    publicKey,
+    sign: (digest, hash) => curve.sign(FLOOR_SECRET, { digest, hash: hash.nonce }).signature,
+    holds: (signature, digest) => curve.verify(signature, { digest, publicKey }),
+  };
+}
+
+const FLOOR_CURVES = {
+  "P-384": floorCurve("2b81040022", nist384),
+  "P-521": floorCurve("2b81040023", nist521),
+  brainpoolP384r1: floorCurve("2b240303020801010b", brainpool384),
+  brainpoolP512r1: floorCurve("2b240303020801010d", brainpool512),
+} as const;
+
+/* Four big endian bytes. */
+function uint32(value: number): number[] {
+  return [value >>> 24, (value >>> 16) & 0xff, (value >>> 8) & 0xff, value & 0xff];
+}
+
+/* One subpacket: length, type, body. */
+function subpacket(type: number, body: readonly number[]): number[] {
+  return [body.length + 1, type, ...body];
+}
+
+/* What a version 4 signature covers and how. */
+interface Signing {
+  readonly type: number;
+  readonly hash: FloorHash;
+  readonly data: Uint8Array;
+  readonly subpackets: readonly number[];
+}
+
+/* A version 4 ECDSA signature body hashed by RFC 9580 §5.2.4, and whether the curve accepts it. */
+function ecdsaSignature(curve: FloorCurve, signing: Signing): { body: Uint8Array; holds: boolean } {
+  const hashed = [...subpacket(2, uint32(FLOOR_TIME)), ...signing.subpackets];
+  const head = [4, signing.type, 19, signing.hash.id, hashed.length >> 8, hashed.length & 0xff];
+  const signed = [...head, ...hashed];
+  const trailer = [...signed, 4, 0xff, ...uint32(signed.length)];
+  const digest = signing.hash.digest(Uint8Array.from([...signing.data, ...trailer]));
+  const signature = curve.sign(hex.encode(digest), signing.hash);
+  const half = signature.length / 2;
+  const values = [signature.slice(0, half), signature.slice(half)];
+  const mpis = values.flatMap((value) => mpiOf(BigInt(`0x${value}`)));
+  return {
+    body: Uint8Array.from([...signed, 0, 0, ...digest.slice(0, 2), ...mpis]),
+    holds: curve.holds(signature, hex.encode(digest)),
+  };
+}
+
+/* A one-line cleartext message signed over a hash, and the key block that certifies its signer. */
+function floorMessage(
+  curve: FloorCurve,
+  hash: FloorHash,
+): { message: string; publicKey: string; fingerprint: string; holds: boolean } {
+  const oid = hex.decode(curve.oid);
+  const key = Uint8Array.from([
+    4,
+    ...uint32(FLOOR_TIME),
+    19,
+    oid.length,
+    ...oid,
+    ...mpiOf(BigInt(`0x${curve.publicKey}`)),
+  ]);
+  const framed = [0x99, key.length >> 8, key.length & 0xff, ...key];
+  const fingerprint = sha1(Uint8Array.from(framed));
+  const issuer = subpacket(33, [4, ...fingerprint]);
+  const userId = new TextEncoder().encode("Floor <floor@example.org>");
+  const certification = ecdsaSignature(curve, {
+    type: 0x13,
+    hash: FLOOR_HASHES.SHA512,
+    data: Uint8Array.from([...framed, 0xb4, ...uint32(userId.length), ...userId]),
+    subpackets: [...subpacket(27, [0x03]), ...issuer],
+  });
+  const text = "The floor holds.";
+  const signature = ecdsaSignature(curve, {
+    type: 0x01,
+    hash,
+    data: new TextEncoder().encode(text),
+    subpackets: issuer,
+  });
+  const armored = base64.encode(signaturePacket(signature.body)).match(/.{1,64}/gu) ?? [];
+  return {
+    message: [
+      "-----BEGIN PGP SIGNED MESSAGE-----",
+      "",
+      text,
+      "-----BEGIN PGP SIGNATURE-----",
+      "",
+      ...armored,
+      "-----END PGP SIGNATURE-----",
+      "",
+    ].join("\n"),
+    publicKey: armorKey([
+      { tag: 6, body: key },
+      { tag: 13, body: userId },
+      { tag: 2, body: certification.body },
+    ]),
+    fingerprint: hex.encode(fingerprint).toUpperCase(),
+    holds: signature.holds,
+  };
+}
+
 describe("OpenPGP cleartext verification", () => {
   it.each([
     ["RSA 3072", rsa, "RSA 3072", "SHA512"],
@@ -334,6 +474,42 @@ describe("OpenPGP cleartext verification", () => {
     expect(verify(broken, { publicKey: vector.publicKey })).toMatchObject({
       state: "invalid",
       reason: "The signature doesn't verify against this key",
+    });
+  });
+
+  it.each([
+    ["P-384", "SHA256", 384],
+    ["P-521", "SHA256", 512],
+    ["P-521", "SHA384", 512],
+    ["brainpoolP384r1", "SHA256", 384],
+    ["brainpoolP512r1", "SHA256", 512],
+    ["brainpoolP512r1", "SHA384", 512],
+  ] as const)("calls ECDSA %s over %s invalid even with the math holding", (curve, hash, floor) => {
+    const vector = floorMessage(FLOOR_CURVES[curve], FLOOR_HASHES[hash]);
+    expect(vector.holds).toBe(true);
+    expect(verify(vector.message, { publicKey: vector.publicKey })).toMatchObject({
+      state: "invalid",
+      primaryFingerprint: vector.fingerprint,
+      hash,
+      reason: `${hash} is too short for this key, RFC 9580 asks for at least ${floor} bits`,
+    });
+  });
+
+  it.each([
+    ["P-384", "SHA384"],
+    ["P-521", "SHA512"],
+    ["brainpoolP384r1", "SHA384"],
+    ["brainpoolP512r1", "SHA512"],
+  ] as const)("verifies ECDSA %s right at its floor, over %s", (curve, hash) => {
+    const vector = floorMessage(FLOOR_CURVES[curve], FLOOR_HASHES[hash]);
+    expect(verify(vector.message, { publicKey: vector.publicKey })).toMatchObject({
+      state: "valid",
+      primaryFingerprint: vector.fingerprint,
+      signingFingerprint: vector.fingerprint,
+      issuer: vector.fingerprint,
+      algorithm: `ECDSA ${curve.startsWith("P-") ? "NIST " : ""}${curve}`,
+      hash,
+      warnings: [],
     });
   });
 
